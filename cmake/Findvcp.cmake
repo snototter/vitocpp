@@ -1,12 +1,14 @@
 # - Try to find vito
 # Once done this will define
-#  VITOCPP_FOUND 
-#  VITOCPP_INCLUDE_DIR - The include directories
-#  VITOCPP_LIBRARIES - The libraries
-#  VITOCPP_LIBRARY_DIR - Link directories, useful for rpath
-# You must set the environmental variable VITOCPP_ROOT_DIR (see installation instructions)!
+#  VCP_FOUND 
+#  VCP_INCLUDE_DIR - The include directories
+#  VCP_LIBRARIES - The libraries
+#  VCP_LIBRARY_DIR - Link directories, useful for rpath
+#
+# If the environmental variable VCP_ROOT_DIR is NOT set, this script will try to
+# locate VCP via relative imports
 
-#TODO automatically add dependent components (if you want pvt_visualization, then you also need pvt_imutils)
+#TODO automatically add dependent components (if you want vcp_visualization, then you also need vcp_imutils)
 
 if(DEFINED ENV{PVT_ROOT_DIR})
   if(WIN32)
