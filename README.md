@@ -8,11 +8,9 @@ C++/Python 3 utilities for common vision tasks, e.g. streaming, visualization or
 
 
 ## Subfolder "scripts"
-* If you want to build the C++ library and Python 3 bindings
-  ```bash
-  $ cd $VCP_ROOT_DIR/scripts
-  $ ./build-ubuntu-18.04.sh
-  ```
+* If you want to build the C++ library and Python 3 bindings, simply run `./scripts/build-ubuntu-18.04.sh`
+
+
 #TODOs
 * [ ] Set up CMake build system, adjusted for VCP
 * [ ] Rename (e.g. "visualization" => imvis)

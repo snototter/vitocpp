@@ -18,9 +18,8 @@ fi
 
 
 ##############################################################################
-# Prepare third party content
+# Look up VCP_ROOT_DIR
 ##############################################################################
-# We need to know the VCP_ROOT_DIR first.
 if [ -z "$VCP_ROOT_DIR" ]; then
   # Get the directory this file is located in.
   # Taken from https://stackoverflow.com/a/246128/400948
@@ -34,10 +33,15 @@ if [ -z "$VCP_ROOT_DIR" ]; then
   VCP_SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
   VCP_ROOT_DIR="${VCP_SCRIPT_DIR}/.."
 fi
+
+
+##############################################################################
+# Set up external (non-packaged) libraries
+##############################################################################
 # Remember current working directory to return here
 CURR_WORK_DIR=$(pwd)
-
 cd ${VCP_ROOT_DIR}/external
+##############################################################################
 ##### live555 for RTSP stream handling
 if [ ! -d "live" ]; then
     tar zxf live.2020.01.11.tar.gz
@@ -48,7 +52,7 @@ if [ ! -d "live" ]; then
     ## the library linkage paths.
     cd ..
 fi
-
+##############################################################################
 ##### pybind11 for Python bindings
 PYBIND_NAME=pybind11-2.4.3
 if [ ! -d "${PYBIND_NAME}" ]; then
@@ -61,7 +65,7 @@ if [ ! -d "${PYBIND_NAME}" ]; then
     make install
     cd ../..
 fi
-
+##############################################################################
 # CD back to VCP_ROOT_DIR
 cd ..
 
