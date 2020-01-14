@@ -74,18 +74,17 @@ return_code=0
 check_optional_packages "${PKG_REALSENSE[@]}"
 if [ $? -eq 1 ]; then
     printf "  All satisfied.\n  => Did you check /etc/default/grub for large enough usbcore.usbfs_memory_mb setting?\n"
-    return_code=$((return_code + 0x04))
+    return_code=$((return_code | 0x04))
 fi
 
 # Azure Kinect (dependencies satisfied, if 4th bit of return code is set)
-#TODO
 PKG_KINECT=(libk4a1.3 libk4a1.3-dev)
 echo
 printf "Checking optional packages for Azure Kinect support:\n"
 check_optional_packages "${PKG_KINECT[@]}"
 if [ $? -eq 1 ]; then
     printf "  All satisfied.\n  => Did you check /etc/default/grub for large enough usbcore.usbfs_memory_mb setting?\n"
-    return_code=$((return_code + 0x08))
+    return_code=$((return_code | 0x08))
 fi
 
 exit $return_code
