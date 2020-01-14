@@ -74,10 +74,11 @@ cd build
 
 cd $CURR_WORK_DIR
 #cmake "${CMAKEOPTIONS[@]}" ..
-
+#TODO
 
 
 ##############################################################################
 # Configure, build and (locally) install Python wrappers
 ##############################################################################
+#TODO
 
