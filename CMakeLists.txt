@@ -10,8 +10,8 @@ set(VCP_VERSION "1.0.0")
 ##############################################################################
 # Options
 ##############################################################################
-option(VCP_VERBOSE_TIMING "Verbose timing output, may spam your console" ON)
-option(VCP_BUILD_STATIC "Build static libraries (in addition to shared ones)." OFF)
+#option(VCP_VERBOSE_TIMING "Verbose timing output, may spam your console" ON)
+#option(VCP_BUILD_STATIC "Build static libraries (in addition to shared ones)." OFF)
 #option(VCP_BUILD_BACKGROUND_MODELS "Build background model library." ON)
 #option(VCP_BUILD_CONFIG "Build configuration library." ON)
 #option(PVT_BUILD_IMUTILS "Build image utilities." ON)
@@ -20,9 +20,9 @@ option(VCP_BUILD_STATIC "Build static libraries (in addition to shared ones)." O
 #option(PVT_BUILD_TRACKING "Build tracking library." ON)
 #option(PVT_BUILD_UI "Build user interface module." ON)
 #option(PVT_BUILD_VISUALIZATION "Build visualizations library." ON)
-#option(PVT_BUILD_TESTS "Build tests, requires gtest." OFF)
+option(VCP_BUILD_TESTS "Build tests, requires GTest." OFF)
 #option(PVT_BUILD_DOC "Build doxygen documentation" ON)
-#option(PVT_DEBUG_OUTPUT "Prints various debug output" OFF)
+option(VCP_ENABLE_DEBUG_LOG "Prints 'a lot of' debug output" OFF)
 
 
 ##############################################################################
@@ -110,11 +110,11 @@ endif()
 #endif()
 
 # Enable testing if requested
-#if (PVT_BUILD_TESTS)
-#  find_package(GTest REQUIRED)
-#  include_directories(${GTEST_INCLUDE_DIRS})
-#  enable_testing()
-#endif (PVT_BUILD_TESTS)
+if(VCP_BUILD_TESTS)
+    find_package(GTest REQUIRED)
+    include_directories(${GTEST_INCLUDE_DIRS})
+    enable_testing()
+endif()
 
 # Always build utils library
 add_subdirectory(src/cpp/vcp_utils)
@@ -189,3 +189,4 @@ else()
   message("Won't generate C++ documentation (doxygen is missing)")
 endif()
 
+#FIXME add option to define: VCP_STACK_TRACE_ON_FAILURE

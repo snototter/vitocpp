@@ -1,7 +1,7 @@
 #include "math_utils.h"
 #include <gtest/gtest.h>
 
-namespace pvt {
+namespace vcp {
 namespace utils {
 namespace test {
 //TODO add remaining functions
@@ -70,4 +70,4 @@ TEST(MathUtils, RoundBase)
 
 } // namespace test
 } // namespace utils
-} // namespace pvt
+} // namespace vcp

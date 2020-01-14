@@ -1,12 +1,12 @@
 #include "circular_buffer.h"
 #include <gtest/gtest.h>
 #ifdef WITH_OPENCV
-#include <opencv2/core/core.hpp>
+    #include <opencv2/core/core.hpp>
 #else
-#error "Test for circular_buffer require OpenCV - we need a complex user type to check bad assignment/memory management!")
+    #error "Tests for circular_buffer require OpenCV - we need a complex user type to check bad assignment/memory management!")
 #endif
 
-namespace pvt {
+namespace vcp {
 namespace utils {
 namespace test {
 TEST(CircularBuffer, Integer) {
@@ -315,4 +315,4 @@ TEST(CircularBuffer, PopIterators) {
 }
 } // namespace test
 } // namespace utils
-} // namespace pvt
+} // namespace vcp

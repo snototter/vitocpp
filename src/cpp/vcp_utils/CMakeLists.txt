@@ -59,7 +59,6 @@ if(VCP_BUILD_TESTS)
         set(EXTRA_TEST_LIBS ${EXTRA_TEST_LIBS} ${OpenCV_LIBS})
         add_definitions(-DWITH_OPENCV)
     endif()
-  #  add_dependencies(${LIB_NAME}_test googletest) #TODO not needed anymore on newer releases??
     # GTest additionally requires pthread
     target_link_libraries(${LIB_NAME}_test
         ${LIB_NAME}

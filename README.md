@@ -23,3 +23,29 @@ C++/Python 3 utilities for common vision tasks, e.g. streaming, visualization or
 * [ ] imvis
 * [ ] "ui"
 * [ ] Python bindings
+
+
+#TODO doc testing
+set up testing
+Testing the C++ library requires gtest, be sure to build the static libraries:
+* Set up `libgtest` (must be compiled by yourself):
+  ```bash
+  $ sudo apt-get install libgtest-dev
+  $ cd /usr/src/googletest
+  $ sudo cmake CMakeLists.txt
+  $ sudo make
+  $ # copy or symlink googlemock/gtest/libgtest.a and googlemock/gtest/libgtest_main.a to your /usr/lib folder
+  $ sudo cp googlemock/gtest/*.a /usr/lib
+  ```
+* Now `vcp` can be tested:
+  ```bash
+  $ cd $VCP_ROOT_DIR/build
+
+  # Enable tests and link the gtest libraries
+  $ cmake -DVCP_BUILD_TESTS ..
+  $ make test 
+
+  # Or, if you prefer:
+  $ ctest -V
+  ```
+

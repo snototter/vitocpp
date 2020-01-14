@@ -399,7 +399,7 @@ std::string SlurpAsciiFile(const std::string &filename)
   std::ifstream ifs(filename.c_str(), std::ios::in);
   if (!ifs.is_open())
   {
-    PVT_LOG_FAILURE("Cannot open file to slurp, check location of '" << filename << "'");
+    VCP_LOG_FAILURE("Cannot open file to slurp, check location of '" << filename << "'");
     return std::string();
   }
 

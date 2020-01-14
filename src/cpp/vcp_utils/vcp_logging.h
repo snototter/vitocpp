@@ -5,11 +5,16 @@
 #include <chrono>
 #include <ctime>
 
-//FIXME - make configurable logger class?
-//// Logs to stdout, only if DEBUG_BUILD is defined.
-// Use ANSI color codes:
-#define PVT_LOG_INFO(msg) (vcp::utils::logging::Log(std::cout, "\033[36;1mINFO\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
-#define PVT_LOG_INFO_NOFILE(msg) (vcp::utils::logging::Log(std::cout, "\033[36;1mINFO\033[0m", nullptr, -1, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
+//FIXME TODO make LOG_DEBUG and enable/disable with cmake option!
+//FIXME implement _NSEC macros
+// * Default macros use ANSI color codes to colorize the log severity.
+// TODO DEBUG
+// * DEBUG and INFO messages are logged to std::cout
+// * WARNING and FAILURE messages are logged to std::cerr
+// * TODO doc NSEC, etc.
+
+//#define PVT_LOG_INFO(msg) (vcp::utils::logging::Log(std::cout, "\033[36;1mINFO\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
+//#define PVT_LOG_INFO_NOFILE(msg) (vcp::utils::logging::Log(std::cout, "\033[36;1mINFO\033[0m", nullptr, -1, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
 #define PVT_LOG_NOFILE(msg) (vcp::utils::logging::Log(std::cout, nullptr, nullptr, -1, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
 
 // Log current time + message
@@ -20,23 +25,48 @@
 #define PVT_LOG_NOFILE_NSEC(nsec, msg) (vcp::utils::logging::LogNSec(std::cout, nullptr, nullptr, -1, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg, nsec));
 
 // Logs a warning to stderr.
-#define PVT_LOG_WARNING(msg) (vcp::utils::logging::Log(std::cerr, "\033[35;1mWARNING\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
-#define PVT_LOG_WARNING_NOFILE(msg) (vcp::utils::logging::Log(std::cerr, "\033[35;1mWARNING\033[0m", nullptr, -1, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
+//#define PVT_LOG_WARNING(msg) (vcp::utils::logging::Log(std::cerr, "\033[35;1mWARNING\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
+//#define PVT_LOG_WARNING_NOFILE(msg) (vcp::utils::logging::Log(std::cerr, "\033[35;1mWARNING\033[0m", nullptr, -1, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
 #define PVT_LOG_WARNING_NSEC(nsec, msg) (vcp::utils::logging::LogNSec(std::cerr, "\033[35;1mWARNING\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg, nsec));
 
-// Logs a failure to stderr.
-#define PVT_LOG_FAILURE(msg) (vcp::utils::logging::Log(std::cerr, "\033[31;1mFAILURE\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
-#define PVT_LOG_FAILURE_NOFILE(msg) (vcp::utils::logging::Log(std::cerr, "\033[31;1mFAILURE\033[0m", nullptr, -1, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
+// Use only if you know what you are doing - you're probably looking
+// for VCP_LOG_INFO, VCP_LOG_WARNING, or VCP_LOG_FAILURE!
+#define VCP_LOG_STREAM(stream, prefix, filename, linenr, msg)   (vcp::utils::logging::Log(stream, prefix, filename, linenr, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
 
-// Adapted from http://stackoverflow.com/questions/19415845/a-better-log-macro-using-template-metaprogramming
-// Workaround GCC 4.7.2 not recognizing noinline attribute
+//TODO add debug macro
+
+// Logs a simple information/notification to stdout.
+#define VCP_LOG_INFO_LOCATION(msg)       VCP_LOG_STREAM(std::cout, "\033[36;1mINFO\033[0m", __FILE__, __LINE__, msg)
+#define VCP_LOG_INFO_DEFAULT(msg)        VCP_LOG_STREAM(std::cout, "\033[36;1mINFO\033[0m", nullptr, -1, msg)
+#define VCP_LOG_INFO(msg)  VCP_LOG_INFO_DEFAULT(msg)
+
+#define PVT_LOG_INFO(msg) (vcp::utils::logging::Log(std::cout, "\033[36;1mINFO\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
+// Logs a WARNING to stderr.
+#define VCP_LOG_WARNING_LOCATION(msg)       VCP_LOG_STREAM(std::cerr, "\033[35;1mWARNING\033[0m", __FILE__, __LINE__, msg)
+#define VCP_LOG_WARNING_DEFAULT(msg)        VCP_LOG_STREAM(std::cerr, "\033[35;1mWARNING\033[0m", nullptr, -1, msg)
+// TODO should we add a cmake option to enable something like: #ifdef VCP_LOG_WITH_SRC_LOCATION ??
+#define VCP_LOG_WARNING(msg)  VCP_LOG_WARNING_DEFAULT(msg)
+
+// Logs a FAILURE to stderr.
+#define VCP_LOG_FAILURE_LOCATION(msg)       VCP_LOG_STREAM(std::cerr, "\033[31;1mFAILURE\033[0m", __FILE__, __LINE__, msg)
+#define VCP_LOG_FAILURE_DEFAULT(msg)        VCP_LOG_STREAM(std::cerr, "\033[31;1mFAILURE\033[0m", nullptr, -1, msg)
+// TODO should we add a cmake option to enable something like: #ifdef VCP_LOG_WITH_SRC_LOCATION ??
+#define VCP_LOG_FAILURE(msg)  VCP_LOG_FAILURE_DEFAULT(msg)
+
+
+
+
+
 #ifndef NOINLINE_ATTRIBUTE
-  #ifdef __ICC
-    #define NOINLINE_ATTRIBUTE __attribute__(( noinline ))
-  #else
-    #define NOINLINE_ATTRIBUTE
-  #endif // __ICC
+// Adapted from http://stackoverflow.com/questions/19415845/a-better-log-macro-using-template-metaprogramming
+// This workaround is needed because GCC 4.7.2 doesn't know the noinline attribute
+    #ifdef __ICC
+        #define NOINLINE_ATTRIBUTE __attribute__(( noinline ))
+    #else
+        #define NOINLINE_ATTRIBUTE
+    #endif // __ICC
 #endif // NOINLINE_ATTRIBUTE
+
 /** @brief A collection of utilities - gathered and re-implemented over and over again throughout my studies. */
 namespace vcp
 {

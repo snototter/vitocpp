@@ -2,7 +2,7 @@
 #include <gtest/gtest.h>
 #include <string>
 
-namespace pvt {
+namespace vcp {
 namespace utils {
 namespace test {
 TEST(StringUtils, EndsWith) {
@@ -102,4 +102,4 @@ TEST(StringUtils, Replace) {
 }
 } // namespace test
 } // namespace utils
-} // namespace pvt
+} // namespace vcp
