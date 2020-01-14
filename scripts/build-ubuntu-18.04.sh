@@ -1,9 +1,29 @@
 #!/bin/bash -
 
 ##############################################################################
+# Look up VCP_ROOT_DIR and VCP_SCRIPT_DIR
+##############################################################################
+if [ -z "$VCP_ROOT_DIR" ]; then
+    # Get the directory this file is located in.
+    # Taken from https://stackoverflow.com/a/246128/400948
+    SOURCE="${BASH_SOURCE[0]}"
+    while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
+        DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+        SOURCE="$(readlink "$SOURCE")"
+        # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
+        [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
+    done
+    VCP_SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
+    VCP_ROOT_DIR="${VCP_SCRIPT_DIR}/.."
+else
+    VCP_SCRIPT_DIR="${VCP_ROOT_DIR}/scripts"
+fi
+
+
+##############################################################################
 # Ensure that all required packages are installed
 ##############################################################################
-./setup-dependencies-ubuntu-18.04.sh
+"$VCP_SCRIPT_DIR"/setup-dependencies-ubuntu-18.04.sh
 OPT_PKG_FLAGS=$?
 
 # Check which of the optional components can be built
@@ -14,24 +34,6 @@ fi
 
 if [ $((OPT_PKG_FLAGS & 0x08)) -gt 0 ]; then
     CMAKEOPTIONS+=("-DWITH_K4A")
-fi
-
-
-##############################################################################
-# Look up VCP_ROOT_DIR
-##############################################################################
-if [ -z "$VCP_ROOT_DIR" ]; then
-  # Get the directory this file is located in.
-  # Taken from https://stackoverflow.com/a/246128/400948
-  SOURCE="${BASH_SOURCE[0]}"
-  while [ -h "$SOURCE" ]; do # resolve $SOURCE until the file is no longer a symlink
-    DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
-    SOURCE="$(readlink "$SOURCE")"
-    # if $SOURCE was a relative symlink, we need to resolve it relative to the path where the symlink file was located
-    [[ $SOURCE != /* ]] && SOURCE="$DIR/$SOURCE"
-  done
-  VCP_SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
-  VCP_ROOT_DIR="${VCP_SCRIPT_DIR}/.."
 fi
 
 

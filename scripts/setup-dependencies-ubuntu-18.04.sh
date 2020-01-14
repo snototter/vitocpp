@@ -29,7 +29,7 @@ function check_optional_packages {
 # Check default packages required to build the basic VCP library
 ##############################################################################
 #TODO add build-essentials cmake, etc
-PKG_DEFAULT="libopencv-dev python-opencv python3-opencv zlib1g-dev libconfig++-dev libcurl4-openssl-dev ffmpeg libavcodec-dev libavformat-dev libavutil-dev libavdevice-dev libswscale-dev"
+PKG_DEFAULT="libopencv-dev python-opencv python3-opencv zlib1g-dev libconfig++-dev libcurl4-openssl-dev libssl-dev ffmpeg libavcodec-dev libavformat-dev libavutil-dev libavdevice-dev libswscale-dev"
 
 # Check, which packages are missing...
 PKG_INSTALL=()
