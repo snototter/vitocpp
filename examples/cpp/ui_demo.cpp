@@ -17,12 +17,16 @@ int main(int argc, char **argv)
   VCP_UNUSED_VAR(argv);
   const cv::Mat image = cv::imread("flamingo.jpg");
 
+  VCP_LOG_INFO(vcp::ui::PointSelectionUsage());
   cv::Point point;
   if (vcp::ui::SelectPoint(point, image))
     VCP_LOG_INFO("Selected point: " << point);
   else
     VCP_LOG_INFO("No point selected");
 
+
+
+  VCP_LOG_INFO(vcp::ui::MultiplePointsSelectionUsage());
   const auto points = vcp::ui::SelectPoints(image);
   if (points.empty())
   {
@@ -34,6 +38,9 @@ int main(int argc, char **argv)
       VCP_LOG_INFO("Selected: " << pt);
   }
 
+
+
+  VCP_LOG_INFO(vcp::ui::RectSelectionUsage());
   cv::Rect rect;
   if (vcp::ui::SelectRectangle(rect, image))
     VCP_LOG_INFO("Selected rect: " << rect);
