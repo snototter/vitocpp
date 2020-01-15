@@ -5,55 +5,95 @@
 #include <chrono>
 #include <ctime>
 
-//FIXME TODO make LOG_DEBUG and enable/disable with cmake option!
-//FIXME implement _NSEC macros
+// TODO doc
 // * Default macros use ANSI color codes to colorize the log severity.
-// TODO DEBUG
 // * DEBUG and INFO messages are logged to std::cout
 // * WARNING and FAILURE messages are logged to std::cerr
-// * TODO doc NSEC, etc.
 
-//#define PVT_LOG_INFO(msg) (vcp::utils::logging::Log(std::cout, "\033[36;1mINFO\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
-//#define PVT_LOG_INFO_NOFILE(msg) (vcp::utils::logging::Log(std::cout, "\033[36;1mINFO\033[0m", nullptr, -1, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
-#define PVT_LOG_NOFILE(msg) (vcp::utils::logging::Log(std::cout, nullptr, nullptr, -1, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
 
-// Log current time + message
-#define PVT_LOG_TIMED(msg) (vcp::utils::logging::LogTimed(std::cout, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
+//----------------------------------------------------------------
+// Generic/base macros, use only if you know what you are doing.
+// You're probably looking for VCP_LOG_INFO, VCP_LOG_WARNING,
+// or VCP_LOG_FAILURE!
 
-// Log message every nsec
-#define PVT_LOG_NSEC(nsec, msg) (vcp::utils::logging::LogNSec(std::cout, "\033[36;1mINFO\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg, nsec));
-#define PVT_LOG_NOFILE_NSEC(nsec, msg) (vcp::utils::logging::LogNSec(std::cout, nullptr, nullptr, -1, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg, nsec));
-
-// Logs a warning to stderr.
-//#define PVT_LOG_WARNING(msg) (vcp::utils::logging::Log(std::cerr, "\033[35;1mWARNING\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
-//#define PVT_LOG_WARNING_NOFILE(msg) (vcp::utils::logging::Log(std::cerr, "\033[35;1mWARNING\033[0m", nullptr, -1, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
-#define PVT_LOG_WARNING_NSEC(nsec, msg) (vcp::utils::logging::LogNSec(std::cerr, "\033[35;1mWARNING\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg, nsec));
-
-// Use only if you know what you are doing - you're probably looking
-// for VCP_LOG_INFO, VCP_LOG_WARNING, or VCP_LOG_FAILURE!
+// Default logging macro - write 'msg' to given 'stream'.
+// If prefix/filename/line-nr are given, they will be printed too.
 #define VCP_LOG_STREAM(stream, prefix, filename, linenr, msg)   (vcp::utils::logging::Log(stream, prefix, filename, linenr, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
 
-//TODO add debug macro
+// Similar to VCP_LOG_STREAM, but there will be at most 1 message
+// within nsec seconds.
+// So make sure, not to send failure/error messages to NSEC...
+#define VCP_LOG_STREAM_NSEC(stream, prefix, filename, linenr, msg, nsec)  (vcp::utils::logging::LogNSec(stream, prefix, filename, linenr, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg, nsec));
 
-// Logs a simple information/notification to stdout.
+
+// In case you want a time-stamped log message to a specific stream, use this
+//TODO maybe deprecate this (?)
+#define VCP_LOG_TIMED(stream, msg) (vcp::utils::logging::LogTimed(stream, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
+
+
+//----------------------------------------------------------------
+// Macro abstractions which prefix the proper log severity/level
+//
+// Logs a DEBUG notification to stdout.
+#define VCP_LOG_DEBUG_LOCATION(msg)      VCP_LOG_STREAM(std::cout, "\033[34;1mDEBUG\033[0m", __FILE__, __LINE__, msg)
+#define VCP_LOG_DEBUG_DEFAULT(msg)       VCP_LOG_STREAM(std::cout, "\033[34;1mDEBUG\033[0m", nullptr, -1, msg)
+// Logs a INFO/status notification to stdout.
 #define VCP_LOG_INFO_LOCATION(msg)       VCP_LOG_STREAM(std::cout, "\033[36;1mINFO\033[0m", __FILE__, __LINE__, msg)
 #define VCP_LOG_INFO_DEFAULT(msg)        VCP_LOG_STREAM(std::cout, "\033[36;1mINFO\033[0m", nullptr, -1, msg)
-#define VCP_LOG_INFO(msg)  VCP_LOG_INFO_DEFAULT(msg)
-
-#define PVT_LOG_INFO(msg) (vcp::utils::logging::Log(std::cout, "\033[36;1mINFO\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
 // Logs a WARNING to stderr.
-#define VCP_LOG_WARNING_LOCATION(msg)       VCP_LOG_STREAM(std::cerr, "\033[35;1mWARNING\033[0m", __FILE__, __LINE__, msg)
-#define VCP_LOG_WARNING_DEFAULT(msg)        VCP_LOG_STREAM(std::cerr, "\033[35;1mWARNING\033[0m", nullptr, -1, msg)
-// TODO should we add a cmake option to enable something like: #ifdef VCP_LOG_WITH_SRC_LOCATION ??
-#define VCP_LOG_WARNING(msg)  VCP_LOG_WARNING_DEFAULT(msg)
-
+#define VCP_LOG_WARNING_LOCATION(msg)    VCP_LOG_STREAM(std::cerr, "\033[35;1mWARNING\033[0m", __FILE__, __LINE__, msg)
+#define VCP_LOG_WARNING_DEFAULT(msg)     VCP_LOG_STREAM(std::cerr, "\033[35;1mWARNING\033[0m", nullptr, -1, msg)
 // Logs a FAILURE to stderr.
-#define VCP_LOG_FAILURE_LOCATION(msg)       VCP_LOG_STREAM(std::cerr, "\033[31;1mFAILURE\033[0m", __FILE__, __LINE__, msg)
-#define VCP_LOG_FAILURE_DEFAULT(msg)        VCP_LOG_STREAM(std::cerr, "\033[31;1mFAILURE\033[0m", nullptr, -1, msg)
-// TODO should we add a cmake option to enable something like: #ifdef VCP_LOG_WITH_SRC_LOCATION ??
-#define VCP_LOG_FAILURE(msg)  VCP_LOG_FAILURE_DEFAULT(msg)
+#define VCP_LOG_FAILURE_LOCATION(msg)    VCP_LOG_STREAM(std::cerr, "\033[31;1mFAILURE\033[0m", __FILE__, __LINE__, msg)
+#define VCP_LOG_FAILURE_DEFAULT(msg)     VCP_LOG_STREAM(std::cerr, "\033[31;1mFAILURE\033[0m", nullptr, -1, msg)
 
 
+//----------------------------------------------------------------
+// Macros intended to be used by library users/module devs.
+//
+// ==> If you want to use these macros outside of the VCP CMake
+//     environment, you have to #define the log level:
+//     VCP_LOG_LEVEL_DEBUG, VCP_LOG_LEVEL_INFO or VCP_LOG_LEVEL_WARNING
+//
+//
+// Log DEBUG messages
+#ifdef VCP_LOG_LEVEL_DEBUG
+    #define VCP_LOG_DEBUG(msg) VCP_LOG_DEBUG_LOCATION(msg)
+#else // VCP_LOG_ENABLE_DEBUG
+    #define VCP_LOG_DEBUG(msg) do {} while(0)
+#endif // VCP_LOG_ENABLE_DEBUG
+//
+//
+// Log INFO messages
+#if defined(VCP_LOG_LEVEL_DEBUG) || defined(VCP_LOG_LEVEL_INFO)
+    #define VCP_LOG_INFO(msg)  VCP_LOG_INFO_DEFAULT(msg)
+#else
+    #define VCP_LOG_INFO(msg)  do {} while(0)
+#endif
+//
+//
+// Log WARNING messages
+#if defined(VCP_LOG_LEVEL_DEBUG) || defined(VCP_LOG_LEVEL_INFO) || defined(VCP_LOG_LEVEL_WARNING)
+    #define VCP_LOG_WARNING(msg)  VCP_LOG_WARNING_DEFAULT(msg)
+#else
+    #define VCP_LOG_WARNING(msg)  do {} while(0)
+#endif
+//
+//
+// Always log FAILURE messages
+#define VCP_LOG_FAILURE(msg)             VCP_LOG_FAILURE_DEFAULT(msg)
+
+
+
+// FIXME: clean up
+//// Log message every nsec
+//#define PVT_LOG_NSEC(nsec, msg) (vcp::utils::logging::LogNSec(std::cout, "\033[36;1mINFO\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg, nsec));
+//#define PVT_LOG_NOFILE_NSEC(nsec, msg) (vcp::utils::logging::LogNSec(std::cout, nullptr, nullptr, -1, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg, nsec));
+//// Logs a warning to stderr.
+////#define PVT_LOG_WARNING(msg) (vcp::utils::logging::Log(std::cerr, "\033[35;1mWARNING\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
+////#define PVT_LOG_WARNING_NOFILE(msg) (vcp::utils::logging::Log(std::cerr, "\033[35;1mWARNING\033[0m", nullptr, -1, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
+//#define PVT_LOG_WARNING_NSEC(nsec, msg) (vcp::utils::logging::LogNSec(std::cerr, "\033[35;1mWARNING\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg, nsec));
+//#define PVT_LOG_INFO(msg) (vcp::utils::logging::Log(std::cout, "\033[36;1mINFO\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
 
 
 
@@ -101,7 +141,7 @@ NOINLINE_ATTRIBUTE {
   }
   prev_invocation = now;
   if (severity)
-    stream << "[" << severity << "]: ";
+    stream << "[" << severity << "] ";
   output(stream, std::move(data.list));
   stream << std::endl;
   if (file)
@@ -126,7 +166,7 @@ template<typename List>
 void Log(std::ostream &stream, const char *severity, const char* file, int line, LogData<List>&& data)
   NOINLINE_ATTRIBUTE {
   if (severity)
-    stream << "[" << severity << "]: ";
+    stream << "[" << severity << "] ";
   output(stream, std::move(data.list));
   stream << std::endl;
   if (file)

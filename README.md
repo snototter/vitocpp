@@ -49,3 +49,10 @@ Testing the C++ library requires gtest, be sure to build the static libraries:
   $ ctest -V
   ```
 
+TODO examples/c++
+examples/cpp demonstrate how to use vitocpp/VCP from your own cmake project
+```bash
+$ cd $VCP_ROOT_DIR/examples
+mkdir build && cd build
+```
+

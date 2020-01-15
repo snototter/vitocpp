@@ -1,0 +1,85 @@
+#include <iostream>
+#include <string>
+#include <vector>
+#include <cstdio>
+#include <fstream>
+
+#include <vcp_utils/string_utils.h>
+#include <vcp_utils/file_utils.h>
+
+#define VCP_LOG_LEVEL_INFO
+#include <vcp_utils/vcp_logging.h>
+
+int main(int argc, char **argv)
+{
+  (void)(argc);
+  (void)(argv);
+
+  VCP_LOG_DEBUG("Debug message - enable/disable via #define");
+  VCP_LOG_DEBUG_DEFAULT("==> log always (without location)");
+  VCP_LOG_DEBUG_LOCATION("==> log always (with location)");
+  VCP_LOG_INFO("Status message - enable/disable via #define");
+  VCP_LOG_WARNING("Status message - enable/disable via #define");
+  VCP_LOG_FAILURE("Status message - always enabled!");
+
+  VCP_LOG_INFO("String utilities:");
+  std::cout << "  str::endswith should be False? " << vcp::utils::string::EndsWith("abc", 'a') << std::endl
+            << "  str::endswith should be True?  " << vcp::utils::string::EndsWith("abc",'c') << std::endl;
+
+  std::cout << "Seconds to string: " << std::endl
+            << "    10: " << vcp::utils::string::SecondsToStr(10) << std::endl
+            << "   379: " << vcp::utils::string::SecondsToStr(379) << std::endl
+            << " 10599: " << vcp::utils::string::SecondsToStr(10599) << std::endl
+            << "999999: " << vcp::utils::string::SecondsToStr(999999) << std::endl << std::endl;
+
+  VCP_LOG_INFO("Filename utilities:");
+  const std::vector<std::string> tokens = {"one", "tokenized/", "path"};
+  std::cout << "Fullfile: " << vcp::utils::file::FullFile(tokens) << std::endl;
+  std::cout << "Fullfile (initlist): " << vcp::utils::file::FullFile({"some", "path", tokens[0], "foo/", "bar"}) << std::endl;
+  std::cout << "Fullfile: " << vcp::utils::file::FullFile("", "foo") << std::endl << std::endl;
+
+  VCP_LOG_INFO("File utilities:");
+  const std::string dir = "/tmp/a/b/c/d/efg/Foo";
+  std::cout << "Exists tmp directory path: " << vcp::utils::file::Exists(dir) << std::endl;
+  std::cout << "Creating tmp dir: " << vcp::utils::file::CreatePath(dir) << std::endl;
+  std::cout << "Exists now? " << vcp::utils::file::Exists(dir) << std::endl;
+
+  std::cout << "Is /tmp/.... a directory: " << vcp::utils::file::IsDir(dir) << std::endl;
+  const std::string tmp_filename = std::tmpnam(nullptr);
+  std::ofstream tmp_file;
+  tmp_file.open(tmp_filename);
+  tmp_file << "foo";
+  tmp_file.close();
+  std::cout << "tmp file exists: " << vcp::utils::file::Exists(tmp_filename) << std::endl
+            << "tmp file is dir: " << vcp::utils::file::IsDir(tmp_filename) << std::endl << std::endl;
+
+  //--------------------------------------------------------------
+  // Directory list
+  VCP_LOG_INFO("Directory listing (sort/file filters):");
+  auto curr_dir_list = vcp::utils::file::ListDirContents(".");
+  std::cout << "List all files in current directory (length sort):" << std::endl;
+  for (const auto dirent : curr_dir_list)
+    std::cout << "  " << dirent << std::endl;
+
+  curr_dir_list = vcp::utils::file::ListDirContents(".", &vcp::utils::file::filename_filter::IncludeAll, true, true, true, &vcp::utils::file::filename_filter::CompareFilenames);
+  std::cout << "List all files in current directory (alphabetical sort):" << std::endl;
+  for (const auto dirent : curr_dir_list)
+    std::cout << "  " << dirent << std::endl;
+
+  curr_dir_list = vcp::utils::file::ListDirContents(".", &vcp::utils::file::filename_filter::HasImageExtension, false);
+  std::cout << "List only image files:" << std::endl;
+  for (const auto dirent : curr_dir_list)
+    std::cout << "  " << dirent << std::endl;
+
+  curr_dir_list = vcp::utils::file::ListDirContents(".", &vcp::utils::file::filename_filter::IncludeAll, false, false, false);
+  std::cout << "List only sub directories (inc . and ..):" << std::endl;
+  for (const auto dirent : curr_dir_list)
+    std::cout << "  " << dirent << std::endl;
+
+
+  curr_dir_list = vcp::utils::file::ListOrPeekDirContents(".", 3);
+  std::cout << "List at most 3 files in current directory (length sort):" << std::endl;
+  for (const auto dirent : curr_dir_list)
+    std::cout << "  " << dirent << std::endl;
+  return 0;
+}

@@ -3,7 +3,6 @@
 #  VCP_FOUND 
 #  VCP_INCLUDE_DIR - The include directories
 #  VCP_LIBRARIES - The libraries
-#  VCP_LIBRARY_DIR - Link directories, useful for rpath
 #
 # If the environmental variable VCP_ROOT_DIR is NOT set, this script will try to
 # locate VCP via relative imports
@@ -19,16 +18,16 @@ if(DEFINED ENV{VCP_ROOT_DIR})
         set(VCP_ROOT $ENV{VCP_ROOT_DIR})
     endif(WIN32)
 else()
-    if(NOT vcp_FIND_QUIETLY)
-        message(STATUS "Environmental variable VCP_ROOT_DIR not set! Assuming relative to Findvcp.cmake: ${VCP_ROOT}")
-    endif()
     set(VCP_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
+    if(NOT vcp_FIND_QUIETLY)
+        message(STATUS "[vcp] Environmental variable VCP_ROOT_DIR not set! Assuming relative to Findvcp.cmake: '${VCP_ROOT}'")
+    endif()
 endif()
 
 ##############################################################################
 # Set up hints for file searches
-set(POTENTIAL_INCLUDE_DIR "${VCP_ROOT}/include")
-set(POTENTIAL_LIBRARY_PATHS "${VCP_ROOT}/lib" "${VCP_ROOT}/lib64")
+set(POTENTIAL_INCLUDE_DIR "${VCP_ROOT}/gen/include")
+set(POTENTIAL_LIBRARY_PATHS "${VCP_ROOT}/gen/lib" "${VCP_ROOT}/gen/lib64")
 
 ##############################################################################
 # Always include the utils module.
@@ -76,7 +75,7 @@ foreach(module ${VCP_MODULES})
 
     # Abort if no library found
     if(NOT LIBRARY_DEBUG AND NOT LIBRARY_RELEASE AND vcp_FIND_REQUIRED)
-        message(FATAL_ERROR "${module} marked as required but not found")
+        message(FATAL_ERROR "[vcp] ${module} marked as required but not found")
     endif()
 
     # If we found the debug version, use it (will be replaced by the
@@ -113,110 +112,107 @@ list(FIND VCP_MODULES vcp_tracking USE_TRACKING)
 # OpenCV
 if(USE_VISUALIZATION GREATER 0 OR USE_TRACKING GREATER 0 OR USE_BACKGROUND_MODELS GREATER 0 OR USE_IP_CAM_CAPTURE GREATER 0 OR USE_UI GREATER 0 OR USE_MATH GREATER 0 OR USE_IMUTILS GREATER 0)
   if(NOT vcp_FIND_QUIETLY)
-    message(STATUS "Some selected PVT modules require OpenCV as dependency")
+    message(STATUS "[vcp] Some selected VCP modules require OpenCV as dependency")
   endif()
-
   find_package(OpenCV REQUIRED)
   if(NOT OpenCV_FOUND)
-    message(FATAL_ERROR "OpenCV not found!")
+    message(FATAL_ERROR "[vcp] OpenCV not found!")
   endif()
 
-  # Add OpenCV libraries to PVT library list
-  set(PVT_LIBRARIES ${PVT_LIBRARIES} ${OpenCV_LIBS})
-  # TODO do we need to add the OpenCV include directory (for those headers that refer to opencv/core, etc)?
+  # Add OpenCV libraries to VCP library list
+  set(VCP_LIBRARIES ${VCP_LIBRARIES} ${OpenCV_LIBS})
 endif()
 
 # CURL
 if(USE_IP_CAM_CAPTURE GREATER 0)
-  if(NOT pvt_FIND_QUIETLY)
-    message(STATUS "Some selected PVT modules require CURL as dependency")
+  if(NOT vcp_FIND_QUIETLY)
+    message(STATUS "[vcp] Some selected VCP modules require CURL as dependency")
   endif()
 
   find_package(CURL REQUIRED)
   if(NOT CURL_FOUND)
-    message(FATAL_ERROR "CURL not found!")
+    message(FATAL_ERROR "[vcp] CURL not found!")
   endif()
 
-  # Add CURL libraries to PVT library list
-  set(PVT_LIBRARIES ${PVT_LIBRARIES} ${CURL_LIBRARIES})
+  # Add CURL libraries to VCP library list
+  set(VCP_LIBRARIES ${VCP_LIBRARIES} ${CURL_LIBRARIES})
 
   # Check if matrix vision sink was installed, if so, add mvIMPACT
-  if (EXISTS "${PVT_ROOT}/include/pvt_icc/matrixvision_sink.h")
-		message(STATUS "PVT ICC was build with matrix vision support, need to include mvIMPACT SDK")
+  if (EXISTS "${VCP_ROOT}/include/vcp_icc/matrixvision_sink.h")
+		message(STATUS "[vcp] VCP ICC was build with matrix vision support, need to include mvIMPACT SDK")
     find_package(mvIMPACT_acquire REQUIRED)
 	  include_directories(${mvIMPACT_acquire_INCLUDE_DIR})
-    set(PVT_LIBRARIES ${PVT_LIBRARIES} ${mvIMPACT_acquire_LIBS})
+    set(VCP_LIBRARIES ${VCP_LIBRARIES} ${mvIMPACT_acquire_LIBS})
   endif()
 
   # Check if realsense2 sink was installed, if so, add realsense2
-  if (EXISTS "${PVT_ROOT}/include/pvt_icc/realsense2_sink.h")
-		message(STATUS "PVT ICC was build with realsense2 support, need to link librealsense2")
+  if (EXISTS "${VCP_ROOT}/include/vcp_icc/realsense2_sink.h")
+		message(STATUS "[vcp] VCP ICC was build with realsense2 support, need to link librealsense2")
     find_package(realsense2 REQUIRED)
 	  include_directories(${realsense_INCLUDE_DIR})
-    set(PVT_LIBRARIES ${PVT_LIBRARIES} ${realsense2_LIBRARY})
+    set(VCP_LIBRARIES ${VCP_LIBRARIES} ${realsense2_LIBRARY})
   endif()
 
   # Check if k4a sink was installed, if so, add k4a dependency
-  if (EXISTS "${PVT_ROOT}/include/pvt_icc/k4a_sink.h")
-		message(STATUS "PVT ICC was build with k4a support, need to link libk4a")
+  if (EXISTS "${VCP_ROOT}/include/vcp_icc/k4a_sink.h")
+		message(STATUS "[vcp] VCP ICC was build with k4a support, need to link libk4a")
     find_package(k4a REQUIRED)
-    set(PVT_LIBRARIES ${PVT_LIBRARIES} k4a) #TODO let's hope, k4a will never be renamed (their cmake config doesn't define k4a_LIBRARY (or similar))
+    set(VCP_LIBRARIES ${VCP_LIBRARIES} k4a) #TODO let's hope, k4a will never be renamed (their cmake config doesn't define k4a_LIBRARY (or similar))
   endif()
 endif()
 
 # zlib
 if(USE_IMUTILS GREATER 0)
-  if(NOT pvt_FIND_QUIETLY)
-    message(STATUS "Some selected PVT modules request zlib as optional dependency")
+  if(NOT vcp_FIND_QUIETLY)
+    message(STATUS "[vcp] Some selected VCP modules request zlib as optional dependency")
   endif()
 
   find_package(ZLIB) # zlib is optional
   if(NOT ZLIB_FOUND)
-    message(WARNING "zlib not found!")
+    message(WARNING "[vcp] zlib not found!")
   else()
-    set(PVT_LIBRARIES ${PVT_LIBRARIES} ${ZLIB_LIBRARIES})
+    set(VCP_LIBRARIES ${VCP_LIBRARIES} ${ZLIB_LIBRARIES})
   endif()
 endif()
 
 # libconfig++
 if(USE_CONFIG GREATER 0)
-  if(NOT pvt_FIND_QUIETLY)
-    message(STATUS "Some selected PVT modules require libconfig++ as dependency")
+  if(NOT vcp_FIND_QUIETLY)
+    message(STATUS "[vcp] Some selected VCP modules require libconfig++ as dependency")
   endif()
 
   find_package(LibConfig++ REQUIRED)
   if(NOT LIBCONFIG++_FOUND)
-    message(FATAL_ERROR "libconfig++ not found!")
+    message(FATAL_ERROR "[vcp] libconfig++ not found!")
   endif()
 
-  # Add CURL libraries to PVT library list
-  set(PVT_LIBRARIES ${PVT_LIBRARIES} ${LIBCONFIG++_LIBRARY})
-  #TODO do we need to add the ${LIBCONFIG++_INCLUDE_DIR}?
+  # Add CURL libraries to VCP library list
+  set(VCP_LIBRARIES ${VCP_LIBRARIES} ${LIBCONFIG++_LIBRARY})
 endif()
 
-# Find include directory
-find_path(PVT_UTILS_INCLUDE_DIR string_utils.h
-  HINTS ${POTENTIAL_INCLUDE_DIR}/pvt_utils
+# Find include directory (search for string_utils.h
+find_path(VCP_UTILS_INCLUDE_DIR string_utils.h
+  HINTS ${POTENTIAL_INCLUDE_DIR}/vcp_utils
   NO_DEFAULT_PATH
 )
 
-if(PVT_UTILS_INCLUDE_DIR AND PVT_LIBRARIES)
-  set(PVT_FOUND TRUE)
+if(VCP_UTILS_INCLUDE_DIR AND VCP_LIBRARIES)
+  set(VCP_FOUND TRUE)
           
   # Set the libraries variable.
-  set(PVT_LIBRARIES ${PVT_LIBRARIES})
+#  set(VCP_LIBRARIES ${VCP_LIBRARIES})
 
-  # Set include directory to parent dir, s.t. we can include<pvt_utils/xyz.h>.
-  get_filename_component(PVT_INCLUDE_DIR "${PVT_UTILS_INCLUDE_DIR}/.." REALPATH)
+  # Set include directory to parent dir, s.t. we can include<vcp_utils/xyz.h>.
+  get_filename_component(VCP_INCLUDE_DIR "${VCP_UTILS_INCLUDE_DIR}/.." REALPATH)
 endif()
-  
-if(PVT_FOUND)
-  if(NOT pvt_FIND_QUIETLY)
-    message(STATUS "Found PVT: ${PVT_LIBRARY_DIR} ${PVT_INCLUDE_DIR}")
-    message(STATUS "Libs: ${PVT_LIBRARIES}")
+
+if(VCP_FOUND)
+  if(NOT vcp_FIND_QUIETLY)
+    message(STATUS "[vcp] Include directory: ${VCP_INCLUDE_DIR}")
+    message(STATUS "[vcp] Selected modules:  ${VCP_LIBRARIES}")
   endif()
 else()
-  if(pvt_FIND_REQUIRED)
-    message(FATAL_ERROR "Could not find PVT")
+  if(vcp_FIND_REQUIRED)
+    message(FATAL_ERROR "[vcp] Could not locate selected VCP modules")
   endif()
 endif()

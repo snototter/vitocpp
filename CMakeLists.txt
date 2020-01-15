@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(vcp_libs)
+project(vitocpp)
 
 ##############################################################################
 # Version info
@@ -11,7 +11,7 @@ set(VCP_VERSION "1.0.0")
 # Options
 ##############################################################################
 #option(VCP_VERBOSE_TIMING "Verbose timing output, may spam your console" ON)
-#option(VCP_BUILD_STATIC "Build static libraries (in addition to shared ones)." OFF)
+option(VCP_BUILD_STATIC "Additionally build static libraries." OFF)
 #option(VCP_BUILD_BACKGROUND_MODELS "Build background model library." ON)
 #option(VCP_BUILD_CONFIG "Build configuration library." ON)
 #option(PVT_BUILD_IMUTILS "Build image utilities." ON)
@@ -20,9 +20,15 @@ set(VCP_VERSION "1.0.0")
 #option(PVT_BUILD_TRACKING "Build tracking library." ON)
 #option(PVT_BUILD_UI "Build user interface module." ON)
 #option(PVT_BUILD_VISUALIZATION "Build visualizations library." ON)
-option(VCP_BUILD_TESTS "Build tests, requires GTest." OFF)
 #option(PVT_BUILD_DOC "Build doxygen documentation" ON)
-option(VCP_ENABLE_DEBUG_LOG "Prints 'a lot of' debug output" OFF)
+# Everybody was unit-testing:
+option(VCP_BUILD_TESTS "Build tests, requires GTest." OFF)
+#
+# Logging related
+set(VCP_LOG_LEVEL "info" CACHE STRING "Select logging level")
+set_property(CACHE VCP_LOG_LEVEL PROPERTY STRINGS debug info warning failure)
+option(VCP_LOG_LOCATION "Logged messages include source file location" OFF)
+
 
 
 ##############################################################################
@@ -38,7 +44,7 @@ set(CMAKE_DEBUG_POSTFIX "d")
 set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR}/gen)
 
 # RPATH for linking
-SET(CMAKE_INSTALL_RPATH "$ORIGIN")
+set(CMAKE_INSTALL_RPATH "$ORIGIN")
 
 
 ##############################################################################
@@ -48,6 +54,7 @@ if(NOT CMAKE_BUILD_TYPE)
     message(STATUS "No build type configured, default to Release")
     set(CMAKE_BUILD_TYPE Release)
 endif()
+#TODO check if needed anymore
 # Set flag (in case sub-modules need to know the build type)
 string(TOLOWER "${CMAKE_BUILD_TYPE}" LBUILD_TYPE)
 if(LBUILD_TYPE MATCHES debug)
@@ -105,16 +112,44 @@ endif()
 #  add_definitions(-DPVT_VERBOSE_TIMING)
 #endif()
 
-#if (PVT_DEBUG_OUTPUT)
-#  add_definitions(-DPVT_SHOW_DEBUG_OUTPUT)
-#endif()
 
+# Logging-related flags
+#
+# ... pick configured logging level
+if(${VCP_LOG_LEVEL} STREQUAL "debug")
+    add_definitions(-DVCP_LOG_LEVEL_DEBUG)
+    message(STATUS "VCP will log DEBUG, INFO, WARNING and FAILURE messages.")
+elseif(${VCP_LOG_LEVEL} STREQUAL "info")
+    add_definitions(-DVCP_LOG_LEVEL_INFO)
+    message(STATUS "VCP will log INFO, WARNING and FAILURE messages.")
+elseif(${VCP_LOG_LEVEL} STREQUAL "warning")
+    add_definitions(-DVCP_LOG_LEVEL_WARNING)
+    message(STATUS "VCP will only log WARNING and FAILURE messages.")
+elseif(${VCP_LOG_LEVEL} STREQUAL "failure")
+    add_definitions(-DVCP_LOG_LEVEL_FAILURE)
+    message(STATUS "VCP will only log FAILURE messages.")
+else()
+    message(FATAL_ERROR "Invalid VCP_LOG_LEVEL value")
+endif()
+#
+# ... should we include the source file location in our logs?
+if(VCP_LOG_LOCATION)
+  add_definitions(-DVCP_LOG_LOCATION)
+endif()
+
+
+
+##############################################################################
 # Enable testing if requested
 if(VCP_BUILD_TESTS)
     find_package(GTest REQUIRED)
     include_directories(${GTEST_INCLUDE_DIRS})
     enable_testing()
 endif()
+
+
+##############################################################################
+# Set up modules
 
 # Always build utils library
 add_subdirectory(src/cpp/vcp_utils)
