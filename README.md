@@ -8,34 +8,54 @@ C++/Python 3 utilities for common vision tasks, e.g. streaming, visualization or
 * `scripts` - shell scripts to prepare the build system, build the libraries, and use/include the library in your project.
 * `src` - source for all modules and python bindings.
 
+## Installation
+* If you want to build the C++ library and Python 3 bindings, simply run `./scripts/build-ubuntu-18.04.sh`, this will:
+  * Check and ask you to install missing system packages.
+  * Configure the build (depending on which optional packages you installed, e.g. `libk4a` to stream from Azure Kinect).
+  * Build the vcp libraries.
+  * Build the python bindings.
+  * Build the example applications.
+* If you've already installed the required packages, and simply want to build the library, it's as easy as
+  ```bash
+  $ cd $VCP_ROOT_DIR
+  $ mkdir build && cd build
+  $ cmake ..
+  $ make -j install
+  # Afterwards, all library files can be found at <$VCP_ROOT_DIR/gen>
+  ```
 
-## Subfolder "scripts"
-* If you want to build the C++ library and Python 3 bindings, simply run `./scripts/build-ubuntu-18.04.sh`
+## Examples
+### C++
+* The C++ applications at `$VCP_ROOT_DIR/examples/cpp` demonstrate how you can use `vcp` from your own CMake projects. After building the vcp library, building these examples is as easy as:
+  ```bash
+  $ cd $VCP_ROOT_DIR/examples
+  mkdir build && cd build
+  cmake ..
+  make -j
+  ```
 
 
-#TODOs
-* [ ] Rename (e.g. "visualization" => imvis)
-* [ ] libconfig++ wrapper
-* [ ] Build script
-* [ ] BGMs
-* [ ] BEST
-* [ ] Math
-* [ ] imutils
-* [ ] imvis
-* [ ] "ui"
-* [ ] Python bindings
+### Python
+To be done!
 
+## Tests
+While all of vcp has been tested "in-the-wild", unit tests are quite sparse, unfortunately.
+It's on my TODO list to improve code coverage. However, this project is not my first priority.
+Feel free to add unit tests yourself and send a PR.
 
-#TODO doc testing
-set up testing
-Testing the C++ library requires gtest, be sure to build the static libraries:
-* Set up `libgtest` (must be compiled by yourself):
+Testing requires `gtest`, which you'll probably need to build yourself - this is a no-brainer, see:
+* Set up `libgtest`:
   ```bash
   $ sudo apt-get install libgtest-dev
+
+  # This package does not provide binaries, so look for the installed
+  # source at /usr/src. It should be (Ubuntu 18.04) at /usr/src/googletest.
   $ cd /usr/src/googletest
   $ sudo cmake CMakeLists.txt
   $ sudo make
-  $ # copy or symlink googlemock/gtest/libgtest.a and googlemock/gtest/libgtest_main.a to your /usr/lib folder
+
+  # Copy or symlink googlemock/gtest/libgtest.a 
+  # and googlemock/gtest/libgtest_main.a to your /usr/lib folder
   $ sudo cp googlemock/gtest/*.a /usr/lib
   ```
 * Now `vcp` can be tested:
@@ -50,10 +70,10 @@ Testing the C++ library requires gtest, be sure to build the static libraries:
   $ ctest -V
   ```
 
-TODO examples/c++
-examples/cpp demonstrate how to use vitocpp/VCP from your own cmake project
-```bash
-$ cd $VCP_ROOT_DIR/examples
-mkdir build && cd build
-```
+
+##TODOs
+* [ ] BGMs
+* [ ] BEST
+* [ ] Python bindings
+* [ ] Increase unit test coverage
 
