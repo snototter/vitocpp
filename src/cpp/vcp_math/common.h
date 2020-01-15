@@ -1,11 +1,9 @@
 #ifndef __VCP_MATH_COMMON_H__
 #define __VCP_MATH_COMMON_H__
 
-#include <string>
 #include <cmath>
 #include <limits>
 #include <type_traits>
-#include <random>
 #include <opencv2/core/core.hpp>
 
 #define MATH_PI   3.1415926535897932384626433832795

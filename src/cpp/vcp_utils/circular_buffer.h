@@ -7,67 +7,71 @@
 #include <stdexcept>
 #include <stddef.h>
 #include <iostream>
-namespace vcp {
-namespace utils {
-//---------------------------------------------------------------------------
-// Templated STL compatible iterator for the circular buffer.
+
+namespace vcp
+{
+namespace utils
+{
+
+/** @brief Templated STL compatible iterator for the circular_buffer. */
 template <typename T, typename T_nonconst, typename elem_type = typename T::value_type>
 class circular_buffer_iterator {
 public:
   // STL requested typedefs
   typedef circular_buffer_iterator<T,T_nonconst,elem_type> self_type;
   typedef T cbuf_type;
-  //typedef std::bidirectional_iterator_tag iterator_category;
   typedef std::random_access_iterator_tag iterator_category;
-  typedef typename cbuf_type::value_type value_type; // Element type, the iterator "points to".
-  typedef typename cbuf_type::size_type size_type; // Container index type
+  typedef typename cbuf_type::value_type value_type; // Element type the iterator "points to".
+  typedef typename cbuf_type::size_type size_type;   // Container index type
   typedef typename cbuf_type::pointer pointer;
   typedef typename cbuf_type::const_pointer const_pointer;
   typedef typename cbuf_type::reference reference;
   typedef typename cbuf_type::const_reference const_reference;
   typedef typename cbuf_type::difference_type difference_type;
 
-  //--------------------------------------------------------------------------------
-  // Construction
-//  inline circular_buffer_iterator() : buf_(nullptr) {}
-
+  /** @brief Constructor. */
   circular_buffer_iterator(cbuf_type *buf, size_type pos) : buf_(buf), pos_(pos) {}
 
   // Use auto-generated copy constructor, copy/assignment operator and destructor.
 
-  //--------------------------------------------------------------------------------
-  // Provide an explicit cast from iterator to const_iterator to enable "const_iterator = buffer.begin()";
+
+  /** @brief Provides an explicit cast from iterator to const_iterator to enable "const_iterator = buffer.begin()"; */
   circular_buffer_iterator(const circular_buffer_iterator<T_nonconst, T_nonconst, typename T_nonconst::value_type> &other)
     : buf_(other.buf_), pos_(other.pos_) {}
   friend class circular_buffer_iterator<const T, T, const elem_type>;
 
-  //--------------------------------------------------------------------------------
-  // Element access
+  /** @brief Element access. */
   elem_type &operator*() { return (*buf_)[pos_]; }
+
+  /** @brief Element access. */
   elem_type *operator->() { return &(operator*()); }
+
 
   //--------------------------------------------------------------------------------
   // Increment/Decrement
-  // Prefix++
+  /** @brief Prefix ++it operator. */
   self_type &operator++()
   {
     pos_++;
     return *this;
   }
-  // Postfix++
+
+  /** @brief Postfix it++ operator. */
   self_type operator++(int)
   {
     self_type tmp(*this);
     ++(*this);
     return tmp;
   }
-  // Prefix--
+
+  /** @brief Prefix --it operator. */
   self_type &operator--()
   {
     pos_--;
     return *this;
   }
-  // Postfix--
+
+  /** @brief Prefix it-- operator. */
   self_type operator--(int)
   {
     self_type tmp(*this);
@@ -75,29 +79,37 @@ public:
     return tmp;
   }
 
+  /** @brief Overloaded + operator. */
   self_type operator+(difference_type n) const
   {
     self_type tmp(*this);
     tmp.pos_ += n;
     return tmp;
   }
+
+  /** @brief Overloaded += operator. */
   self_type &operator+=(difference_type n)
   {
     pos_ += n;
     return *this;
   }
 
+  /** @brief Overloaded - operator. */
   self_type operator-(difference_type n) const
   {
     self_type tmp(*this);
     tmp.pos_ -= n;
     return tmp;
   }
+
+  /** @brief Overlaoded -= operator. */
   self_type &operator-=(difference_type n)
   {
     pos_ -= n;
     return *this;
   }
+
+  /** @brief Overloaded - operator. */
   difference_type operator-(const self_type &c) const
   {
     return pos_ - c.pos_;
@@ -350,53 +362,10 @@ private:
   // Converts external index to an array subscript
   size_type index_to_subscript(size_type index) const { return normalise(index + tail_); }
 
-//  void increment_tail()
-//  {
-//    ++size_;
-//    tail_ = next_tail();
-//  }
-
   size_type next_position(size_type index)
   {
     return (index+1 == capacity_) ? 0 : index + 1;
   }
-
-//  size_type next_tail()
-//  {
-//    return (tail_+1 >= capacity_) ? 0 : tail_+1;
-//  }
-
-//  size_type next_head()
-//  {
-//    return (head_+1 >= capacity_) ? 0 : head_+1;
-//  }
-
-//  void increment_head()
-//  {
-//    // Precondition: !empty()
-////    ++head_;
-////    --size_;
-////    if (head_ >= capacity_)
-////      head_ = 0;
-//  }
-
-//  void decrement_tail()
-//  {
-//    // Precondition: !empty()
-//    --size_;
-//    if (size_ == 0)
-//    {
-//      head_ = 0;
-//      tail_ = 0;
-//    }
-//    else
-//    {
-//      if (tail_ == 0)
-//        tail_ = capacity_-1;
-//      else
-//        --tail_;
-//    }
-//  }
 
   template <typename iter>
   void assign_into(iter from, iter to)

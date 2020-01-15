@@ -127,8 +127,10 @@
 /** @brief A collection of utilities - gathered and re-implemented over and over again throughout my studies. */
 namespace vcp
 {
+/** @brief Plain C++ utilities (extensions you commonly use, but don't want to add heavier dependencies, like boost). */
 namespace utils
 {
+/** @brief Stream manipulation utilities to enable flexible logging to stdout/stderr via the VCP_LOG_{DEBUG|INFO|WARNING|FAILURE} macros. */
 namespace logging
 {
 struct None { };

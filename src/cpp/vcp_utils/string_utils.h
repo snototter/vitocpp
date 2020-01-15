@@ -8,9 +8,13 @@
 
 // TODO generalize to basic_string and make header-only, e.g. trim: https://github.com/wichtounet/cpp_utils
 
-namespace vcp {
-namespace utils {
-namespace string {
+namespace vcp
+{
+namespace utils
+{
+/** @brief Common string manipulation, you've re-implemented at least a dozen times. */
+namespace string
+{
   /**
    * @brief Checks if the given string ends with another string
    */

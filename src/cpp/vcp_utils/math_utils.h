@@ -10,6 +10,7 @@ namespace vcp
 {
 namespace utils
 {
+/** @brief Basic math utilities to analyse data collections (std::vector) of built-in types. */
 namespace math
 {
 // TODO Computing statistics from a vector of built-in types: see https://stackoverflow.com/a/7616783/400948

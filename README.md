@@ -39,9 +39,8 @@ C++/Python 3 utilities for common vision tasks, e.g. streaming, visualization or
 To be done!
 
 ## Tests
-While all of vcp has been tested "in-the-wild", unit tests are quite sparse, unfortunately.
-It's on my TODO list to improve code coverage. However, this project is not my first priority.
-Feel free to add unit tests yourself and send a PR.
+While all of vcp has been tested "in-the-wild", unit tests are rather sparse, unfortunately.
+Especially for the "best effort streaming" module, tests become rather impossible to automate (threading + the need for the specific hardware connected to the test server).
 
 Testing requires `gtest`, which you'll probably need to build yourself - this is a no-brainer, see:
 * Set up `libgtest`:

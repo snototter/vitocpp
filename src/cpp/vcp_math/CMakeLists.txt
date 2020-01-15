@@ -67,6 +67,7 @@ if (VCP_BUILD_TESTS)
     message("  [+] Building ${LIB_NAME} tests")
     add_executable(${LIB_NAME}_test
       math_test.cpp
+      common_test.cpp
     )
 
   # GTest additionally requires pthread

@@ -10,6 +10,9 @@ namespace vcp
 {
 namespace utils
 {
+/**
+ * @brief Path and filename utilities (e.g. mkdir, listdir, exists, etc.)
+ */
 namespace file
 {
 /**

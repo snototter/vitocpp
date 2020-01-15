@@ -5,8 +5,6 @@
 #include <iostream>
 #include <iomanip>
 
-//FIXME use logger
-
 // For VCP, there's a CMake option to enable (verbose) timing.
 // If you want to use TIC/TOC in your code, define VCP_VERBOSE_TIMING before including this header!
 //#define VCP_VERBOSE_TIMING
