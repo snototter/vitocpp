@@ -15,11 +15,11 @@ option(VCP_BUILD_STATIC "Additionally build static libraries." OFF)
 #option(VCP_BUILD_BACKGROUND_MODELS "Build background model library." ON)
 option(VCP_BUILD_CONFIG "Build config module." ON)
 option(VCP_BUILD_IMUTILS "Build image utilities module." ON)
+option(VCP_BUILD_IMVIS "Build visualization module." ON)
 #option(VCP_BUILD_IP_CAM_CAPTURE "Build IP camera capturing library." ON)
 option(VCP_BUILD_MATH "Build math utility module." ON)
 #option(VCP_BUILD_TRACKING "Build tracking library." ON)
 option(VCP_BUILD_UI "Build simple UI utility module." ON)
-option(VCP_BUILD_VISUALIZATION "Build visualization module." ON)
 #option(VCP_BUILD_DOC "Build doxygen documentation" OFF)
 # Everybody was unit-testing:
 option(VCP_BUILD_TESTS "Build tests, requires GTest." OFF)
@@ -198,8 +198,8 @@ if(VCP_BUILD_UI)
 endif()
 
 # Visualizations library
-if(VCP_BUILD_VISUALIZATION)
-    add_subdirectory(src/cpp/vcp_visualization)
+if(VCP_BUILD_IMVIS)
+    add_subdirectory(src/cpp/vcp_imvis)
 endif()
 
 # Add an uninstall target

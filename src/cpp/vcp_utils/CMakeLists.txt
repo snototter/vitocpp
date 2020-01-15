@@ -74,7 +74,7 @@ endif()
 
 # Export
 install(FILES ${HEADERS}
-    DESTINATION include/vcp_utils
+    DESTINATION include/${PROJECT_NAME}
     COMPONENT headers
 )
 install(TARGETS ${LIBS}

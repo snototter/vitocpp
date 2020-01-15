@@ -1,12 +1,12 @@
-#ifndef __VCP_VISUALIZATION_COLLAGE_H__
-#define __VCP_VISUALIZATION_COLLAGE_H__
+#ifndef __VCP_IMVIS_COLLAGE_H__
+#define __VCP_IMVIS_COLLAGE_H__
 
 #include <vector>
 #include <opencv2/core/core.hpp>
 
 namespace vcp
 {
-namespace visualization
+namespace imvis
 {
 namespace collage
 {
@@ -38,6 +38,6 @@ void Collage(const std::vector<cv::Mat> &images, cv::Mat &collage, size_t images
   */
 void Resize(const cv::Mat &image, cv::Mat &resized, const cv::Size &new_size);
 } // namespace collage
-} // namespace visualization
+} // namespace imvis
 } // namespace vcp
-#endif // __VCP_VISUALIZATION_COLLAGE_H__
+#endif // __VCP_IMVIS_COLLAGE_H__

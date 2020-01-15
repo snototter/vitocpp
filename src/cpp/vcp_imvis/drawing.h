@@ -1,5 +1,5 @@
-#ifndef __VCP_VISUALIZATION_DRAWING_H__
-#define __VCP_VISUALIZATION_DRAWING_H__
+#ifndef __VCP_IMVIS_DRAWING_H__
+#define __VCP_IMVIS_DRAWING_H__
 
 #include <vector>
 #include <string>
@@ -9,7 +9,7 @@
 
 namespace vcp
 {
-namespace visualization
+namespace imvis
 {
 namespace drawing
 {
@@ -303,6 +303,6 @@ void DrawBoundingBoxes3d(cv::Mat &image, const cv::Mat &K, const cv::Mat &Rt, co
 
 
 } // namespace drawing
-} // namespace visualization
+} // namespace imvis
 } // namespace vcp
-#endif // __VCP_VISUALIZATION_DRAWING_H__
+#endif // __VCP_IMVIS_DRAWING_H__

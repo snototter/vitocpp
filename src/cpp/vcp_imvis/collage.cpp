@@ -9,7 +9,7 @@
 
 namespace vcp
 {
-namespace visualization
+namespace imvis
 {
 namespace collage
 {
@@ -261,5 +261,5 @@ void Resize(const cv::Mat &image, cv::Mat &resized, const cv::Size &new_size)
 }
 
 } // namespace collage
-} // namespace visualization
+} // namespace imvis
 } // namespace vcp

@@ -28,7 +28,7 @@ set(IMUTILS_EXTERNAL_LIBS
 
 
 # We (optionally) need zlib to dump/load compressed raw images
-find_package(ZLIB)
+find_package(ZLIB QUIET)
 if (ZLIB_FOUND)
   include_directories(${ZLIB_INCLUDE_DIRS})
   set(IMUTILS_EXTERNAL_LIBS ${IMUTILS_EXTERNAL_LIBS} ${ZLIB_LIBRARIES})
@@ -75,7 +75,7 @@ endif()
 
 # Export (only public headers)
 install(FILES ${PUBLIC_HEADERS}
-  DESTINATION include/vcp_imutils
+  DESTINATION include/${PROJECT_NAME}
   COMPONENT headers
 )
 install(TARGETS ${LIBS}

@@ -11,7 +11,7 @@
 
 namespace vcp
 {
-namespace visualization
+namespace imvis
 {
 namespace pseudocolor
 {
@@ -906,5 +906,5 @@ cv::Mat Highlight(const cv::Mat &image, const cv::Mat &mask, const cv::Scalar &h
   return vis;
 }
 } // namespace pseudocolor
-} // namespace visualization
+} // namespace imvis
 } // namespace vcp

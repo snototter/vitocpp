@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-project(vcp_visualization)
+project(vcp_imvis)
 
 set(LIB_NAME ${PROJECT_NAME})
 message("Configuring module ${LIB_NAME}")
@@ -67,7 +67,7 @@ endif()
 
 # Export
 install(FILES ${HEADERS}
-  DESTINATION include/vcp_visualization
+  DESTINATION include/${PROJECT_NAME}
   COMPONENT headers
 )
 install(TARGETS ${LIBS}

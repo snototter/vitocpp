@@ -9,7 +9,7 @@ if(DEFINED ENV{VCP_ROOT_DIR})
     endif(WIN32)
 else(DEFINED ENV{VCP_ROOT_DIR})
     set(VCP_ROOT ${CMAKE_CURRENT_LIST_DIR}/..)
-    message(STATUS "[vcp-Findnlohmannjson] Environmental variable VCP_ROOT_DIR not set! Trying to continue from ${PVT_ROOT}")
+    message(STATUS "[vcp-Findnlohmannjson] Environmental variable VCP_ROOT_DIR not set! Trying to continue from ${VCP_ROOT}")
 endif(DEFINED ENV{VCP_ROOT_DIR})
 
 set(POTENTIAL_INCLUDE_DIR ${VCP_ROOT}/external)

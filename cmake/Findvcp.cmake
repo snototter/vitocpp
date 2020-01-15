@@ -7,8 +7,6 @@
 # If the environmental variable VCP_ROOT_DIR is NOT set, this script will try to
 # locate VCP via relative imports
 
-#TODO automatically add dependent components (if you want vcp_visualization, then you also need vcp_imutils)
-
 ##############################################################################
 # Where's the library's root dir?
 if(DEFINED ENV{VCP_ROOT_DIR})
@@ -50,16 +48,16 @@ set(QUERY_STRING_DEBUG_LIB "d")
 
 ##############################################################################
 # First, find out which modules the user requested
-list(FIND VCP_MODULES vcp_best          REQUESTED_BEST)
-list(FIND VCP_MODULES vcp_bgm           REQUESTED_BGM)
-list(FIND VCP_MODULES vcp_config        REQUESTED_CONFIG)
-list(FIND VCP_MODULES vcp_imutils       REQUESTED_IMUTILS)
-list(FIND VCP_MODULES vcp_math          REQUESTED_MATH)
-list(FIND VCP_MODULES vcp_tracking      REQUESTED_TRACKING)
-list(FIND VCP_MODULES vcp_ui            REQUESTED_UI)
-list(FIND VCP_MODULES vcp_visualization REQUESTED_VISUALIZATION)
+list(FIND VCP_MODULES vcp_best      REQUESTED_BEST)
+list(FIND VCP_MODULES vcp_bgm       REQUESTED_BGM)
+list(FIND VCP_MODULES vcp_config    REQUESTED_CONFIG)
+list(FIND VCP_MODULES vcp_imutils   REQUESTED_IMUTILS)
+list(FIND VCP_MODULES vcp_imvis     REQUESTED_IMVIS)
+list(FIND VCP_MODULES vcp_math      REQUESTED_MATH)
+list(FIND VCP_MODULES vcp_tracking  REQUESTED_TRACKING)
+list(FIND VCP_MODULES vcp_ui        REQUESTED_UI)
 
-# ... then, add dependencies (e.g. vcp_visualization uses vcp_math)
+# ... then, add dependencies (e.g. vcp_imvis uses vcp_math)
 if(REQUESTED_BEST GREATER 0)
     message(FATAL_ERROR "Not yet supported")
 endif()
@@ -82,7 +80,7 @@ endif()
   #if(REQUESTED_UI GREATER 0)
   #    set(VCP_MODULES ${VCP_MODULES} vcp_ui)
   #endif()
-if(REQUESTED_VISUALIZATION GREATER 0)
+if(REQUESTED_IMVIS GREATER 0)
     set(VCP_MODULES ${VCP_MODULES} vcp_imutils vcp_math)
 endif()
 
@@ -138,17 +136,17 @@ endforeach()
 
 ##############################################################################
 # Add external dependencies for the selected/requested modules
-list(FIND VCP_MODULES vcp_best          USE_BEST)
-list(FIND VCP_MODULES vcp_bgm           USE_BGM)
-list(FIND VCP_MODULES vcp_config        USE_CONFIG)
-list(FIND VCP_MODULES vcp_imutils       USE_IMUTILS)
-list(FIND VCP_MODULES vcp_math          USE_MATH)
-list(FIND VCP_MODULES vcp_tracking      USE_TRACKING)
-list(FIND VCP_MODULES vcp_ui            USE_UI)
-list(FIND VCP_MODULES vcp_visualization USE_VISUALIZATION)
+list(FIND VCP_MODULES vcp_best      USE_BEST)
+list(FIND VCP_MODULES vcp_bgm       USE_BGM)
+list(FIND VCP_MODULES vcp_config    USE_CONFIG)
+list(FIND VCP_MODULES vcp_imutils   USE_IMUTILS)
+list(FIND VCP_MODULES vcp_imvis     USE_IMVIS)
+list(FIND VCP_MODULES vcp_math      USE_MATH)
+list(FIND VCP_MODULES vcp_tracking  USE_TRACKING)
+list(FIND VCP_MODULES vcp_ui        USE_UI)
 
 # OpenCV
-if(USE_BEST GREATER 0 OR USE_BGM GREATER 0 OR USE_IMUTILS GREATER 0 OR USE_MATH GREATER 0 OR USE_TRACKING GREATER 0 OR USE_UI GREATER 0 OR USE_VISUALIZATION GREATER 0)
+if(USE_BEST GREATER 0 OR USE_BGM GREATER 0 OR USE_IMUTILS GREATER 0 OR USE_MATH GREATER 0 OR USE_TRACKING GREATER 0 OR USE_UI GREATER 0 OR USE_IMVIS GREATER 0)
     if(NOT vcp_FIND_QUIETLY)
         message(STATUS "[vcp] Some of the selected VCP modules require OpenCV")
     endif()

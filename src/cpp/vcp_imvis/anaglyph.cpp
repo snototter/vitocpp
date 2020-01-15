@@ -5,7 +5,7 @@
 
 namespace vcp
 {
-namespace visualization
+namespace imvis
 {
 namespace anaglyph
 {
@@ -100,35 +100,6 @@ cv::Mat ShiftImage(const cv::Mat &img, int offset_x, int offset_y, cv::Mat *padd
   return shifted;
 }
 
-//DEPRECATED
-cv::Mat AdjustBaseline(const cv::Mat &img, int offset)
-{
-  return ShiftImage(img, -offset, 0, nullptr);
-  // * adjust the baseline of 'img' and store it in 'shifted_img'
-  //
-  //   - get the parameter config.baseline
-    //   - check if config.baseline > 0
-  //      -> if yes: move every pixel of 'img' by config.baseline pixels to
-  //                 the left side. set the rest to black.
-  //      -> if no:  calculate absolute value of config.baseline
-  //                 move every pixel of 'img' by absolute value of
-  //                 config.baseline pixels to the right side.
-  //                 set the rest to black.
-//  cv::Mat shifted_img = cv::Mat::zeros(img.size(), img.type());
-//  if (offset < 0)
-//  {
-//    offset = -offset;
-//    cv::Mat roi = shifted_img(cv::Rect(offset, 0, shifted_img.cols - offset, shifted_img.rows));
-//    img(cv::Rect(0, 0, img.cols - offset, img.rows)).copyTo(roi);
-//  }
-//  else
-//  {
-//    cv::Mat roi = shifted_img(cv::Rect(0, 0, shifted_img.cols - offset, shifted_img.rows));
-//    img(cv::Rect(offset, 0, img.cols - offset, img.rows)).copyTo(roi);
-//  }
-//  return shifted_img;
-}
-
 } // namespace anaglyph
-} // namespace visualization
+} // namespace imvis
 } // namespace vcp

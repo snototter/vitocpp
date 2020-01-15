@@ -59,7 +59,7 @@ endif()
 
 # Export
 install(FILES ${HEADERS}
-  DESTINATION include/vcp_ui
+  DESTINATION include/${PROJECT_NAME}
   COMPONENT headers
 )
 install(TARGETS ${LIBS}

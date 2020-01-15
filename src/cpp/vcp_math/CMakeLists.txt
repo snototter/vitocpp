@@ -83,7 +83,7 @@ endif()
 
 # Export (only public headers and lib)
 install(FILES ${PUBLIC_HEADERS}
-  DESTINATION include/vcp_math
+  DESTINATION include/${PROJECT_NAME}
   COMPONENT headers
 )
 install(TARGETS ${LIBS}

@@ -3,7 +3,7 @@
 #include "common.h"
 #include "conversions.h"
 #include <vcp_utils/vcp_error.h>
-#include "../vcp_visualization/trajectories.h"
+#include "../vcp_imvis/trajectories.h"
 #include <algorithm>
 #include <vector>
 #include <iterator>
@@ -338,7 +338,7 @@ std::vector<size_t> SimplifyRamerDouglasPeuckerIndices(const std::vector<cv::Vec
 
 std::vector<cv::Vec2d> SmoothTrajectory(const std::vector<cv::Vec2d> &positions, int smoothing_window)
 {
-  return vcp::visualization::trajectories::SmoothTrajectoryMovingAverage<std::vector<cv::Vec2d>>(positions, smoothing_window);
+  return vcp::imvis::trajectories::SmoothTrajectoryMovingAverage<std::vector<cv::Vec2d>>(positions, smoothing_window);
 }
 
 

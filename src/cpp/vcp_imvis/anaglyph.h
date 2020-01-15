@@ -1,11 +1,11 @@
-#ifndef __VCP_VISUALIZATION_ANAGLYPH_H__
-#define __VCP_VISUALIZATION_ANAGLYPH_H__
+#ifndef __VCP_IMVIS_ANAGLYPH_H__
+#define __VCP_IMVIS_ANAGLYPH_H__
 
 #include <opencv2/core/core.hpp>
 
 namespace vcp
 {
-namespace visualization
+namespace imvis
 {
 namespace anaglyph
 {
@@ -20,11 +20,7 @@ void GenerateAnaglyph(const cv::Mat &left, const cv::Mat &right, cv::Mat &anagly
  * If you provide an output mask (padded), it will highlight which image regions have been padded/are invalid after shifting.
  */
 cv::Mat ShiftImage(const cv::Mat &img, int offset_x, int offset_y, cv::Mat *padded);
-
-
-/** @deprecated Use ShiftImage() instead */
-cv::Mat AdjustBaseline(const cv::Mat &img, int offset);
 } // namespace anaglyph
-} // namespace visualization
+} // namespace imvis
 } // namespace vcp
-#endif // __VCP_VISUALIZATION_ANAGLYPH_H__
+#endif // __VCP_IMVIS_ANAGLYPH_H__

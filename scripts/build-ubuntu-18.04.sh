@@ -77,14 +77,25 @@ cd ..
 ##############################################################################
 mkdir -p build
 cd build
-
+cmake "${CMAKEOPTIONS[@]}" ..
+make -j install
 cd $CURR_WORK_DIR
-#cmake "${CMAKEOPTIONS[@]}" ..
-#TODO
 
 
 ##############################################################################
 # Configure, build and (locally) install Python wrappers
 ##############################################################################
 #TODO
+
+
+##############################################################################
+# Configure, build and (locally) install Python wrappers
+##############################################################################
+cd examples
+mkdir -p build
+cd build
+cmake ..
+make -j install
+cd $CURR_WORK_DIR
+
 

@@ -14,7 +14,7 @@
 
 namespace vcp
 {
-namespace visualization
+namespace imvis
 {
 namespace drawing
 {
@@ -988,17 +988,17 @@ cv::Point GetTextPos(const cv::RotatedRect &rect, int text_anchor)
 {
   cv::Vec2d tpvec;
   // Horizontally:
-  if (text_anchor & vcp::visualization::drawing::textanchor::LEFT)
+  if (text_anchor & vcp::imvis::drawing::textanchor::LEFT)
     tpvec = cv::Vec2d(rect.center.x - rect.size.width/2.0f, 0);
-  else if (text_anchor & vcp::visualization::drawing::textanchor::HCENTER)
+  else if (text_anchor & vcp::imvis::drawing::textanchor::HCENTER)
     tpvec = cv::Vec2d(rect.center.x, 0);
   else
     tpvec = cv::Vec2d(rect.center.x + rect.size.width/2.0f, 0);
 
   // Vertically:
-  if (text_anchor & vcp::visualization::drawing::textanchor::TOP)
+  if (text_anchor & vcp::imvis::drawing::textanchor::TOP)
     tpvec.val[1] = rect.center.y - rect.size.height/2.0f;
-  else if (text_anchor & vcp::visualization::drawing::textanchor::VCENTER)
+  else if (text_anchor & vcp::imvis::drawing::textanchor::VCENTER)
     tpvec.val[1] = rect.center.y;
   else
     tpvec.val[1] = rect.center.y + rect.size.height/2.0f;
@@ -2117,5 +2117,5 @@ void DrawBoundingBoxes3d(cv::Mat &image, const cv::Mat &K, const cv::Mat &Rt, co
 }
 
 } // namespace drawing
-} // namespace visualization
+} // namespace imvis
 } // namespace vcp

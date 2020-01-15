@@ -8,7 +8,7 @@
 
 namespace vcp
 {
-namespace visualization
+namespace imvis
 {
 namespace trajectories
 {
@@ -48,7 +48,7 @@ void DrawFadingTrajectory2d(cv::Mat &image, const std::vector<cv::Vec2d> &positi
           : (progress * obj_color + (1.0-progress) * fade_color);
 
     if (dash_length > 0)
-      vcp::visualization::drawing::DrawDashedLine(pt1, pt2, color, dash_length, thickness, image);
+      vcp::imvis::drawing::DrawDashedLine(pt1, pt2, color, dash_length, thickness, image);
     else
       cv::line(image, pt1, pt2, color, thickness);
 
@@ -83,7 +83,7 @@ void DrawTrajectory2d(cv::Mat &image, const std::vector<cv::Vec2d> &positions, b
     const cv::Point pt2 = vcp::convert::ToPoint(trajectory[i]);
 
     if (dash_length > 0)
-      vcp::visualization::drawing::DrawDashedLine(pt1, pt2, obj_color, dash_length, line_width, image);
+      vcp::imvis::drawing::DrawDashedLine(pt1, pt2, obj_color, dash_length, line_width, image);
     else
       cv::line(image, pt1, pt2, obj_color, line_width);
 
@@ -138,30 +138,30 @@ cv::RotatedRect GetErrorEllipse99(const cv::Vec2d &mean, const cv::Mat &cov_mat)
 void DrawErrorEllipse(cv::Mat &image, const cv::Vec2d &mean, const cv::Mat &cov_mat, const cv::Scalar &color, double chisquare_val, int line_width, double fill_opacity)
 {
   const cv::RotatedRect r = GetErrorEllipse(chisquare_val, mean, cov_mat);
-  vcp::visualization::drawing::DrawEllipse(image, r, color, line_width, fill_opacity);
+  vcp::imvis::drawing::DrawEllipse(image, r, color, line_width, fill_opacity);
 }
 
 
 void DrawErrorEllipse90(cv::Mat &image, const cv::Vec2d &mean, const cv::Mat &cov_mat, const cv::Scalar &color, int line_width, double fill_opacity)
 {
   const cv::RotatedRect r = GetErrorEllipse90(mean, cov_mat);
-  vcp::visualization::drawing::DrawEllipse(image, r, color, line_width, fill_opacity);
+  vcp::imvis::drawing::DrawEllipse(image, r, color, line_width, fill_opacity);
 }
 
 
 void DrawErrorEllipse95(cv::Mat &image, const cv::Vec2d &mean, const cv::Mat &cov_mat, const cv::Scalar &color, int line_width, double fill_opacity)
 {
   const cv::RotatedRect r = GetErrorEllipse95(mean, cov_mat);
-  vcp::visualization::drawing::DrawEllipse(image, r, color, line_width, fill_opacity);
+  vcp::imvis::drawing::DrawEllipse(image, r, color, line_width, fill_opacity);
 }
 
 
 void DrawErrorEllipse99(cv::Mat &image, const cv::Vec2d &mean, const cv::Mat &cov_mat, const cv::Scalar &color, int line_width, double fill_opacity)
 {
   const cv::RotatedRect r = GetErrorEllipse99(mean, cov_mat);
-  vcp::visualization::drawing::DrawEllipse(image, r, color, line_width, fill_opacity);
+  vcp::imvis::drawing::DrawEllipse(image, r, color, line_width, fill_opacity);
 }
 
 } // namespace trajectories
-} // namespace visualization
+} // namespace imvis
 } // namespace vcp

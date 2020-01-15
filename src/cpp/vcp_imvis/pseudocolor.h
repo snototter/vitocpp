@@ -1,12 +1,12 @@
-#ifndef __VCP_VISUALIZATION_PSEUDOCOLOR_H__
-#define __VCP_VISUALIZATION_PSEUDOCOLOR_H__
+#ifndef __VCP_IMVIS_PSEUDOCOLOR_H__
+#define __VCP_IMVIS_PSEUDOCOLOR_H__
 
 #include <opencv2/core/core.hpp>
 #include <iostream>
 
 namespace vcp
 {
-namespace visualization
+namespace imvis
 {
 namespace pseudocolor
 {
@@ -23,17 +23,17 @@ enum class ColorMap
   Gray,         /**< Convert to grayscale. */
   Hot,          /**< Black-red-yellow-white colormap, similar to MATLAB's hot. */
   HSV,          /**< Red-yellow-green-cyan-blue-magenta-red colormap. */
+  Inferno,      /**< Perceptually uniform. */
   Jet,          /**< MATLAB's default color map up until R2015, high contrast but otherwise bad. */
+  Magma,        /**< Perceptually uniform. */
   Parula,       /**< MATLAB's default color map as of R2015, perceptually uniform. */
   Pastel,       /**< Black-pastel-white colormap, linear grayscale changes when printed black/white. */
+  Plasma,       /**< Perceptually uniform. */
   Sepia,        /**< Black-brown-white colormap, perceptually uniform. */
   Temperature,  /**< Blue-pale-dark red colormap, for visualizing data like temperature (good contrast for colorblind viewers). */
   Thermal,      /**< Black-purple-red-yellow-white colormap. */
   Turbo,        /**< An improved rainbow colormap, similar to (but smoother than) Jet. */
-  Magma,        /**< Perceptually uniform. */
-  Viridis,      /**< Perceptually uniform, default of matplotlib. */
-  Inferno,      /**< Perceptually uniform. */
-  Plasma        /**< Perceptually uniform. */
+  Viridis      /**< Perceptually uniform, default of matplotlib. */
 };
 
 /** Overload the stream operator '<<' for the colormap enumeration. */
@@ -55,7 +55,7 @@ cv::Scalar GetPseudocolor(double value, const ColorMap &colormap, double limit_f
 /** @brief Highlight the masked region. If highlight color is negative, show unmasked area in grayscale; otherwise, overlay the color with color_opacity. */
 cv::Mat Highlight(const cv::Mat &image, const cv::Mat &mask, const cv::Scalar &highlight = cv::Scalar::all(-1.0), double color_opacity=0.5);
 } // namespace pseudocolor
-} // namespace visualization
+} // namespace imvis
 } // namespace vcp
 
-#endif // __VCP_VISUALIZATION_PSEUDOCOLOR_H__
+#endif // __VCP_IMVIS_PSEUDOCOLOR_H__

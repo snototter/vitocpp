@@ -1,12 +1,12 @@
-#ifndef __VCP_VISUALIZATION_TRAJECTORIES_H__
-#define __VCP_VISUALIZATION_TRAJECTORIES_H__
+#ifndef __VCP_IMVIS_TRAJECTORIES_H__
+#define __VCP_IMVIS_TRAJECTORIES_H__
 
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
 namespace vcp
 {
-namespace visualization
+namespace imvis
 {
 namespace trajectories
 {
@@ -146,7 +146,7 @@ void DrawErrorEllipse95(cv::Mat &image, const cv::Vec2d &mean, const cv::Mat &co
 void DrawErrorEllipse99(cv::Mat &image, const cv::Vec2d &mean, const cv::Mat &cov_mat, const cv::Scalar &color, int line_width=1, double fill_opacity=0.0);
 
 } // namespace trajectories
-} // namespace visualization
+} // namespace imvis
 } // namespace vcp
 
-#endif // __VCP_VISUALIZATION_TRAJECTORIES_H__
+#endif // __VCP_IMVIS_TRAJECTORIES_H__
