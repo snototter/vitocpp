@@ -1,8 +1,8 @@
 #include <iostream>
 
 #include <opencv2/highgui/highgui.hpp>
-#include <vcp_visualization/pseudocolor.h>
-#include <vcp_visualization/collage.h>
+#include <vcp_imvis/pseudocolor.h>
+#include <vcp_imvis/collage.h>
 #include <vcp_utils/vcp_error.h>
 #include <vcp_utils/file_utils.h>
 
@@ -21,15 +21,15 @@ int main(int argc, char **argv)
   img.convertTo(img_32f, CV_32FC1, 1.0/255.0);
 
   cv::Mat heatmap_a, heatmap_b;
-  vcp::visualization::pseudocolor::Colorize(img_32f, vcp::visualization::pseudocolor::ColorMap::Parula, heatmap_a, 0, 1);
+  vcp::imvis::pseudocolor::Colorize(img_32f, vcp::imvis::pseudocolor::ColorMap::Parula, heatmap_a, 0, 1);
   cv::imshow("PseudoColor 32F [0,1]", heatmap_a);
-  vcp::visualization::pseudocolor::Colorize(img, vcp::visualization::pseudocolor::ColorMap::Parula, heatmap_b, 50, 200);
+  vcp::imvis::pseudocolor::Colorize(img, vcp::imvis::pseudocolor::ColorMap::Parula, heatmap_b, 50, 200);
   cv::imshow("PseudoColor 8U [80,175]", heatmap_b);
   cv::waitKey(100);
 
-  vcp::visualization::pseudocolor::Colorize(img_32f, vcp::visualization::pseudocolor::ColorMap::Jet, heatmap_a);
+  vcp::imvis::pseudocolor::Colorize(img_32f, vcp::imvis::pseudocolor::ColorMap::Jet, heatmap_a);
   cv::imshow("Jet", heatmap_a);
-  vcp::visualization::pseudocolor::Colorize(img_32f, vcp::visualization::pseudocolor::ColorMap::Thermal, heatmap_b);
+  vcp::imvis::pseudocolor::Colorize(img_32f, vcp::imvis::pseudocolor::ColorMap::Thermal, heatmap_b);
   cv::imshow("Thermal", heatmap_b);
   cv::waitKey(100);
 
@@ -45,7 +45,7 @@ int main(int argc, char **argv)
   collage_images.push_back(img_32f);
 
   cv::Mat collage;
-  vcp::visualization::collage::Collage(collage_images, collage, 2, 5, cv::Size(100, 100), false, cv::Scalar(255, 0, 0));
+  vcp::imvis::collage::Collage(collage_images, collage, 2, 5, cv::Size(100, 100), false, cv::Scalar(255, 0, 0));
   // Even though convert_8U param is false, collage will still be CV_8U, because we mixed 32f and 8U images
   cv::imshow("Collage2x2-downsampled", collage);
   cv::waitKey(100);
@@ -56,7 +56,7 @@ int main(int argc, char **argv)
   collage_images.push_back(img);
   collage_images.push_back(heatmap_b);
 
-  vcp::visualization::collage::Collage(collage_images, collage, 3, 10, cv::Size(), false, cv::Scalar(200,200,200));
+  vcp::imvis::collage::Collage(collage_images, collage, 3, 10, cv::Size(), false, cv::Scalar(200,200,200));
   // Collage is 8U, but no images were converted
   cv::imshow("Collage3x2", collage);
   cv::waitKey(100);
@@ -65,7 +65,7 @@ int main(int argc, char **argv)
   collage_images.push_back(img_32f);
   collage_images.push_back(img_32f);
   collage_images.push_back(img_32f);
-  vcp::visualization::collage::Collage(collage_images, collage, 1, 5, cv::Size(), false, cv::Scalar(100,100,100));
+  vcp::imvis::collage::Collage(collage_images, collage, 1, 5, cv::Size(), false, cv::Scalar(100,100,100));
   cv::imshow("Collage-vertical-32F", collage);
   std::cout << "Collage depth: " << collage.depth() << " CV_32F: " << CV_32F << ", CV_8U: " << CV_8U << std::endl;
 

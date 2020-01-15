@@ -95,7 +95,7 @@ cd examples
 mkdir -p build
 cd build
 cmake ..
-make -j install
+make -j
 cd $CURR_WORK_DIR
 
 

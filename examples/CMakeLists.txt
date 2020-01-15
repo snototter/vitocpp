@@ -35,17 +35,17 @@ target_link_libraries(utils_demo
     ${VCP_LIBRARIES}
 )
 
-# vcp_visualization demo
+# vcp_imvis demo
 message(STATUS "Setting up visualization_demo")
-find_package(vcp REQUIRED COMPONENTS vcp_utils vcp_visualization)
+find_package(vcp REQUIRED COMPONENTS vcp_utils vcp_imvis)
 include_directories(${VCP_INCLUDE_DIR})
-add_executable(visualization_demo
-    cpp/visualization_demo.cpp
+add_executable(imvis_demo
+    cpp/imvis_demo.cpp
 )
-target_link_libraries(visualization_demo
+target_link_libraries(imvis_demo
     ${VCP_LIBRARIES}
 )
-add_custom_command(TARGET visualization_demo POST_BUILD
+add_custom_command(TARGET imvis_demo POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/data/peaks.png ${CMAKE_BINARY_DIR}
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/data/flamingo.jpg ${CMAKE_BINARY_DIR}
 )
