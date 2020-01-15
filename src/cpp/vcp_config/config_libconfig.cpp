@@ -105,7 +105,6 @@ T GetParam(const libconfig::Config &cfg, const std::string &param_name)
   return CastSetting<T>(setting);
 }
 
-//TODO get all config keys at a specific level
 /** @brief Return a list of all parameters under the given parameter name. */
 std::vector<std::string> ListChildren(const libconfig::Config &config, const std::string &param_name)
 {
@@ -119,7 +118,6 @@ std::vector<std::string> ListChildren(const libconfig::Config &config, const std
     }
   }
   return child_params;
-  //FIXME implement/test
 }
 
 

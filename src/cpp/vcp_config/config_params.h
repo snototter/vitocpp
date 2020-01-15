@@ -148,19 +148,29 @@ public:
   virtual void SetIntegerPolygon(const std::string &param_name, const std::vector<std::vector<int>> &values) = 0;
   virtual void SetIntegerPolygons(const std::string &param_name, const std::vector<std::vector<std::vector<int>>> &values) = 0;
 
-  /** @brief Allow to build something like a dictionary (required to configure some cameras more easily).
+  /** @brief Allows to build "something like" a python dictionary (required to configure some cameras more easily).
    *
    * libconfig++ example (list of lists): (("key1", 1), ("key2", -30))
    */
   virtual void SetIntegerKeyValueList(const std::string &param_name, const std::vector<std::pair<std::string, int>> &values) = 0;
 
+  /** @brief Allows to build "something like" a python dictionary (which is required to configure some sensors more easily in vcp_best).
+   *
+   * libconfig++ example: (list of lists): (("key1", 1.0), ("key2", -42.123))
+   */
   virtual void SetDoubleKeyValueList(const std::string &param_name, const std::vector<std::pair<std::string, double>> &values) = 0;
 
+  /** @brief Returns a string representation of this configuration object (basically the same as would be saved to disk). */
   virtual std::string ToString() const = 0;
 
+  /** @brief Returns a string representation of the corresponding parameter. */
   virtual std::string AsString(const std::string &param_name) const = 0;
 
-  //TODO doc list all parameters within the group/aggregrate called "param_name"
+  /** @brief Return a list of all parameters under the given parameter name.
+   *
+   * Can be used to verify a config file, e.g. check if the user provided additional
+   * keys (which might indicate a potential typo).
+   */
   virtual std::vector<std::string> ListConfigGroupParameters(const std::string &param_name) const = 0;
 
 protected:
