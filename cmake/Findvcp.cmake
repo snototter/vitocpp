@@ -47,6 +47,46 @@ endif()
 set(QUERY_STRING_STATIC_LIB "_static")
 set(QUERY_STRING_DEBUG_LIB "d")
 
+
+##############################################################################
+# First, find out which modules the user requested
+list(FIND VCP_MODULES vcp_best          REQUESTED_BEST)
+list(FIND VCP_MODULES vcp_bgm           REQUESTED_BGM)
+list(FIND VCP_MODULES vcp_config        REQUESTED_CONFIG)
+list(FIND VCP_MODULES vcp_imutils       REQUESTED_IMUTILS)
+list(FIND VCP_MODULES vcp_math          REQUESTED_MATH)
+list(FIND VCP_MODULES vcp_tracking      REQUESTED_TRACKING)
+list(FIND VCP_MODULES vcp_ui            REQUESTED_UI)
+list(FIND VCP_MODULES vcp_visualization REQUESTED_VISUALIZATION)
+
+# ... then, add dependencies (e.g. vcp_visualization uses vcp_math)
+if(REQUESTED_BEST GREATER 0)
+    message(FATAL_ERROR "Not yet supported")
+endif()
+if(REQUESTED_BGM GREATER 0)
+    message(FATAL_ERROR "Not yet supported")
+endif()
+if(REQUESTED_CONFIG GREATER 0)
+    message(FATAL_ERROR "Not yet supported")
+endif()
+if(REQUESTED_IMUTILS GREATER 0)
+    set(VCP_MODULES ${VCP_MODULES} vcp_math)
+endif()
+  #if(REQUESTED_MATH GREATER 0)
+      # Math only uses headers from utils and imutils
+  #    set(VCP_MODULES ${VCP_MODULES} vcp_utils)
+  #endif()
+if(REQUESTED_TRACKING GREATER 0)
+    message(FATAL_ERROR "Not yet supported")
+endif()
+  #if(REQUESTED_UI GREATER 0)
+  #    set(VCP_MODULES ${VCP_MODULES} vcp_ui)
+  #endif()
+if(REQUESTED_VISUALIZATION GREATER 0)
+    set(VCP_MODULES ${VCP_MODULES} vcp_imutils vcp_math)
+endif()
+
+
 ##############################################################################
 # Query each requested module.
 list(REMOVE_DUPLICATES VCP_MODULES)
@@ -99,9 +139,9 @@ endforeach()
 ##############################################################################
 # Add external dependencies for the selected/requested modules
 #TODO add similar logic before above foreach to add required VCP modules!
-list(FIND VCP_MODULES vcp_bgm USE_BACKGROUND_MODELS)
+list(FIND VCP_MODULES vcp_best USE_BEST)
+list(FIND VCP_MODULES vcp_bgm USE_BGM)
 list(FIND VCP_MODULES vcp_config USE_CONFIG)
-list(FIND VCP_MODULES vcp_icc USE_IP_CAM_CAPTURE)
 list(FIND VCP_MODULES vcp_math USE_MATH)
 list(FIND VCP_MODULES vcp_imutils USE_IMUTILS)
 list(FIND VCP_MODULES vcp_ui USE_UI)
@@ -110,7 +150,7 @@ list(FIND VCP_MODULES vcp_tracking USE_TRACKING)
 
 #TODO cont' adaptation from here
 # OpenCV
-if(USE_VISUALIZATION GREATER 0 OR USE_TRACKING GREATER 0 OR USE_BACKGROUND_MODELS GREATER 0 OR USE_IP_CAM_CAPTURE GREATER 0 OR USE_UI GREATER 0 OR USE_MATH GREATER 0 OR USE_IMUTILS GREATER 0)
+if(USE_VISUALIZATION GREATER 0 OR USE_TRACKING GREATER 0 OR USE_BGM GREATER 0 OR USE_BEST GREATER 0 OR USE_UI GREATER 0 OR USE_MATH GREATER 0 OR USE_IMUTILS GREATER 0)
   if(NOT vcp_FIND_QUIETLY)
     message(STATUS "[vcp] Some selected VCP modules require OpenCV as dependency")
   endif()
@@ -124,7 +164,7 @@ if(USE_VISUALIZATION GREATER 0 OR USE_TRACKING GREATER 0 OR USE_BACKGROUND_MODEL
 endif()
 
 # CURL
-if(USE_IP_CAM_CAPTURE GREATER 0)
+if(USE_BEST GREATER 0)
   if(NOT vcp_FIND_QUIETLY)
     message(STATUS "[vcp] Some selected VCP modules require CURL as dependency")
   endif()
@@ -209,7 +249,8 @@ endif()
 if(VCP_FOUND)
   if(NOT vcp_FIND_QUIETLY)
     message(STATUS "[vcp] Include directory: ${VCP_INCLUDE_DIR}")
-    message(STATUS "[vcp] Selected modules:  ${VCP_LIBRARIES}")
+    message(STATUS "[vcp] Selected modules:  ${VCP_MODULES}")
+#message(STATUS "[vcp] Libraries: ${VCP_LIBRARIES}")
   endif()
 else()
   if(vcp_FIND_REQUIRED)

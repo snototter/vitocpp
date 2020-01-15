@@ -13,36 +13,42 @@ else()
     set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wall -std=c++11 -Wpedantic -Wextra -g -rdynamic")
 endif()
 
-#set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} $ENV{PVT_ROOT_DIR}/cmake)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/../../cmake")
-find_package(vcp REQUIRED COMPONENTS vcp_utils)
-include_directories(${VCP_INCLUDE_DIR})
+
 
 # vcp_utils demo
+message(STATUS "Setting up utils_demo")
+find_package(vcp REQUIRED)
+include_directories(${VCP_INCLUDE_DIR})
+
 add_executable(utils_demo
-  utils_demo.cpp
+    utils_demo.cpp
 )
 target_link_libraries(utils_demo
-  ${VCP_LIBRARIES}
+    ${VCP_LIBRARIES}
 )
 
-## pvt_visualization demo
-#add_executable(visualization_demo
-#  visualization_demo.cpp
-#)
-#target_link_libraries(visualization_demo
-#  ${PVT_LIBRARIES}
-#)
-#add_custom_command(TARGET visualization_demo POST_BUILD
-#  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/data/peaks.png ${CMAKE_BINARY_DIR}
-#)
-#
+# vcp_visualization demo
+message(STATUS "Setting up visualization_demo")
+find_package(vcp REQUIRED COMPONENTS vcp_utils vcp_visualization)
+include_directories(${VCP_INCLUDE_DIR})
+add_executable(visualization_demo
+    visualization_demo.cpp
+)
+target_link_libraries(visualization_demo
+    ${VCP_LIBRARIES}
+)
+add_custom_command(TARGET visualization_demo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../data/peaks.png ${CMAKE_BINARY_DIR}
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../data/flamingo.jpg ${CMAKE_BINARY_DIR}
+)
+
 ## kalman demo
 #add_executable(kalman_demo
 #  kalman_demo.cpp
 #)
 #target_link_libraries(kalman_demo
-#  ${PVT_LIBRARIES}
+#  ${VCP_LIBRARIES}
 #)
 ##
 #
@@ -65,9 +71,9 @@ target_link_libraries(utils_demo
 #${LIVE555_LIBRARIES}
 #)
 #add_custom_command(TARGET icc_demo POST_BUILD
-#  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/data/*.png ${CMAKE_BINARY_DIR}
-#  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/data/*.cfg ${CMAKE_BINARY_DIR}
-#  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/data/*.sdp ${CMAKE_BINARY_DIR}
+#  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../data/*.png ${CMAKE_BINARY_DIR}
+#  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../data/*.cfg ${CMAKE_BINARY_DIR}
+#  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../data/*.sdp ${CMAKE_BINARY_DIR}
 #)
 #
 # Streaming demo
@@ -77,7 +83,7 @@ target_link_libraries(utils_demo
 #  stream_demo.cpp
 #)
 #target_link_libraries(stream_demo
-#  ${PVT_LIBRARIES}
+#  ${VCP_LIBRARIES}
 #  ${OpenCV_LIBS}
 #${LIVE555_LIBRARIES}
 #)
@@ -87,28 +93,35 @@ target_link_libraries(utils_demo
 #  config_demo.cpp
 #)
 #target_link_libraries(config_demo
-#  ${PVT_LIBRARIES}
+#  ${VCP_LIBRARIES}
 #)
 #add_custom_command(TARGET config_demo POST_BUILD
  # COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/data/config.cfg ${CMAKE_BINARY_DIR}
 #)
 
-# config access demo
-#add_executable(ui_demo
-#  ui_demo.cpp
-#)
-#target_link_libraries(ui_demo
-#  ${PVT_LIBRARIES}
-#)
-#add_custom_command(TARGET ui_demo POST_BUILD
-#  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/data/lena.jpg ${CMAKE_BINARY_DIR}
-#)
+# UI demo
+message(STATUS "Setting up ui_demo")
+find_package(vcp REQUIRED COMPONENTS vcp_ui)
+include_directories(${VCP_INCLUDE_DIR})
+add_executable(ui_demo
+    ui_demo.cpp
+)
+target_link_libraries(ui_demo
+    ${VCP_LIBRARIES}
+)
+add_custom_command(TARGET ui_demo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../data/flamingo.jpg ${CMAKE_BINARY_DIR}
+)
 
 # math demo
-#add_executable(math_demo
-#  math_demo.cpp
-#)
-#target_link_libraries(math_demo
-#  ${PVT_LIBRARIES}
-#)
+message(STATUS "Setting up math_demo (also imutils::matutils)")
+find_package(vcp REQUIRED COMPONENTS vcp_math vcp_imutils)
+include_directories(${VCP_INCLUDE_DIR})
+
+add_executable(math_demo
+    math_demo.cpp
+)
+target_link_libraries(math_demo
+    ${VCP_LIBRARIES}
+)
 

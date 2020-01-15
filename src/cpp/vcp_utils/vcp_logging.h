@@ -6,10 +6,12 @@
 #include <ctime>
 
 // TODO doc
+// VCP_LOG_LOCATION
 // * Default macros use ANSI color codes to colorize the log severity.
 // * DEBUG and INFO messages are logged to std::cout
 // * WARNING and FAILURE messages are logged to std::cerr
 
+#define VCP_UNUSED_VAR(var) (void)(var)
 
 //----------------------------------------------------------------
 // Generic/base macros, use only if you know what you are doing.
@@ -58,7 +60,11 @@
 //
 // Log DEBUG messages
 #ifdef VCP_LOG_LEVEL_DEBUG
-    #define VCP_LOG_DEBUG(msg) VCP_LOG_DEBUG_LOCATION(msg)
+    #ifdef VCP_LOG_LOCATION
+        #define VCP_LOG_DEBUG(msg) VCP_LOG_DEBUG_LOCATION(msg)
+    #else // VCP_LOG_LOCATION
+        #define VCP_LOG_DEBUG(msg) VCP_LOG_DEBUG_DEFAULT(msg)
+    #endif // VCP_LOG_LOCATION
 #else // VCP_LOG_ENABLE_DEBUG
     #define VCP_LOG_DEBUG(msg) do {} while(0)
 #endif // VCP_LOG_ENABLE_DEBUG
@@ -66,7 +72,11 @@
 //
 // Log INFO messages
 #if defined(VCP_LOG_LEVEL_DEBUG) || defined(VCP_LOG_LEVEL_INFO)
-    #define VCP_LOG_INFO(msg)  VCP_LOG_INFO_DEFAULT(msg)
+    #ifdef VCP_LOG_LOCATION
+        #define VCP_LOG_INFO(msg)  VCP_LOG_INFO_LOCATION(msg)
+    #else // VCP_LOG_LOCATION
+        #define VCP_LOG_INFO(msg)  VCP_LOG_INFO_DEFAULT(msg)
+    #endif // VCP_LOG_LOCATION
 #else
     #define VCP_LOG_INFO(msg)  do {} while(0)
 #endif
@@ -74,15 +84,22 @@
 //
 // Log WARNING messages
 #if defined(VCP_LOG_LEVEL_DEBUG) || defined(VCP_LOG_LEVEL_INFO) || defined(VCP_LOG_LEVEL_WARNING)
-    #define VCP_LOG_WARNING(msg)  VCP_LOG_WARNING_DEFAULT(msg)
+    #ifdef VCP_LOG_LOCATION
+        #define VCP_LOG_WARNING(msg)  VCP_LOG_WARNING_LOCATION(msg)
+    #else // VCP_LOG_LOCATION
+        #define VCP_LOG_WARNING(msg)  VCP_LOG_WARNING_DEFAULT(msg)
+    #endif // VCP_LOG_LOCATION
 #else
     #define VCP_LOG_WARNING(msg)  do {} while(0)
 #endif
 //
 //
 // Always log FAILURE messages
-#define VCP_LOG_FAILURE(msg)             VCP_LOG_FAILURE_DEFAULT(msg)
-
+#ifdef VCP_LOG_LOCATION
+    #define VCP_LOG_FAILURE(msg)    VCP_LOG_FAILURE_LOCATION(msg)
+#else // VCP_LOG_LOCATION
+    #define VCP_LOG_FAILURE(msg)    VCP_LOG_FAILURE_DEFAULT(msg)
+#endif // VCP_LOG_LOCATION
 
 
 // FIXME: clean up

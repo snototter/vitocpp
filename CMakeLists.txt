@@ -14,20 +14,23 @@ set(VCP_VERSION "1.0.0")
 option(VCP_BUILD_STATIC "Additionally build static libraries." OFF)
 #option(VCP_BUILD_BACKGROUND_MODELS "Build background model library." ON)
 #option(VCP_BUILD_CONFIG "Build configuration library." ON)
-#option(PVT_BUILD_IMUTILS "Build image utilities." ON)
-#option(PVT_BUILD_IP_CAM_CAPTURE "Build IP camera capturing library." ON)
-#option(PVT_BUILD_MATH "Build math utilities." ON)
-#option(PVT_BUILD_TRACKING "Build tracking library." ON)
-#option(PVT_BUILD_UI "Build user interface module." ON)
-#option(PVT_BUILD_VISUALIZATION "Build visualizations library." ON)
-#option(PVT_BUILD_DOC "Build doxygen documentation" ON)
+option(VCP_BUILD_IMUTILS "Build image utilities module." ON)
+#option(VCP_BUILD_IP_CAM_CAPTURE "Build IP camera capturing library." ON)
+option(VCP_BUILD_MATH "Build math utility module." ON)
+#option(VCP_BUILD_TRACKING "Build tracking library." ON)
+option(VCP_BUILD_UI "Build simple UI utility module." ON)
+option(VCP_BUILD_VISUALIZATION "Build visualization module." ON)
+#option(VCP_BUILD_DOC "Build doxygen documentation" OFF)
 # Everybody was unit-testing:
 option(VCP_BUILD_TESTS "Build tests, requires GTest." OFF)
 #
 # Logging related
 set(VCP_LOG_LEVEL "info" CACHE STRING "Select logging level")
 set_property(CACHE VCP_LOG_LEVEL PROPERTY STRINGS debug info warning failure)
-option(VCP_LOG_LOCATION "Logged messages include source file location" OFF)
+#
+option(VCP_LOG_LOCATION "Logged messages include source file location." OFF)
+#
+option(VCP_LOG_STACK_TRACE_ON_ERROR "Log stack trace on exception/exit/abort." ON)
 
 
 
@@ -51,7 +54,7 @@ set(CMAKE_INSTALL_RPATH "$ORIGIN")
 # Check build type
 ##############################################################################
 if(NOT CMAKE_BUILD_TYPE)
-    message(STATUS "No build type configured, default to Release")
+    message(STATUS "[${PROJECT_NAME}] No build type configured, default to Release")
     set(CMAKE_BUILD_TYPE Release)
 endif()
 #TODO check if needed anymore
@@ -93,7 +96,7 @@ file(WRITE src/python3/vcp/version.py
 
 
 if(WIN32)
-    message(FATAL_ERROR "TODO Need to specify MSVC-compatible flags, at least for c++11")
+    message(FATAL_ERROR "[${PROJECT_NAME}] TODO Need to specify MSVC-compatible flags, at least for c++11")
 else()
     set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wall -std=c++11 -Wpedantic -Wextra -g -rdynamic")
 endif()
@@ -118,23 +121,28 @@ endif()
 # ... pick configured logging level
 if(${VCP_LOG_LEVEL} STREQUAL "debug")
     add_definitions(-DVCP_LOG_LEVEL_DEBUG)
-    message(STATUS "VCP will log DEBUG, INFO, WARNING and FAILURE messages.")
+    message(STATUS "[${PROJECT_NAME}] Will log DEBUG, INFO, WARNING and FAILURE messages.")
 elseif(${VCP_LOG_LEVEL} STREQUAL "info")
     add_definitions(-DVCP_LOG_LEVEL_INFO)
-    message(STATUS "VCP will log INFO, WARNING and FAILURE messages.")
+    message(STATUS "[${PROJECT_NAME}] Will log INFO, WARNING and FAILURE messages.")
 elseif(${VCP_LOG_LEVEL} STREQUAL "warning")
     add_definitions(-DVCP_LOG_LEVEL_WARNING)
-    message(STATUS "VCP will only log WARNING and FAILURE messages.")
+    message(STATUS "[${PROJECT_NAME}] Will only log WARNING and FAILURE messages.")
 elseif(${VCP_LOG_LEVEL} STREQUAL "failure")
     add_definitions(-DVCP_LOG_LEVEL_FAILURE)
-    message(STATUS "VCP will only log FAILURE messages.")
+    message(STATUS "[${PROJECT_NAME}] Will only log FAILURE messages.")
 else()
-    message(FATAL_ERROR "Invalid VCP_LOG_LEVEL value")
+    message(FATAL_ERROR "[${PROJECT_NAME}] Invalid VCP_LOG_LEVEL value")
 endif()
 #
 # ... should we include the source file location in our logs?
 if(VCP_LOG_LOCATION)
   add_definitions(-DVCP_LOG_LOCATION)
+endif()
+#
+# ... should we log the stack trace on unrecoverable errors?
+if(VCP_LOG_STACK_TRACE_ON_ERROR)
+    add_definitions(-DVCP_LOG_STACK_TRACE_ON_ERROR)
 endif()
 
 
@@ -156,43 +164,43 @@ add_subdirectory(src/cpp/vcp_utils)
 
 # Background models
 #if(PVT_BUILD_BACKGROUND_MODELS)
-#  add_subdirectory(src/pvt_bgm)
+#    add_subdirectory(src/pvt_bgm)
 #endif()
 
 # Config module
 #if(PVT_BUILD_CONFIG)
-#  add_subdirectory(src/pvt_config)
+#    add_subdirectory(src/pvt_config)
 #endif()
 
 # IP camera capture
 #if(PVT_BUILD_IP_CAM_CAPTURE)
-#  add_subdirectory(src/pvt_icc)
+#    add_subdirectory(src/pvt_icc)
 #endif()
 
 # Imutils utilities
-##if(PVT_BUILD_IMUTILS)
-#  add_subdirectory(src/pvt_imutils)
-#endif()
+if(VCP_BUILD_IMUTILS)
+    add_subdirectory(src/cpp/vcp_imutils)
+endif()
 
 # Math utilities
-#if(PVT_BUILD_MATH)
-#  add_subdirectory(src/pvt_math)
-#endif()
+if(VCP_BUILD_MATH)
+    add_subdirectory(src/cpp/vcp_math)
+endif()
 
 # Tracking library
 #if(PVT_BUILD_TRACKING)
-#  add_subdirectory(src/pvt_tracking)
+#    add_subdirectory(src/pvt_tracking)
 #endif()
 
 # User interface module
-#if(PVT_BUILD_UI)
-#  add_subdirectory(src/pvt_ui)
-#endif()
+if(VCP_BUILD_UI)
+    add_subdirectory(src/cpp/vcp_ui)
+endif()
 
 # Visualizations library
-#if(PVT_BUILD_VISUALIZATION)
-#  add_subdirectory(src/pvt_visualization)
-#endif()
+if(VCP_BUILD_VISUALIZATION)
+    add_subdirectory(src/cpp/vcp_visualization)
+endif()
 
 # Add an uninstall target
 # See: https://gitlab.kitware.com/cmake/community/wikis/FAQ#can-i-do-make-uninstall-with-cmake
@@ -203,7 +211,8 @@ if(NOT TARGET uninstall)
         IMMEDIATE @ONLY)
 
     add_custom_target(uninstall
-        COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
+        COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake
+        COMMENT "Uninstall files which were created upon 'make install'")
 endif()
 
 # Check if Doxygen is installed
@@ -221,7 +230,6 @@ if (DOXYGEN_FOUND)
         COMMENT "Generating API documentation with Doxygen"
         VERBATIM)
 else()
-  message("Won't generate C++ documentation (doxygen is missing)")
+  message("[${PROJECT_NAME}] Won't generate C++ documentation (doxygen is missing)")
 endif()
 
-#FIXME add option to define: VCP_STACK_TRACE_ON_FAILURE

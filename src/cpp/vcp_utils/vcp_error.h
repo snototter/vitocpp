@@ -17,48 +17,59 @@
   * can be overcome by catching exceptions within main():
   * https://stackoverflow.com/a/397081
   */
-#ifdef VCP_STACK_TRACE_ON_FAILURE
+#ifdef VCP_LOG_STACK_TRACE_ON_ERROR
     #if defined(__APPLE__) || defined(__linux__) || defined(__unix__)
-        // On these *nix-based systems, we can use glibc to print the
-        // current stack trace.
-        // See: https://stackoverflow.com/a/77336
+        // On these systems, we can use glibc to print the
+        // current stack trace, see https://stackoverflow.com/a/77336
 
         /**@brief Show a [FAILURE] message on stderr, then throw a std::runtime_error. */
-        #define VCP_RAISE_ERROR(msg) {\
-            VCP_LOG_FAILURE_FILE(msg);\
+        #define VCP_ERROR(msg) {\
+            VCP_LOG_FAILURE_LOCATION(msg);\
             void *array[10];\
             size_t size = backtrace(array, 10);\
             backtrace_symbols_fd(array, size, STDERR_FILENO);\
             throw std::runtime_error("Aborting VCP library call due to error!");\
         }
+
+        /**@brief Show a [FAILURE] message on stderr, then abort. */
+        #define VCP_ABORT(msg) {\
+            VCP_LOG_FAILURE_LOCATION(msg);\
+            void *array[10];\
+            size_t size = backtrace(array, 10);\
+            backtrace_symbols_fd(array, size, STDERR_FILENO);\
+            abort();\
+        }
+
+        /**@brief Show a [FAILURE] message on stderr, then exit. */
+        #define VCP_EXIT(msg, errcode) {\
+            VCP_LOG_FAILURE_LOCATION(msg);\
+            void *array[10];\
+            size_t size = backtrace(array, 10);\
+            backtrace_symbols_fd(array, size, STDERR_FILENO);\
+            exit(errcode);\
+        }
     #else //  defined(__APPLE__) || defined(__linux__) || defined(__unix__)
         #error "Printing stack trace is currently only supported under *nix-based systems"
     #endif //  defined(__APPLE__) || defined(__linux__) || defined(__unix__)
-#else  // VCP_STACK_TRACE_ON_FAILURE
+#else  // VCP_LOG_STACK_TRACE_ON_ERROR
     /**@brief Show a [FAILURE] message on stderr, then throw a std::runtime_error. */
-    #define VCP_RAISE_ERROR(msg) {\
-        VCP_LOG_FAILURE_FILE(msg);\
+    #define VCP_ERROR(msg) {\
+        VCP_LOG_FAILURE_LOCATION(msg);\
         throw std::runtime_error("Aborting VCP library call due to error!");\
     }
 
     /**@brief Show a [FAILURE] message on stderr, then abort. */
     #define VCP_ABORT(msg) {\
-        VCP_LOG_FAILURE_FILE(msg);\
+        VCP_LOG_FAILURE_LOCATION(msg);\
         abort();\
     }
 
     /**@brief Show a [FAILURE] message on stderr, then exit. */
-    #define VCP_EXIT(msg) {\
-        VCP_LOG_FAILURE_FILE(msg);\
-        exit();\
+    #define VCP_EXIT(msg, errcode) {\
+        VCP_LOG_FAILURE_LOCATION(msg);\
+        exit(errcode);\
     }
-#endif // VCP_STACK_TRACE_ON_FAILURE
-
-
-#define VCP_EXIT(msg) {\
-    VCP_LOG_FAILURE_FILE(msg);\
-    exit(1);\
-}
+#endif // VCP_LOG_STACK_TRACE_ON_ERROR
 
 
 #define VCP_CHECK(condition)   { assert(condition); }
