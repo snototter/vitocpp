@@ -66,9 +66,9 @@ endif()
 if(REQUESTED_BGM GREATER 0)
     message(FATAL_ERROR "Not yet supported")
 endif()
-if(REQUESTED_CONFIG GREATER 0)
-    message(FATAL_ERROR "Not yet supported")
-endif()
+#if(REQUESTED_CONFIG GREATER 0)
+#    message(FATAL_ERROR "Not yet supported")
+#endif()
 if(REQUESTED_IMUTILS GREATER 0)
     set(VCP_MODULES ${VCP_MODULES} vcp_math)
 endif()
@@ -88,7 +88,7 @@ endif()
 
 
 ##############################################################################
-# Query each requested module.
+# Query each requested/required module.
 list(REMOVE_DUPLICATES VCP_MODULES)
 foreach(module ${VCP_MODULES})
     # Select order of names to search for libs (prefer static or shared depending on configuration).
@@ -138,114 +138,112 @@ endforeach()
 
 ##############################################################################
 # Add external dependencies for the selected/requested modules
-#TODO add similar logic before above foreach to add required VCP modules!
-list(FIND VCP_MODULES vcp_best USE_BEST)
-list(FIND VCP_MODULES vcp_bgm USE_BGM)
-list(FIND VCP_MODULES vcp_config USE_CONFIG)
-list(FIND VCP_MODULES vcp_math USE_MATH)
-list(FIND VCP_MODULES vcp_imutils USE_IMUTILS)
-list(FIND VCP_MODULES vcp_ui USE_UI)
+list(FIND VCP_MODULES vcp_best          USE_BEST)
+list(FIND VCP_MODULES vcp_bgm           USE_BGM)
+list(FIND VCP_MODULES vcp_config        USE_CONFIG)
+list(FIND VCP_MODULES vcp_imutils       USE_IMUTILS)
+list(FIND VCP_MODULES vcp_math          USE_MATH)
+list(FIND VCP_MODULES vcp_tracking      USE_TRACKING)
+list(FIND VCP_MODULES vcp_ui            USE_UI)
 list(FIND VCP_MODULES vcp_visualization USE_VISUALIZATION)
-list(FIND VCP_MODULES vcp_tracking USE_TRACKING)
 
-#TODO cont' adaptation from here
 # OpenCV
-if(USE_VISUALIZATION GREATER 0 OR USE_TRACKING GREATER 0 OR USE_BGM GREATER 0 OR USE_BEST GREATER 0 OR USE_UI GREATER 0 OR USE_MATH GREATER 0 OR USE_IMUTILS GREATER 0)
-  if(NOT vcp_FIND_QUIETLY)
-    message(STATUS "[vcp] Some selected VCP modules require OpenCV as dependency")
-  endif()
-  find_package(OpenCV REQUIRED)
-  if(NOT OpenCV_FOUND)
-    message(FATAL_ERROR "[vcp] OpenCV not found!")
-  endif()
+if(USE_BEST GREATER 0 OR USE_BGM GREATER 0 OR USE_IMUTILS GREATER 0 OR USE_MATH GREATER 0 OR USE_TRACKING GREATER 0 OR USE_UI GREATER 0 OR USE_VISUALIZATION GREATER 0)
+    if(NOT vcp_FIND_QUIETLY)
+        message(STATUS "[vcp] Some of the selected VCP modules require OpenCV")
+    endif()
 
-  # Add OpenCV libraries to VCP library list
-  set(VCP_LIBRARIES ${VCP_LIBRARIES} ${OpenCV_LIBS})
+    find_package(OpenCV REQUIRED)
+    if(NOT OpenCV_FOUND)
+        message(FATAL_ERROR "[vcp] OpenCV not found!")
+    endif()
+
+    # Add OpenCV libraries to VCP library list
+    set(VCP_LIBRARIES ${VCP_LIBRARIES} ${OpenCV_LIBS})
 endif()
 
 # CURL
 if(USE_BEST GREATER 0)
-  if(NOT vcp_FIND_QUIETLY)
-    message(STATUS "[vcp] Some selected VCP modules require CURL as dependency")
-  endif()
+    if(NOT vcp_FIND_QUIETLY)
+        message(STATUS "[vcp] vcp_best requires CURL")
+    endif()
 
-  find_package(CURL REQUIRED)
-  if(NOT CURL_FOUND)
-    message(FATAL_ERROR "[vcp] CURL not found!")
-  endif()
+    find_package(CURL REQUIRED)
+    if(NOT CURL_FOUND)
+        message(FATAL_ERROR "[vcp] CURL not found!")
+    endif()
 
-  # Add CURL libraries to VCP library list
-  set(VCP_LIBRARIES ${VCP_LIBRARIES} ${CURL_LIBRARIES})
+    # Add CURL libraries to VCP library list
+    set(VCP_LIBRARIES ${VCP_LIBRARIES} ${CURL_LIBRARIES})
 
-  # Check if matrix vision sink was installed, if so, add mvIMPACT
-  if (EXISTS "${VCP_ROOT}/include/vcp_icc/matrixvision_sink.h")
-		message(STATUS "[vcp] VCP ICC was build with matrix vision support, need to include mvIMPACT SDK")
-    find_package(mvIMPACT_acquire REQUIRED)
-	  include_directories(${mvIMPACT_acquire_INCLUDE_DIR})
-    set(VCP_LIBRARIES ${VCP_LIBRARIES} ${mvIMPACT_acquire_LIBS})
-  endif()
+    # Check if matrix vision sink was installed, if so, add mvIMPACT
+    if (EXISTS "${VCP_ROOT}/gen/include/vcp_icc/matrixvision_sink.h")
+		    message(STATUS "[vcp] vcp_best was built with matrix vision support, thus requires mvIMPACT SDK")
+        find_package(mvIMPACT_acquire REQUIRED)
+	      include_directories(${mvIMPACT_acquire_INCLUDE_DIR})
+        set(VCP_LIBRARIES ${VCP_LIBRARIES} ${mvIMPACT_acquire_LIBS})
+    endif()
 
-  # Check if realsense2 sink was installed, if so, add realsense2
-  if (EXISTS "${VCP_ROOT}/include/vcp_icc/realsense2_sink.h")
-		message(STATUS "[vcp] VCP ICC was build with realsense2 support, need to link librealsense2")
-    find_package(realsense2 REQUIRED)
-	  include_directories(${realsense_INCLUDE_DIR})
-    set(VCP_LIBRARIES ${VCP_LIBRARIES} ${realsense2_LIBRARY})
-  endif()
+    # Check if realsense2 sink was installed, if so, add realsense2
+    if (EXISTS "${VCP_ROOT}/gen/include/vcp_icc/realsense2_sink.h")
+        message(STATUS "[vcp] vcp_best was built with RealSense2 support, thus requires librealsense2")
+        find_package(realsense2 REQUIRED)
+	      include_directories(${realsense_INCLUDE_DIR})
+        set(VCP_LIBRARIES ${VCP_LIBRARIES} ${realsense2_LIBRARY})
+    endif()
 
-  # Check if k4a sink was installed, if so, add k4a dependency
-  if (EXISTS "${VCP_ROOT}/include/vcp_icc/k4a_sink.h")
-		message(STATUS "[vcp] VCP ICC was build with k4a support, need to link libk4a")
-    find_package(k4a REQUIRED)
-    set(VCP_LIBRARIES ${VCP_LIBRARIES} k4a) #TODO let's hope, k4a will never be renamed (their cmake config doesn't define k4a_LIBRARY (or similar))
-  endif()
+    # Check if k4a sink was installed, if so, add k4a dependency
+    if (EXISTS "${VCP_ROOT}/gen/include/vcp_icc/k4a_sink.h")
+		  message(STATUS "[vcp] vcp_best was built with Azure Kinect support, thus requires libk4a")
+      find_package(k4a REQUIRED)
+      set(VCP_LIBRARIES ${VCP_LIBRARIES} k4a)
+    endif()
 endif()
 
 # zlib
 if(USE_IMUTILS GREATER 0)
-  if(NOT vcp_FIND_QUIETLY)
-    message(STATUS "[vcp] Some selected VCP modules request zlib as optional dependency")
-  endif()
+    if(NOT vcp_FIND_QUIETLY)
+        message(STATUS "[vcp] vcp_imutils was linked against zlib, thus requires this dependency")
+    endif()
 
-  find_package(ZLIB) # zlib is optional
-  if(NOT ZLIB_FOUND)
-    message(WARNING "[vcp] zlib not found!")
-  else()
+    find_package(ZLIB REQUIRED)
+    if(NOT ZLIB_FOUND)
+        message(FATAL_ERROR "[vcp] zlib not found!")
+    endif()
     set(VCP_LIBRARIES ${VCP_LIBRARIES} ${ZLIB_LIBRARIES})
-  endif()
 endif()
 
 # libconfig++
 if(USE_CONFIG GREATER 0)
-  if(NOT vcp_FIND_QUIETLY)
-    message(STATUS "[vcp] Some selected VCP modules require libconfig++ as dependency")
-  endif()
+    if(NOT vcp_FIND_QUIETLY)
+        message(STATUS "[vcp] vcp_config requires libconfig++")
+    endif()
 
-  find_package(LibConfig++ REQUIRED)
-  if(NOT LIBCONFIG++_FOUND)
-    message(FATAL_ERROR "[vcp] libconfig++ not found!")
-  endif()
+    find_package(LibConfig++ REQUIRED)
+    if(NOT LIBCONFIG++_FOUND)
+        message(FATAL_ERROR "[vcp] libconfig++ not found!")
+    endif()
 
-  # Add CURL libraries to VCP library list
-  set(VCP_LIBRARIES ${VCP_LIBRARIES} ${LIBCONFIG++_LIBRARY})
+    # Add CURL libraries to VCP library list
+    set(VCP_LIBRARIES ${VCP_LIBRARIES} ${LIBCONFIG++_LIBRARY})
 endif()
 
-# Find include directory (search for string_utils.h
+
+##############################################################################
+# Find include directory (by searching for vcp_utils/string_utils.h)
 find_path(VCP_UTILS_INCLUDE_DIR string_utils.h
-  HINTS ${POTENTIAL_INCLUDE_DIR}/vcp_utils
-  NO_DEFAULT_PATH
+    HINTS ${POTENTIAL_INCLUDE_DIR}/vcp_utils
+    NO_DEFAULT_PATH
 )
 
 if(VCP_UTILS_INCLUDE_DIR AND VCP_LIBRARIES)
-  set(VCP_FOUND TRUE)
-          
-  # Set the libraries variable.
-#  set(VCP_LIBRARIES ${VCP_LIBRARIES})
-
-  # Set include directory to parent dir, s.t. we can include<vcp_utils/xyz.h>.
-  get_filename_component(VCP_INCLUDE_DIR "${VCP_UTILS_INCLUDE_DIR}/.." REALPATH)
+    set(VCP_FOUND TRUE)
+    # Set include directory to parent dir, s.t. we can "#include <vcp_utils/xyz.h>".
+    get_filename_component(VCP_INCLUDE_DIR "${VCP_UTILS_INCLUDE_DIR}/.." REALPATH)
 endif()
 
+##############################################################################
+# Clean up, raise error if required, notify if we're not forced to be quiet...
 if(VCP_FOUND)
   if(NOT vcp_FIND_QUIETLY)
     message(STATUS "[vcp] Include directory: ${VCP_INCLUDE_DIR}")
@@ -257,3 +255,4 @@ else()
     message(FATAL_ERROR "[vcp] Could not locate selected VCP modules")
   endif()
 endif()
+

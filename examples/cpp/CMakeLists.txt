@@ -88,16 +88,19 @@ add_custom_command(TARGET visualization_demo POST_BUILD
 #${LIVE555_LIBRARIES}
 #)
 #
-# config access demo
-#add_executable(config_demo
-#  config_demo.cpp
-#)
-#target_link_libraries(config_demo
-#  ${VCP_LIBRARIES}
-#)
-#add_custom_command(TARGET config_demo POST_BUILD
- # COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/data/config.cfg ${CMAKE_BINARY_DIR}
-#)
+# config demo
+message(STATUS "Setting up config_demo")
+find_package(vcp REQUIRED COMPONENTS vcp_config)
+include_directories(${VCP_INCLUDE_DIR})
+add_executable(config_demo
+  config_demo.cpp
+)
+target_link_libraries(config_demo
+  ${VCP_LIBRARIES}
+)
+add_custom_command(TARGET config_demo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../data/config.cfg ${CMAKE_BINARY_DIR}
+)
 
 # UI demo
 message(STATUS "Setting up ui_demo")

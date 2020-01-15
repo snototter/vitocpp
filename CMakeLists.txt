@@ -13,7 +13,7 @@ set(VCP_VERSION "1.0.0")
 #option(VCP_VERBOSE_TIMING "Verbose timing output, may spam your console" ON)
 option(VCP_BUILD_STATIC "Additionally build static libraries." OFF)
 #option(VCP_BUILD_BACKGROUND_MODELS "Build background model library." ON)
-#option(VCP_BUILD_CONFIG "Build configuration library." ON)
+option(VCP_BUILD_CONFIG "Build config module." ON)
 option(VCP_BUILD_IMUTILS "Build image utilities module." ON)
 #option(VCP_BUILD_IP_CAM_CAPTURE "Build IP camera capturing library." ON)
 option(VCP_BUILD_MATH "Build math utility module." ON)
@@ -168,9 +168,9 @@ add_subdirectory(src/cpp/vcp_utils)
 #endif()
 
 # Config module
-#if(PVT_BUILD_CONFIG)
-#    add_subdirectory(src/pvt_config)
-#endif()
+if(VCP_BUILD_CONFIG)
+    add_subdirectory(src/cpp/vcp_config)
+endif()
 
 # IP camera capture
 #if(PVT_BUILD_IP_CAM_CAPTURE)
