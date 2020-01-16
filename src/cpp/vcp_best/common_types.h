@@ -8,11 +8,23 @@
 
 
 #include <opencv2/core/core.hpp>
-#include <pvt_config/config_params.h>
-#include "stream_sink.h"
+#include <vcp_config/config_params.h>
+//#include "stream_sink.h"
 
 namespace vcp
 {
+/** @brief Best Effort STreaming module.
+ *
+ * Configuration can easily be done via:
+ * libconfig++
+ * <configfile>.cfg:
+ *   num_cameras = N;
+ *   camera_1 = {
+ *     sink_type = "TODO"; // required
+ *     frame_type = one of {"monocular", "stereo", "depth"} // optional
+ * TODO
+ *   };
+ */
 namespace best
 {
 /** @brief Strongly typed enum to denote what kind of data a sink (i.e. device) returns.
@@ -44,6 +56,7 @@ std::ostream &operator<<(std::ostream &stream, const FrameType &s);
 
 
 /** @brief Strongly typed enum to look up a sink's type. */
+//TODO change generic IPCAM_MONO to AXIS, etc.
 enum class SinkType
 {
   IMAGE_DIRECTORY,
@@ -77,33 +90,53 @@ class SinkParams
 public:
   virtual ~SinkParams() {}
 
+  SinkType sink_type;
   FrameType frame_type;
   std::string label;
   std::string calibration_file;
   bool color_as_bgr;
 
 protected:
-  SinkParams()
-    : stream_type(StreamType::UNKNOWN), label(GetDefaultSinkLabel()), calibration_file(), color_as_bgr(false) {}
-  SinkParams(const FrameType &type, const std::string &lbl, const std::string &calib_file, bool return_bgr)
-    : frame_type(type), label(lbl), calibration_file(calib_file), color_as_bgr(return_bgr) {}
+  SinkParams(const SinkType stype,
+      const FrameType &ftype,
+      const std::string &lbl,
+      const std::string &calib_file=std::string(),
+      bool return_bgr=false)
+    : sink_type(stype), frame_type(ftype),
+      label(lbl), calibration_file(calib_file),
+      color_as_bgr(return_bgr)
+  {}
 };
 
 
-//---------------------------------------------------------------------------------------------------------------------------
-// Utils to parse a configuration file
-std::string GetOptionalStringFromConfig(const pvt::config::ConfigParams &config, const std::string &cam_group, const std::string &key, const std::string &default_value);
-int GetOptionalIntFromConfig(const pvt::config::ConfigParams &config, const std::string &cam_group, const std::string &key, int default_value);
-unsigned int GetOptionalUnsignedIntFromConfig(const pvt::config::ConfigParams &config, const std::string &cam_group, const std::string &key, unsigned int default_value);
-double GetOptionalDoubleFromConfig(const pvt::config::ConfigParams &config, const std::string &cam_group, const std::string &key, double default_value);
-bool GetOptionalBoolFromConfig(const pvt::config::ConfigParams &config, const std::string &cam_group, const std::string &key, bool default_value);
-std::string GetSinkLabelFromConfig(const pvt::config::ConfigParams &config, const std::string &cam_group);
-std::string GetCalibrationFileFromConfig(const pvt::config::ConfigParams &config, const std::string &cam_group);
-std::string GetCameraTypeFromConfig(const pvt::config::ConfigParams &config, const std::string &cam_group);
-StreamType GetStreamTypeFromConfig(const pvt::config::ConfigParams &config, const std::string &cam_group);
+//TODO hide from public interface
+////---------------------------------------------------------------------------------------------------------------------------
+//// Utils to parse a configuration file
+///** @brief Look up an optional string with parameter name [cam_group].[key]. To look up only [key], [cam_group] can be empty. */
+//std::string GetOptionalStringFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group, const std::string &key, const std::string &default_value);
+
+///** @brief Look up an optional integer with parameter name [cam_group].[key]. To look up only [key], [cam_group] can be empty. */
+//int GetOptionalIntFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group, const std::string &key, int default_value);
+
+///** @brief Look up an optional unsigned integer with parameter name [cam_group].[key]. To look up only [key], [cam_group] can be empty. */
+//unsigned int GetOptionalUnsignedIntFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group, const std::string &key, unsigned int default_value);
+
+///** @brief Look up an optional double with parameter name [cam_group].[key]. To look up only [key], [cam_group] can be empty. */
+//double GetOptionalDoubleFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group, const std::string &key, double default_value);
+
+///** @brief Look up an optional boolean with parameter name [cam_group].[key]. To look up only [key], [cam_group] can be empty. */
+//bool GetOptionalBoolFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group, const std::string &key, bool default_value);
+
+//std::string GetSinkLabelFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group);
+//std::string GetCalibrationFileFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group);
+//std::string GetCameraTypeFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group);
+//FrameType GetFrameTypeFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group);
+
+SinkParams ParseSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group);
 
 
-
+/** @brief Returns the num_cameras parameter if configured. Otherwise, counts the "cameraX" entries. */
+size_t GetNumCamerasFromConfig(const vcp::config::ConfigParams &config);
 } // namespace best
 } // namespace vcp
 

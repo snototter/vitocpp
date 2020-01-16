@@ -109,7 +109,7 @@ T GetParam(const libconfig::Config &cfg, const std::string &param_name)
 std::vector<std::string> ListChildren(const libconfig::Config &config, const std::string &param_name)
 {
   std::vector<std::string> child_params;
-  const libconfig::Setting &setting = GetSetting(config, param_name);
+  const libconfig::Setting &setting = param_name.empty() ? config.getRoot() : GetSetting(config, param_name);
   if (setting.isAggregate())
   {
     for (int i = 0; i < setting.getLength(); ++i)

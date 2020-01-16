@@ -170,6 +170,8 @@ public:
    *
    * Can be used to verify a config file, e.g. check if the user provided additional
    * keys (which might indicate a potential typo).
+   *
+   * Pass empty param_name to query all children of the root node.
    */
   virtual std::vector<std::string> ListConfigGroupParameters(const std::string &param_name) const = 0;
 

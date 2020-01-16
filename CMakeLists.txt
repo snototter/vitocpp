@@ -12,11 +12,11 @@ set(VCP_VERSION "1.0.0")
 ##############################################################################
 #option(VCP_VERBOSE_TIMING "Verbose timing output, may spam your console" ON)
 option(VCP_BUILD_STATIC "Additionally build static libraries." OFF)
-#option(VCP_BUILD_BACKGROUND_MODELS "Build background model library." ON)
+option(VCP_BUILD_BEST "Build Best Effort STreaming module." ON)
+#option(VCP_BUILD_BGM "Build background model module." ON)
 option(VCP_BUILD_CONFIG "Build config module." ON)
 option(VCP_BUILD_IMUTILS "Build image utilities module." ON)
 option(VCP_BUILD_IMVIS "Build visualization module." ON)
-#option(VCP_BUILD_IP_CAM_CAPTURE "Build IP camera capturing library." ON)
 option(VCP_BUILD_MATH "Build math utility module." ON)
 #option(VCP_BUILD_TRACKING "Build tracking library." ON)
 option(VCP_BUILD_UI "Build simple UI utility module." ON)
@@ -162,8 +162,13 @@ endif()
 # Always build utils library
 add_subdirectory(src/cpp/vcp_utils)
 
+# Best effort streaming
+if(VCP_BUILD_BEST)
+    add_subdirectory(src/cpp/vcp_best)
+endif()
+
 # Background models
-#if(PVT_BUILD_BACKGROUND_MODELS)
+#if(VCP_BUILD_BGM)
 #    add_subdirectory(src/pvt_bgm)
 #endif()
 
@@ -171,11 +176,6 @@ add_subdirectory(src/cpp/vcp_utils)
 if(VCP_BUILD_CONFIG)
     add_subdirectory(src/cpp/vcp_config)
 endif()
-
-# IP camera capture
-#if(PVT_BUILD_IP_CAM_CAPTURE)
-#    add_subdirectory(src/pvt_icc)
-#endif()
 
 # Imutils utilities
 if(VCP_BUILD_IMUTILS)
