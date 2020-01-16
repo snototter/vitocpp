@@ -50,12 +50,12 @@ set(QUERY_STRING_DEBUG_LIB "d")
 # First, find out which modules the user requested
 list(FIND VCP_MODULES vcp_best      REQUESTED_BEST)
 list(FIND VCP_MODULES vcp_bgm       REQUESTED_BGM)
-list(FIND VCP_MODULES vcp_config    REQUESTED_CONFIG)
+    # list(FIND VCP_MODULES vcp_config    REQUESTED_CONFIG)  # Only requires pvt_utils
 list(FIND VCP_MODULES vcp_imutils   REQUESTED_IMUTILS)
 list(FIND VCP_MODULES vcp_imvis     REQUESTED_IMVIS)
-list(FIND VCP_MODULES vcp_math      REQUESTED_MATH)
+    # list(FIND VCP_MODULES vcp_math      REQUESTED_MATH)  # No dependencies (uses header-only def's of other modules if needed)
 list(FIND VCP_MODULES vcp_tracking  REQUESTED_TRACKING)
-list(FIND VCP_MODULES vcp_ui        REQUESTED_UI)
+    # list(FIND VCP_MODULES vcp_ui        REQUESTED_UI)  # Only requires pvt_utils
 
 # ... then, add dependencies (e.g. vcp_imvis uses vcp_math)
 if(REQUESTED_BEST GREATER 0)
@@ -64,22 +64,12 @@ endif()
 if(REQUESTED_BGM GREATER 0)
     message(FATAL_ERROR "Not yet supported")
 endif()
-#if(REQUESTED_CONFIG GREATER 0)
-#    message(FATAL_ERROR "Not yet supported")
-#endif()
 if(REQUESTED_IMUTILS GREATER 0)
     set(VCP_MODULES ${VCP_MODULES} vcp_math)
 endif()
-  #if(REQUESTED_MATH GREATER 0)
-      # Math only uses headers from utils and imutils
-  #    set(VCP_MODULES ${VCP_MODULES} vcp_utils)
-  #endif()
 if(REQUESTED_TRACKING GREATER 0)
     message(FATAL_ERROR "Not yet supported")
 endif()
-  #if(REQUESTED_UI GREATER 0)
-  #    set(VCP_MODULES ${VCP_MODULES} vcp_ui)
-  #endif()
 if(REQUESTED_IMVIS GREATER 0)
     set(VCP_MODULES ${VCP_MODULES} vcp_imutils vcp_math)
 endif()
@@ -134,6 +124,7 @@ foreach(module ${VCP_MODULES})
     set(VCP_LIBRARIES ${VCP_LIBRARIES} ${CURRENT_LIBRARY})
 endforeach()
 
+
 ##############################################################################
 # Add external dependencies for the selected/requested modules
 list(FIND VCP_MODULES vcp_best      USE_BEST)
@@ -144,6 +135,7 @@ list(FIND VCP_MODULES vcp_imvis     USE_IMVIS)
 list(FIND VCP_MODULES vcp_math      USE_MATH)
 list(FIND VCP_MODULES vcp_tracking  USE_TRACKING)
 list(FIND VCP_MODULES vcp_ui        USE_UI)
+
 
 # OpenCV
 if(USE_BEST GREATER 0 OR USE_BGM GREATER 0 OR USE_IMUTILS GREATER 0 OR USE_MATH GREATER 0 OR USE_TRACKING GREATER 0 OR USE_UI GREATER 0 OR USE_IMVIS GREATER 0)
@@ -159,6 +151,7 @@ if(USE_BEST GREATER 0 OR USE_BGM GREATER 0 OR USE_IMUTILS GREATER 0 OR USE_MATH 
     # Add OpenCV libraries to VCP library list
     set(VCP_LIBRARIES ${VCP_LIBRARIES} ${OpenCV_LIBS})
 endif()
+
 
 # CURL
 if(USE_BEST GREATER 0)
@@ -197,6 +190,7 @@ if(USE_BEST GREATER 0)
       set(VCP_LIBRARIES ${VCP_LIBRARIES} k4a)
     endif()
 endif()
+
 
 # zlib
 if(USE_IMUTILS GREATER 0)
@@ -239,6 +233,7 @@ if(VCP_UTILS_INCLUDE_DIR AND VCP_LIBRARIES)
     # Set include directory to parent dir, s.t. we can "#include <vcp_utils/xyz.h>".
     get_filename_component(VCP_INCLUDE_DIR "${VCP_UTILS_INCLUDE_DIR}/.." REALPATH)
 endif()
+
 
 ##############################################################################
 # Clean up, raise error if required, notify if we're not forced to be quiet...
