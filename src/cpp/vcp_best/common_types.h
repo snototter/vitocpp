@@ -92,7 +92,7 @@ public:
   bool color_as_bgr;
 
 protected:
-  SinkParams(const SinkType stype,
+  SinkParams(const SinkType &stype,
       const FrameType &ftype,
       const std::string &lbl,
       const std::string &calib_file=std::string(),

@@ -15,79 +15,80 @@ message("Configuring module ${LIB_NAME}")
 
 # HTTP Streaming Files
 set(PUBLIC_HTTP_STREAM_HEADERS
-  http_mjpeg_sink.h
-  curl_file_handling.h
+    http_mjpeg_sink.h
+    curl_file_handling.h
 )
 set(PRIVATE_HTTP_STREAM_HEADERS
 )
 set(HTTP_STREAM_SOURCES
-  http_mjpeg_sink.cpp
-  curl_file_handling.cpp
+    http_mjpeg_sink.cpp
+    curl_file_handling.cpp
 )
 
 
 # RTSP Streaming Files
 set(PUBLIC_RTSP_STREAM_HEADERS
-  rtsp_sink.h
+    rtsp_sink.h
 )
 set(PRIVATE_RTSP_STREAM_HEADERS
-  rtsp_media_sink.h
-  rtsp_client.h
+    rtsp_media_sink.h
+    rtsp_client.h
 )
 set(RTSP_STREAM_SOURCES
-  rtsp_sink.cpp
-  rtsp_media_sink.cpp
-  rtsp_client.cpp
+    rtsp_sink.cpp
+    rtsp_media_sink.cpp
+    rtsp_client.cpp
 )
 
 
 # MatrixVision streaming files
 set(PUBLIC_MATRIXVISION_STREAM_HEADERS
-  matrixvision_sink.h
-  capture_matrixvision.h
+    matrixvision_sink.h
+    capture_matrixvision.h
 )
 set(PRIVATE_MATRIXVISION_STREAM_HEADERS
-  matrixvision_opencv.h
-  matrixvision_utils.h
+    matrixvision_opencv.h
+    matrixvision_utils.h
 )
 set(MATRIXVISION_STREAM_SOURCES
-  matrixvision_sink.cpp
-  matrixvision_opencv.cpp
-  capture_matrixvision.cpp
+    matrixvision_sink.cpp
+    matrixvision_opencv.cpp
+    capture_matrixvision.cpp
 )
 
 
 # Realsense2 streaming files
 set(PUBLIC_REALSENSE2_STREAM_HEADERS
-	realsense2_sink.h
-  capture_realsense2.h
+    realsense2_sink.h
+    capture_realsense2.h
 )
 set(PRIVATE_REALSENSE2_STREAM_HEADERS)
 set(REALSENSE2_STREAM_SOURCES
-	realsense2_sink.cpp
-  capture_realsense2.cpp
+    realsense2_sink.cpp
+    capture_realsense2.cpp
 )
 
 
 # K4A Kinect Azure streaming files
 set(PUBLIC_K4A_STREAM_HEADERS
-	k4a_sink.h
-  capture_k4a.h
+    k4a_sink.h
+    capture_k4a.h
 )
 set(PRIVATE_K4A_STREAM_HEADERS)
 set(K4A_STREAM_SOURCES
-  k4a_sink.cpp
-  capture_k4a.cpp
+    k4a_sink.cpp
+    capture_k4a.cpp
 )
 
 
 # Common header files - will be extended below for optional devices
 set(PUBLIC_HEADERS
-  common_types.h
-#  stream_sink.h
-#  sink_buffer.h
+    common_types.h
+    sink.h
+    sink_buffer.h
+    file_sink.h
 #  webcam_sink.h
-#  capture.h
+    capture.h
 #  capture_file.h
 #  capture_webcam.h
 #  rectifier.h
@@ -97,10 +98,11 @@ set(PRIVATE_HEADERS)
 
 # Common source files - will be extended below for optional devices
 set(SOURCES
-  common_types.cpp
-#  stream_sink.cpp
+    common_types.cpp
+    sink.cpp
+    file_sink.cpp
 #  webcam_sink.cpp
-#  capture.cpp
+    capture.cpp
 #  capture_file.cpp
 #  capture_webcam.cpp
 #  rectifier.cpp
