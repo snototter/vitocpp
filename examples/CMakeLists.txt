@@ -67,21 +67,21 @@ add_custom_command(TARGET imvis_demo POST_BUILD
 #  ${PVT_LIBRARIES}
 #)#
 #
-## ip cam capture (icc) demo
-#find_package(LIVE555 REQUIRED)
-#  include_directories(${LIVE555_INCLUDE_DIRS})
-#add_executable(icc_demo
-#  icc_demo.cpp
-#)
-#target_link_libraries(icc_demo
-#  ${PVT_LIBRARIES}
-#${LIVE555_LIBRARIES}
-#)
-#add_custom_command(TARGET icc_demo POST_BUILD
-#  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../data/*.png ${CMAKE_BINARY_DIR}
-#  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../data/*.cfg ${CMAKE_BINARY_DIR}
-#  COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/../data/*.sdp ${CMAKE_BINARY_DIR}
-#)
+# Best Effort Streaming (BESt) demo
+message(STATUS "Setting up best_demo")
+find_package(vcp REQUIRED COMPONENTS vcp_best vcp_imvis)
+include_directories(${VCP_INCLUDE_DIR})
+add_executable(best_demo
+  cpp/best_demo.cpp
+)
+target_link_libraries(best_demo
+    ${VCP_LIBRARIES}
+)
+add_custom_command(TARGET best_demo POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/best/
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/data/best/* ${CMAKE_BINARY_DIR}/best/
+)
+
 #
 # Streaming demo
 #find_package(OpenCV REQUIRED)

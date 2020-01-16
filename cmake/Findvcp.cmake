@@ -59,7 +59,7 @@ list(FIND VCP_MODULES vcp_tracking  REQUESTED_TRACKING)
 
 # ... then, add dependencies (e.g. vcp_imvis uses vcp_math)
 if(REQUESTED_BEST GREATER 0)
-    message(FATAL_ERROR "Not yet supported")
+    message(WARNING "Need to update package list!")
 endif()
 if(REQUESTED_BGM GREATER 0)
     message(FATAL_ERROR "Not yet supported")

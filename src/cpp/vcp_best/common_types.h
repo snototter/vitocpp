@@ -13,17 +13,12 @@
 
 namespace vcp
 {
-/** @brief Best Effort STreaming module.
+/** @brief BESt (Best Effort Streaming) module.
  *
  * Configuration can easily be done via:
  * libconfig++
- * <configfile>.cfg:
- *   num_cameras = N;
- *   camera_1 = {
- *     sink_type = "TODO"; // required
- *     frame_type = one of {"monocular", "stereo", "depth"} // optional
- * TODO
- *   };
+ * TODO refer to examples/data/best/*.cfg
+ * or python bindings/demo
  */
 namespace best
 {
@@ -59,7 +54,7 @@ std::ostream &operator<<(std::ostream &stream, const FrameType &s);
 //TODO change generic IPCAM_MONO to AXIS, etc.
 enum class SinkType
 {
-  IMAGE_DIRECTORY,
+  IMAGE_DIR,
 #ifdef VCP_WITH_IPCAMERA
   IPCAM_MONOCULAR,
   IPCAM_STEREO,
