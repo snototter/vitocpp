@@ -18,7 +18,7 @@ namespace vcp
  *
  * Configuration can easily be done via:
  * libconfig++
- * TODO refer to examples/data/best/*.cfg
+ * TODO refer to examples/data/data-best/ *.cfg
  * or python bindings/demo
  */
 namespace best
@@ -80,6 +80,15 @@ public:
    *
    * If no data is available for a specific sink, it
    * will yield an empty cv::Mat instead.
+   *
+   * As the sinks push images into the frame buffers
+   * which are protected with a mutex each, busy
+   * polling Next() can lead to unwanted side effects.
+   * For example, you may observe "stuttering" streams - which
+   * are almost ever caused by the frame queue (since your
+   * main polling thread constantly locks the queue's mutex).
+   * So make sure, you do some processing, or let your main thread
+   * sleep; as a rule of thumb: query roughly at the expected frame rate.
    */
   virtual std::vector<cv::Mat> Next() = 0;
 
@@ -94,6 +103,7 @@ public:
 
   /** @brief returns the number of configured streams (NOT the number of sinks). */
   virtual size_t NumStreams() const = 0;
+
 
   /** @brief returns the number of devices/sinks (NOT the number of streams/frames). */
   virtual size_t NumDevices() const = 0;
@@ -113,50 +123,35 @@ public:
   /** @brief Returns the configuration parameter name, i.e. "cameraX", for
    * each stream/frame.
    * See comments on @see FrameLabels() why this might be of interest
-   * to you. Usually you won't ever need it.
+   * to you. However, it's usually better to query the @see FrameLabels()
+   * and/or @see FrameTypes().
    */
   virtual std::vector<std::string> ConfigurationKeys() const = 0;
 
 
-  //virtual std::vector<SinkType> SinkTypes() const = 0;
-
-//  /** @brief Provides the key (group name, e.g. 'camera3') of the vcp configuration file or an empty string.
-//   *
-//   * Is needed because if you mix camera types (webcam + video + ipcam,...), the ordering
-//   * in the configuration file (camera1, camera2) may not relate to the
-//   * ordering of sink[idx]!
-//   */
-//  virtual std::string GetCorrespondingConfigKey(size_t sink_index) const;
-//  virtual FrameType GetStreamType(size_t stream_index) const;
-//  virtual std::vector<StreamType> GetStreamTypes() const { return stream_types_; }
-
+  /** @brief Returns the FrameType for each stream/frame.
+   * See comments on @see FrameLabels() why you cannot assume
+   * that the frames will be in the same order you specified
+   * in your configuration file.
+   * Thus, use @see ConfigurationKeys() in combination with
+   * these FrameType information to access a specific stream.
+   *
+   * This has only be taken into account if you mix the data
+   * sources (e.g. stream webcams + RGBD + RTSP).
+   */
+  virtual std::vector<FrameType> FrameTypes() const = 0;
 
 protected:
   Capture() {}
-
-//  void AddLabels(const std::vector<std::string> &labels) { sink_labels_.insert(sink_labels_.end(), labels.begin(), labels.end()); }
-//  void AddLabel(const std::string &label) { sink_labels_.push_back(label); }
-
-//  void AddCalibrationFiles(const std::vector<std::string> &sink_calibration_files) {
-//    sink_calibration_files_.insert(sink_calibration_files_.end(), sink_calibration_files.begin(), sink_calibration_files.end()); }
-//  void AddCalibrationFile(const std::string &calibration_file) { sink_calibration_files_.push_back(calibration_file); }
-
-//  void AddStreamTypes(const std::vector<StreamType> &stream_types) {
-//    stream_types_.insert(stream_types_.end(), stream_types.begin(), stream_types.end()); }
-//  void AddStreamType(const StreamType &stream_type) { stream_types_.push_back(stream_type); }
-
-//  void AddCorrespondingConfigKeys(const std::vector<std::string> &config_keys) {
-//    corresponding_config_keys_.insert(corresponding_config_keys_.end(), config_keys.begin(), config_keys.end()); }
-//  void AddCorrespondingConfigKey(const std::string &config_key) { corresponding_config_keys_.push_back(config_key); }
-
-//private:
-//  std::vector<std::string> sink_labels_;
-//  std::vector<std::string> sink_calibration_files_;
-//  std::vector<StreamType> stream_types_;
-//  std::vector<std::string> corresponding_config_keys_;
 };
 
+/** Overload the stream operator '<<' to print a Capture. */
+std::ostream& operator<<(std::ostream & os, const Capture &cap);
+
+
+/** @brief Creates a capture based on the provided configuration. */
 std::unique_ptr<Capture> CreateCapture(const vcp::config::ConfigParams &config);
+
 
 
 ////---------------------------------------------------------------------------------------------------------------------------
@@ -179,8 +174,6 @@ std::unique_ptr<Capture> CreateCapture(const vcp::config::ConfigParams &config);
 //protected:
 //  RectifiedCapture() : Capture() {}
 //};
-
-//std::unique_ptr<RectifiedCapture> CreateRectifiedCapture(const pvt::config::ConfigParams &config, bool force_loading_extrinsics);
 
 } // namespace best
 } // namespace vcp

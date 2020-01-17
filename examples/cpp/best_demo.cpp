@@ -33,16 +33,33 @@ void Stream(const std::string &config_file)
     return;
   }
 
+  VCP_LOG_INFO_DEFAULT(*capture);
+
   capture->WaitForInitialFrames(5000);
 
   VCP_TIC;
-//  while (capture->AreFramesAvailable() && elapsed_ms < MAX_STREAMING_TIME_PER_CONFIG)
-  while (elapsed_ms < MAX_STREAMING_TIME_PER_CONFIG)
+  std::chrono::high_resolution_clock::time_point tp_query;
+  while (capture->AreDevicesAvailable() && elapsed_ms < MAX_STREAMING_TIME_PER_CONFIG)
   {
-    std::vector<cv::Mat> frames = capture->Next();
+    std::vector<cv::Mat> frames;
+    // Since this demo only displays the streams, we might be too
+    // fast (querying for the next set of frames).
+    // The following loop briefly delays the main thread if no
+    // frames are available (up to 500 ms).
+    tp_query = std::chrono::high_resolution_clock::now();
+    while (!capture->AreFramesAvailable())
+    {
+      std::this_thread::sleep_for(std::chrono::milliseconds(15));
+      const auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(std::chrono::high_resolution_clock::now() - tp_query);
+      if (duration.count() > 500)
+        break;
+    }
 
+    // Grab the frames and check if all were available.
+    frames = capture->Next();
     VCP_TOC_ASSIGN(elapsed_ms);
-    bool skip = false;
+
+    bool skip = frames.empty();
     for (const auto &frame : frames)
     {
       if (frame.empty())
@@ -54,20 +71,23 @@ void Stream(const std::string &config_file)
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
       continue;
     }
-//    cv::Mat collage;
-//    vcp::imvis::collage::Collage(frames, collage, 2, 0, cv::Size(640, 480));
 
-//    cv::imshow("Stream", collage);
-    cv::imshow("Stream", frames[0]);
+
+    // If they're available, display them. We make a collage (of resized
+    // frames) if there are multiple streams to show.
+    cv::Mat collage;
+    vcp::imvis::collage::Collage(frames, collage, 2, 0, cv::Size(640, 480));
+
+    // Display and let the user press ESC to exit.
+    cv::imshow("Stream", collage);
     int k = cv::waitKey(10);
     if ((k & 0xFF) == 27)
       break;
   }
-  VCP_LOG_INFO_DEFAULT("Closing stream after " << elapsed_ms/1000 << " sec.");
+  VCP_LOG_INFO_DEFAULT("Closing stream after " << elapsed_ms/1000 << " sec." << std::endl
+                       << "       Devices are " << (capture->AreDevicesAvailable() ? "still" : "not")
+                       << " available.");
 
-  // TODO test forgetting to stop/close or doing it twice, ...
-  //capture->StopStreams();
-  //capture->CloseDevices();
   capture.reset();
 }
 
@@ -78,8 +98,8 @@ int main(int argc, char **argv)
   VCP_UNUSED_VAR(argv);
 
   const std::vector<std::string> configs = {
-    //"data-best/image_sequence.cfg",
-    //"data-best/video.cfg",
+    "data-best/image_sequence.cfg",
+    "data-best/video.cfg",
     "data-best/webcam.cfg"
   };
   for (const auto &c : configs)

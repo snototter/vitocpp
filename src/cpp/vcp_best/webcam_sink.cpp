@@ -470,8 +470,6 @@ public:
       VCP_LOG_FAILURE("Streaming thread already running, ignoring StartStreaming() call.");
       return false;
     }
-    VCP_LOG_INFO("StartStreaming from webcam #" << params_.device_number << ":" << std::endl
-                 << params_.resolution << ", @" << params_.fps << ", buffer capacity: " << image_queue_->Capacity());
 
     continue_capture_ = true;
     stream_thread_ = std::thread(&WebcamSink::Receive, this);

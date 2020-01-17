@@ -22,7 +22,7 @@ namespace utils
 /** @brief Check if all images have the same depth. Must have at least 1 image. */
 bool HaveSameDepth(const std::vector<cv::Mat> &images)
 {
-  VCP_LOG_DEBUG("HaveSameDepth()");
+//  VCP_LOG_DEBUG("HaveSameDepth()");
   const int first_depth = images[0].depth();
   for (size_t i = 1; i < images.size(); ++i)
   {
@@ -36,7 +36,7 @@ bool HaveSameDepth(const std::vector<cv::Mat> &images)
  * the minimum/maximum number of layers. Must have at least 1 image. */
 bool CheckLayers(const std::vector<cv::Mat> &images, int *max_layers, int *min_layers)
 {
-  VCP_LOG_DEBUG("CheckLayers()");
+//  VCP_LOG_DEBUG("CheckLayers()");
   bool supported_layers = true;
   if (min_layers)
     *min_layers = images[0].channels();
@@ -65,7 +65,7 @@ bool CheckLayers(const std::vector<cv::Mat> &images, int *max_layers, int *min_l
  */
 cv::Size ComputeRescaledSize(const cv::Mat &image, const cv::Size &fixed_size, cv::Rect *centered_roi)
 {
-  VCP_LOG_DEBUG("ComputeRescaledSize()");
+//  VCP_LOG_DEBUG("ComputeRescaledSize()");
   if (!IsValidSize(fixed_size))
   {
     if (centered_roi)
@@ -114,7 +114,7 @@ cv::Size ComputeRescaledSize(const cv::Mat &image, const cv::Size &fixed_size, c
 /** @brief Compute size of the final collage. */
 void ComputeCollageSize(const std::vector<cv::Mat> &images, const cv::Size &fixed_size, size_t padding, size_t &num_images_per_row, size_t &num_rows, cv::Size &collage_size, std::vector<int> &max_row_heights)
 {
-  VCP_LOG_DEBUG("ComputeCollageSize()");
+//  VCP_LOG_DEBUG("ComputeCollageSize()");
   const size_t num_images = images.size();
   num_images_per_row = std::min(num_images, num_images_per_row);
   num_rows = static_cast<size_t>(std::ceil(static_cast<double>(num_images) / static_cast<double>(num_images_per_row)));
@@ -160,7 +160,7 @@ void ComputeCollageSize(const std::vector<cv::Mat> &images, const cv::Size &fixe
 /** Optionally resize (exactly to the given target_size!) and convert (depth and number of layers) the given image. */
 cv::Mat PrepareImageForCollage(const cv::Mat &image, const cv::Size &target_size, bool convert_8U, int num_layers)
 {
-  VCP_LOG_DEBUG("PrepareImageForCollage()");
+//  VCP_LOG_DEBUG("PrepareImageForCollage()");
   // Resize if needed.
   cv::Mat resized;
   if (!IsValidSize(target_size) || (target_size.width == image.cols && target_size.height == image.rows))
@@ -254,7 +254,7 @@ void Collage(const std::vector<cv::Mat> &images, cv::Mat &collage, size_t num_im
 
 void Resize(const cv::Mat &image, cv::Mat &resized, const cv::Size &new_size)
 {
-  VCP_LOG_DEBUG("Resize()");
+//  VCP_LOG_DEBUG("Resize()");
   resized = cv::Mat::zeros(new_size, image.type());
 
   cv::Size image_new_size;

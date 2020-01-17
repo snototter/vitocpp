@@ -462,7 +462,7 @@ public:
     VCP_LOG_DEBUG("OpenDevice()");
     if (!vcp::utils::file::IsDir(params_.directory))
     {
-      VCP_LOG_FAILURE("Cannot access ''" << params_.directory << "'");
+      VCP_LOG_FAILURE("Cannot access '" << params_.directory << "'");
       return false;
     }
 
@@ -589,26 +589,25 @@ public:
 
   int IsDeviceAvailable() const override
   {
-    VCP_LOG_DEBUG("IsDeviceAvailable()");
-    if (filenames_.empty())
-      return 0;
-    return 1;
-  }
-
-  int IsFrameAvailable() const override
-  {
-    // Processing an image directory frame-by-frame, we don't
-    // have an image queue (so only check whether images are
-    // left to be loaded)
+    // Only check whether there are images
+    // left to be loaded.
     if (frame_idx_ < filenames_.size())
       return 1;
     return 0;
   }
 
+
+  int IsFrameAvailable() const override
+  {
+    return IsDeviceAvailable();
+  }
+
+
   size_t NumStreams() const override
   {
     return 1;
   }
+
 
   FrameType FrameTypeAt (size_t stream_index) const override
   {
@@ -616,11 +615,13 @@ public:
     return params_.frame_type;
   }
 
+
   std::string StreamLabel(size_t stream_index) const override
   {
     VCP_UNUSED_VAR(stream_index);
     return params_.sink_label;
   }
+
 
 private:
   ImageDirectorySinkParams params_;

@@ -13,9 +13,9 @@ message("Configuring module ${LIB_NAME}")
 option(VCP_BEST_DEBUG_FRAMERATE "If enabled, sinks debug their frame rate (Enable DEBUG level!)" ON)
 #TODO use library-wide flag instead option(VCP_BEST_DEBUG_FRAMERATE "Include timing + debug output to analyze streaming frame rates" OFF)
 
-#if(VCP_BEST_DEBUG_FRAMERATE)
-#    add_definitions(-DVCP_BEST_DEBUG_FRAMERATE)
-#endif()
+if(VCP_BEST_DEBUG_FRAMERATE)
+    add_definitions(-DVCP_BEST_DEBUG_FRAMERATE)
+endif()
 
 # HTTP Streaming Files
 set(PUBLIC_HTTP_STREAM_HEADERS

@@ -11,13 +11,12 @@
 #include <sstream>
 #include <exception>
 #include <thread>
+#include <iomanip>
 
 #include "file_sink.h"
 #include "webcam_sink.h"
 
 //#include "rectifier.h"
-//#include "capture_file.h"
-//#include "capture_webcam.h"
 //#ifdef WITH_IPCAMERA
 //  #include "capture_ipcam.h"
 //#endif
@@ -31,6 +30,7 @@
 //  #include "capture_realsense2.h"
 //  #include <chrono>
 //#endif
+#include <chrono>
 
 namespace vcp
 {
@@ -267,9 +267,8 @@ public:
   {
     for (size_t i = 0; i < sink->NumStreams(); ++i)
     {
-      //sink_types_.push_back(sink->Type(i));
-      frame_types_.push_back(sink->FrameTypeAt(i));
       sink_params_.push_back(params);
+      frame_types_.push_back(sink->FrameTypeAt(i));
       frame_labels_.push_back(sink->StreamLabel(i));
     }
     sinks_.push_back(std::move(sink));
@@ -305,6 +304,11 @@ public:
   std::vector<std::string> FrameLabels() const override
   {
     return frame_labels_;
+  }
+
+  std::vector<FrameType> FrameTypes() const override
+  {
+    return frame_types_;
   }
 
   bool AreDevicesAvailable() const override
@@ -369,6 +373,10 @@ public:
       }
 #endif // VCP_WITH_REALSENSE2
     }
+#ifdef VCP_BEST_DEBUG_FRAMERATE
+  prev_frame_timestamp_ = std::chrono::high_resolution_clock::now();
+  ms_between_frames_ = -1.0;
+#endif // VCP_BEST_DEBUG_FRAMERATE
     return success;
   }
 
@@ -407,6 +415,19 @@ public:
   std::vector<cv::Mat> Next() override
   {
     VCP_LOG_DEBUG("Next()");
+#ifdef VCP_BEST_DEBUG_FRAMERATE
+    const std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
+    const auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(now - prev_frame_timestamp_);
+    const double ms_ema_alpha = 0.1;
+    prev_frame_timestamp_ = now;
+    if (ms_between_frames_ < 0.0)
+      ms_between_frames_ = duration.count();
+    else
+      ms_between_frames_ = ms_ema_alpha * duration.count() + (1.0 - ms_ema_alpha) * ms_between_frames_;
+    VCP_LOG_DEBUG_DEFAULT("Next() called after " << std::fixed << std::setw(5) << duration.count() << " ms, "
+                         << std::setw(5) << (1000.0 / ms_between_frames_) << "fps");
+#endif // VCP_BEST_DEBUG_FRAMERATE
+
     // Collect the frames of all captures and store them in a single vector
     std::vector<cv::Mat> frames;
     for (size_t i = 0; i < sinks_.size(); ++i)
@@ -451,11 +472,99 @@ private:
   std::vector<FrameType> frame_types_; // Note: they will be per stream/frame, not per device
   std::vector<SinkParams> sink_params_; // Note: they will be per stream/frame, not per device
   std::vector<std::string> frame_labels_;
-
+#ifdef VCP_BEST_DEBUG_FRAMERATE
+  std::chrono::high_resolution_clock::time_point prev_frame_timestamp_;
+  double ms_between_frames_;
+#endif // VCP_BEST_DEBUG_FRAMERATE
 #ifdef WITH_REALSENSE2
   bool multiple_realsenses_;
 #endif // WITH_REALSENSE2
 };
+
+
+std::ostream& operator<<(std::ostream & os, const Capture &cap)
+{
+  // Query all interesting fields.
+  const bool av_devs = cap.AreDevicesAvailable();
+  const bool av_frames = cap.AreFramesAvailable();
+  const size_t nd = cap.NumDevices();
+  const size_t ns = cap.NumStreams();
+  const auto ftypes = cap.FrameTypes();
+  std::vector<std::string> ftypes_str;
+  const auto cfg_keys = cap.ConfigurationKeys();
+  const auto flbls = cap.FrameLabels();
+
+  // Prepare for formatting:
+  size_t longest_ftype_len = 0;
+  size_t longest_lbl_len = 0;
+  size_t longest_cfg_len = 0;
+
+  for (size_t i = 0; i < ns; ++i)
+  {
+    const std::string fts = FrameTypeToString(ftypes[i]);
+    if (fts.length() > longest_ftype_len)
+      longest_ftype_len = fts.length();
+    ftypes_str.push_back(fts);
+
+    if (flbls[i].length() > longest_lbl_len)
+      longest_lbl_len = flbls[i].length();
+
+    if (cfg_keys[i].length() > longest_cfg_len)
+      longest_cfg_len = cfg_keys[i].length();
+  }
+
+/*
+Print a header:
+
+Capture:
+    Frame#  Label     Type        Config. Param
+  -----------------------------------------------
+         0  camera1   monocular   camera1
+         1  Mountain  unknown     camera42
+         2  camera99  rgbd-image  camera99
+         3  Bamboo    unknown     camera8642
+
+*/
+  os << "Capture:" << std::endl;
+  longest_lbl_len = std::max(longest_lbl_len, std::string("Type").length());
+  longest_ftype_len = std::max(longest_ftype_len, static_cast<size_t>(2));
+  const size_t longest_fnr = std::max(vcp::utils::string::ToStr(ns).length(), std::string("Frame#").length());
+  // Add a header:
+  os << "Capture:" << std::endl
+     << "    " << std::setw(longest_fnr) << "Frame#" << "  "
+     << std::setw(longest_lbl_len) << std::left << "Label"
+     << "  " << std::setw(longest_ftype_len) << std::left << "Type"
+     << "  Config. Param" << std::endl << "  ";
+  const size_t divider_len = std::max(static_cast<size_t>(13), longest_cfg_len) \
+      + longest_lbl_len + longest_ftype_len + longest_fnr + 10;
+  for (size_t i = 0; i < divider_len; ++i)
+    os << "-";
+  os << std::endl;
+
+  for (size_t i = 0; i < ns; ++i)
+     os << "    " << std::setw(longest_fnr) << std::right << i << "  " << std::left
+        << std::setw(longest_lbl_len) << flbls[i] << "  "
+        << std::setw(longest_ftype_len) << ftypes_str[i] << "  "
+        << std::setw(longest_cfg_len) << cfg_keys[i] << std::endl;
+
+  os << "  ";
+  for (size_t i = 0; i < divider_len; ++i)
+    os << "-";
+  os << std::endl;
+
+  os << "    " << ns << " " << (ns == 1 ? "stream" : "streams") << " from " << nd << " " << (nd == 1 ? "device" : "devices") << std::endl;
+  if (nd == 1)
+    os << "    " << (av_devs ? '*' : '!') << " Device " << (av_devs ? "is" : "is not") << " available" << std::endl;
+  else
+    os << "    " << (av_devs ? '*' : '!') << " Devices " << (av_devs ? "are" : "are not") << " available" << std::endl;
+
+  if (ns == 1)
+    os << "    " << (av_frames ? '*' : '!') << " Frame " << (av_frames ? "is" : "is not") << " enqueued" << std::endl;
+  else
+    os << "    " << (av_frames ? '*' : '!') << " Frames " << (av_frames ? "are" : "are not") << " enqueued" << std::endl;
+
+  return os;
+}
 
 
 std::unique_ptr<Capture> CreateCapture(const vcp::config::ConfigParams &config)

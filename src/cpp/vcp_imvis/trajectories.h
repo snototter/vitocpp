@@ -2,7 +2,6 @@
 #define __VCP_IMVIS_TRAJECTORIES_H__
 
 #include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 
 namespace vcp
 {
