@@ -1,31 +1,37 @@
 #include "capture.h"
-#include "stream_sink.h"
+#include "sink.h"
 
-#include <pvt_utils/pvt_error.h>
-#include <pvt_utils/string_utils.h>
-#include <pvt_math/geometry3d.h>
-#include <pvt_utils/file_utils.h>
+#include <vcp_utils/vcp_error.h>
+#include <vcp_utils/vcp_logging.h>
+#include <vcp_utils/string_utils.h>
+#include <vcp_math/geometry3d.h>
+#include <vcp_utils/file_utils.h>
+
 
 #include <sstream>
 #include <exception>
 #include <thread>
 
-#include "rectifier.h"
-#include "capture_file.h"
-#include "capture_webcam.h"
-#ifdef WITH_IPCAMERA
-  #include "capture_ipcam.h"
-#endif
-#ifdef WITH_K4A
-  #include "capture_k4a.h"
-#endif
-#ifdef WITH_MATRIXVISION
-  #include "capture_matrixvision.h"
-#endif
-#ifdef WITH_REALSENSE2
-  #include "capture_realsense2.h"
-  #include <chrono>
-#endif
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::best"
+
+#include "file_sink.h"
+//#include "rectifier.h"
+//#include "capture_file.h"
+//#include "capture_webcam.h"
+//#ifdef WITH_IPCAMERA
+//  #include "capture_ipcam.h"
+//#endif
+//#ifdef WITH_K4A
+//  #include "capture_k4a.h"
+//#endif
+//#ifdef WITH_MATRIXVISION
+//  #include "capture_matrixvision.h"
+//#endif
+//#ifdef WITH_REALSENSE2
+//  #include "capture_realsense2.h"
+//  #include <chrono>
+//#endif
 
 namespace vcp
 {
@@ -36,89 +42,98 @@ class MultiDeviceCapture : public Capture
 public:
   MultiDeviceCapture(const vcp::config::ConfigParams &config) : Capture()
   {
-    const int num_cameras = config.GetInteger("num_cameras");
+    VCP_LOG_DEBUG("MultiDeviceCapture::MultiDeviceCapture()");
+    LoadConfig(config);
+  }
 
-#ifdef WITH_IPCAMERA
-    std::vector<MonoIpCameraSinkParams> ip_mono_params;
-    std::vector<StereoIpCameraSinkParams> ip_stereo_params;
-    std::vector<std::string> cck_ip_mono; // Corresponding configuration file keys (camera1, etc)
-    std::vector<std::string> cck_ip_stereo; // Corresponding configuration file keys (camera1, etc)
-#endif
+  void LoadConfig(const vcp::config::ConfigParams &config)
+  {
+    VCP_LOG_DEBUG("MultiDeviceCapture::LoadConfig()");
+    //size_t num_cameras = GetNumCamerasFromConfig(config);
+
+//#ifdef WITH_IPCAMERA
+//    std::vector<MonoIpCameraSinkParams> ip_mono_params;
+//    std::vector<StereoIpCameraSinkParams> ip_stereo_params;
+//    std::vector<std::string> cck_ip_mono; // Corresponding configuration file keys (camera1, etc)
+//    std::vector<std::string> cck_ip_stereo; // Corresponding configuration file keys (camera1, etc)
+//#endif
     std::vector<ImageDirectorySinkParams> imgdir_params;
-    std::vector<std::string> cck_imgdir; // Corresponding configuration file keys (camera1, etc)
-#ifdef WITH_MATRIXVISION
-    std::vector<MvBlueFox3SinkParams> mvbluefox_params;
-    std::vector<std::string> cck_mvbluefox; // Corresponding configuration file keys (camera1, etc)
-#endif
-#ifdef WITH_K4A
-    std::vector<K4ASinkParams> k4a_params;
-    std::vector<std::string> cck_k4a; // Corresponding configuration file keys (camera1, etc)
-#endif
-#ifdef WITH_REALSENSE2
-    std::vector<RealSense2SinkParams> realsense_params;
-    std::vector<std::string> cck_realsense; // Corresponding configuration file keys (camera1, etc)
-#endif
-    std::vector<VideoSinkParams> video_params;
-    std::vector<std::string> cck_video; // Corresponding configuration file keys (camera1, etc)
-    std::vector<WebcamSinkParams> webcam_params;
-    std::vector<std::string> cck_webcam; // Corresponding configuration file keys (camera1, etc)
+//#ifdef WITH_MATRIXVISION
+//    std::vector<MvBlueFox3SinkParams> mvbluefox_params;
+//    std::vector<std::string> cck_mvbluefox; // Corresponding configuration file keys (camera1, etc)
+//#endif
+//#ifdef WITH_K4A
+//    std::vector<K4ASinkParams> k4a_params;
+//    std::vector<std::string> cck_k4a; // Corresponding configuration file keys (camera1, etc)
+//#endif
+//#ifdef WITH_REALSENSE2
+//    std::vector<RealSense2SinkParams> realsense_params;
+//    std::vector<std::string> cck_realsense; // Corresponding configuration file keys (camera1, etc)
+//#endif
+    std::vector<VideoFileSinkParams> video_params;
+//    std::vector<WebcamSinkParams> webcam_params;
+//    std::vector<std::string> cck_webcam; // Corresponding configuration file keys (camera1, etc)
 
-    for (int i = 0; i < num_cameras; ++i)
+    // TODO nice-to-have: we could load the root's child params, filter for "camera[0-9]+", sort via utils, and just iterate over these strings, then we don't need
+    const std::vector<std::string> cam_config_names = GetCameraConfigParameterNames(config);
+    //for (int i = 0; i < num_cameras; ++i)
+    for (const auto &cam_config_name : cam_config_names)
     {
-      std::stringstream id;
-      id << "camera" << (i+1);
-      const std::string cam_type = config.GetString(id.str() + ".type");
+//      std::stringstream id;
+//      id << "camera" << (i+1);
+//      const std::string cam_type = config.GetString(id.str() + ".type");
+      const std::string cam_type = config.GetString(cam_config_name + ".type");
 
-      if (IsImageDirectory(cam_type))
+      if (IsImageDirectorySink(cam_type))
       {
-        imgdir_params.push_back(ImageDirectorySinkParamsFromConfig(config, id.str()));
-        cck_imgdir.push_back(id.str());
+        imgdir_params.push_back(ImageDirectorySinkParamsFromConfig(config, cam_config_name));
+//        cck_imgdir.push_back(id.str());
       }
-#ifdef WITH_IPCAMERA
-      else if (IsMonocularIpCamera(cam_type))
+//#ifdef WITH_IPCAMERA
+//      else if (IsMonocularIpCamera(cam_type))
+//      {
+//        ip_mono_params.push_back(MonoIpCameraSinkParamsFromConfig(config, id.str()));
+//        cck_ip_mono.push_back(id.str());
+//      }
+//      else if (IsStereoIpCamera(cam_type))
+//      {
+//        ip_stereo_params.push_back(StereoIpCameraSinkParamsFromConfig(config, id.str()));
+//        cck_ip_stereo.push_back(id.str());
+//      }
+//#endif // WITH_IPCAMERA
+//#ifdef WITH_K4A
+//      else if (IsK4A(cam_type))
+//      {
+//        k4a_params.push_back(K4ASinkParamsFromConfig(config, id.str()));
+//        cck_k4a.push_back(id.str());
+//      }
+//#endif // WITH_K4A
+//#ifdef WITH_MATRIXVISION
+//      else if (IsMatrixVision(cam_type))
+//      {
+//        mvbluefox_params.push_back(MvBlueFox3SinkParamsFromConfig(config, id.str()));
+//        cck_mvbluefox.push_back(id.str());
+//      }
+//#endif // WITH_MATRIXVISION
+//#ifdef WITH_REALSENSE2
+//      else if (IsRealSense2(cam_type))
+//      {
+//        realsense_params.push_back(RealSense2SinkParamsFromConfig(config, id.str()));
+//        cck_realsense.push_back(id.str());
+//      }
+//#endif // WITH_REALSENSE2
+      else if (IsVideoFileSink(cam_type))
       {
-        ip_mono_params.push_back(MonoIpCameraSinkParamsFromConfig(config, id.str()));
-        cck_ip_mono.push_back(id.str());
+        video_params.push_back(VideoFileSinkParamsFromConfig(config, cam_config_name));
+//        cck_video.push_back(id.str());
       }
-      else if (IsStereoIpCamera(cam_type))
-      {
-        ip_stereo_params.push_back(StereoIpCameraSinkParamsFromConfig(config, id.str()));
-        cck_ip_stereo.push_back(id.str());
-      }
-#endif // WITH_IPCAMERA
-#ifdef WITH_K4A
-      else if (IsK4A(cam_type))
-      {
-        k4a_params.push_back(K4ASinkParamsFromConfig(config, id.str()));
-        cck_k4a.push_back(id.str());
-      }
-#endif // WITH_K4A
-#ifdef WITH_MATRIXVISION
-      else if (IsMatrixVision(cam_type))
-      {
-        mvbluefox_params.push_back(MvBlueFox3SinkParamsFromConfig(config, id.str()));
-        cck_mvbluefox.push_back(id.str());
-      }
-#endif // WITH_MATRIXVISION
-#ifdef WITH_REALSENSE2
-      else if (IsRealSense2(cam_type))
-      {
-        realsense_params.push_back(RealSense2SinkParamsFromConfig(config, id.str()));
-        cck_realsense.push_back(id.str());
-      }
-#endif // WITH_REALSENSE2
-      else if (IsVideoStream(cam_type))
-      {
-        video_params.push_back(VideoSinkParamsFromConfig(config, id.str()));
-        cck_video.push_back(id.str());
-      }
-      else if (IsWebcam(cam_type))
-      {
-        webcam_params.push_back(WebcamSinkParamsFromConfig(config, id.str()));
-        cck_webcam.push_back(id.str());
-      }
+//      else if (IsWebcam(cam_type))
+//      {
+//        webcam_params.push_back(WebcamSinkParamsFromConfig(config, id.str()));
+//        cck_webcam.push_back(id.str());
+//      }
       else
-        PVT_EXIT("Camera type '" << cam_type << "' not yet supported!");
+        VCP_LOG_FAILURE("Camera type '" << cam_type << "' is not yet supported!");
     }
 
     // TODO if you extend the sinks, be sure to set label, calibration file, StreamType(s) and corresponding config key,
@@ -126,18 +141,28 @@ public:
     // Additionally, be sure to add the correct SinkType!
 
     // Initialize the indiviual captures
-    if (!imgdir_params.empty())
+    for (const auto &p : imgdir_params)
     {
-      for (const auto &p : imgdir_params)
+      const auto sink = vcp::best::CreateSink(p);
+      for (size_t i = 0; i < sink->NumStreams(); ++i)
       {
-        sinks_.push_back(pvt::icc::CreateSink(p));
-        AddLabel(p.label);
-        AddCalibrationFile(p.calibration_file);
-        AddStreamType(p.stream_type);
-        sink_types_.push_back(SinkType::IMAGE_DIRECTORY);
+        sink_types_.push_back(sink->Type(i));
+        sink_params_.push_back(p);
+        frame_labels_.push_back(sink->StreamLabel(i));
       }
-      AddCorrespondingConfigKeys(cck_imgdir);
     }
+//    if (!imgdir_params.empty())
+//    {
+//      for (const auto &p : imgdir_params)
+//      {
+//        sinks_.push_back(pvt::icc::CreateSink(p));
+//        AddLabel(p.label);
+//        AddCalibrationFile(p.calibration_file);
+//        AddStreamType(p.stream_type);
+//        sink_types_.push_back(SinkType::IMAGE_DIRECTORY);
+//      }
+//      AddCorrespondingConfigKeys(cck_imgdir);
+//    }
 
 #ifdef WITH_IPCAMERA
     if (!ip_mono_params.empty())
@@ -251,53 +276,79 @@ public:
     multiple_realsenses_ = realsense_params.size() > 1;
 #endif // WITH_REALSENSE2
 
-    if (!video_params.empty())
-    {
-      for (const auto &p : video_params)
-      {
-        sinks_.push_back(pvt::icc::CreateSink(p));
-        AddLabel(p.label);
-        AddCalibrationFile(p.calibration_file);
-        AddStreamType(p.stream_type);
-        sink_types_.push_back(SinkType::VIDEO_FILE);
-      }
-      AddCorrespondingConfigKeys(cck_video);
-    }
+//    if (!video_params.empty())
+//    {
+//      for (const auto &p : video_params)
+//      {
+//        sinks_.push_back(pvt::icc::CreateSink(p));
+//        AddLabel(p.label);
+//        AddCalibrationFile(p.calibration_file);
+//        AddStreamType(p.stream_type);
+//        sink_types_.push_back(SinkType::VIDEO_FILE);
+//      }
+//      AddCorrespondingConfigKeys(cck_video);
+//    }
 
-    if (!webcam_params.empty())
-    {
-      for (const auto &p : webcam_params)
-      {
-        sinks_.push_back(pvt::icc::CreateSink(p));
-        AddLabel(p.label);
-        AddCalibrationFile(p.calibration_file);
-        AddStreamType(p.stream_type);
-        sink_types_.push_back(SinkType::WEBCAM);
-      }
-      AddCorrespondingConfigKeys(cck_webcam);
-    }
+//    if (!webcam_params.empty())
+//    {
+//      for (const auto &p : webcam_params)
+//      {
+//        sinks_.push_back(pvt::icc::CreateSink(p));
+//        AddLabel(p.label);
+//        AddCalibrationFile(p.calibration_file);
+//        AddStreamType(p.stream_type);
+//        sink_types_.push_back(SinkType::WEBCAM);
+//      }
+//      AddCorrespondingConfigKeys(cck_webcam);
+//    }
   }
 
   virtual ~MultiCapture()
   {
-    Terminate();
+    VCP_LOG_DEBUG("MultiDeviceCapture::~MultiDeviceCapture()");
+    Stop();
     for (size_t i = 0; i < sinks_.size(); ++i)
       sinks_[i].reset();
   }
 
-  bool IsAvailable() const override
+  size_t NumStreams() const override
   {
+    return sink_params_.size();
+  }
+
+  size_t NumDevices() const override
+  {
+    return sinks_.size();
+  }
+
+  std::vector<std::string> ConfigurationKeys() const override
+  {
+    std::vector<std::string> keys;
+    for (const auto &p : sink_params_)
+      keys.push_back(p.configuration_key);
+    return keys;
+  }
+
+  std::vector<std::string> FrameLabels() const override
+  {
+    return frame_labels_;
+  }
+
+  bool AreDevicesAvailable() const override
+  {
+    VCP_LOG_DEBUG("MultiDeviceCapture::AreDevicesAvailable()");
     for (size_t i = 0; i < sinks_.size(); ++i)
     {
-      if (!sinks_[i]->IsAvailable())
+      if (!sinks_[i]->IsDeviceAvailable())
         return false;
     }
     return true;
   }
 
 
-  bool IsFrameAvailable() const override
+  bool AreFramesAvailable() const override
   {
+    VCP_LOG_DEBUG("MultiDeviceCapture::AreFramesAvailable()");
     for (size_t i = 0; i < sinks_.size(); ++i)
     {
       if (!sinks_[i]->IsFrameAvailable())
@@ -307,45 +358,80 @@ public:
   }
 
 
-  bool Start() override
+  bool OpenDevices() override
   {
+    VCP_LOG_DEBUG("MultiDeviceCapture::OpenDevices()");
+    bool success = true;
+    for (size_t i = 0; i < sinks_.size(); ++i)
+      success = success && sinks_[i]->OpenDevice();
+    return success;
+  }
+
+
+  bool CloseDevices() override
+  {
+    VCP_LOG_DEBUG("MultiDeviceCapture::CloseDevices()");
+    bool success = true;
+    for (size_t i = 0; i < sinks_.size(); ++i)
+      success = success && sinks_[i]->CloseDevice();
+    return success;
+  }
+
+
+  bool StartStreams() override
+  {
+    VCP_LOG_DEBUG("MultiDeviceCapture::StartStreams()");
+    bool success = true;
     for (size_t i = 0; i < sinks_.size(); ++i)
     {
-      sinks_[i]->StartStream();
-#ifdef WITH_REALSENSE2
+      success = success && sinks_[i]->StartStreaming();
+#ifdef VCP_WITH_REALSENSE2
+      // According to the RealSense white paper on multiple sensors, they
+      // "found it useful to start the cameras sequentially in time with some delay".
       if (multiple_realsenses_ && (i+1) < sinks_.size() &&
           sink_types_[i] == sink_types_[i+1] && sink_types_[i] == SinkType::REALSENSE)
       {
-        // According to the RealSense white paper on multiple sensors, they "found it useful to start the cameras sequentially in time with some delay".
         PVT_LOG_INFO("Pausing thread temporarily before starting the next RealSense stream!");
         std::this_thread::sleep_for(std::chrono::milliseconds(1500));
       }
-#endif // WITH_REALSENSE2
+#endif // VCP_WITH_REALSENSE2
     }
-
-    return true;
+    return success;
   }
 
-  std::vector<cv::Mat> NextFrame() override
+
+  bool StopStreams() override
   {
+    VCP_LOG_DEBUG("MultiDeviceCapture::StopStreams()");
+    bool success = true;
+    for (size_t i = 0; i < sinks_.size(); ++i)
+      success = success && sinks_[i]->StopStreaming();
+    return success;
+  }
+
+
+  std::vector<cv::Mat> Next() override
+  {
+    VCP_LOG_DEBUG("MultiDeviceCapture::Next()");
     // Collect the frames of all captures and store them in a single vector
     std::vector<cv::Mat> frames;
     for (size_t i = 0; i < sinks_.size(); ++i)
     {
-      std::vector<cv::Mat> captured = sinks_[i]->GetNextFrame();
+      std::vector<cv::Mat> captured = sinks_[i]->Next();
       frames.insert(frames.end(), captured.begin(), captured.end());
     }
     return frames;
   }
 
 
-  std::vector<cv::Mat> PreviousFrame() override
+  std::vector<cv::Mat> Previous() override
   {
+    VCP_LOG_DEBUG("MultiDeviceCapture::Previous()");
     // Collect frames of all sinks - may throw an exception if not implemented.
     std::vector<cv::Mat> frames;
     for (size_t i = 0; i < sinks_.size(); ++i)
     {
-      std::vector<cv::Mat> captured = sinks_[i]->GetPreviousFrame();
+      std::vector<cv::Mat> captured = sinks_[i]->Previous();
       frames.insert(frames.end(), captured.begin(), captured.end());
     }
     return frames;
@@ -354,6 +440,7 @@ public:
 
   std::vector<cv::Mat> FastForward(size_t num_frames) override
   {
+    VCP_LOG_DEBUG("MultiDeviceCapture::FastForward(" << num_frames << ")");
     // Collect frames of all sinks - may throw an exception if not implemented.
     std::vector<cv::Mat> frames;
     for (size_t i = 0; i < sinks_.size(); ++i)
@@ -365,17 +452,11 @@ public:
   }
 
 
-  bool Terminate() override
-  {
-    for (size_t i = 0; i < sinks_.size(); ++i)
-      sinks_[i]->Terminate();
-    return true;
-  }
-
 private:
-  std::vector<std::unique_ptr<StreamSink>> sinks_;
-  std::vector<SinkType> sink_types_;
-  std::vector<std::string> corresponding_config_keys_;
+  std::vector<std::unique_ptr<StreamSink>> sinks_; // Potentially less than streams/frames
+  std::vector<SinkType> sink_types_; // Note: they will be per stream/frame, not per device
+  std::vector<SinkParams> sink_params_; // Note: they will be per stream/frame, not per device
+  std::vector<std::string> frame_labels_;
 
 #ifdef WITH_REALSENSE2
   bool multiple_realsenses_;

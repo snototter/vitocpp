@@ -1,469 +1,281 @@
-#include "stream_sink.h"
+#include "sink.h"
 
-#include <thread>
-#include <mutex>
-#include <atomic>
+#include <vcp_config/config_params.h>
+#include <vcp_utils/vcp_error.h>
+#include <vcp_utils/string_utils.h>
+#include <sstream>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+#include "file_sink.h"
 
-#include <pvt_utils/timing_utils.h>
-#include <pvt_utils/pvt_error.h>
-#include <pvt_utils/file_utils.h>
-#include <pvt_utils/string_utils.h>
-#include <pvt_imutils/matutils.h>
-
-namespace pvt
+namespace vcp
 {
-namespace icc
+namespace best
 {
-namespace
+#define MAKE_STREAMTYPE_TO_STRING_CASE(st) case FrameType::st: rep = std::string(#st); break
+std::string FrameTypeToString(const FrameType &s)
 {
-/** @brief Replays a video at the specified frame rate - does NOT support backwards seeking. */
-class TimedVideoFileSink : public StreamSink
-{
-public:
-  TimedVideoFileSink(const std::string &filename, size_t first_frame,
-                     double fps, bool color_as_bgr, std::unique_ptr<SinkBuffer> sink_buffer)
-    : StreamSink(), continue_capture_(false), capture_(nullptr), image_queue_(std::move(sink_buffer)),
-      filename_(filename), first_frame_(first_frame), frame_rate_(fps), color_as_bgr_(color_as_bgr), eof_(true)
+  std::string rep;
+  switch (s)
   {
+  MAKE_STREAMTYPE_TO_STRING_CASE(MONOCULAR);
+  MAKE_STREAMTYPE_TO_STRING_CASE(STEREO);
+  MAKE_STREAMTYPE_TO_STRING_CASE(DEPTH);
+  MAKE_STREAMTYPE_TO_STRING_CASE(UNKNOWN);
+  default:
+    std::stringstream str;
+    str << "(" << static_cast<int>(s) << ")";
+    rep = str.str();
+    break;
   }
 
-  virtual ~TimedVideoFileSink()
-  {
-    Terminate();
-  }
-
-  void StartStream() override
-  {
-    if (capture_ && capture_->isOpened())
-      PVT_EXIT("Video file already opened");
-
-    if (!pvt::utils::file::Exists(filename_))
-      PVT_EXIT("Video file '" << filename_ << "' does not exist!");
-
-    capture_ = std::unique_ptr<cv::VideoCapture>(new cv::VideoCapture(filename_));
-    if (!capture_->isOpened())
-      PVT_LOG_FAILURE("Cannot open video file: " << filename_);
-
-    if (!capture_->set(CV_CAP_PROP_POS_FRAMES, static_cast<double>(first_frame_)))
-      PVT_LOG_FAILURE("Cannot jump to specified first frame [" << first_frame_ << "]");
-
-    eof_ = false;
-    continue_capture_ = true;
-    stream_thread_ = std::thread(&TimedVideoFileSink::Receive, this);
-  }
-
-  void Terminate() override
-  {
-    if (continue_capture_)
-    {
-      continue_capture_ = false;
-      stream_thread_.join();
-    }
-  }
-
-  void GetNextFrame(cv::Mat &frame) override
-  {
-    image_queue_mutex_.lock();
-    if (image_queue_->Empty())
-    {
-      frame = cv::Mat();
-    }
-    else
-    {
-      // Retrieve oldest image in queue.
-      frame = image_queue_->Front().clone();
-      image_queue_->PopFront();
-    }
-    image_queue_mutex_.unlock();
-  }
-
-  int IsAvailable() const override
-  {
-    if (capture_ && !eof_)
-      return 1;
-    return 0;
-  }
-
-  int IsFrameAvailable() const override
-  {
-    image_queue_mutex_.lock();
-    const bool empty = image_queue_->Empty();
-    image_queue_mutex_.unlock();
-    if (empty)
-      return 0;
-    return 1;
-  }
-
-private:
-  std::atomic<bool> continue_capture_;
-  std::unique_ptr<cv::VideoCapture> capture_;
-  std::unique_ptr<SinkBuffer> image_queue_;
-
-  std::string filename_;
-  size_t first_frame_;
-  double frame_rate_;
-  bool color_as_bgr_;
-  bool eof_;
-
-  std::thread stream_thread_;
-  mutable std::mutex image_queue_mutex_;
-
-  void Receive()
-  {
-    const int64_t mus_per_frame = static_cast<int64_t>(1000000.0 / frame_rate_);
-
-    std::chrono::steady_clock::time_point tp_start = std::chrono::steady_clock::now();
-    while (continue_capture_)
-    {
-      // Get next frame
-      cv::Mat frame;
-      if (capture_->grab())
-      {
-        cv::Mat loaded;
-        capture_->retrieve(loaded);
-        if (color_as_bgr_)
-          frame = loaded;
-        else
-        {
-          if (loaded.channels() == 3)
-            cv::cvtColor(loaded, frame, CV_BGR2RGB);
-          else if (loaded.channels() == 4)
-            cv::cvtColor(loaded, frame, CV_BGRA2RGBA);
-          else
-            frame = loaded;
-        }
-      }
-      else
-      {
-        frame = cv::Mat();
-        eof_ = true;
-      }
-
-      // Push into queue
-      image_queue_mutex_.lock();
-      image_queue_->PushBack(frame.clone());
-      image_queue_mutex_.unlock();
-      const std::chrono::steady_clock::time_point tp_stop = std::chrono::steady_clock::now();
-      const int64_t elapsed = std::chrono::duration_cast<std::chrono::microseconds>(tp_stop - tp_start).count();
-
-      const int64_t to_sleep = mus_per_frame - elapsed;
-      if (to_sleep > 0)
-        std::this_thread::sleep_for(std::chrono::microseconds(to_sleep));
-      else if (to_sleep < 0)
-      {
-        PVT_LOG_WARNING("TimedVideoSink delayed (Time budget: " << (mus_per_frame/1000.0) << "ms, decoding took " << (elapsed/1000.0) << "ms)");
-      }
-
-      tp_start = std::chrono::steady_clock::now();
-    }
-    capture_.reset();
-  }
-};
-
-
-/** @brief Replays a video frame-by-frame. Supports retrieving previous frames. */
-class VideoFileSink : public StreamSink
-{
-public:
-  VideoFileSink(const std::string &filename, size_t first_frame, bool color_as_bgr) : StreamSink(),
-    capture_(nullptr), filename_(filename), first_frame_(first_frame), color_as_bgr_(color_as_bgr), eof_(true)
-  {
-  }
-
-  virtual ~VideoFileSink()
-  {
-    // cv::VideoCapture destructor will be invoked (and gracefully cleans up) automatically...
-  }
-
-  void StartStream() override
-  {
-    if (capture_ && capture_->isOpened())
-      PVT_EXIT("Video file already opened");
-
-    if (!pvt::utils::file::Exists(filename_))
-      PVT_EXIT("Video file '" << filename_ << "' does not exist!");
-
-    capture_ = std::unique_ptr<cv::VideoCapture>(new cv::VideoCapture(filename_));
-    if (!capture_->isOpened())
-      PVT_LOG_FAILURE("Cannot open video file: " << filename_);
-
-    if (!capture_->set(CV_CAP_PROP_POS_FRAMES, static_cast<double>(first_frame_)))
-      PVT_LOG_FAILURE("Cannot jump to specified first frame [" << first_frame_ << "]");
-
-    eof_ = false;
-  }
-
-  void Terminate() override
-  {
-    if (capture_)
-      capture_->release();
-    capture_.reset();
-  }
-
-  void GetNextFrame(cv::Mat &frame) override
-  {
-    if (capture_ && capture_->grab())
-    {
-      cv::Mat loaded;
-      capture_->retrieve(loaded);
-      if (color_as_bgr_)
-      {
-        frame = loaded;
-      }
-      else
-      {
-        if (loaded.channels() == 3)
-          cv::cvtColor(loaded, frame, CV_BGR2RGB);
-        else if (loaded.channels() == 4)
-          cv::cvtColor(loaded, frame, CV_BGRA2RGBA);
-        else
-          frame = loaded;
-      }
-    }
-    else
-    {
-      frame = cv::Mat();
-      eof_ = true;
-    }
-  }
-
-
-  void GetPreviousFrame(cv::Mat &frame) override
-  {
-    if (capture_)
-    {
-      const double current_frame = capture_->get(CV_CAP_PROP_POS_FRAMES);
-      if (current_frame > 1.0)
-      {
-        // Frame index already points to the next frame (which is not yet loaded, so seeking back must decrease by 2)
-        if (capture_->set(CV_CAP_PROP_POS_FRAMES, current_frame-2.0))
-        {
-          GetNextFrame(frame);
-        }
-        else
-        {
-          frame = cv::Mat();
-          PVT_LOG_FAILURE("Cannot seek to frame [" << static_cast<long>(current_frame-2.0) << "] for video " << filename_);
-        }
-      }
-      else
-      {
-        frame = cv::Mat();
-        PVT_LOG_FAILURE("Cannot query current frame for video " << filename_);
-      }
-    }
-    else
-    {
-      frame = cv::Mat();
-      PVT_LOG_FAILURE("Capture is not available for video " << filename_);
-    }
-  }
-
-  void FastForward(cv::Mat &frame, size_t num_frames) override
-  {
-    if (capture_)
-    {
-      const double current_frame = capture_->get(CV_CAP_PROP_POS_FRAMES);
-      // Frame index already points to the next frame (which is not yet loaded, so skip step must be decreased by 1 (ffwd 1 = next frame, ffwd 2 = skip 1 frame, etc.)
-      const double next_frame_index = current_frame + static_cast<double>(num_frames-1);
-      if (capture_->set(CV_CAP_PROP_POS_FRAMES, next_frame_index))
-      {
-        GetNextFrame(frame);
-      }
-      else
-      {
-        frame = cv::Mat();
-        PVT_LOG_FAILURE("Cannot seek to frame [" << next_frame_index << "] for video " << filename_);
-      }
-    }
-    else
-    {
-      frame = cv::Mat();
-      PVT_LOG_FAILURE("Capture is not available for video " << filename_);
-    }
-  }
-
-
-  int IsAvailable() const override
-  {
-    if (capture_ && !eof_)
-      return 1;
-    return 0;
-  }
-
-  int IsFrameAvailable() const override
-  {
-    return IsAvailable(); // Processing a video frame-by-frame, we don't have a queue but only need to check for EOF
-  }
-
-private:
-  std::unique_ptr<cv::VideoCapture> capture_;
-  std::string filename_;
-  size_t first_frame_;
-  bool color_as_bgr_;
-  bool eof_;
-};
-
-
-class ImageDirectorySink : public StreamSink
-{
-public:
-  ImageDirectorySink(const std::string &directory, size_t first_frame, bool color_as_bgr) : StreamSink(),
-    directory_(directory), frame_idx_(0), first_frame_(first_frame), color_as_bgr_(color_as_bgr)
-  {
-    if (!pvt::utils::file::IsDir(directory_))
-      PVT_ABORT("Image directory '" << directory_ << "' does not exist!");
-
-    namespace puff = pvt::utils::file::filename_filter;
-    filenames_ = pvt::utils::file::ListDirContents(directory_, &puff::HasImageExtension, true, true, true,
-                                      &puff::CompareFileLengthsAndNames);
-
-    if (filenames_.empty())
-    {
-#ifdef PVT_SHOW_DEBUG_OUTPUT
-      PVT_LOG_INFO("No image files within '" << directory_ << "', now looking for binary matrix dumps (cvm/cvz).");
-#endif // PVT_SHOW_DEBUG_OUTPUT
-
-      load_images_ = false;
-      // Check if the directory contains binary mat files.
-      filenames_ = pvt::utils::file::ListDirContents(directory_, [](const std::string &f) -> bool {
-        const std::string cvmat_ext(".cvm");
-        const std::string cvzip_ext(".cvz");
-        const std::string ext = pvt::utils::file::GetExtension(f);
-        return (cvmat_ext.compare(ext) == 0) || (cvzip_ext.compare(ext) == 0);
-      }, true, true, true, &puff::CompareFileLengthsAndNames);
-      if (filenames_.empty())
-      {
-        PVT_EXIT("Image directory '" << directory_ << "' is empty!");
-      }
-    }
-    else
-    {
-#ifdef PVT_SHOW_DEBUG_OUTPUT
-      PVT_LOG_INFO("Image directory '" << directory_ << "' contains " << filenames_.size() << " images.");
-#endif // PVT_SHOW_DEBUG_OUTPUT
-      load_images_ = true;
-    }
-  }
-
-  virtual ~ImageDirectorySink()
-  {
-  }
-
-  void StartStream() override
-  {
-    frame_idx_ = first_frame_;
-  }
-
-  void Terminate() override
-  {
-    frame_idx_ = first_frame_;
-  }
-
-  void GetNextFrame(cv::Mat &frame) override
-  {
-#ifdef PVT_SHOW_DEBUG_OUTPUT
-      PVT_LOG_INFO("Image directory '" << directory_ << "' loading next frame " << (frame_idx_+1) << "/" << filenames_.size());
-#endif // PVT_SHOW_DEBUG_OUTPUT
-    if (frame_idx_ < filenames_.size())
-    {
-      cv::Mat loaded;
-      if (load_images_)
-      {
-        loaded = cv::imread(pvt::utils::file::FullFile(directory_, filenames_[frame_idx_]), cv::IMREAD_UNCHANGED);
-        if (color_as_bgr_)
-        {
-          // Default OpenCV behavior
-          frame = loaded;
-        }
-        else
-        {
-          if (loaded.channels() == 3)
-            cv::cvtColor(loaded, frame, CV_BGR2RGB);
-          else if (loaded.channels() == 4)
-            cv::cvtColor(loaded, frame, CV_BGRA2RGBA);
-          else
-            frame = loaded;
-        }
-      }
-      else
-        frame = pvt::imutils::LoadMat(pvt::utils::file::FullFile(directory_, filenames_[frame_idx_]));
-
-      ++frame_idx_;
-    }
-    else
-    {
-      frame = cv::Mat();
-    }
-  }
-
-
-  void GetPreviousFrame(cv::Mat &frame) override
-  {
-#ifdef PVT_SHOW_DEBUG_OUTPUT
-      PVT_LOG_INFO("Image directory '" << directory_ << "' loading previous frame " << (frame_idx_-2) << "/" << filenames_.size());
-#endif // PVT_SHOW_DEBUG_OUTPUT
-    if (frame_idx_ > 1)
-    {
-      frame_idx_-=2; // Frame index already points to the next frame (which is not yet loaded, so seeking back must decrease by 2)
-    }
-    else
-    {
-      PVT_LOG_WARNING("Cannot seek back beyond the first frame for image directory " << directory_);
-    }
-    GetNextFrame(frame);
-  }
-
-  void FastForward(cv::Mat &frame, size_t num_frames) override
-  {
-    frame_idx_ += (num_frames-1);
-    GetNextFrame(frame);
-  }
-
-
-  int IsAvailable() const override
-  {
-    if (!filenames_.empty() && frame_idx_ < filenames_.size())
-      return 1;
-
-#ifdef PVT_SHOW_DEBUG_OUTPUT
-      PVT_LOG_INFO("Image directory '" << directory_ << "' is NOT available (about to load fnr " << frame_idx_ << ", total " << filenames_.size() << ")");
-#endif // PVT_SHOW_DEBUG_OUTPUT
-    return 0;
-  }
-
-  int IsFrameAvailable() const override
-  {
-    return IsAvailable(); // Processing an image directory frame-by-frame, we don't have an image queue (so only check whether images are left to be loaded)
-  }
-
-private:
-  std::string directory_;
-  size_t frame_idx_;
-  size_t first_frame_;
-  bool color_as_bgr_;
-  std::vector<std::string> filenames_; // Relative filenames
-  bool load_images_;
-};
-} // namespace
-
-std::unique_ptr<StreamSink> CreateVideoFileSink(const std::string &video_filename, size_t first_frame, double fps, bool color_as_bgr)
-{
-  if (fps > 0.0)
-    return std::unique_ptr<TimedVideoFileSink>(new TimedVideoFileSink(video_filename, first_frame, fps, color_as_bgr, CreateCircularStreamSinkBuffer<PVT_ICC_CIRCULAR_SINK_BUFFER_CAPACITY>()));
-  else
-    return std::unique_ptr<VideoFileSink>(new VideoFileSink(video_filename, first_frame, color_as_bgr));
+  return rep;
 }
 
-//TODO a TimedImageDirectorySink would be nice-to-have (needs additional fps parameter)
-std::unique_ptr<StreamSink> CreateImageDirectorySink(const std::string &image_directory, size_t first_frame, bool color_as_bgr)
+
+#define MAKE_STRING_TO_STREAMTYPE_IF(st, rep) if (rep.compare(FrameTypeToString(FrameType::st)) == 0) return FrameType::st
+FrameType FrameTypeFromString(const std::string &s)
 {
-  return std::unique_ptr<ImageDirectorySink>(new ImageDirectorySink(image_directory, first_frame, color_as_bgr));
+  std::string upper(s);
+  vcp::utils::string::ToUpper(upper);
+  MAKE_STRING_TO_STREAMTYPE_IF(MONOCULAR, upper);
+  MAKE_STRING_TO_STREAMTYPE_IF(STEREO, upper);
+  MAKE_STRING_TO_STREAMTYPE_IF(DEPTH, upper);
+  MAKE_STRING_TO_STREAMTYPE_IF(UNKNOWN, upper);
+  VCP_ERROR("FrameTypeFromString(): Cannot convert '" << s << "' to FrameType");
 }
 
-} // namespace icc
-} // namespace pvt
+
+std::ostream &operator<<(std::ostream &stream, const FrameType &s)
+{
+  stream << "FrameType::" << FrameTypeToString(s);
+  return stream;
+}
+
+
+//std::string GetDefaultSinkLabel()
+//{
+//  static size_t counter = 0;
+//  std::stringstream str;
+//  str << "camera-" << counter;
+//  ++counter;
+//  return str.str();
+//}
+
+
+#define MAKE_SINKTYPE_TO_STRING_CASE(st)  case SinkType::st: rep = std::string(#st); break
+std::string SinkTypeToString(const SinkType &s)
+{
+  std::string rep;
+  switch (s)
+  {
+  MAKE_SINKTYPE_TO_STRING_CASE(IMAGE_DIR);
+#ifdef VCP_WITH_IPCAMERA
+  MAKE_SINKTYPE_TO_STRING_CASE(IPCAM_MONOCULAR);
+  MAKE_SINKTYPE_TO_STRING_CASE(IPCAM_STEREO);
+#endif
+#ifdef VCP_WITH_K4A
+  MAKE_SINKTYPE_TO_STRING_CASE(K4A);
+#endif
+#ifdef VCP_WITH_MATRIXVISION
+  MAKE_SINKTYPE_TO_STRING_CASE(MVBLUEFOX3);
+#endif
+#ifdef VCP_WITH_REALSENSE2
+  MAKE_SINKTYPE_TO_STRING_CASE(REALSENSE);
+#endif
+  MAKE_SINKTYPE_TO_STRING_CASE(VIDEO_FILE);
+  MAKE_SINKTYPE_TO_STRING_CASE(WEBCAM);
+  default:
+    std::stringstream str;
+    str << "(" << static_cast<int>(s) << ")";
+    rep = str.str();
+    break;
+  }
+
+  return rep;
+}
+
+#define MAKE_STRING_TO_SINKTYPE_IF(st, rep)  if (rep.compare(SinkTypeToString(SinkType::st)) == 0) return SinkType::st
+SinkType SinkTypeFromString(const std::string &s)
+{
+  if (IsImageDirectorySink(s))
+    return SinkType::IMAGE_DIR;
+  else if (IsVideoFileSink(s))
+    return SinkType::VIDEO_FILE;
+
+//  std::string upper(s);
+//  vcp::utils::string::ToUpper(upper);
+//  MAKE_STRING_TO_SINKTYPE_IF(IMAGE_DIR, upper);
+//#ifdef VCP_WITH_IPCAMERA
+//  MAKE_STRING_TO_SINKTYPE_IF(IPCAM_MONOCULAR, upper);
+//  MAKE_STRING_TO_SINKTYPE_IF(IPCAM_STEREO, upper);
+//#endif
+//#ifdef VCP_WITH_K4A
+//  MAKE_STRING_TO_SINKTYPE_IF(K4A, upper);
+//#endif
+//#ifdef VCP_WITH_MATRIXVISION
+//  MAKE_STRING_TO_SINKTYPE_IF(MVBLUEFOX3, upper);
+//#endif
+//#ifdef VCP_WITH_REALSENSE2
+//  MAKE_STRING_TO_SINKTYPE_IF(REALSENSE, upper);
+//#endif
+//  MAKE_STRING_TO_SINKTYPE_IF(VIDEO_FILE, upper);
+//  MAKE_STRING_TO_SINKTYPE_IF(WEBCAM, upper);
+  VCP_ERROR("SinkTypeFromString(): Representation '" << s << "' not yet handled.");
+}
+
+std::ostream &operator<<(std::ostream &stream, const SinkType &s)
+{
+  stream << "SinkType::" << SinkTypeToString(s);
+  return stream;
+}
+
+
+inline std::string GetConfigKey(const std::string &cam_group, const std::string &key)
+{
+  if (key.empty())
+    VCP_ERROR("GetConfigKey(): Key cannot be empty!");
+  if (cam_group.empty())
+    return key;
+  return cam_group + "." + key;
+}
+
+std::string GetOptionalStringFromConfig(
+    const vcp::config::ConfigParams &config,
+    const std::string &cam_group,
+    const std::string &key,
+    const std::string &default_value)
+{
+  const std::string lookup = GetConfigKey(cam_group, key);
+  if (config.SettingExists(lookup))
+    return config.GetString(lookup);
+  return default_value;
+}
+
+
+int GetOptionalIntFromConfig(const config::ConfigParams &config, const std::string &cam_group, const std::string &key, int default_value)
+{
+  const std::string lookup = GetConfigKey(cam_group, key);
+  if (config.SettingExists(lookup))
+    return config.GetInteger(lookup);
+  return default_value;
+}
+
+
+unsigned int GetOptionalUnsignedIntFromConfig(const config::ConfigParams &config,
+    const std::string &cam_group, const std::string &key, unsigned int default_value)
+{
+  const std::string lookup = GetConfigKey(cam_group, key);
+  if (config.SettingExists(lookup))
+    return config.GetUnsignedInteger(lookup);
+  return default_value;
+}
+
+
+double GetOptionalDoubleFromConfig(const config::ConfigParams &config, const std::string &cam_group, const std::string &key, double default_value)
+{
+  const std::string lookup = GetConfigKey(cam_group, key);
+  if (config.SettingExists(lookup))
+    return config.GetDouble(lookup);
+  return default_value;
+}
+
+bool GetOptionalBoolFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group, const std::string &key, bool default_value)
+{
+  const std::string lookup = GetConfigKey(cam_group, key);
+  if (config.SettingExists(lookup))
+    return config.GetBoolean(lookup);
+  return default_value;
+}
+
+
+std::string GetSinkLabelFromConfig(const vcp::config::ConfigParams &config,
+                                   const std::string &cam_group,
+                                   std::vector<std::string> &configured_keys)
+{
+  // "cam_group" must have a unique name, or the config cannot be loaded
+  // by libconfig++, so use it as the default/fallback value.
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "label"), configured_keys.end());
+  return GetOptionalStringFromConfig(config, cam_group, "label", cam_group);
+}
+
+
+std::string GetCalibrationFileFromConfig(const vcp::config::ConfigParams &config,
+                                         const std::string &cam_group,
+                                         std::vector<std::string> &configured_keys)
+{
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "calibration_file"), configured_keys.end());
+  return GetOptionalStringFromConfig(config, cam_group, "calibration_file", std::string());
+}
+
+bool GetColorAsBgrFromConfig(const vcp::config::ConfigParams &config,
+                             const std::string &cam_group,
+                             std::vector<std::string> &configured_keys)
+{
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "color_as_bgr"), configured_keys.end());
+  return GetOptionalBoolFromConfig(config, cam_group, "color_as_bgr", false);
+}
+
+
+//std::string GetCameraTypeFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group)
+//{
+//  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "type"), configured_keys.end());
+//  return config.GetString(cam_group + ".sink_type"); // mandatory field, must be set
+//}
+
+FrameType GetFrameTypeFromConfig(const vcp::config::ConfigParams &config,
+                                 const std::string &cam_group,
+                                 std::vector<std::string> &configured_keys)
+{
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "frame_type"), configured_keys.end());
+  return FrameTypeFromString(GetOptionalStringFromConfig(config, cam_group, "frame_type", FrameTypeToString(FrameType::UNKNOWN)));
+}
+
+SinkType GetSinkTypeFromConfig(const vcp::config::ConfigParams &config,
+                               const std::string &cam_group,
+                               std::vector<std::string> &configured_keys)
+{
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "sink_type"), configured_keys.end());
+  return SinkTypeFromString(config.GetString(cam_group + ".sink_type"));
+}
+
+
+
+// TODO capture in sink_XY.h if needed (not for webcams, video files, etc.)
+// TODO captures needed for multiple realsenses, multiple rtsp streams, etc.
+
+SinkParams ParseBaseSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group, std::vector<std::string> &configured_keys)
+{
+  const SinkType sink_type = GetSinkTypeFromConfig(config, cam_group, configured_keys);
+  const FrameType frame_type = GetFrameTypeFromConfig(config, cam_group, configured_keys);
+  const std::string sink_label = GetSinkLabelFromConfig(config, cam_group, configured_keys);
+  const std::string calibration_file = GetCalibrationFileFromConfig(config, cam_group, configured_keys);
+  const bool color_as_bgr = GetColorAsBgrFromConfig(config, cam_group, configured_keys);
+
+  return SinkParams(sink_type, frame_type, sink_label, calibration_file, cam_group, color_as_bgr);
+}
+
+size_t GetNumCamerasFromConfig(const vcp::config::ConfigParams &config)
+{
+  if (config.SettingExists("num_cameras"))
+    return static_cast<size_t>(config.GetInteger("num_cameras"));
+
+  const std::vector<std::string> params = GetCameraConfigParameterNames(config);
+  return params.size();
+}
+
+std::vector<std::string> GetCameraConfigParameterNames(const vcp::config::ConfigParams &config)
+{
+  std::vector<std::string> camera_parameters;
+  // Get all first-level parameters:
+  const std::vector<std::string> params = config.ListConfigGroupParameters(std::string());
+
+  for (const auto &p : params)
+  {
+    if (vcp::utils::string::StartsWith(p, "camera"))
+      camera_parameters.push_back(p);
+  }
+  //TODO FIXME sorting would be nice (and safer)!
+  return camera_parameters;
+}
+} // namespace best
+} // namespace vcp

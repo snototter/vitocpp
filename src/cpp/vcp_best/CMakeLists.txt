@@ -98,7 +98,7 @@ set(PRIVATE_HEADERS)
 
 # Common source files - will be extended below for optional devices
 set(SOURCES
-    common_types.cpp
+#    common_types.cpp
     sink.cpp
     file_sink.cpp
 #  webcam_sink.cpp

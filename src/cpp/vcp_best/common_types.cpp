@@ -66,7 +66,7 @@ std::string SinkTypeToString(const SinkType &s)
   std::string rep;
   switch (s)
   {
-  MAKE_SINKTYPE_TO_STRING_CASE(IMAGE_DIRECTORY);
+  MAKE_SINKTYPE_TO_STRING_CASE(IMAGE_DIR);
 #ifdef VCP_WITH_IPCAMERA
   MAKE_SINKTYPE_TO_STRING_CASE(IPCAM_MONOCULAR);
   MAKE_SINKTYPE_TO_STRING_CASE(IPCAM_STEREO);
@@ -97,7 +97,7 @@ SinkType SinkTypeFromString(const std::string &s)
 {
   std::string upper(s);
   vcp::utils::string::ToUpper(upper);
-  MAKE_STRING_TO_SINKTYPE_IF(IMAGE_DIRECTORY, upper);
+  MAKE_STRING_TO_SINKTYPE_IF(IMAGE_DIR, upper);
 #ifdef VCP_WITH_IPCAMERA
   MAKE_STRING_TO_SINKTYPE_IF(IPCAM_MONOCULAR, upper);
   MAKE_STRING_TO_SINKTYPE_IF(IPCAM_STEREO, upper);
@@ -220,7 +220,7 @@ SinkParams ParseSinkParamsFromConfig(const vcp::config::ConfigParams &config, co
   const SinkType sink_type = GetSinkTypeFromConfig(config, cam_group);
   switch (sink_type)
   {
-    case SinkType::IMAGE_DIRECTORY:
+    case SinkType::IMAGE_DIR:
       //TODOreturn vcp::best::WebcamSinkFromConfig(config, cam_group);
 //  #ifdef VCP_WITH_IPCAMERA
 //    MAKE_STRING_TO_STREAMTYPE_IF(IPCAM_MONOCULAR, upper);
@@ -247,14 +247,23 @@ size_t GetNumCamerasFromConfig(const vcp::config::ConfigParams &config)
   if (config.SettingExists("num_cameras"))
     return static_cast<size_t>(config.GetInteger("num_cameras"));
 
-  std::vector<std::string> params = config.ListConfigGroupParameters(std::string());
-  size_t num_cameras = 0;
+  const std::vector<std::string> params = GetCameraConfigParameterNames(config);
+  return params.size();
+}
+
+std::vector<std::string> GetCameraConfigParameterNames(const vcp::config::ConfigParams &config)
+{
+  std::vector<std::string> camera_parameters;
+  // Get all first-level parameters:
+  const std::vector<std::string> params = config.ListConfigGroupParameters(std::string());
+
   for (const auto &p : params)
   {
     if (vcp::utils::string::StartsWith(p, "camera"))
-      ++num_cameras;
+      camera_parameters.push_back(p);
   }
-  return num_cameras;
+  //TODO FIXME sorting would be nice (and safer)!
+  return camera_parameters;
 }
 } // namespace best
 } // namespace vcp

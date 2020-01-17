@@ -8,12 +8,20 @@
 
 
 #include <opencv2/core/core.hpp>
-#include <pvt_config/config_params.h>
-//#include "stream_sink.h"
-#include "common_types.h"
+#include <vcp_config/config_params.h>
+#include "sink.h"
+//#include "common_types.h"
 
 namespace vcp
 {
+
+/** @brief BESt (Best Effort Streaming) module.
+ *
+ * Configuration can easily be done via:
+ * libconfig++
+ * TODO refer to examples/data/best/*.cfg
+ * or python bindings/demo
+ */
 namespace best
 {
 /** @brief Provides access to image streams of (potentially) multiple,
@@ -30,11 +38,11 @@ namespace best
  * 2. Open() devices, so they can be properly initialized.
  *    Check if initialization succeeded: AreDevicesAvailable().
  * 3. Start() streaming.
- * 4. GetNextFrames() - empty cv::Mat entries correspond to missing
+ * 4. Next() - empty cv::Mat entries correspond to missing
  *    frames.
  *    You can query if frames are available for all sinks, via AreFramesAvailable().
  *    However, this is NOT guaranteed to work if you use @see FastForward()
- *    or @see GetPreviousFrames(). The issue is that the user may choose to arbitrarily
+ *    or @see Previous(). The issue is that the user may choose to arbitrarily
  *    query the next/previous frames on those sinks.
  * 5. Stop() streaming.
  * 6. Repeat 4-6 if you want to restart streaming.
@@ -52,27 +60,27 @@ public:
   virtual bool AreFramesAvailable() const = 0;
 
   /** @brief Initialize devices. */
-  virtual bool Open() = 0;
+  virtual bool OpenDevices() = 0;
 
   /** @brief Close devices/tear down connections. */
-  virtual bool Close() = 0;
+  virtual bool CloseDevices() = 0;
 
   /** @brief Starts the image streams. */
-  virtual bool Start() = 0;
+  virtual bool StartStreams() = 0;
 
   /** @brief Stops the image streams. */
-  virtual bool Stop() = 0;
+  virtual bool StopStreams() = 0;
 
   /** @brief Returns the currently available frames.
    *
    * If no data is available for a specific sink, it
    * will yield an empty cv::Mat instead.
    */
-  virtual std::vector<cv::Mat> NextFrames() = 0;
+  virtual std::vector<cv::Mat> Next() = 0;
 
 
   /** @brief Some sinks support seeking backwards (i.e. image directory and video sinks). Others will throw a std::runtime_error. */
-  virtual std::vector<cv::Mat> PreviousFrames() = 0;
+  virtual std::vector<cv::Mat> Previous() = 0;
 
 
   /** @brief Some sinks (video and imagedir) support fast forwarding (skipping frames). Others will throw a std::runtime_error. */
@@ -81,6 +89,9 @@ public:
 
   /** @brief returns the number of configured streams (NOT the number of sinks). */
   virtual size_t NumStreams() const = 0;
+
+  /** @brief returns the number of devices/sinks (NOT the number of streams/frames). */
+  virtual size_t NumDevices() const = 0;
 
 
   /** @brief Return the (user-defined) frame labels.
