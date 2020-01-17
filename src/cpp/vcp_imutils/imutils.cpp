@@ -1,6 +1,5 @@
 #include "imutils.h"
 #include "matutils.h"
-#include <vcp_utils/vcp_logging.h>
 #include <vcp_math/common.h>
 #include <vcp_math/geometry2d.h>
 #include <vcp_math/conversions.h>

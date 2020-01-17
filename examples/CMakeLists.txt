@@ -78,8 +78,8 @@ target_link_libraries(best_demo
     ${VCP_LIBRARIES}
 )
 add_custom_command(TARGET best_demo POST_BUILD
-    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/best/
-    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/data/best/* ${CMAKE_BINARY_DIR}/best/
+    COMMAND ${CMAKE_COMMAND} -E make_directory ${CMAKE_BINARY_DIR}/data-best/
+    COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/data/data-best/* ${CMAKE_BINARY_DIR}/data-best/
 )
 
 #

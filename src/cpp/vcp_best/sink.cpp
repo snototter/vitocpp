@@ -7,6 +7,9 @@
 
 #include "file_sink.h"
 
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::best::sink"
+
 namespace vcp
 {
 namespace best
@@ -232,20 +235,41 @@ FrameType GetFrameTypeFromConfig(const vcp::config::ConfigParams &config,
 
 SinkType GetSinkTypeFromConfig(const vcp::config::ConfigParams &config,
                                const std::string &cam_group,
-                               std::vector<std::string> &configured_keys)
+                               std::vector<std::string> *configured_keys)
 {
-  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "sink_type"), configured_keys.end());
-  return SinkTypeFromString(config.GetString(cam_group + ".sink_type"));
+  if (configured_keys)
+    configured_keys->erase(std::remove(configured_keys->begin(), configured_keys->end(), "sink_type"), configured_keys->end());
+  if (config.SettingExists(cam_group + ".sink_type"))
+    return SinkTypeFromString(config.GetString(cam_group + ".sink_type"));
+  VCP_LOG_WARNING("Mandatory configuration parameter '" << cam_group << ".sink_type' is not specified, trying to look up the obsolete '.type'.");
+
+  if (configured_keys)
+    configured_keys->erase(std::remove(configured_keys->begin(), configured_keys->end(), "type"), configured_keys->end());
+  if (config.SettingExists(cam_group + ".type"))
+    return SinkTypeFromString(config.GetString(cam_group + ".type"));
+
+  VCP_ERROR("Neither '" << cam_group << ".sink_type' nor the (obsolete) '" << cam_group << ".type' has been set. Cannot deduce sink type.");
 }
 
 
+void WarnOfUnusedParameters(const std::string &cam_group, const std::vector<std::string> &unused_parameters)
+{
+  if (!unused_parameters.empty())
+  {
+    std::stringstream s;
+    s << "'" << unused_parameters[0] << "'";
+    for (size_t i = 1; i < unused_parameters.size(); ++i)
+      s << ", '" << unused_parameters[i] << "'";
+    VCP_LOG_WARNING("There are unused parameters for '" << cam_group << "': " << s.str());
+  }
+}
 
 // TODO capture in sink_XY.h if needed (not for webcams, video files, etc.)
 // TODO captures needed for multiple realsenses, multiple rtsp streams, etc.
 
 SinkParams ParseBaseSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group, std::vector<std::string> &configured_keys)
 {
-  const SinkType sink_type = GetSinkTypeFromConfig(config, cam_group, configured_keys);
+  const SinkType sink_type = GetSinkTypeFromConfig(config, cam_group, &configured_keys);
   const FrameType frame_type = GetFrameTypeFromConfig(config, cam_group, configured_keys);
   const std::string sink_label = GetSinkLabelFromConfig(config, cam_group, configured_keys);
   const std::string calibration_file = GetCalibrationFileFromConfig(config, cam_group, configured_keys);

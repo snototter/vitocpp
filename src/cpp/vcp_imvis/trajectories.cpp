@@ -6,6 +6,9 @@
 #include <vcp_math/conversions.h>
 #include <vcp_math/common.h>
 
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::imvis::trajectories"
+
 namespace vcp
 {
 namespace imvis
@@ -15,6 +18,7 @@ namespace trajectories
 
 void DrawFadingTrajectory2d(cv::Mat &image, const std::vector<cv::Vec2d> &positions, bool newest_position_first, int smoothing_window, int trajectory_length, const cv::Scalar &obj_color, const cv::Scalar &fade_color, int max_line_width, int dash_length)
 {
+  VCP_LOG_DEBUG("DrawFadingTrajectory2d()");
   //FIXME TODO dashed trajectories doesn't work yet! we need to interpolate the trajectory points at the dash transitions :-/
   const std::vector<cv::Vec2d> trajectory = smoothing_window > 0 ? SmoothTrajectoryMovingAverage<std::vector<cv::Vec2d>>(positions, smoothing_window) : positions;
 
@@ -60,6 +64,7 @@ void DrawFadingTrajectory2d(cv::Mat &image, const std::vector<cv::Vec2d> &positi
 
 void DrawTrajectory2d(cv::Mat &image, const std::vector<cv::Vec2d> &positions, bool newest_position_first, int smoothing_window, int trajectory_length, const cv::Scalar &obj_color, int line_width, int dash_length)
 {
+  VCP_LOG_DEBUG("DrawTrajectory2d()");
   const std::vector<cv::Vec2d> trajectory = smoothing_window > 0 ? SmoothTrajectoryMovingAverage<std::vector<cv::Vec2d>>(positions, smoothing_window) : positions;
 
   if (trajectory_length == 0)
@@ -94,6 +99,7 @@ void DrawTrajectory2d(cv::Mat &image, const std::vector<cv::Vec2d> &positions, b
 
 cv::RotatedRect GetErrorEllipse(double chisquare_val, const cv::Vec2d &mean, const cv::Mat &cov_mat)
 {
+  VCP_LOG_DEBUG("GetErrorEllipse()");
   // See http://www.visiondummy.com/2014/04/draw-error-ellipse-representing-covariance-matrix/
   // Get the eigenvalues and eigenvectors.
   cv::Mat eigenvalues, eigenvectors;
@@ -119,24 +125,28 @@ cv::RotatedRect GetErrorEllipse(double chisquare_val, const cv::Vec2d &mean, con
 // Error elipse at 90 % confidence
 cv::RotatedRect GetErrorEllipse90(const cv::Vec2d &mean, const cv::Mat &cov_mat)
 {
+  VCP_LOG_DEBUG("GetErrorEllipse90()");
   return GetErrorEllipse(std::sqrt(4.605), mean, cov_mat);
 }
 
 // Error elipse at 95 % confidence
 cv::RotatedRect GetErrorEllipse95(const cv::Vec2d &mean, const cv::Mat &cov_mat)
 {
+  VCP_LOG_DEBUG("GetErrorEllipse95()");
   return GetErrorEllipse(std::sqrt(5.991), mean, cov_mat);
 }
 
 // Error elipse at 99 % confidence
 cv::RotatedRect GetErrorEllipse99(const cv::Vec2d &mean, const cv::Mat &cov_mat)
 {
+  VCP_LOG_DEBUG("GetErrorEllipse99()");
   return GetErrorEllipse(std::sqrt(9.210), mean, cov_mat);
 }
 
 
 void DrawErrorEllipse(cv::Mat &image, const cv::Vec2d &mean, const cv::Mat &cov_mat, const cv::Scalar &color, double chisquare_val, int line_width, double fill_opacity)
 {
+  VCP_LOG_DEBUG("DrawErrorEllipse()");
   const cv::RotatedRect r = GetErrorEllipse(chisquare_val, mean, cov_mat);
   vcp::imvis::drawing::DrawEllipse(image, r, color, line_width, fill_opacity);
 }
@@ -144,6 +154,7 @@ void DrawErrorEllipse(cv::Mat &image, const cv::Vec2d &mean, const cv::Mat &cov_
 
 void DrawErrorEllipse90(cv::Mat &image, const cv::Vec2d &mean, const cv::Mat &cov_mat, const cv::Scalar &color, int line_width, double fill_opacity)
 {
+  VCP_LOG_DEBUG("DrawErrorEllipse90()");
   const cv::RotatedRect r = GetErrorEllipse90(mean, cov_mat);
   vcp::imvis::drawing::DrawEllipse(image, r, color, line_width, fill_opacity);
 }
@@ -151,6 +162,7 @@ void DrawErrorEllipse90(cv::Mat &image, const cv::Vec2d &mean, const cv::Mat &co
 
 void DrawErrorEllipse95(cv::Mat &image, const cv::Vec2d &mean, const cv::Mat &cov_mat, const cv::Scalar &color, int line_width, double fill_opacity)
 {
+  VCP_LOG_DEBUG("DrawErrorEllipse95()");
   const cv::RotatedRect r = GetErrorEllipse95(mean, cov_mat);
   vcp::imvis::drawing::DrawEllipse(image, r, color, line_width, fill_opacity);
 }
@@ -158,6 +170,7 @@ void DrawErrorEllipse95(cv::Mat &image, const cv::Vec2d &mean, const cv::Mat &co
 
 void DrawErrorEllipse99(cv::Mat &image, const cv::Vec2d &mean, const cv::Mat &cov_mat, const cv::Scalar &color, int line_width, double fill_opacity)
 {
+  VCP_LOG_DEBUG("DrawErrorEllipse99()");
   const cv::RotatedRect r = GetErrorEllipse99(mean, cov_mat);
   vcp::imvis::drawing::DrawEllipse(image, r, color, line_width, fill_opacity);
 }

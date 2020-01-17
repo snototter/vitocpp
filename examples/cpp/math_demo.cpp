@@ -22,6 +22,9 @@ int main(int argc, char **argv)
   VCP_UNUSED_VAR(argc);
   VCP_UNUSED_VAR(argv);
 
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "Plane Stuff"
+
   // Plane from 3 points
   auto plane = geo3::PlaneFrom3Points(cv::Vec3d(10,2342.234,0), cv::Vec3d(243,1234,0), cv::Vec3d(12,-3455,0));
   VCP_LOG_INFO("Plane from 3 points:\n  " << plane << "\n  XYZ intercepts: " << geo3::PlaneXYZIntercepts(plane));
@@ -70,6 +73,8 @@ int main(int argc, char **argv)
                  << "  Line:  " << line1 << std::endl
                  << "    Intersects " << ints1 << "==true at " << at1 << std::endl);
 
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "Line Stuff"
   // Point to line/line segment distance
   const geo3::Line3d segment(cv::Vec3d(1,1,1), cv::Vec3d(1,1,3));
   std::vector<cv::Vec3d> points;
@@ -95,20 +100,20 @@ int main(int argc, char **argv)
                << "\n1... vs 1e5, 1: |" << vm::eps_equal(1.000000000000001, 100000.0, 1));
 
 
-  VCP_LOG_INFO("OpenCV Mat types: " << vi::CVMatDepthToString(CV_8U,1) << ", "
-                 << vi::CVMatDepthToString(CV_8S,2) << ", "
-                 << vi::CVMatDepthToString(CV_64F,3) << ", "
-                 << vi::CVMatDepthToString(CV_32S));
-
   // 2D lines
+  std::cout << std::endl;
   geo2::Line2d line2d(cv::Vec2d(10,3), cv::Vec2d(10,5));
   cv::Vec2d pt2d(9.2, 5.7);
   VCP_LOG_INFO("Distance 2d:\n  Line: " << line2d << ", pt: " << pt2d << std::endl << "  Distance: " << geo2::DistancePointLine(pt2d, line2d) << " to segment: " << geo2::DistancePointLineSegment(pt2d, line2d));
   pt2d = cv::Vec2d(10.0, 2.8);
   VCP_LOG_INFO("Distance 2d:\n  Line: " << line2d << ", pt: " << pt2d << std::endl << "  Distance: " << geo2::DistancePointLine(pt2d, line2d) << " to segment: " << geo2::DistancePointLineSegment(pt2d, line2d));
 
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "Misc"
+
   // Mod
-  VCP_LOG_INFO("\nModulo (mathematic instead of symmetric):" << std::endl << "-2 mod 5: " << vm::Mod(-2, 5) << "\n-5 mod 4: " << vm::Mod(-5,4)
+  std::cout << std::endl;
+  VCP_LOG_INFO("Modulo (mathematic instead of symmetric):" << std::endl << "-2 mod 5: " << vm::Mod(-2, 5) << "\n-5 mod 4: " << vm::Mod(-5,4)
                   << "\n-3 mod 4: " << vm::Mod(-3,4) << "\n2 mod 3: " << vm::Mod(2,3) << "\n19 mod 2: " << vm::Mod(19,2));
 
   // GCD
@@ -117,5 +122,11 @@ int main(int argc, char **argv)
   // LCM
   VCP_LOG_INFO("\nLCM(8,12): " << vm::LeastCommonMultiple(8,12) << ", (12,8): " << vm::LeastCommonMultiple(12,8)
                  << "\nLCM(21,6): " << vm::LeastCommonMultiple(21,6));
+
+  std::cout << std::endl;
+  VCP_LOG_INFO("OpenCV Mat types: " << vi::CVMatDepthToString(CV_8U,1) << ", "
+                 << vi::CVMatDepthToString(CV_8S,2) << ", "
+                 << vi::CVMatDepthToString(CV_64F,3) << ", "
+                 << vi::CVMatDepthToString(CV_32S));
   return 0;
 }

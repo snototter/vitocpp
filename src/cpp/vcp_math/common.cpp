@@ -4,6 +4,8 @@
 #include <opencv2/core/core.hpp>
 #include <vcp_utils/vcp_logging.h>
 
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::math"
 namespace vcp
 {
 namespace math

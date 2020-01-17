@@ -2,7 +2,11 @@
 
 #include <vector>
 #include <opencv2/imgproc/imgproc.hpp>
+#include <vcp_utils/vcp_logging.h>
 
+
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::imvis::anaglyph"
 namespace vcp
 {
 namespace imvis
@@ -11,6 +15,7 @@ namespace anaglyph
 {
 void GenerateAnaglyph(const cv::Mat &left, const cv::Mat &right, cv::Mat &anaglyph, bool flip_color_channels, cv::Mat *invalid)
 {
+  VCP_LOG_DEBUG("GenerateAnaglyph()");
   std::vector<cv::Mat> r, l;
 
   cv::split(left, l);
@@ -54,6 +59,7 @@ void GenerateAnaglyph(const cv::Mat &left, const cv::Mat &right, cv::Mat &anagly
 
 cv::Mat ShiftImage(const cv::Mat &img, int offset_x, int offset_y, cv::Mat *padded)
 {
+  VCP_LOG_DEBUG("ShiftImage()");
   cv::Mat shifted = cv::Mat::zeros(img.size(), img.type());
   if (padded)
     *padded = cv::Mat(img.rows, img.cols, CV_8UC1, cv::Scalar::all(255.0));

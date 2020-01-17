@@ -5,10 +5,8 @@
 #include <memory>
 #include <exception>
 #include <opencv2/core/core.hpp>
-
+#include <vcp_config/config_params.h>
 #include "sink_buffer.h"
-#include "common_types.h"
-
 
 namespace vcp
 {
@@ -101,7 +99,6 @@ public:
   bool color_as_bgr;
 
 
-protected:
   SinkParams(const SinkParams &other)
     : sink_type(other.sink_type), frame_type(other.frame_type),
       sink_label(other.sink_label), calibration_file(other.calibration_file),
@@ -197,6 +194,12 @@ double GetOptionalDoubleFromConfig(const vcp::config::ConfigParams &config, cons
 /** @brief Look up an optional boolean with parameter name [cam_group].[key]. To look up only [key], [cam_group] can be empty. */
 bool GetOptionalBoolFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group, const std::string &key, bool default_value);
 
+
+SinkType GetSinkTypeFromConfig(const vcp::config::ConfigParams &config,
+                               const std::string &cam_group,
+                               std::vector<std::string> *configured_keys=nullptr);
+
+void WarnOfUnusedParameters(const std::string &cam_group, const std::vector<std::string> &unused_parameters);
 
 // Should only be available to the base sinkparams/abstract sink class
 //std::string GetSinkLabelFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group);

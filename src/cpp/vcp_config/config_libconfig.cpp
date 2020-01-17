@@ -13,6 +13,8 @@
 #include <vcp_utils/vcp_error.h>
 #include <vcp_utils/string_utils.h>
 
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::config"
 
 namespace vcp
 {

@@ -3,11 +3,16 @@
 #include "common.h"
 #include "conversions.h"
 #include <vcp_utils/vcp_error.h>
+#include <vcp_utils/vcp_logging.h>
 #include "../vcp_imvis/trajectories.h"
 #include <algorithm>
 #include <vector>
 #include <iterator>
 #include <opencv2/imgproc/imgproc.hpp>
+
+
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::math::geo2d"
 
 namespace vcp
 {

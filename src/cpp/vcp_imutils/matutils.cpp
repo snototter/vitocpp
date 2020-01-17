@@ -9,6 +9,9 @@
 // Allow a buffer of 16 KB to zip/unzip a cv::Mat
 #define ZIP_MAT_BUFFER_SIZE 16384
 
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::imutils"
+
 namespace vcp
 {
 namespace imutils

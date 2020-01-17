@@ -12,6 +12,8 @@
 #include <limits>
 #include <opencv2/imgproc/imgproc.hpp>
 
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::imvis::drawing"
 namespace vcp
 {
 namespace imvis
@@ -268,6 +270,7 @@ const cv::Scalar kAxisColorsRGB[3] = { cv::Scalar(255, 80, 0), cv::Scalar(0, 200
 
 void DrawRoundedRect(cv::Mat &image, const cv::Rect &rect, const cv::Scalar &color, double corner_percentage, double fill_opacity, int line_width)
 {
+  VCP_LOG_DEBUG("DrawRoundedRect()");
   // Adapted from https://stackoverflow.com/a/18975399/400948
   if (corner_percentage < 0.0 || corner_percentage > 0.5)
   {
@@ -353,6 +356,7 @@ void DrawRoundedRect(cv::Mat &image, const cv::Rect &rect, const cv::Scalar &col
 
 void DrawRoundedRects(cv::Mat &image, const std::vector<cv::Rect> &rects, const cv::Scalar &color, double corner_percentage, double fill_opacity, int line_width, bool non_overlapping)
 {
+  VCP_LOG_DEBUG("DrawRoundedRects()");
   if (non_overlapping)
   {
     cv::Mat mask = cv::Mat::ones(image.size(), CV_8UC1);
@@ -385,6 +389,7 @@ void DrawRoundedRects(cv::Mat &image, const std::vector<cv::Rect> &rects, const 
 
 void DrawRect(cv::Mat &image, const cv::Rect &rect, const cv::Scalar &color, double fill_opacity, int line_width, int dash_length)
 {
+  VCP_LOG_DEBUG("DrawRect()");
   // Fill, if requested:
   if (fill_opacity > 0.0)
   {
@@ -411,6 +416,7 @@ void DrawRect(cv::Mat &image, const cv::Rect &rect, const cv::Scalar &color, dou
 
 void DrawRects(cv::Mat &image, const std::vector<cv::Rect> &rects, const cv::Scalar &color, double fill_opacity, int line_width, int dash_length, bool non_overlapping)
 {
+  VCP_LOG_DEBUG("DrawRects()");
   if (non_overlapping)
   {
     cv::Mat mask = cv::Mat::ones(image.size(), CV_8UC1);
@@ -446,6 +452,7 @@ void DrawBoundingBoxes2d(cv::Mat &image, const std::vector<cv::Rect> &rects, con
                          const std::vector<cv::Scalar> &font_colors, const std::vector<cv::Scalar> &text_box_colors, int text_box_padding,
                          double text_box_opacity, int font_face, double font_scale, int font_thickness)
 {
+  VCP_LOG_DEBUG("DrawBoundingBoxes2d()");
   const bool dashes_provided = !dash_lengths.empty();
   const bool text_bg_provided = !text_box_colors.empty();
   const bool text_fg_provided = !font_colors.empty();
@@ -524,6 +531,7 @@ void DrawRotatedBoundingBoxes2d(cv::Mat &image, const std::vector<cv::RotatedRec
                          const std::vector<cv::Scalar> &font_colors, const std::vector<cv::Scalar> &text_box_colors, int text_box_padding,
                          double text_box_opacity, int font_face, double font_scale, int font_thickness)
 {
+  VCP_LOG_DEBUG("DrawRotatedBoundingBoxes2d()");
   const bool dashes_provided = !dash_lengths.empty();
   const bool text_bg_provided = !text_box_colors.empty();
   const bool text_fg_provided = !font_colors.empty();
@@ -597,6 +605,7 @@ void DrawRotatedBoundingBoxes2d(cv::Mat &image, const std::vector<cv::RotatedRec
 
 void DrawRotatedRects(cv::Mat &image, const std::vector<cv::RotatedRect> &rects, const cv::Scalar &color, double fill_opacity, int line_width, int dash_length, bool non_overlapping)
 {
+  VCP_LOG_DEBUG("DrawRotatedRects()");
   if (non_overlapping)
   {
     cv::Mat mask = cv::Mat::ones(image.size(), CV_8UC1);
@@ -629,6 +638,7 @@ void DrawRotatedRects(cv::Mat &image, const std::vector<cv::RotatedRect> &rects,
 
 void DrawDashedRect(cv::Mat &image, const cv::Rect &rect, const cv::Scalar &color, int dash_length, int line_width)
 {
+  VCP_LOG_DEBUG("DrawDashedRect()");
   const cv::Point tl = rect.tl();
   const cv::Point br(rect.x + rect.width - 1, rect.y + rect.height - 1); // OpenCV calculates rect.br() as x+w, y+h (which would be (W+1) x (H+1)!;
   const cv::Point tr(br.x, tl.y);
@@ -643,6 +653,7 @@ void DrawDashedRect(cv::Mat &image, const cv::Rect &rect, const cv::Scalar &colo
 
 void DrawRotatedRect(cv::Mat &image, const cv::RotatedRect &rect, const cv::Scalar &color, double fill_opacity, int line_width, int dash_length)
 {
+  VCP_LOG_DEBUG("DrawRotatedRect()");
   // Fill, if requested:
   if (fill_opacity > 0.0)
   {
@@ -713,6 +724,7 @@ void DrawRotatedRect(cv::Mat &image, const cv::RotatedRect &rect, const cv::Scal
 
 void DrawDashedRotatedRect(cv::Mat &image, const cv::RotatedRect &rect, const cv::Scalar &color, int dash_length, int line_width)
 {
+  VCP_LOG_DEBUG("DrawDashedRotatedRect()");
   cv::Point2f vertices[4];
   rect.points(vertices);
 
@@ -723,6 +735,7 @@ void DrawDashedRotatedRect(cv::Mat &image, const cv::RotatedRect &rect, const cv
 
 void DrawDashedLine(const cv::Point &pt1, const cv::Point &pt2, const cv::Scalar &color, int dash_length, int thickness, cv::Mat &image)
 {
+  VCP_LOG_DEBUG("DrawDashedLine()");
   if (pt1 == pt2)
     return;
 
@@ -775,6 +788,7 @@ void DrawDashedLine(const cv::Point &pt1, const cv::Point &pt2, const cv::Scalar
 
 void DrawLines(cv::Mat &image, const std::vector<cv::Point> &start, const std::vector<cv::Point> &end, const cv::Scalar &color, int line_width, const std::vector<int> &dash_lengths)
 {
+  VCP_LOG_DEBUG("DrawLines() with single color.");
   VCP_CHECK(start.size() == end.size());
   VCP_CHECK(dash_lengths.empty() || dash_lengths.size() == start.size());
 
@@ -791,6 +805,7 @@ void DrawLines(cv::Mat &image, const std::vector<cv::Point> &start, const std::v
 
 void DrawLines(cv::Mat &image, const std::vector<cv::Point> &start, const std::vector<cv::Point> &end, const std::vector<cv::Scalar> &colors, int line_width, const std::vector<int> &dash_lengths)
 {
+  VCP_LOG_DEBUG("DrawLines() with different colors.");
   VCP_CHECK(start.size() == end.size());
   VCP_CHECK(colors.size() == start.size());
   VCP_CHECK(dash_lengths.empty() || dash_lengths.size() == start.size());
@@ -807,6 +822,7 @@ void DrawLines(cv::Mat &image, const std::vector<cv::Point> &start, const std::v
 
 void DrawInfiniteLine(cv::Mat &image, const cv::Point &pt1, const cv::Point &pt2, const cv::Scalar &color, int line_width, int dash_length)
 {
+  VCP_LOG_DEBUG("DrawInfiniteLine()");
   const vcp::math::geo2d::Line2d line = vcp::math::geo2d::ClipLineByRectangle(vcp::math::geo2d::Line2d(pt1, pt2), cv::Rect(0, 0, image.cols, image.rows));
 
   if (!line.empty())
@@ -823,6 +839,7 @@ void DrawInfiniteLine(cv::Mat &image, const cv::Point &pt1, const cv::Point &pt2
 
 void DrawPolygon2d(cv::Mat &image, const std::vector<cv::Point> &polygon, const cv::Scalar &color, int line_width, int dash_length, double fill_opacity)
 {
+  VCP_LOG_DEBUG("DrawPolygon2d()");
   if (polygon.size() < 3)
     return;
 
@@ -921,6 +938,7 @@ void DrawPolygon2d(cv::Mat &image, const std::vector<cv::Point> &polygon, const 
 
 void DrawLineSegment3d(cv::Mat &image, const cv::Vec3d &pt1, const cv::Vec3d &pt2, const cv::Mat &P, const cv::Scalar &color, int line_width, int dash_length, double scale_image_points, cv::Point *prj1, cv::Point *prj2)
 {
+  VCP_LOG_DEBUG("DrawLineSegment3d()");
   const cv::Point from = utils::ProjectPointWithScale(P, pt1, scale_image_points);
   const cv::Point to = utils::ProjectPointWithScale(P, pt2, scale_image_points);
 
@@ -947,6 +965,7 @@ void DrawLineSegment3d(cv::Mat &image, const cv::Vec3d &pt1, const cv::Vec3d &pt
 
 void DrawPolygon3d(cv::Mat &image, const std::vector<cv::Vec3d> &pts, const cv::Mat &P, const cv::Scalar &color, double fill_opacity, int line_width, int dash_length, double scale_image_points)
 {
+  VCP_LOG_DEBUG("DrawPolygon3d()");
   if (pts.size() < 2)
     return;
 
@@ -1042,6 +1061,7 @@ std::string TextAnchorToString(int text_anchor)
 
 void DrawTextBox(cv::Mat &image, const std::string &text, const cv::Point &pos, int anchor, int padding, double fill_opacity, const cv::Scalar &font_color, const cv::Scalar &bg_color, int font_face, double font_scale, int thickness, cv::Rect *image_roi)
 {
+  VCP_LOG_DEBUG("DrawTextBox()");
   const cv::Size txt_size = cv::getTextSize(text, font_face, font_scale, thickness, nullptr);
   const cv::Size padded_txt_size(txt_size.width + 2*padding, txt_size.height + 2*padding);
 
@@ -1106,6 +1126,7 @@ void DrawTextBox(cv::Mat &image, const std::string &text, const cv::Point &pos, 
 void DrawArrow(const cv::Point &pt1, const cv::Point &pt2, const cv::Scalar &color, cv::Mat &image,
                int thickness, double tip_length, int dash_length)
 {
+  VCP_LOG_DEBUG("DrawArrow()");
   // Adapted from OpenCV 3.X for two reasons: OpenCV 2.x has no such functionality and we want dashed arrows sometimes.
   // Factor to normalize the size of the tip depending on the length of the arrow
   const double tip_size = cv::norm(pt1 - pt2) * tip_length;
@@ -1134,7 +1155,6 @@ void DrawArrow(const cv::Point &pt1, const cv::Point &pt2, const cv::Scalar &col
 }
 
 
-//TODO doesn't work with 20,20,20, etc
 cv::Scalar ComplementaryColor(const cv::Scalar &color, bool is_rgb)
 {
   // Opposites of white and black are ambiguous within the color wheel!
@@ -1168,6 +1188,7 @@ cv::Scalar InvertColorRGB(const cv::Scalar &color)
 
 void DrawPoints(cv::Mat &image, const std::vector<cv::Point> &points, const std::vector<cv::Scalar> &colors, int radius, int line_width, double alpha)
 {
+  VCP_LOG_DEBUG("DrawPoints() with different colors.");
   VCP_CHECK(points.size() == colors.size());
   VCP_CHECK(alpha >= 0.0 && alpha <= 1.0);
 
@@ -1184,6 +1205,7 @@ void DrawPoints(cv::Mat &image, const std::vector<cv::Point> &points, const std:
 
 void DrawPoints(cv::Mat &image, const std::vector<cv::Point> &points, const cv::Scalar &color, int radius, int line_width, double alpha, bool flip_color_channels)
 {
+  VCP_LOG_DEBUG("DrawPoints() with single color.");
   std::vector<cv::Scalar> colors;
   colors.reserve(points.size());
   const bool valid_color = !((color[0] < 0.0) || (color[1] < 0.0) || (color[2] < 0.0));
@@ -1202,6 +1224,7 @@ void DrawPoints(cv::Mat &image, const std::vector<cv::Point> &points, const cv::
 
 void DrawEllipse(cv::Mat &image, const cv::RotatedRect &rect, const cv::Scalar &color, int line_width, double fill_opacity)
 {
+  VCP_LOG_DEBUG("DrawEllipse()");
   // Fill, if requested:
   if (fill_opacity > 0.0)
   {
@@ -1235,6 +1258,7 @@ void DrawEllipse(cv::Mat &image, const cv::RotatedRect &rect, const cv::Scalar &
 void DrawXYZAxes(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::Mat &t, const cv::Vec3d &origin,
               double scale_axes, double scale_image_points, int line_width, int dash_length, bool image_is_rgb)
 {
+  VCP_LOG_DEBUG("DrawXYZAxes()");
   // Check if origin is visible.
   // ... it must be in front of the image plane:
   const cv::Vec4d image_plane = vcp::math::geo3d::ImagePlaneInWorldCoordinateSystem(R, t);
@@ -1273,6 +1297,7 @@ void DrawXYZAxes(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::M
 
 void DrawHorizon(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::Mat &t, const cv::Scalar &color, double scale_image_points, int line_width, int dash_length, bool warn_if_not_visible)
 {
+  VCP_LOG_DEBUG("DrawHorizon()");
   const double original_width = image.cols / scale_image_points;
   const double original_height = image.rows / scale_image_points;
   vcp::math::geo2d::Line2d horizon = vcp::math::geo2d::GetProjectionOfHorizon(K, R, t, cv::Size(original_width, original_height));
@@ -1300,6 +1325,7 @@ void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, con
                          const cv::Vec2d &grid_origin, double scale_image_points,
                          int point_radius, int line_width, double opacity, bool flip_color_channels)
 {
+  VCP_LOG_DEBUG("DrawGroundplaneGrid()");
   // If our FOV is smaller than the given grid extent, we don't want to project all the points - so first check what's actually visible, then continue to draw.
 
   // We need to avoid projecting points which are above the horizon!
@@ -1799,6 +1825,7 @@ cv::Point GetTextPos(const vcp::math::geo3d::Line3d &a, const vcp::math::geo3d::
 
 bool DrawBox3d(cv::Mat &image, const Box3d &box, const cv::Mat &K, const cv::Mat &Rt, const cv::Scalar &color, cv::Rect *bounding_rect_box, cv::Point *text_pos, std::vector<cv::Point> *convex_hull, int text_anchor, int line_width, double scale_image_points, int dash_length, double top_fill_opacity, double bottom_fill_opacity)
 {
+  VCP_LOG_DEBUG("DrawBox3d()");
   namespace geo3 = vcp::math::geo3d;
 
   if (!box.Valid())
@@ -2029,6 +2056,7 @@ void DrawBoundingBoxes3d(cv::Mat &image, const cv::Mat &K, const cv::Mat &Rt, co
                          double fill_top_opacity, double fill_bottom_opacity, int text_anchor, int text_box_padding, double text_box_opacity,
                          const std::vector<cv::Scalar> &font_colors, const std::vector<cv::Scalar> &text_box_colors, int font_face, double font_scale, int font_thickness)
 {
+  VCP_LOG_DEBUG("DrawBoundingBoxes3d()");
   const bool text_bg_provided = !text_box_colors.empty();
   const bool text_fg_provided = !font_colors.empty();
 

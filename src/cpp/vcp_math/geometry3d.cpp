@@ -3,11 +3,16 @@
 #include "common.h"
 #include "conversions.h"
 #include <vcp_utils/vcp_error.h>
+#include <vcp_utils/vcp_logging.h>
 
 // Plane stuff based on tutorials and summaries at:
 // * http://mathworld.wolfram.com/Plane.html
 // * http://tutorial.math.lamar.edu/Classes/CalcIII/EqnsOfPlanes.aspx
 // * http://www.easy-math.net/transforming-between-plane-forms/
+
+
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::math::geo3d"
 
 namespace vcp
 {

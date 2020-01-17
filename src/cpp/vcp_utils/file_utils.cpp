@@ -21,6 +21,8 @@
   #include <sys/stat.h>
 #endif
 
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::utils::file"
 namespace vcp
 {
 namespace utils

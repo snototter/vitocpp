@@ -83,7 +83,6 @@ set(K4A_STREAM_SOURCES
 
 # Common header files - will be extended below for optional devices
 set(PUBLIC_HEADERS
-    common_types.h
     sink.h
     sink_buffer.h
     file_sink.h
@@ -98,7 +97,6 @@ set(PRIVATE_HEADERS)
 
 # Common source files - will be extended below for optional devices
 set(SOURCES
-#    common_types.cpp
     sink.cpp
     file_sink.cpp
 #  webcam_sink.cpp

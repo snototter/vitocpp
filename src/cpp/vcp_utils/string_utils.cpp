@@ -1,11 +1,11 @@
 #include "string_utils.h"
 #include <algorithm>
 #include <fstream>
+#include "vcp_logging.h"
 
 namespace vcp {
 namespace utils {
 namespace string {
-#define IGNORE_UNUSED_VAR(v) do { (void)(v); } while(0);
 
 bool EndsWith(const std::string &s, const std::string &end) {
   if (s.length() >= end.length())
@@ -55,10 +55,10 @@ bool IsNumeric(const std::string &s) {
   char *pd, *pl;
   // Check long
   long dummyl = strtol(s.c_str(), &pl, 10);
-  IGNORE_UNUSED_VAR(dummyl);
+  VCP_UNUSED_VAR(dummyl);
   // Check double
   double dummyd = strtod(s.c_str(), &pd);
-  IGNORE_UNUSED_VAR(dummyd);
+  VCP_UNUSED_VAR(dummyd);
   return (*pd == 0) || (*pl == 0);
 }
 

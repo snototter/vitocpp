@@ -11,6 +11,9 @@
 // * DEBUG and INFO messages are logged to std::cout
 // * WARNING and FAILURE messages are logged to std::cerr
 
+//TODO skip if empty, else do undef, def
+#define VCP_LOGGING_COMPONENT nullptr
+
 #define VCP_UNUSED_VAR(var) (void)(var)
 
 //----------------------------------------------------------------
@@ -20,12 +23,12 @@
 
 // Default logging macro - write 'msg' to given 'stream'.
 // If prefix/filename/line-nr are given, they will be printed too.
-#define VCP_LOG_STREAM(stream, prefix, filename, linenr, msg)   (vcp::utils::logging::Log(stream, prefix, filename, linenr, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
+#define VCP_LOG_STREAM(stream, prefix, filename, linenr, msg)   (vcp::utils::logging::Log(stream, prefix, VCP_LOGGING_COMPONENT, filename, linenr, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
 
 // Similar to VCP_LOG_STREAM, but there will be at most 1 message
 // within nsec seconds.
 // So make sure, not to send failure/error messages to NSEC...
-#define VCP_LOG_STREAM_NSEC(stream, prefix, filename, linenr, msg, nsec)  (vcp::utils::logging::LogNSec(stream, prefix, filename, linenr, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg, nsec));
+#define VCP_LOG_STREAM_NSEC(stream, prefix, filename, linenr, msg, nsec)  (vcp::utils::logging::LogNSec(stream, prefix, VCP_LOGGING_COMPONENT, filename, linenr, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg, nsec));
 
 
 // In case you want a time-stamped log message to a specific stream, use this
@@ -143,7 +146,7 @@ struct LogData
 
 
 template<typename List>
-void LogNSec(std::ostream &stream, const char* severity, const char* file, int line, LogData<List>&& data, double nsec)
+void LogNSec(std::ostream &stream, const char* severity, const char* component, const char* file, int line, LogData<List>&& data, double nsec)
 NOINLINE_ATTRIBUTE {
   static bool initialized = false;
   static std::chrono::system_clock::time_point prev_invocation;
@@ -157,10 +160,14 @@ NOINLINE_ATTRIBUTE {
   else
   {
     initialized = true;
-  }
+  }  
   prev_invocation = now;
   if (severity)
     stream << "[" << severity << "] ";
+
+  if (component)
+    stream << "(" << component << ") ";
+
   output(stream, std::move(data.list));
   stream << std::endl;
   if (file)
@@ -182,10 +189,14 @@ void LogTimed(std::ostream &stream, LogData<List>&& data)
 }
 
 template<typename List>
-void Log(std::ostream &stream, const char *severity, const char* file, int line, LogData<List>&& data)
+void Log(std::ostream &stream, const char* severity, const char* component, const char* file, int line, LogData<List>&& data)
   NOINLINE_ATTRIBUTE {
   if (severity)
     stream << "[" << severity << "] ";
+
+  if (component)
+    stream << "(" << component << ") ";
+
   output(stream, std::move(data.list));
   stream << std::endl;
   if (file)

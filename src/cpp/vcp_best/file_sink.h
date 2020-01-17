@@ -5,7 +5,6 @@
 #include <memory>
 #include <exception>
 #include <opencv2/core/core.hpp>
-#include "common_types.h"
 #include "sink.h"
 
 namespace vcp

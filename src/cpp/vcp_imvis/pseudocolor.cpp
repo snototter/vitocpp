@@ -6,9 +6,12 @@
 #include <opencv2/core/core.hpp>
 
 #include <vcp_utils/vcp_error.h>
+#include <vcp_utils/vcp_logging.h>
 #include <vcp_imutils/imutils.h>
 #include <vcp_imutils/matutils.h>
 
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::imvis::pseudocolor"
 namespace vcp
 {
 namespace imvis
@@ -834,6 +837,7 @@ std::ostream& operator<<(std::ostream & os, const ColorMap &cm)
 
 void Colorize(const cv::Mat &values, const ColorMap &colormap, cv::Mat &colored, double limit_from, double limit_to)
 {
+  VCP_LOG_DEBUG("Colorize()");
   assert(values.channels() == 1);
 
   const cv::Scalar *map = GetColorMap(colormap);
@@ -861,6 +865,7 @@ void Colorize(const cv::Mat &values, const ColorMap &colormap, cv::Mat &colored,
 
 cv::Scalar GetPseudocolor(double value, const ColorMap &colormap, double limit_from, double limit_to)
 {
+  VCP_LOG_DEBUG("GetPseudocolor()");
   const cv::Scalar *map = GetColorMap(colormap);
 
   // Lookup color
@@ -874,6 +879,7 @@ cv::Scalar GetPseudocolor(double value, const ColorMap &colormap, double limit_f
 
 cv::Mat Highlight(const cv::Mat &image, const cv::Mat &mask, const cv::Scalar &highlight, double color_opacity)
 {
+  VCP_LOG_DEBUG("Highlight()");
   cv::Mat vis;
   vcp::imutils::ConvertTo8U(image, vis);
 

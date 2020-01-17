@@ -16,6 +16,9 @@
 
 #include "capture.h"
 
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "file_sink"
+
 namespace vcp
 {
 namespace best
@@ -167,8 +170,6 @@ namespace
 //};
 
 
-#undef VCP_LOGGING_COMPONENT
-#define VCP_LOGGING_COMPONENT "VideoFileSink"
 /** @brief Replays a video frame-by-frame. Supports retrieving previous frames. */
 class VideoFileSink : public StreamSink
 {
@@ -376,7 +377,7 @@ public:
   std::string StreamLabel(size_t stream_index) const override
   {
     VCP_UNUSED_VAR(stream_index);
-    return params_.label;
+    return params_.sink_label;
   }
 
 private:
@@ -386,8 +387,6 @@ private:
 };
 
 
-#undef VCP_LOGGING_COMPONENT
-#define VCP_LOGGING_COMPONENT "ImageDirectorySink"
 class ImageDirectorySink : public StreamSink
 {
 public:
@@ -565,7 +564,7 @@ public:
   std::string StreamLabel(size_t stream_index) const override
   {
     VCP_UNUSED_VAR(stream_index);
-    return params_.label;
+    return params_.sink_label;
   }
 
 private:
@@ -576,9 +575,6 @@ private:
 };
 } // namespace
 
-
-#undef VCP_LOGGING_COMPONENT
-#define VCP_LOGGING_COMPONENT "file_sink"
 
 /** @brief Given the cameraXX.type (configuration) parameter, checks if the configuration belongs to a VideoFileSink. */
 bool IsVideoFileSink(const std::string &type_param)
@@ -598,12 +594,12 @@ bool IsVideoFileSink(const std::string &type_param)
 /** @brief Given the cameraXX.type (configuration) parameter, checks if the configuration belongs to a VideoFileSink. */
 bool IsImageDirectorySink(const std::string &type_param)
 {
-  std::string type(type_param);
+  std::string type = vcp::utils::string::Replace(type_param, "-", "_");
   vcp::utils::string::ToLower(type);
-  if (type.compare("img-dir") == 0
-      || type.compare("image-dir") == 0
-      || type.compare("image-directory") == 0
-      || type.compare("img-sequence") == 0)
+  if (type.compare("img_dir") == 0
+      || type.compare("image_dir") == 0
+      || type.compare("image_directory") == 0
+      || type.compare("img_sequence") == 0)
   {
     return true;
   }
@@ -613,20 +609,62 @@ bool IsImageDirectorySink(const std::string &type_param)
 
 VideoFileSinkParams VideoFileSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param)
 {
-  //TODO
+  std::vector<std::string> configured_keys = config.ListConfigGroupParameters(cam_param);
+  const SinkParams sink_params = ParseBaseSinkParamsFromConfig(config, cam_param, configured_keys);
+
+  std::string file;
+  if (config.SettingExists(cam_param + ".video_file"))
+  {
+    file = config.GetString(cam_param + ".video_file");
+    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "video_file"), configured_keys.end());
+  }
+  else if (config.SettingExists(cam_param + ".file"))
+  {
+    file = config.GetString(cam_param + ".file");
+    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "file"), configured_keys.end());
+  }
+  else if (config.SettingExists(cam_param + ".filename"))
+  {
+    file = config.GetString(cam_param + ".filename");
+    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "filename"), configured_keys.end());
+  }
+  else if (config.SettingExists(cam_param + ".video"))
+  {
+    file = config.GetString(cam_param + ".video");
+    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "video"), configured_keys.end());
+  }
+  else
+  {
+    VCP_ERROR("Cannot find video parameter for '" << cam_param << "'. Use either 'file', 'filename', 'video' or 'video_file' to specify it.");
+  }
+
+  const size_t start_frame = static_cast<size_t>(GetOptionalIntFromConfig(config, cam_param, "first_frame", 0));
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "first_frame"), configured_keys.end());
+
+  const double frame_rate = GetOptionalDoubleFromConfig(config, cam_param, "fps", -1.0);
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "fps"), configured_keys.end());
+
+  WarnOfUnusedParameters(cam_param, configured_keys);
+
+  return VideoFileSinkParams(sink_params, file, start_frame, frame_rate);
 }
 
 ImageDirectorySinkParams ImageDirectorySinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param)
 {
   std::vector<std::string> configured_keys = config.ListConfigGroupParameters(cam_param);
-  for (const auto &cp : camera_parameters)
-    VCP_LOG_FAILURE("TODO check before: " << cp);
   const SinkParams sink_params = ParseBaseSinkParamsFromConfig(config, cam_param, configured_keys);
-  for (const auto &cp : camera_parameters)
-    VCP_LOG_FAILURE("TODO check after: " << cp);
+
   const std::string folder = config.GetString(cam_param + ".directory");
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "directory"), configured_keys.end());
+
   const size_t start_frame = static_cast<size_t>(GetOptionalIntFromConfig(config, cam_param, "first_frame", 0));
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "first_frame"), configured_keys.end());
+
   const double frame_rate = GetOptionalDoubleFromConfig(config, cam_param, "fps", -1.0);
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "fps"), configured_keys.end());
+
+  WarnOfUnusedParameters(cam_param, configured_keys);
+
   return ImageDirectorySinkParams(sink_params, folder, start_frame, frame_rate);
 }
 

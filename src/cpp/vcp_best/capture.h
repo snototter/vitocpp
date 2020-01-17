@@ -10,7 +10,6 @@
 #include <opencv2/core/core.hpp>
 #include <vcp_config/config_params.h>
 #include "sink.h"
-//#include "common_types.h"
 
 namespace vcp
 {

@@ -12,9 +12,6 @@
 #include <exception>
 #include <thread>
 
-#undef VCP_LOGGING_COMPONENT
-#define VCP_LOGGING_COMPONENT "vcp::best"
-
 #include "file_sink.h"
 //#include "rectifier.h"
 //#include "capture_file.h"
@@ -37,18 +34,21 @@ namespace vcp
 {
 namespace best
 {
+
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::best::capture"
 class MultiDeviceCapture : public Capture
 {
 public:
   MultiDeviceCapture(const vcp::config::ConfigParams &config) : Capture()
   {
-    VCP_LOG_DEBUG("MultiDeviceCapture::MultiDeviceCapture()");
+    VCP_LOG_DEBUG("MultiDeviceCapture()");
     LoadConfig(config);
   }
 
   void LoadConfig(const vcp::config::ConfigParams &config)
   {
-    VCP_LOG_DEBUG("MultiDeviceCapture::LoadConfig()");
+    VCP_LOG_DEBUG("LoadConfig()");
     //size_t num_cameras = GetNumCamerasFromConfig(config);
 
 //#ifdef WITH_IPCAMERA
@@ -82,13 +82,24 @@ public:
 //      std::stringstream id;
 //      id << "camera" << (i+1);
 //      const std::string cam_type = config.GetString(id.str() + ".type");
-      const std::string cam_type = config.GetString(cam_config_name + ".type");
+      //const std::string cam_type = config.GetString(cam_config_name + ".type");//FUCKER
+      const SinkType sink_type = GetSinkTypeFromConfig(config, cam_config_name);
 
-      if (IsImageDirectorySink(cam_type))
+      switch(sink_type)
       {
-        imgdir_params.push_back(ImageDirectorySinkParamsFromConfig(config, cam_config_name));
-//        cck_imgdir.push_back(id.str());
+        case SinkType::IMAGE_DIR:
+          imgdir_params.push_back(ImageDirectorySinkParamsFromConfig(config, cam_config_name));
+          break;
+
+        case SinkType::VIDEO_FILE:
+          video_params.push_back(VideoFileSinkParamsFromConfig(config, cam_config_name));
+          break;
+
+        default:
+          VCP_LOG_FAILURE("Sink type '" << sink_type << "' is not yet supported!");
+          break;
       }
+
 //#ifdef WITH_IPCAMERA
 //      else if (IsMonocularIpCamera(cam_type))
 //      {
@@ -122,47 +133,27 @@ public:
 //        cck_realsense.push_back(id.str());
 //      }
 //#endif // WITH_REALSENSE2
-      else if (IsVideoFileSink(cam_type))
-      {
-        video_params.push_back(VideoFileSinkParamsFromConfig(config, cam_config_name));
-//        cck_video.push_back(id.str());
-      }
+//      else if (IsVideoFileSink(cam_type))
+//      {
+//
+//      }
 //      else if (IsWebcam(cam_type))
 //      {
 //        webcam_params.push_back(WebcamSinkParamsFromConfig(config, id.str()));
 //        cck_webcam.push_back(id.str());
 //      }
-      else
-        VCP_LOG_FAILURE("Camera type '" << cam_type << "' is not yet supported!");
     }
 
     // TODO if you extend the sinks, be sure to set label, calibration file, StreamType(s) and corresponding config key,
     // since 'camera1' may be loaded after 'camera7' if you mix types, due to the following ordering!
     // Additionally, be sure to add the correct SinkType!
 
-    // Initialize the indiviual captures
+    // Initialize the individual captures
     for (const auto &p : imgdir_params)
-    {
-      const auto sink = vcp::best::CreateSink(p);
-      for (size_t i = 0; i < sink->NumStreams(); ++i)
-      {
-        sink_types_.push_back(sink->Type(i));
-        sink_params_.push_back(p);
-        frame_labels_.push_back(sink->StreamLabel(i));
-      }
-    }
-//    if (!imgdir_params.empty())
-//    {
-//      for (const auto &p : imgdir_params)
-//      {
-//        sinks_.push_back(pvt::icc::CreateSink(p));
-//        AddLabel(p.label);
-//        AddCalibrationFile(p.calibration_file);
-//        AddStreamType(p.stream_type);
-//        sink_types_.push_back(SinkType::IMAGE_DIRECTORY);
-//      }
-//      AddCorrespondingConfigKeys(cck_imgdir);
-//    }
+      AddSink(vcp::best::CreateSink(p), p);
+
+    for (const auto &p : video_params)
+      AddSink(vcp::best::CreateSink(p), p);
 
 #ifdef WITH_IPCAMERA
     if (!ip_mono_params.empty())
@@ -303,10 +294,22 @@ public:
 //    }
   }
 
-  virtual ~MultiCapture()
+  void AddSink(std::unique_ptr<StreamSink> sink, const SinkParams params)
   {
-    VCP_LOG_DEBUG("MultiDeviceCapture::~MultiDeviceCapture()");
-    Stop();
+    for (size_t i = 0; i < sink->NumStreams(); ++i)
+    {
+      sink_types_.push_back(sink->Type(i));
+      sink_params_.push_back(params);
+      frame_labels_.push_back(sink->StreamLabel(i));
+    }
+    sinks_.push_back(std::move(sink));
+  }
+
+  virtual ~MultiDeviceCapture()
+  {
+    VCP_LOG_DEBUG("~MultiDeviceCapture()");
+    StopStreams();
+    CloseDevices();
     for (size_t i = 0; i < sinks_.size(); ++i)
       sinks_[i].reset();
   }
@@ -336,7 +339,7 @@ public:
 
   bool AreDevicesAvailable() const override
   {
-    VCP_LOG_DEBUG("MultiDeviceCapture::AreDevicesAvailable()");
+    VCP_LOG_DEBUG("AreDevicesAvailable()");
     for (size_t i = 0; i < sinks_.size(); ++i)
     {
       if (!sinks_[i]->IsDeviceAvailable())
@@ -348,7 +351,7 @@ public:
 
   bool AreFramesAvailable() const override
   {
-    VCP_LOG_DEBUG("MultiDeviceCapture::AreFramesAvailable()");
+    VCP_LOG_DEBUG("AreFramesAvailable()");
     for (size_t i = 0; i < sinks_.size(); ++i)
     {
       if (!sinks_[i]->IsFrameAvailable())
@@ -360,7 +363,7 @@ public:
 
   bool OpenDevices() override
   {
-    VCP_LOG_DEBUG("MultiDeviceCapture::OpenDevices()");
+    VCP_LOG_DEBUG("OpenDevices()");
     bool success = true;
     for (size_t i = 0; i < sinks_.size(); ++i)
       success = success && sinks_[i]->OpenDevice();
@@ -370,7 +373,7 @@ public:
 
   bool CloseDevices() override
   {
-    VCP_LOG_DEBUG("MultiDeviceCapture::CloseDevices()");
+    VCP_LOG_DEBUG("CloseDevices()");
     bool success = true;
     for (size_t i = 0; i < sinks_.size(); ++i)
       success = success && sinks_[i]->CloseDevice();
@@ -380,7 +383,7 @@ public:
 
   bool StartStreams() override
   {
-    VCP_LOG_DEBUG("MultiDeviceCapture::StartStreams()");
+    VCP_LOG_DEBUG("StartStreams()");
     bool success = true;
     for (size_t i = 0; i < sinks_.size(); ++i)
     {
@@ -402,7 +405,7 @@ public:
 
   bool StopStreams() override
   {
-    VCP_LOG_DEBUG("MultiDeviceCapture::StopStreams()");
+    VCP_LOG_DEBUG("StopStreams()");
     bool success = true;
     for (size_t i = 0; i < sinks_.size(); ++i)
       success = success && sinks_[i]->StopStreaming();
@@ -412,7 +415,7 @@ public:
 
   std::vector<cv::Mat> Next() override
   {
-    VCP_LOG_DEBUG("MultiDeviceCapture::Next()");
+    VCP_LOG_DEBUG("Next()");
     // Collect the frames of all captures and store them in a single vector
     std::vector<cv::Mat> frames;
     for (size_t i = 0; i < sinks_.size(); ++i)
@@ -426,7 +429,7 @@ public:
 
   std::vector<cv::Mat> Previous() override
   {
-    VCP_LOG_DEBUG("MultiDeviceCapture::Previous()");
+    VCP_LOG_DEBUG("Previous()");
     // Collect frames of all sinks - may throw an exception if not implemented.
     std::vector<cv::Mat> frames;
     for (size_t i = 0; i < sinks_.size(); ++i)
@@ -440,7 +443,7 @@ public:
 
   std::vector<cv::Mat> FastForward(size_t num_frames) override
   {
-    VCP_LOG_DEBUG("MultiDeviceCapture::FastForward(" << num_frames << ")");
+    VCP_LOG_DEBUG("FastForward(" << num_frames << ")");
     // Collect frames of all sinks - may throw an exception if not implemented.
     std::vector<cv::Mat> frames;
     for (size_t i = 0; i < sinks_.size(); ++i)
