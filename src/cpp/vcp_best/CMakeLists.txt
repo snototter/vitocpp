@@ -10,8 +10,12 @@ message("Configuring module ${LIB_NAME}")
 #option(VCP_BEST_WITH_REALSENSE2_STREAMING "Build Intel RealSense streaming module (requires librealsense2)." OFF)
 #option(VCP_BEST_WITH_K4A_STREAMING "Build Kinect 4 Azure streaming module (requires libk4a)." OFF)
 #option(VCP_BEST_K4A_STREAM_COLOR_MJPG "K4A sends color as MJPG if ON (decoding takes ~40ms), otherwise BGRA32 (higher bandwidth)." OFF)
+option(VCP_BEST_DEBUG_FRAMERATE "If enabled, sinks debug their frame rate (Enable DEBUG level!)" ON)
 #TODO use library-wide flag instead option(VCP_BEST_DEBUG_FRAMERATE "Include timing + debug output to analyze streaming frame rates" OFF)
 
+if(VCP_BEST_DEBUG_FRAMERATE)
+    add_definitions(-DVCP_BEST_DEBUG_FRAMERATE)
+endif()
 
 # HTTP Streaming Files
 set(PUBLIC_HTTP_STREAM_HEADERS
@@ -86,7 +90,7 @@ set(PUBLIC_HEADERS
     sink.h
     sink_buffer.h
     file_sink.h
-#  webcam_sink.h
+    webcam_sink.h
     capture.h
 #  capture_file.h
 #  capture_webcam.h
@@ -99,7 +103,7 @@ set(PRIVATE_HEADERS)
 set(SOURCES
     sink.cpp
     file_sink.cpp
-#  webcam_sink.cpp
+    webcam_sink.cpp
     capture.cpp
 #  capture_file.cpp
 #  capture_webcam.cpp

@@ -17,7 +17,7 @@
 #include "capture.h"
 
 #undef VCP_LOGGING_COMPONENT
-#define VCP_LOGGING_COMPONENT "file_sink"
+#define VCP_LOGGING_COMPONENT "vcp::best::file_sink"
 
 namespace vcp
 {
@@ -346,7 +346,6 @@ public:
 
   int IsDeviceAvailable() const override
   {
-    VCP_LOG_DEBUG("IsDeviceAvailable()");
     if (vcp::utils::file::Exists(params_.filename))
       return 1;
     return 0;
@@ -355,7 +354,6 @@ public:
 
   int IsFrameAvailable() const override
   {
-    VCP_LOG_DEBUG("IsFrameAvailable()");
     // By processing a video frame-by-frame, we don't
     // have a queue but only need to check for EOF.
     if (capture_ && !eof_)
@@ -368,10 +366,10 @@ public:
     return 1;
   }
 
-  SinkType Type(size_t stream_index) const override
+  FrameType FrameTypeAt(size_t stream_index) const override
   {
     VCP_UNUSED_VAR(stream_index);
-    return SinkType::VIDEO_FILE;
+    return params_.frame_type;
   }
 
   std::string StreamLabel(size_t stream_index) const override
@@ -541,7 +539,6 @@ public:
 
   int IsFrameAvailable() const override
   {
-    VCP_LOG_DEBUG("IsFrameAvailable()");
     // Processing an image directory frame-by-frame, we don't
     // have an image queue (so only check whether images are
     // left to be loaded)
@@ -555,10 +552,10 @@ public:
     return 1;
   }
 
-  SinkType Type(size_t stream_index) const override
+  FrameType FrameTypeAt (size_t stream_index) const override
   {
     VCP_UNUSED_VAR(stream_index);
-    return SinkType::IMAGE_DIR;
+    return params_.frame_type;
   }
 
   std::string StreamLabel(size_t stream_index) const override
@@ -668,7 +665,7 @@ ImageDirectorySinkParams ImageDirectorySinkParamsFromConfig(const vcp::config::C
   return ImageDirectorySinkParams(sink_params, folder, start_frame, frame_rate);
 }
 
-std::unique_ptr<StreamSink> CreateSink(const VideoFileSinkParams &params)
+std::unique_ptr<StreamSink> CreateVideoFileSink(const VideoFileSinkParams &params)
 {
   if (params.fps > 0.0)
   {
@@ -679,7 +676,7 @@ std::unique_ptr<StreamSink> CreateSink(const VideoFileSinkParams &params)
 }
 
 
-std::unique_ptr<StreamSink> CreateSink(const ImageDirectorySinkParams &params)
+std::unique_ptr<StreamSink> CreateImageDirectorySink(const ImageDirectorySinkParams &params)
 {
   if (params.fps > 0.0)
   {

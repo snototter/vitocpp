@@ -70,11 +70,11 @@ ImageDirectorySinkParams ImageDirectorySinkParamsFromConfig(const vcp::config::C
 
 
 /** @brief Returns a StreamSink wrapper to access video files. */
-std::unique_ptr<StreamSink> CreateSink(const VideoFileSinkParams &params);
+std::unique_ptr<StreamSink> CreateVideoFileSink(const VideoFileSinkParams &params);
 
 
 /** @brief Returns a StreamSink wrapper to access a directory full of images. */
-std::unique_ptr<StreamSink> CreateSink(const ImageDirectorySinkParams &params);
+std::unique_ptr<StreamSink> CreateImageDirectorySink(const ImageDirectorySinkParams &params);
 
 } // namespace best
 } // namespace vcp

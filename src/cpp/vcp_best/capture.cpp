@@ -13,6 +13,8 @@
 #include <thread>
 
 #include "file_sink.h"
+#include "webcam_sink.h"
+
 //#include "rectifier.h"
 //#include "capture_file.h"
 //#include "capture_webcam.h"
@@ -29,6 +31,10 @@
 //  #include "capture_realsense2.h"
 //  #include <chrono>
 //#endif
+
+#ifndef VCP_BEST_STREAM_BUFFER_CAPACITY
+#define VCP_BEST_STREAM_BUFFER_CAPACITY 2
+#endif
 
 namespace vcp
 {
@@ -71,18 +77,13 @@ public:
 //    std::vector<std::string> cck_realsense; // Corresponding configuration file keys (camera1, etc)
 //#endif
     std::vector<VideoFileSinkParams> video_params;
-//    std::vector<WebcamSinkParams> webcam_params;
-//    std::vector<std::string> cck_webcam; // Corresponding configuration file keys (camera1, etc)
+    std::vector<WebcamSinkParams> webcam_params;
 
-    // TODO nice-to-have: we could load the root's child params, filter for "camera[0-9]+", sort via utils, and just iterate over these strings, then we don't need
+    // Filter all "camera[0-9,a-z]*" parameters out of the configuration:
     const std::vector<std::string> cam_config_names = GetCameraConfigParameterNames(config);
-    //for (int i = 0; i < num_cameras; ++i)
+
     for (const auto &cam_config_name : cam_config_names)
     {
-//      std::stringstream id;
-//      id << "camera" << (i+1);
-//      const std::string cam_type = config.GetString(id.str() + ".type");
-      //const std::string cam_type = config.GetString(cam_config_name + ".type");//FUCKER
       const SinkType sink_type = GetSinkTypeFromConfig(config, cam_config_name);
 
       switch(sink_type)
@@ -93,6 +94,10 @@ public:
 
         case SinkType::VIDEO_FILE:
           video_params.push_back(VideoFileSinkParamsFromConfig(config, cam_config_name));
+          break;
+
+        case SinkType::WEBCAM:
+          webcam_params.push_back(WebcamSinkParamsFromConfig(config, cam_config_name));
           break;
 
         default:
@@ -133,15 +138,6 @@ public:
 //        cck_realsense.push_back(id.str());
 //      }
 //#endif // WITH_REALSENSE2
-//      else if (IsVideoFileSink(cam_type))
-//      {
-//
-//      }
-//      else if (IsWebcam(cam_type))
-//      {
-//        webcam_params.push_back(WebcamSinkParamsFromConfig(config, id.str()));
-//        cck_webcam.push_back(id.str());
-//      }
     }
 
     // TODO if you extend the sinks, be sure to set label, calibration file, StreamType(s) and corresponding config key,
@@ -150,10 +146,13 @@ public:
 
     // Initialize the individual captures
     for (const auto &p : imgdir_params)
-      AddSink(vcp::best::CreateSink(p), p);
+      AddSink(CreateImageDirectorySink(p), p);
 
     for (const auto &p : video_params)
-      AddSink(vcp::best::CreateSink(p), p);
+      AddSink(CreateVideoFileSink(p), p);
+
+    for (const auto &p : webcam_params)
+      AddSink(CreateWebcamSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p), p);
 
 #ifdef WITH_IPCAMERA
     if (!ip_mono_params.empty())
@@ -266,39 +265,14 @@ public:
     }
     multiple_realsenses_ = realsense_params.size() > 1;
 #endif // WITH_REALSENSE2
-
-//    if (!video_params.empty())
-//    {
-//      for (const auto &p : video_params)
-//      {
-//        sinks_.push_back(pvt::icc::CreateSink(p));
-//        AddLabel(p.label);
-//        AddCalibrationFile(p.calibration_file);
-//        AddStreamType(p.stream_type);
-//        sink_types_.push_back(SinkType::VIDEO_FILE);
-//      }
-//      AddCorrespondingConfigKeys(cck_video);
-//    }
-
-//    if (!webcam_params.empty())
-//    {
-//      for (const auto &p : webcam_params)
-//      {
-//        sinks_.push_back(pvt::icc::CreateSink(p));
-//        AddLabel(p.label);
-//        AddCalibrationFile(p.calibration_file);
-//        AddStreamType(p.stream_type);
-//        sink_types_.push_back(SinkType::WEBCAM);
-//      }
-//      AddCorrespondingConfigKeys(cck_webcam);
-//    }
   }
 
   void AddSink(std::unique_ptr<StreamSink> sink, const SinkParams params)
   {
     for (size_t i = 0; i < sink->NumStreams(); ++i)
     {
-      sink_types_.push_back(sink->Type(i));
+      //sink_types_.push_back(sink->Type(i));
+      frame_types_.push_back(sink->FrameTypeAt(i));
       sink_params_.push_back(params);
       frame_labels_.push_back(sink->StreamLabel(i));
     }
@@ -402,6 +376,27 @@ public:
     return success;
   }
 
+  bool WaitForInitialFrames(double timeout_ms) const override
+  {
+    std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
+    double elapsed_ms = 0;
+    while (elapsed_ms < timeout_ms)
+    {
+      bool available = true;
+      for (size_t i = 0; i < sinks_.size(); ++i)
+        available = available && sinks_[i]->IsFrameAvailable();
+      if (available)
+        return true;
+      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+
+      const auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(
+                std::chrono::high_resolution_clock::now() - start);
+      elapsed_ms = duration.count();
+    }
+    VCP_LOG_FAILURE("Not all sinks are ready. Waited for " << elapsed_ms/1000 << " sec.");
+    return false;
+  }
+
 
   bool StopStreams() override
   {
@@ -457,7 +452,7 @@ public:
 
 private:
   std::vector<std::unique_ptr<StreamSink>> sinks_; // Potentially less than streams/frames
-  std::vector<SinkType> sink_types_; // Note: they will be per stream/frame, not per device
+  std::vector<FrameType> frame_types_; // Note: they will be per stream/frame, not per device
   std::vector<SinkParams> sink_params_; // Note: they will be per stream/frame, not per device
   std::vector<std::string> frame_labels_;
 

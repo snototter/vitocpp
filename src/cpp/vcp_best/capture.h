@@ -67,6 +67,12 @@ public:
   /** @brief Starts the image streams. */
   virtual bool StartStreams() = 0;
 
+  /** @brief After starting, you can wait for the first set of images to become available.
+   * Specify a timeout in milliseconds, after that the result will indicate whether
+   * frames from all devices/sinks are available or not.
+   */
+  virtual bool WaitForInitialFrames(double timeout_ms) const = 0;
+
   /** @brief Stops the image streams. */
   virtual bool StopStreams() = 0;
 

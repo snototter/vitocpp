@@ -25,7 +25,8 @@ enum class FrameType
   UNKNOWN,     /**< The sink doesn't know (e.g. if you load a video file and don't configure the "frame_type" parameter). */
   MONOCULAR,   /**< Most often, we deal with monocular image streams. */
   STEREO,      /**< Horizontal stereo (a single, concatenated frame consisting of the left and right image) */
-  DEPTH        /**< Depth stream from an RGBD device. */
+  RGBD_IMAGE,  /**< Image stream from an RGBD device. */
+  RGBD_DEPTH   /**< Depth stream from an RGBD device. */
 };
 
 
@@ -170,7 +171,8 @@ public:
   virtual size_t NumStreams() const = 0;
 
   //TODO doc
-  virtual SinkType Type(size_t stream_index) const = 0;
+  //virtual SinkType Type(size_t stream_index) const = 0;
+  virtual FrameType FrameTypeAt(size_t stream_index) const = 0;
 
   virtual std::string StreamLabel(size_t stream_index) const = 0;
 };

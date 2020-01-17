@@ -6,6 +6,7 @@
 #include <sstream>
 
 #include "file_sink.h"
+#include "webcam_sink.h"
 
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::best::sink"
@@ -22,7 +23,8 @@ std::string FrameTypeToString(const FrameType &s)
   {
   MAKE_STREAMTYPE_TO_STRING_CASE(MONOCULAR);
   MAKE_STREAMTYPE_TO_STRING_CASE(STEREO);
-  MAKE_STREAMTYPE_TO_STRING_CASE(DEPTH);
+  MAKE_STREAMTYPE_TO_STRING_CASE(RGBD_IMAGE);
+  MAKE_STREAMTYPE_TO_STRING_CASE(RGBD_DEPTH);
   MAKE_STREAMTYPE_TO_STRING_CASE(UNKNOWN);
   default:
     std::stringstream str;
@@ -38,12 +40,30 @@ std::string FrameTypeToString(const FrameType &s)
 #define MAKE_STRING_TO_STREAMTYPE_IF(st, rep) if (rep.compare(FrameTypeToString(FrameType::st)) == 0) return FrameType::st
 FrameType FrameTypeFromString(const std::string &s)
 {
-  std::string upper(s);
-  vcp::utils::string::ToUpper(upper);
-  MAKE_STRING_TO_STREAMTYPE_IF(MONOCULAR, upper);
-  MAKE_STRING_TO_STREAMTYPE_IF(STEREO, upper);
-  MAKE_STRING_TO_STREAMTYPE_IF(DEPTH, upper);
-  MAKE_STRING_TO_STREAMTYPE_IF(UNKNOWN, upper);
+  std::string lower(s);
+  vcp::utils::string::ToLower(lower);
+  if (lower.empty()
+      || lower.compare("unknown") == 0)
+    return FrameType::UNKNOWN;
+
+  if (lower.compare("monocular") == 0
+      || lower.compare("mono") == 0
+      || lower.compare("color") == 0
+      || lower.compare("image") == 0)
+    return FrameType::MONOCULAR;
+
+  if (lower.compare("stereo") == 0)
+    return FrameType::STEREO;
+
+  if (lower.compare("rgbd-color") == 0
+      || lower.compare("rgbd-image") == 0)
+    return FrameType::RGBD_IMAGE;
+
+  if (lower.compare("depth") == 0
+      || lower.compare("rgbd-depth") == 0
+      || lower.compare("rgbd_depth") == 0)
+    return FrameType::RGBD_DEPTH;
+
   VCP_ERROR("FrameTypeFromString(): Cannot convert '" << s << "' to FrameType");
 }
 
@@ -104,7 +124,8 @@ SinkType SinkTypeFromString(const std::string &s)
     return SinkType::IMAGE_DIR;
   else if (IsVideoFileSink(s))
     return SinkType::VIDEO_FILE;
-
+  else if (IsWebcamSink(s))
+    return SinkType::WEBCAM;
 //  std::string upper(s);
 //  vcp::utils::string::ToUpper(upper);
 //  MAKE_STRING_TO_SINKTYPE_IF(IMAGE_DIR, upper);
