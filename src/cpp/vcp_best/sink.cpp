@@ -254,7 +254,7 @@ SinkType GetSinkTypeFromConfig(const vcp::config::ConfigParams &config,
     configured_keys->erase(std::remove(configured_keys->begin(), configured_keys->end(), "sink_type"), configured_keys->end());
   if (config.SettingExists(cam_group + ".sink_type"))
     return SinkTypeFromString(config.GetString(cam_group + ".sink_type"));
-  VCP_LOG_WARNING("Mandatory configuration parameter '" << cam_group << ".sink_type' is not specified, trying to look up the obsolete '" << cam_group << ".type'.");
+  VCP_LOG_WARNING("Mandatory configuration parameter '" << cam_group << ".sink_type' is not specified, looking up the obsolete '" << cam_group << ".type'.");
 
   if (configured_keys)
     configured_keys->erase(std::remove(configured_keys->begin(), configured_keys->end(), "type"), configured_keys->end());
@@ -309,7 +309,8 @@ std::vector<std::string> GetCameraConfigParameterNames(const vcp::config::Config
 
   for (const auto &p : params)
   {
-    if (vcp::utils::string::StartsWith(p, "camera"))
+    if (vcp::utils::string::StartsWith(p, "camera")
+        || vcp::utils::string::StartsWith(p, "sink"))
       camera_parameters.push_back(p);
   }
   return camera_parameters;

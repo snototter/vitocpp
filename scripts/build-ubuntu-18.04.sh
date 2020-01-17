@@ -27,13 +27,14 @@ fi
 OPT_PKG_FLAGS=$?
 
 # Check which of the optional components can be built
-CMAKEOPTIONS=("-DCMAKE_BUILD_TYPE=Release")
+CMAKEOPTIONS=("-DCMAKE_BUILD_TYPE=Release" "-DVCP_BUILD_BEST=ON")
 if [ $((OPT_PKG_FLAGS & 0x04)) -gt 0 ]; then
     echo "TODO enable RealSense!"
 fi
 
 if [ $((OPT_PKG_FLAGS & 0x08)) -gt 0 ]; then
-    CMAKEOPTIONS+=("-DWITH_K4A")
+    CMAKEOPTIONS+=("-DVCP_BEST_WITH_K4A_STREAMING=ON")
+    CMAKEOPTIONS+=("-DVCP_BEST_WITH_K4A_STREAM_MJPG=OFF")
 fi
 
 
@@ -79,7 +80,7 @@ mkdir -p build
 cd build
 cmake "${CMAKEOPTIONS[@]}" ..
 make -j install
-cd $CURR_WORK_DIR
+cd ..
 
 
 ##############################################################################

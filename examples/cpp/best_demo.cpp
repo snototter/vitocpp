@@ -75,6 +75,7 @@ void Stream(const std::string &config_file)
 
     // If they're available, display them. We make a collage (of resized
     // frames) if there are multiple streams to show.
+    std::cout << frames[0].size() << std::endl;
     cv::Mat collage;
     vcp::imvis::collage::Collage(frames, collage, 2, 0, cv::Size(640, 480));
 

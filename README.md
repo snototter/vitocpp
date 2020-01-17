@@ -71,8 +71,29 @@ Testing requires `gtest`, which you'll probably need to build yourself - this is
 
 
 ##TODOs
-* [ ] BGMs
-* [ ] BEST
+* [ ] BGM module
+  * Factory pattern!
+* [ ] BESt module
+  * [ ] Load intrinsics
+  * [ ] Load extrinsics
+  * [ ] Rectify streams
+  * [x] File sinks
+  * [x] Webcam sink
+  * [ ] HTTP sink
+  * [ ] RTSP sink
+  * [ ] Monocular/stereo
+  * [ ] RealSense
+  * [ ] Azure Kinect
+    * [ ] Stream raw data
+    * [ ] Align RGB+D
+    * [ ] Query intrinsics
+  * [ ] mvBlueFox
+  * [ ] Axis, Mobotix, etc.
 * [ ] Python bindings
 * [ ] Increase unit test coverage
+* [ ] C++ Tools/examples
+  * [ ] Viewer
+  * [ ] Capturing tool
+* [ ] Camera calibration (nice-to-have)
+* [ ] Tracking module
 

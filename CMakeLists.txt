@@ -12,7 +12,7 @@ set(VCP_VERSION "1.0.0")
 ##############################################################################
 #option(VCP_VERBOSE_TIMING "Verbose timing output, may spam your console" ON)
 option(VCP_BUILD_STATIC "Additionally build static libraries." OFF)
-option(VCP_BUILD_BEST "Build Best Effort STreaming module." ON)
+option(VCP_BUILD_BEST "Build Best Effort Streaming module." ON)
 #option(VCP_BUILD_BGM "Build background model module." ON)
 option(VCP_BUILD_CONFIG "Build config module." ON)
 option(VCP_BUILD_IMUTILS "Build image utilities module." ON)

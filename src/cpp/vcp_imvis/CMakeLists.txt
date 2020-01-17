@@ -47,7 +47,7 @@ target_include_directories(${LIB_NAME}
 
 # Add the static library
 if(VCP_BUILD_STATIC)
-    message("  [+] Building static ${LIB_NAME} library")
+    message("  [+] Building static ${LIB_NAME} library\n")
     set(LIBS ${LIBS} ${LIB_NAME}_static)
     add_library(${LIB_NAME}_static STATIC ${HEADERS} ${SOURCES})
     target_link_libraries(${LIB_NAME}_static
@@ -61,7 +61,7 @@ if(VCP_BUILD_STATIC)
       ${CMAKE_SOURCE_DIR}/src/cpp
     )
 else()
-    message("  [ ] Won't build static ${LIB_NAME} library")
+    message("  [ ] Won't build static ${LIB_NAME} library\n")
 endif()
 
 

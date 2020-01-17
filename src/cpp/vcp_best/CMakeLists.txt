@@ -4,12 +4,12 @@ project(vcp_best)
 set(LIB_NAME ${PROJECT_NAME})
 message("Configuring module ${LIB_NAME}")
 
-#option(VCP_BEST_WITH_HTTP_STREAMING "Build HTTP streaming modules (requires CURL)." ON)
-#option(VCP_BEST_WITH_RTSP_STREAMING "Build RTSP streaming modules (requires live555 and ffmpeg)." ON)
-#option(VCP_BEST_WITH_MATRIXVISION_STREAMING "Build MatrixVision streaming module (requires mvIMPACT_acquire SDK)." OFF)
-#option(VCP_BEST_WITH_REALSENSE2_STREAMING "Build Intel RealSense streaming module (requires librealsense2)." OFF)
-#option(VCP_BEST_WITH_K4A_STREAMING "Build Kinect 4 Azure streaming module (requires libk4a)." OFF)
-#option(VCP_BEST_K4A_STREAM_COLOR_MJPG "K4A sends color as MJPG if ON (decoding takes ~40ms), otherwise BGRA32 (higher bandwidth)." OFF)
+#option(VCP_BEST_WITH_HTTP "Build HTTP streaming modules (requires CURL)." ON)
+#option(VCP_BEST_WITH_RTSP "Build RTSP streaming modules (requires live555 and ffmpeg)." ON)
+#option(VCP_BEST_WITH_MATRIXVISION "Build MatrixVision streaming module (requires mvIMPACT_acquire SDK)." OFF)
+#option(VCP_BEST_WITH_REALSENSE2 "Build Intel RealSense streaming module (requires librealsense2)." OFF)
+option(VCP_BEST_WITH_K4A "Build Kinect 4 Azure streaming module (requires libk4a)." OFF)
+option(VCP_BEST_WITH_K4A_MJPG "K4A sends color as MJPG if ON (slow), otherwise BGRA32 (high bandwidth)." OFF)
 option(VCP_BEST_DEBUG_FRAMERATE "If enabled, sinks debug their frame rate (Enable DEBUG level!)" ON)
 #TODO use library-wide flag instead option(VCP_BEST_DEBUG_FRAMERATE "Include timing + debug output to analyze streaming frame rates" OFF)
 
@@ -76,12 +76,10 @@ set(REALSENSE2_STREAM_SOURCES
 # K4A Kinect Azure streaming files
 set(PUBLIC_K4A_STREAM_HEADERS
     k4a_sink.h
-    capture_k4a.h
 )
 set(PRIVATE_K4A_STREAM_HEADERS)
 set(K4A_STREAM_SOURCES
     k4a_sink.cpp
-    capture_k4a.cpp
 )
 
 
@@ -211,17 +209,10 @@ else()
   message("  [ ] Disable Intel RealSense sensors")
 endif()
 
-
-if (PVT_ICC_WITH_K4A_STREAMING)
+if (VCP_BEST_WITH_K4A)
   find_package(k4a REQUIRED)
 
-  add_definitions(-DWITH_K4A)
-  if (PVT_ICC_K4A_STREAM_COLOR_MJPG)
-    add_definitions(-DPVT_K4A_COLOR_STREAM_MJPG)
-    message("      * Using JPG encoded K4A color stream")
-  else()
-    message("      * Using raw BGRA32 K4A color stream")
-  endif()
+  add_definitions(-DVCP_WITH_K4A)
 
   set(ICC_EXTERNAL_LIBS ${ICC_EXTERNAL_LIBS} k4a)
   set(PUBLIC_HEADERS ${PUBLIC_HEADERS} ${PUBLIC_K4A_STREAM_HEADERS})
@@ -229,9 +220,17 @@ if (PVT_ICC_WITH_K4A_STREAMING)
   set(SOURCES ${SOURCES} ${K4A_STREAM_SOURCES})
 
   message("  [+] Enable Azure Kinect sensors")
+
+  if (VCP_WITH_K4A_MJPG)
+    add_definitions(-DVCP_WITH_K4A_MJPG)
+    message("      * Using JPG encoded K4A color stream")
+  else()
+    message("      * Using raw BGRA32 K4A color stream")
+  endif()
 else()
   message("  [ ] Disable Azure Kinect sensors")
 endif()
+
 
 # Add the shared library
 message("  [+] Building shared ${LIB_NAME} library")
@@ -251,7 +250,7 @@ target_include_directories(${LIB_NAME}
 
 # Add the static library
 if(VCP_BUILD_STATIC)
-  message("  [+] Building static ${LIB_NAME} library")
+  message("  [+] Building static ${LIB_NAME} library\n")
   set(LIBS ${LIBS} ${LIB_NAME}_static)
   add_library(${LIB_NAME}_static STATIC ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
   target_link_libraries(${LIB_NAME}_static 
@@ -266,7 +265,7 @@ if(VCP_BUILD_STATIC)
     ${CMAKE_SOURCE_DIR}/src/cpp
   )
 else()
-  message("  [ ] Won't build static ${LIB_NAME} library")
+  message("  [ ] Won't build static ${LIB_NAME} library\n")
 endif()
 
 

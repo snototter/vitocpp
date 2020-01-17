@@ -64,7 +64,7 @@ endif()
 # Add tests if required
 if (VCP_BUILD_TESTS)
     # See https://www.eriksmistad.no/getting-started-with-google-test-on-ubuntu/
-    message("  [+] Building ${LIB_NAME} tests")
+    message("  [+] Building ${LIB_NAME} tests\n")
     add_executable(${LIB_NAME}_test
       math_test.cpp
       common_test.cpp
@@ -78,7 +78,7 @@ if (VCP_BUILD_TESTS)
     )
     add_test(${LIB_NAME}_test ${LIB_NAME}_test)
 else()
-    message("  [ ] Skipping ${LIB_NAME} tests")
+    message("  [ ] Skipping ${LIB_NAME} tests\n")
 endif()
 
 

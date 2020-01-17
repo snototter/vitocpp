@@ -44,7 +44,7 @@ endif()
 
 # Add tests if required
 if(VCP_BUILD_TESTS)
-    message("  [+] Building ${LIB_NAME} tests")
+    message("  [+] Building ${LIB_NAME} tests\n")
     add_executable(${LIB_NAME}_test
         test_utils.h
         utils_test.cpp
@@ -68,7 +68,7 @@ if(VCP_BUILD_TESTS)
     )
     add_test(${LIB_NAME}_test ${LIB_NAME}_test)
 else()
-    message("  [ ] Skipping ${LIB_NAME} tests")
+    message("  [ ] Skipping ${LIB_NAME} tests\n")
 endif()
 
 
