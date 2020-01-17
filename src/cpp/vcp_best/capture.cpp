@@ -525,7 +525,6 @@ Capture:
          3  Bamboo    unknown     camera8642
 
 */
-  os << "Capture:" << std::endl;
   longest_lbl_len = std::max(longest_lbl_len, std::string("Type").length());
   longest_ftype_len = std::max(longest_ftype_len, static_cast<size_t>(2));
   const size_t longest_fnr = std::max(vcp::utils::string::ToStr(ns).length(), std::string("Frame#").length());
