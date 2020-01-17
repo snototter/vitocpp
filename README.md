@@ -1,12 +1,37 @@
 # vitocpp (VCP)
 C++/Python 3 utilities for common vision tasks, e.g. streaming, visualization or image manipulation.
 
+
+## What is it good for?
+Some of `vcp`'s highlights:
+* Best effort multi-device streaming. Suppose you have a capturing setup similar to this:
+  ```
+    Frame#  Label         Type        Config. Param
+  --------------------------------------------------
+         0  kinect-rgb    rgbd-image  sink-k4a  
+         1  kinect-depth  rgbd-depth  sink-k4a
+         2  zed-stereo    stereo      sink-webcam 
+         3  ip-cam-axis   monocular   sink-axis
+  --------------------------------------------------
+    4 streams from 4 devices
+    * Devices are available
+    * Frames are enqueued
+  ```
+* Nice(r) visualizations with less effort than plain OpenCV (have you ever tried to render a 3D bounding box?)
+TODO example images (drawingXY)
+* Pseudocoloring for data visualization/analysis.
+TODO (+ see iminspect)
+* Geometry utilities - besides enabling all the visualizations above, you can also do basic geometry tasks (e.g. computing tangents of circles, line (segment) intersection, and quite a lot more).
+* C++ utilities - for basic file/path and string manipulation (if you want to avoid heavier dependencies, such as Boost).
+
+
 ## Repository Contents
 * `cmake` - CMake utilities (incl. custom `Find<package>.cmake` scripts).
 * `examples` - example usage of these utilities.
 * `external` - third party libraries (which cannot be installed out-of-the-box).
 * `scripts` - shell scripts to prepare the build system, build the libraries, and use/include the library in your project.
 * `src` - source for all modules and python bindings.
+
 
 ## Installation
 * If you want to build the C++ library and Python 3 bindings, simply run `./scripts/build-ubuntu-18.04.sh`, this will:
@@ -24,6 +49,7 @@ C++/Python 3 utilities for common vision tasks, e.g. streaming, visualization or
   # Afterwards, all library files can be found at <$VCP_ROOT_DIR/gen>
   ```
 
+
 ## Examples
 ### C++
 * The C++ applications at `$VCP_ROOT_DIR/examples/cpp` demonstrate how you can use `vcp` from your own CMake projects. After building the vcp library, building these examples is as easy as:
@@ -37,6 +63,7 @@ C++/Python 3 utilities for common vision tasks, e.g. streaming, visualization or
 
 ### Python
 To be done!
+
 
 ## Tests
 While all of vcp has been tested "in-the-wild", unit tests are rather sparse, unfortunately.
