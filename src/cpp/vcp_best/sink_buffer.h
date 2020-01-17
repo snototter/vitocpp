@@ -43,6 +43,9 @@ public:
   /** @brief Returns the number of images currently available. */
   virtual size_t Size() const = 0;
 
+  /** @brief Returns the buffer capacity (or -1 if unknown/cannot be determined). */
+  virtual int Capacity() const = 0;
+
 protected:
   SinkBuffer() {}
 };
@@ -90,6 +93,11 @@ public:
   size_t Size() const override
   {
     return image_queue_.size();
+  }
+
+  int Capacity() const override
+  {
+    return BufferCapacity;
   }
 
 private:

@@ -118,8 +118,7 @@ public:
   virtual std::vector<std::string> ConfigurationKeys() const = 0;
 
 
-  /** @brief
-  virtual std::vector<SinkType> SinkTypes() const = 0;
+  //virtual std::vector<SinkType> SinkTypes() const = 0;
 
 //  /** @brief Provides the key (group name, e.g. 'camera3') of the vcp configuration file or an empty string.
 //   *

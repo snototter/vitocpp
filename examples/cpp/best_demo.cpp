@@ -10,7 +10,7 @@
 #include <thread>
 
 // Terminate the streaming demo after X ms (if there would be more incoming data).
-#define MAX_STREAMING_TIME_PER_CONFIG 10000
+#define MAX_STREAMING_TIME_PER_CONFIG 20000
 void Stream(const std::string &config_file)
 {
   std::cout << std::endl << std::endl << std::endl;
@@ -36,8 +36,8 @@ void Stream(const std::string &config_file)
   capture->WaitForInitialFrames(5000);
 
   VCP_TIC;
-  while (capture->AreFramesAvailable() && elapsed_ms < MAX_STREAMING_TIME_PER_CONFIG)
-  //while (elapsed_ms < MAX_STREAMING_TIME_PER_CONFIG)
+//  while (capture->AreFramesAvailable() && elapsed_ms < MAX_STREAMING_TIME_PER_CONFIG)
+  while (elapsed_ms < MAX_STREAMING_TIME_PER_CONFIG)
   {
     std::vector<cv::Mat> frames = capture->Next();
 
@@ -54,22 +54,20 @@ void Stream(const std::string &config_file)
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
       continue;
     }
-    cv::Mat collage;
-    vcp::imvis::collage::Collage(frames, collage, 2, 0, cv::Size(640, 480));
+//    cv::Mat collage;
+//    vcp::imvis::collage::Collage(frames, collage, 2, 0, cv::Size(640, 480));
 
-    cv::imshow("Stream", collage);
-    int k = cv::waitKey(-1);
+//    cv::imshow("Stream", collage);
+    cv::imshow("Stream", frames[0]);
+    int k = cv::waitKey(10);
     if ((k & 0xFF) == 27)
       break;
   }
   VCP_LOG_INFO_DEFAULT("Closing stream after " << elapsed_ms/1000 << " sec.");
 
   // TODO test forgetting to stop/close or doing it twice, ...
-  capture->StopStreams();
-  capture->StopStreams();
-  capture->CloseDevices();
-  capture->CloseDevices();
-  capture->CloseDevices();
+  //capture->StopStreams();
+  //capture->CloseDevices();
   capture.reset();
 }
 
@@ -80,8 +78,8 @@ int main(int argc, char **argv)
   VCP_UNUSED_VAR(argv);
 
   const std::vector<std::string> configs = {
-    "data-best/image_sequence.cfg",
-    "data-best/video.cfg",
+    //"data-best/image_sequence.cfg",
+    //"data-best/video.cfg",
     "data-best/webcam.cfg"
   };
   for (const auto &c : configs)

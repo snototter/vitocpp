@@ -8,6 +8,10 @@
 #include <vcp_config/config_params.h>
 #include "sink_buffer.h"
 
+#ifndef VCP_BEST_STREAM_BUFFER_CAPACITY
+#define VCP_BEST_STREAM_BUFFER_CAPACITY 2
+#endif
+
 namespace vcp
 {
 namespace best

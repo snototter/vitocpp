@@ -25,149 +25,207 @@ namespace best
 {
 namespace
 {
-////TODO/** @brief Replays a video at the specified frame rate - does NOT support backwards seeking. */
-//class TimedVideoFileSink : public StreamSink
-//{
-//public:
-//  TimedVideoFileSink(const std::string &filename, size_t first_frame,
-//                     double fps, bool color_as_bgr, std::unique_ptr<SinkBuffer> sink_buffer)
-//    : StreamSink(), continue_capture_(false), capture_(nullptr), image_queue_(std::move(sink_buffer)),
-//      filename_(filename), first_frame_(first_frame), frame_rate_(fps), color_as_bgr_(color_as_bgr), eof_(true)
-//  {
-//  }
+/** @brief Replays a video at the specified frame rate - does NOT support backwards seeking. */
+class TimedVideoFileSink : public StreamSink
+{
+public:
+  TimedVideoFileSink(const VideoFileSinkParams &params, std::unique_ptr<SinkBuffer> sink_buffer)
+    : StreamSink(), continue_capture_(false), capture_(nullptr), image_queue_(std::move(sink_buffer)),
+      params_(params), eof_(true)
+  {
+    VCP_LOG_DEBUG("TimedVideoFileSink()");
+  }
 
-//  virtual ~TimedVideoFileSink()
-//  {
-//    Terminate();
-//  }
+  virtual ~TimedVideoFileSink()
+  {
+    VCP_LOG_DEBUG("~TimedVideoFileSink()");
+    CloseDevice();
+  }
 
-//  void StartStream() override
-//  {
-//    if (capture_ && capture_->isOpened())
-//      PVT_EXIT("Video file already opened");
+  bool OpenDevice() override
+  {
+    if (!vcp::utils::file::Exists(params_.filename))
+    {
+      VCP_LOG_FAILURE("Video file '" << params_.filename << "' does not exist!");
+      return false;
+    }
 
-//    if (!pvt::utils::file::Exists(filename_))
-//      PVT_EXIT("Video file '" << filename_ << "' does not exist!");
+    if (capture_)
+      capture_->open(params_.filename);
+    else
+      capture_ = std::unique_ptr<cv::VideoCapture>(new cv::VideoCapture(params_.filename));
 
-//    capture_ = std::unique_ptr<cv::VideoCapture>(new cv::VideoCapture(filename_));
-//    if (!capture_->isOpened())
-//      PVT_LOG_FAILURE("Cannot open video file: " << filename_);
+    if (!capture_->isOpened())
+    {
+      VCP_LOG_FAILURE("Cannot open video file '" << params_.filename << "'");
+      return false;
+    }
 
-//    if (!capture_->set(CV_CAP_PROP_POS_FRAMES, static_cast<double>(first_frame_)))
-//      PVT_LOG_FAILURE("Cannot jump to specified first frame [" << first_frame_ << "]");
+    return true;
+  }
 
-//    eof_ = false;
-//    continue_capture_ = true;
-//    stream_thread_ = std::thread(&TimedVideoFileSink::Receive, this);
-//  }
+  bool CloseDevice() override
+  {
+    StopStreaming();
+    capture_.reset();
+    return true;
+  }
 
-//  void Terminate() override
-//  {
-//    if (continue_capture_)
-//    {
-//      continue_capture_ = false;
-//      stream_thread_.join();
-//    }
-//  }
+  bool StartStreaming() override
+  {
+    if (!capture_ || !capture_->isOpened())
+      OpenDevice();
 
-//  void GetNextFrame(cv::Mat &frame) override
-//  {
-//    image_queue_mutex_.lock();
-//    if (image_queue_->Empty())
-//    {
-//      frame = cv::Mat();
-//    }
-//    else
-//    {
-//      // Retrieve oldest image in queue.
-//      frame = image_queue_->Front().clone();
-//      image_queue_->PopFront();
-//    }
-//    image_queue_mutex_.unlock();
-//  }
+    if (continue_capture_)
+    {
+      VCP_LOG_FAILURE("Streaming thread already running, ignoring StartStreaming() call.");
+      return false;
+    }
 
-//  int IsAvailable() const override
-//  {
-//    if (capture_ && !eof_)
-//      return 1;
-//    return 0;
-//  }
+    if (params_.first_frame > 0)
+    {
+      if (!capture_->set(CV_CAP_PROP_POS_FRAMES, static_cast<double>(params_.first_frame)))
+      {
+        VCP_LOG_FAILURE("Cannot jump to specified first frame [" << params_.first_frame << "]");
+      }
+      else
+      {
+        VCP_LOG_DEBUG("Set first frame to be #" << params_.first_frame);
+      }
+    }
 
-//  int IsFrameAvailable() const override
-//  {
-//    image_queue_mutex_.lock();
-//    const bool empty = image_queue_->Empty();
-//    image_queue_mutex_.unlock();
-//    if (empty)
-//      return 0;
-//    return 1;
-//  }
+    eof_ = false;
+    continue_capture_ = true;
+    stream_thread_ = std::thread(&TimedVideoFileSink::Receive, this);
+    return true;
+  }
 
-//private:
-//  std::atomic<bool> continue_capture_;
-//  std::unique_ptr<cv::VideoCapture> capture_;
-//  std::unique_ptr<SinkBuffer> image_queue_;
+  bool StopStreaming() override
+  {
+    if (continue_capture_)
+    {
+      continue_capture_ = false;
+      stream_thread_.join();
+    }
+    return true;
+  }
 
-//  std::string filename_;
-//  size_t first_frame_;
-//  double frame_rate_;
-//  bool color_as_bgr_;
-//  bool eof_;
+  std::vector<cv::Mat> Next() override
+  {
+    std::vector<cv::Mat> frames;
+    cv::Mat frame;
+    image_queue_mutex_.lock();
+    if (image_queue_->Empty())
+    {
+      frame = cv::Mat();
+    }
+    else
+    {
+      // Retrieve oldest image in queue.
+      frame = image_queue_->Front().clone();
+      image_queue_->PopFront();
+    }
+    image_queue_mutex_.unlock();
+    frames.push_back(frame);
+    return frames;
+  }
 
-//  std::thread stream_thread_;
-//  mutable std::mutex image_queue_mutex_;
+  int IsDeviceAvailable() const override
+  {
+    if (capture_ && !eof_)
+      return 1;
+    return 0;
+  }
 
-//  void Receive()
-//  {
-//    const int64_t mus_per_frame = static_cast<int64_t>(1000000.0 / frame_rate_);
+  int IsFrameAvailable() const override
+  {
+    image_queue_mutex_.lock();
+    const bool empty = image_queue_->Empty();
+    image_queue_mutex_.unlock();
+    if (empty)
+      return 0;
+    return 1;
+  }
 
-//    std::chrono::steady_clock::time_point tp_start = std::chrono::steady_clock::now();
-//    while (continue_capture_)
-//    {
-//      // Get next frame
-//      cv::Mat frame;
-//      if (capture_->grab())
-//      {
-//        cv::Mat loaded;
-//        capture_->retrieve(loaded);
-//        if (color_as_bgr_)
-//          frame = loaded;
-//        else
-//        {
-//          if (loaded.channels() == 3)
-//            cv::cvtColor(loaded, frame, CV_BGR2RGB);
-//          else if (loaded.channels() == 4)
-//            cv::cvtColor(loaded, frame, CV_BGRA2RGBA);
-//          else
-//            frame = loaded;
-//        }
-//      }
-//      else
-//      {
-//        frame = cv::Mat();
-//        eof_ = true;
-//      }
+  size_t NumStreams() const override
+  {
+    return 1;
+  }
 
-//      // Push into queue
-//      image_queue_mutex_.lock();
-//      image_queue_->PushBack(frame.clone());
-//      image_queue_mutex_.unlock();
-//      const std::chrono::steady_clock::time_point tp_stop = std::chrono::steady_clock::now();
-//      const int64_t elapsed = std::chrono::duration_cast<std::chrono::microseconds>(tp_stop - tp_start).count();
+  FrameType FrameTypeAt(size_t stream_index) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return params_.frame_type;
+  }
 
-//      const int64_t to_sleep = mus_per_frame - elapsed;
-//      if (to_sleep > 0)
-//        std::this_thread::sleep_for(std::chrono::microseconds(to_sleep));
-//      else if (to_sleep < 0)
-//      {
-//        PVT_LOG_WARNING("TimedVideoSink delayed (Time budget: " << (mus_per_frame/1000.0) << "ms, decoding took " << (elapsed/1000.0) << "ms)");
-//      }
+  std::string StreamLabel(size_t stream_index) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return params_.sink_label;
+  }
 
-//      tp_start = std::chrono::steady_clock::now();
-//    }
-//    capture_.reset();
-//  }
-//};
+private:
+  std::atomic<bool> continue_capture_;
+  std::unique_ptr<cv::VideoCapture> capture_;
+  std::unique_ptr<SinkBuffer> image_queue_;
+
+  VideoFileSinkParams params_;
+  bool eof_;
+
+  std::thread stream_thread_;
+  mutable std::mutex image_queue_mutex_;
+
+  void Receive()
+  {
+    const int64_t mus_per_frame = static_cast<int64_t>(1000000.0 / params_.fps);
+
+    std::chrono::steady_clock::time_point tp_start = std::chrono::steady_clock::now();
+    while (continue_capture_)
+    {
+      // Get next frame
+      cv::Mat frame;
+      if (capture_->grab())
+      {
+        cv::Mat loaded;
+        capture_->retrieve(loaded);
+        if (params_.color_as_bgr)
+          frame = loaded;
+        else
+        {
+          if (loaded.channels() == 3)
+            cv::cvtColor(loaded, frame, CV_BGR2RGB);
+          else if (loaded.channels() == 4)
+            cv::cvtColor(loaded, frame, CV_BGRA2RGBA);
+          else
+            frame = loaded;
+        }
+      }
+      else
+      {
+        frame = cv::Mat();
+        eof_ = true;
+      }
+
+      // Push into queue
+      image_queue_mutex_.lock();
+      image_queue_->PushBack(frame.clone());
+      image_queue_mutex_.unlock();
+      const std::chrono::steady_clock::time_point tp_stop = std::chrono::steady_clock::now();
+      const int64_t elapsed = std::chrono::duration_cast<std::chrono::microseconds>(tp_stop - tp_start).count();
+
+      const int64_t to_sleep = mus_per_frame - elapsed;
+      VCP_LOG_DEBUG("TimedVideoSink going to sleep for " << to_sleep << " mus, processing took " << elapsed << " mus");
+      if (to_sleep > 0)
+        std::this_thread::sleep_for(std::chrono::microseconds(to_sleep));
+      else if (to_sleep < 0)
+      {
+        VCP_LOG_WARNING("TimedVideoSink delayed (Time budget: " << (mus_per_frame/1000.0) << " ms, decoding took " << (elapsed/1000.0) << " ms)");
+      }
+
+      tp_start = std::chrono::steady_clock::now();
+    }
+  }
+};
 
 
 /** @brief Replays a video frame-by-frame. Supports retrieving previous frames. */
@@ -668,9 +726,9 @@ ImageDirectorySinkParams ImageDirectorySinkParamsFromConfig(const vcp::config::C
 std::unique_ptr<StreamSink> CreateVideoFileSink(const VideoFileSinkParams &params)
 {
   if (params.fps > 0.0)
-  {
-    VCP_ERROR("Not yet implemented");
-  }
+    return std::unique_ptr<TimedVideoFileSink>(new TimedVideoFileSink(
+                                                 params,
+                                                 CreateCircularStreamSinkBuffer<VCP_BEST_STREAM_BUFFER_CAPACITY>()));
   else
     return std::unique_ptr<VideoFileSink>(new VideoFileSink(params));
 }
