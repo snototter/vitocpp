@@ -527,10 +527,10 @@ Capture:
 */
   longest_lbl_len = std::max(longest_lbl_len, std::string("Type").length());
   longest_ftype_len = std::max(longest_ftype_len, static_cast<size_t>(2));
-  const size_t longest_fnr = std::max(vcp::utils::string::ToStr(ns).length(), std::string("Frame#").length());
+  const size_t longest_fnr = std::max(vcp::utils::string::ToStr(ns).length(), std::string("Stream").length());
   // Add a header:
   os << "Capture:" << std::endl
-     << "    " << std::setw(longest_fnr) << "Frame#" << "  "
+     << "    " << std::setw(longest_fnr) << "Stream" << "  "
      << std::setw(longest_lbl_len) << std::left << "Label"
      << "  " << std::setw(longest_ftype_len) << std::left << "Type"
      << "  Config. Param" << std::endl << "  ";
