@@ -13,10 +13,11 @@ Some of `vcp`'s highlights:
          2  zed-stereo    stereo      sink-webcam 
          3  ip-cam-axis   monocular   sink-axis
   --------------------------------------------------
-    4 streams from 4 devices
+    4 streams from 3 devices
     * Devices are available
     * Frames are enqueued
   ```
+  What if I told you that the corresponding configuration file simply looks like this: todo
 * Nice(r) visualizations with less effort than plain OpenCV (have you ever tried to render a 3D bounding box?)
 TODO example images (drawingXY)
 * Pseudocoloring for data visualization/analysis.
