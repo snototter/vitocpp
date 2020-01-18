@@ -6,7 +6,7 @@ C++/Python 3 utilities for common vision tasks, e.g. streaming, visualization or
 Some of `vcp`'s highlights:
 * Best effort multi-device streaming. Suppose you have a capturing setup similar to this:
   ```
-    Frame#  Label         Type        Config. Param
+    Stream  Label         Type        Config. Param
   --------------------------------------------------
          0  kinect-rgb    rgbd-image  sink-k4a  
          1  kinect-depth  rgbd-depth  sink-k4a
@@ -26,11 +26,11 @@ TODO (+ see iminspect)
 
 
 ## Repository Contents
-* `cmake` - CMake utilities (incl. custom `Find<package>.cmake` scripts).
-* `examples` - example usage of these utilities.
-* `external` - third party libraries (which cannot be installed out-of-the-box).
-* `scripts` - shell scripts to prepare the build system, build the libraries, and use/include the library in your project.
-* `src` - source for all modules and python bindings.
+* `./cmake` - CMake utilities (incl. custom `Find<package>.cmake` scripts).
+* `./examples` - example usage of these utilities.
+* `./external` - third party libraries (which cannot be installed out-of-the-box).
+* `./scripts` - shell scripts to prepare the build system, build the libraries, and use/include the library in your project.
+* `./src` - source for all modules and python bindings.
 
 
 ## Installation
