@@ -34,10 +34,71 @@ namespace vcp
 {
 namespace best
 {
-const std::string kEmptyK4ASerialNumber = "----";
-
 namespace k4a
 {
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::best::k4a"
+
+const std::string kEmptyK4ASerialNumber = "----";
+
+
+#define VCP_K4A_STRING_TO_ENUM(str, O) if (str.compare(#O) == 0) { return O; }
+
+k4a_wired_sync_mode_t StringToWiredSyncMode(const std::string &name)
+{
+  VCP_K4A_STRING_TO_ENUM(name, K4A_WIRED_SYNC_MODE_STANDALONE);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_WIRED_SYNC_MODE_MASTER);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_WIRED_SYNC_MODE_SUBORDINATE);
+  VCP_ERROR("k4a_wired_sync_mode_t '" << name << "' is not yet mapped");
+}
+
+k4a_color_resolution_t StringToColorResolution(const std::string &name)
+{
+  VCP_K4A_STRING_TO_ENUM(name, K4A_COLOR_RESOLUTION_OFF);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_COLOR_RESOLUTION_720P);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_COLOR_RESOLUTION_1080P);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_COLOR_RESOLUTION_1440P);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_COLOR_RESOLUTION_1536P);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_COLOR_RESOLUTION_2160P);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_COLOR_RESOLUTION_3072P);
+  VCP_ERROR("k4a_color_resolution_t '" << name << "' is not yet mapped");
+}
+
+k4a_depth_mode_t StringToDepthMode(const std::string &name)
+{
+  VCP_K4A_STRING_TO_ENUM(name, K4A_DEPTH_MODE_OFF);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_DEPTH_MODE_NFOV_2X2BINNED);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_DEPTH_MODE_NFOV_UNBINNED);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_DEPTH_MODE_WFOV_2X2BINNED);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_DEPTH_MODE_WFOV_UNBINNED);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_DEPTH_MODE_PASSIVE_IR);
+  VCP_ERROR("k4a_depth_mode_t '" << name << "' is not yet mapped");
+}
+
+k4a_fps_t StringToFps(const std::string &name)
+{
+  VCP_K4A_STRING_TO_ENUM(name, K4A_FRAMES_PER_SECOND_5);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_FRAMES_PER_SECOND_15);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_FRAMES_PER_SECOND_30);
+  VCP_ERROR("k4a_fps_t '" << name << "' is not yet mapped");
+}
+
+k4a_color_control_command_t StringToColorControlCommand(const std::string &name)
+{
+  VCP_K4A_STRING_TO_ENUM(name, K4A_COLOR_CONTROL_EXPOSURE_TIME_ABSOLUTE);
+//  K4A_COLOR_CONTROL_AUTO_EXPOSURE_PRIORITY // deprecated as of k4a 1.2.0
+  VCP_K4A_STRING_TO_ENUM(name, K4A_COLOR_CONTROL_BRIGHTNESS);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_COLOR_CONTROL_CONTRAST);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_COLOR_CONTROL_SATURATION);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_COLOR_CONTROL_SHARPNESS);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_COLOR_CONTROL_WHITEBALANCE);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_COLOR_CONTROL_BACKLIGHT_COMPENSATION);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_COLOR_CONTROL_GAIN);
+  VCP_K4A_STRING_TO_ENUM(name, K4A_COLOR_CONTROL_POWERLINE_FREQUENCY);
+  VCP_ERROR("k4a_color_control_command_t '" << name << "' is not yet mapped");
+}
+
+
 std::string GetSerialNumber(k4a_device_t dev)
 {
   std::string sn = std::string();
@@ -71,7 +132,7 @@ std::string GetSerialNumber(k4a_device_t dev)
 }
 
 
-bool GetDevice(k4a_device_t &device, const K4AParams &params)
+bool GetDevice(k4a_device_t &device, const K4ASinkParams &params)
 {
   if (params.serial_number.empty() || kEmptyK4ASerialNumber.compare(params.serial_number) == 0)
   {
@@ -110,8 +171,8 @@ bool GetDevice(k4a_device_t &device, const K4AParams &params)
       }
     }
     VCP_LOG_FAILURE("Cannot find the Kinect Azure device with serial number '" << params.serial_number << "'");
-    return false;
   }
+  return false;
 }
 
 std::vector<k4a_color_control_command_t> GetAvailableColorControlCommands()
@@ -333,7 +394,7 @@ std::vector<K4ADeviceInfo> ListK4ADevices(bool warn_if_no_devices)
 class K4ARGBDSink : public StreamSink
 {
 public:
-  K4ARGBDSink(const K4AParams &params, std::unique_ptr<SinkBuffer> rgb_buffer, std::unique_ptr<SinkBuffer> depth_buffer) : StreamSink(),
+  K4ARGBDSink(const K4ASinkParams &params, std::unique_ptr<SinkBuffer> rgb_buffer, std::unique_ptr<SinkBuffer> depth_buffer) : StreamSink(),
     continue_capture_(false),
     rgb_queue_(std::move(rgb_buffer)),
     depth_queue_(std::move(depth_buffer)),
@@ -510,7 +571,7 @@ private:
   mutable std::mutex image_queue_mutex_;
   std::unique_ptr<SinkBuffer> rgb_queue_;
   std::unique_ptr<SinkBuffer> depth_queue_;
-  K4AParams params_;
+  K4ASinkParams params_;
   std::string serial_number_;
   std::string calibration_file_;
   std::atomic<int> available_;
@@ -834,19 +895,19 @@ private:
     }
   }
 };
-} // namespace k4a
 
-bool K4AParams::IsColorStreamEnabled() const
+
+bool K4ASinkParams::IsColorStreamEnabled() const
 {
   return this->color_resolution != K4A_COLOR_RESOLUTION_OFF;
 }
 
-bool K4AParams::IsDepthStreamEnabled() const
+bool K4ASinkParams::IsDepthStreamEnabled() const
 {
   return this->depth_mode != K4A_DEPTH_MODE_OFF;
 }
 
-bool K4AParams::IsInfraredStreamEnabled() const
+bool K4ASinkParams::IsInfraredStreamEnabled() const
 {
   return this->enable_infrared_stream && IsDepthStreamEnabled();
 }
@@ -862,15 +923,113 @@ std::ostream &operator<< (std::ostream &out, const K4AColorControlSetting &s)
 }
 
 
-std::unique_ptr<StreamSink> CreateBufferedK4ASink(const K4AParams &params, std::unique_ptr<SinkBuffer> rgb_buffer, std::unique_ptr<SinkBuffer> depth_buffer)
+K4ASinkParams K4ASinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param)
 {
-  return std::unique_ptr<k4a::K4ARGBDSink>(new k4a::K4ARGBDSink(params, std::move(rgb_buffer), std::move(depth_buffer)));
+  std::vector<std::string> configured_keys = config.ListConfigGroupParameters(cam_param);
+  const SinkParams sink_params = ParseBaseSinkParamsFromConfig(config, cam_param, configured_keys);
+
+  K4ASinkParams params(sink_params);
+  // Set to kEmptyK4ASerialNumber (or empty string) to address the first connected RealSense device.
+  params.serial_number = GetOptionalStringFromConfig(config, cam_param, "serial_number", kEmptyK4ASerialNumber);
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "serial_number"), configured_keys.end());
+
+  // Store path to calibration file (needed such that the sink knows where to save the calibration data).
+  params.write_calibration = GetOptionalBoolFromConfig(config, cam_param, "write_calibration", false);
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "write_calibration"), configured_keys.end());
+
+  // Align depth to color stream?
+  params.align_depth_to_color = GetOptionalBoolFromConfig(config, cam_param, "align_depth_to_color", true);
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "align_depth_to_color"), configured_keys.end());
+
+  // Timeout in milliseconds for a single k4a_device_get_capture() call
+  params.capture_timeout_ms = static_cast<int32_t>(GetOptionalIntFromConfig(config, cam_param, "capture_timeout_ms", 0));
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "capture_timeout_ms"), configured_keys.end());
+
+  // Color camera resolution mode
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "color_resolution"), configured_keys.end());
+  const std::string cres = GetOptionalStringFromConfig(config, cam_param, "color_resolution", std::string());
+  if (!cres.empty())
+    params.color_resolution = k4a::StringToColorResolution(cres);
+
+  // Depth mode
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "depth_mode"), configured_keys.end());
+  const std::string dm = GetOptionalStringFromConfig(config, cam_param, "depth_mode", std::string());
+  if (!dm.empty())
+    params.depth_mode = k4a::StringToDepthMode(dm);
+
+  // Target/desired frame rate
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "fps"), configured_keys.end());
+  const std::string fps = GetOptionalStringFromConfig(config, cam_param, "fps", std::string());
+  if (!fps.empty())
+    params.camera_fps = k4a::StringToFps(fps);
+
+  // Set true if you want to turn off the streaming LED
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "disable_streaming_indicator"), configured_keys.end());
+  params.disable_streaming_indicator = GetOptionalBoolFromConfig(config, cam_param, "disable_streaming_indicator", false);
+
+  // Desired delay between color and depth
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "depth_delay_off_color_usec"), configured_keys.end());
+  params.depth_delay_off_color_usec = GetOptionalIntFromConfig(config, cam_param, "depth_delay_off_color_usec", params.depth_delay_off_color_usec);
+
+  // Return depth as CV_64F (in meters) or CV_16U (in millimeters).
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "depth_in_meters"), configured_keys.end());
+  params.depth_in_meters = GetOptionalBoolFromConfig(config, cam_param, "depth_in_meters", false);
+
+  // External synchronization timing
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "subordinate_delay_off_master_usec"), configured_keys.end());
+  params.subordinate_delay_off_master_usec = GetOptionalUnsignedIntFromConfig(config, cam_param, "subordinate_delay_off_master_usec", params.subordinate_delay_off_master_usec);
+
+  // If true, k4a capture will skip readings with invalid color or depth
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "synchronized_images_only"), configured_keys.end());
+  params.synchronized_images_only = GetOptionalBoolFromConfig(config, cam_param, "synchronized_images_only", true);
+
+  // External sync mode: Standalone, master or subordinate
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "wired_sync_mode"), configured_keys.end());
+  const std::string wsm = GetOptionalStringFromConfig(config, cam_param, "wired_sync_mode", std::string());
+  if (!wsm.empty())
+    params.wired_sync_mode = k4a::StringToWiredSyncMode(wsm);
+
+  // Check, if there are color control commands to set:
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "color_control_auto"), configured_keys.end());
+  const std::string k4a_cc_auto = cam_param + ".color_control_auto";
+  if (config.SettingExists(k4a_cc_auto))
+  {
+    const std::vector<std::string> opts_auto = config.GetStringArray(k4a_cc_auto);
+    for (const auto &oa : opts_auto)
+    {
+      K4AColorControlSetting s;
+      s.command = k4a::StringToColorControlCommand(oa);
+      s.mode = K4A_COLOR_CONTROL_MODE_AUTO;
+      params.color_control_auto.push_back(s);
+    }
+  }
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "color_control_manual"), configured_keys.end());
+  const std::string k4a_cc_manual = cam_param + ".color_control_manual";
+  if (config.SettingExists(k4a_cc_manual))
+  {
+    std::vector<std::pair<std::string, int>> opts_manual = config.GetIntegerKeyValueList(k4a_cc_manual);
+    for (const auto &om : opts_manual)
+    {
+      K4AColorControlSetting s;
+      s.command = k4a::StringToColorControlCommand(om.first);
+      s.mode = K4A_COLOR_CONTROL_MODE_MANUAL;
+      s.value = static_cast<int32_t>(om.second);
+      params.color_control_manual.push_back(s);
+    }
+  }
+
+  // There's no "depth control" yet (except for the "depth mode" which we already set).
+
+  WarnOfUnusedParameters(cam_param, configured_keys);
+
+  return params;
 }
 
 
-std::vector<K4ADeviceInfo> ListK4ADevices(bool warn_if_no_devices)
+
+std::unique_ptr<StreamSink> CreateBufferedK4ASink(const K4ASinkParams &params, std::unique_ptr<SinkBuffer> rgb_buffer, std::unique_ptr<SinkBuffer> depth_buffer)
 {
-  return k4a::ListK4ADevices(warn_if_no_devices);
+  return std::unique_ptr<k4a::K4ARGBDSink>(new k4a::K4ARGBDSink(params, std::move(rgb_buffer), std::move(depth_buffer)));
 }
 
 
@@ -891,5 +1050,6 @@ bool IsK4A(const std::string &type_param)
   return false;
 }
 
+} // namespace k4a
 } // namespace best
 } // namespace vcp

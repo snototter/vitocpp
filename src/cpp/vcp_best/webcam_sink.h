@@ -7,6 +7,8 @@ namespace vcp
 {
 namespace best
 {
+namespace webcam
+{
 /** @brief Configuration parameters to stream from a webcam. */
 struct WebcamSinkParams : public SinkParams
 {
@@ -44,6 +46,7 @@ std::unique_ptr<StreamSink> CreateWebcamSink(const WebcamSinkParams &params)
   return CreateBufferedWebcamSink(params, std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()));
 }
 
+} // namespace webcam
 } // namespace best
 } // namespace vcp
 #endif // __VCP_BEST_WEBCAM_SINK_H__

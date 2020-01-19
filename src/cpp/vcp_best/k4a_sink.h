@@ -13,8 +13,11 @@ namespace vcp
 {
 namespace best
 {
+namespace k4a
+{
 /** @brief String representation of an empty/invalid/unset serial number. Use this if you don't want to specify a particular device. */
 extern const std::string kEmptyK4ASerialNumber;
+
 
 // Struct representing K4A's color control settings, which
 // can be changed by the user.
@@ -28,7 +31,7 @@ struct K4AColorControlSetting
 };
 
 
-struct K4AParams : SinkParams
+struct K4ASinkParams : SinkParams
 {
   //FIXME k4a: for multiple cameras, see depth stream offset: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/green_screen/main.cpp
 
@@ -68,7 +71,7 @@ struct K4AParams : SinkParams
   std::vector<K4AColorControlSetting> color_control_manual;
 
 
-  K4AParams(const SinkParams &params,
+  K4ASinkParams(const SinkParams &params,
             const std::string &serial_number=kEmptyK4ASerialNumber,
             const bool write_calibration=false,
             const bool align_depth_to_color=false,
@@ -121,17 +124,21 @@ struct K4ADeviceInfo
 };
 
 
+/** @brief Parses the configuration group "cam_param" into a K4ASinkParams configuration. */
+K4ASinkParams K4ASinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
+
+
 /**
  * @brief Creates a StreamSink to capture from an Azure Kinect using libk4a.
  * @param sink_buffer A sink buffer which will be used as image queue.
  */
-std::unique_ptr<StreamSink> CreateBufferedK4ASink(const K4AParams &params, std::unique_ptr<SinkBuffer> rgb_buffer, std::unique_ptr<SinkBuffer> depth_buffer);
+std::unique_ptr<StreamSink> CreateBufferedK4ASink(const K4ASinkParams &params, std::unique_ptr<SinkBuffer> rgb_buffer, std::unique_ptr<SinkBuffer> depth_buffer);
 
 /**
  * @brief Creates a StreamSink to capture from an Azure Kinect device, specify size of the image queue as template parameter.
  */
 template <int BufferCapacity>
-std::unique_ptr<StreamSink> CreateK4ASink(const K4AParams &params)
+std::unique_ptr<StreamSink> CreateK4ASink(const K4ASinkParams &params)
 {
   return CreateBufferedK4ASink(params, std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()), std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()));
 }
@@ -141,6 +148,7 @@ std::vector<K4ADeviceInfo> ListK4ADevices(bool warn_if_no_devices=true);
 /** @brief Checks if the configuration belongs to a K4A (Kinect Azure) device (using the configuration parameter "cameraX.type"). */
 bool IsK4A(const std::string &type_param);
 
+} // namespace k4a
 } // namespace best
 } // namespace vcp
 #endif // __VCP_BEST_K4A_SINK_H__

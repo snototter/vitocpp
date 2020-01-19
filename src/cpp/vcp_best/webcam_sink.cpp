@@ -19,8 +19,6 @@
 #include <vcp_utils/file_utils.h>
 #include <vcp_imutils/opencv_compatibility.h>
 
-#undef VCP_LOGGING_COMPONENT
-#define VCP_LOGGING_COMPONENT "vcp::best::webcam_sink"
 
 /**
  * Notes:
@@ -70,8 +68,11 @@ namespace vcp
 {
 namespace best
 {
-namespace
+namespace webcam
 {
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::best::webcam"
+
 #ifdef WITH_FFMPEG
 #error "This needs to be properly investigated - currently, we observe "rolling shutter"-like effects for HD webcams"
   class WebcamSink : public StreamSink
@@ -605,8 +606,6 @@ private:
   }
 };
 #endif
-} // namespace
-
 
 bool IsWebcamSink(const std::string &type_param)
 {
@@ -682,5 +681,6 @@ std::unique_ptr<StreamSink> CreateBufferedWebcamSink(
   return std::unique_ptr<WebcamSink>(new WebcamSink(std::move(sink_buffer), params));
 }
 
+} // namespace webcam
 } // namespace best
 } // namespace vcp

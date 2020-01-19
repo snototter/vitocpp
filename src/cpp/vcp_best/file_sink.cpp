@@ -16,15 +16,15 @@
 
 #include "capture.h"
 
-#undef VCP_LOGGING_COMPONENT
-#define VCP_LOGGING_COMPONENT "vcp::best::file_sink"
-
 namespace vcp
 {
 namespace best
 {
-namespace
+namespace file
 {
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::best::file"
+
 /** @brief Replays a video at the specified frame rate - does NOT support backwards seeking. */
 class TimedVideoFileSink : public StreamSink
 {
@@ -637,7 +637,6 @@ private:
   bool load_images_;                    /**< Whether we should load (and decode) images or raw/zipped cv::Mat files. */
   std::vector<std::string> filenames_;  /**< Stores the relative filenames. */
 };
-} // namespace
 
 
 /** @brief Given the cameraXX.type (configuration) parameter, checks if the configuration belongs to a VideoFileSink. */
@@ -753,6 +752,6 @@ std::unique_ptr<StreamSink> CreateImageDirectorySink(const ImageDirectorySinkPar
     return std::unique_ptr<ImageDirectorySink>(new ImageDirectorySink(params));
 }
 
-
+} // namespace file
 } // namespace icc
 } // namespace pvt

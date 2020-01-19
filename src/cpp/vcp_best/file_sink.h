@@ -12,6 +12,8 @@ namespace vcp
 {
 namespace best
 {
+namespace file
+{
 /** @brief Configuration parameters to "stream" from a video file. */
 struct VideoFileSinkParams : public SinkParams
 {
@@ -58,12 +60,14 @@ bool IsVideoFileSink(const std::string &type_param);
 bool IsImageDirectorySink(const std::string &type_param);
 
 
-//TODO doc
+/** @brief Parses the configuration group "cam_param" into a VideoFileSinkParams configuration. */
 VideoFileSinkParams VideoFileSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
 
+
+/** @brief Parses the configuration group "cam_param" into an ImageDirectorySinkParams configuration. */
 ImageDirectorySinkParams ImageDirectorySinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
 
-
+//FIXME replace by templated (create buffered sink...) version!
 /** @brief Returns a StreamSink wrapper to access video files. */
 std::unique_ptr<StreamSink> CreateVideoFileSink(const VideoFileSinkParams &params);
 
@@ -71,6 +75,7 @@ std::unique_ptr<StreamSink> CreateVideoFileSink(const VideoFileSinkParams &param
 /** @brief Returns a StreamSink wrapper to access a directory full of images. */
 std::unique_ptr<StreamSink> CreateImageDirectorySink(const ImageDirectorySinkParams &params);
 
+} // namespace file
 } // namespace best
 } // namespace vcp
 #endif // __VCP_BEST_FILE_SINK_H__

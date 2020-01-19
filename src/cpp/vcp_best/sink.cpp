@@ -115,13 +115,13 @@ std::string SinkTypeToString(const SinkType &s)
 #define MAKE_STRING_TO_SINKTYPE_IF(st, rep)  if (rep.compare(SinkTypeToString(SinkType::st)) == 0) return SinkType::st
 SinkType SinkTypeFromString(const std::string &s)
 {
-  if (IsImageDirectorySink(s))
+  if (file::IsImageDirectorySink(s))
     return SinkType::IMAGE_DIR;
-  else if (IsVideoFileSink(s))
+  else if (file::IsVideoFileSink(s))
     return SinkType::VIDEO_FILE;
-  else if (IsWebcamSink(s))
+  else if (webcam::IsWebcamSink(s))
     return SinkType::WEBCAM;
-  else if (IsK4A(s))
+  else if (k4a::IsK4A(s))
     return SinkType::K4A;
 //  std::string upper(s);
 //  vcp::utils::string::ToUpper(upper);
@@ -303,7 +303,7 @@ SinkParams ParseBaseSinkParamsFromConfig(const vcp::config::ConfigParams &config
   const bool color_as_bgr = GetColorAsBgrFromConfig(config, cam_group, configured_keys);
   const bool verbose = GetVerbosityFlagFromConfig(config, cam_group, configured_keys);
 
-  return SinkParams(sink_type, frame_type, sink_label, calibration_file, cam_group, color_as_bgr);
+  return SinkParams(sink_type, frame_type, sink_label, calibration_file, cam_group, color_as_bgr, verbose);
 }
 
 size_t GetNumCamerasFromConfig(const vcp::config::ConfigParams &config)

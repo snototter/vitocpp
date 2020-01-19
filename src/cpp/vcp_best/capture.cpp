@@ -59,7 +59,7 @@ public:
 //    std::vector<std::string> cck_ip_mono; // Corresponding configuration file keys (camera1, etc)
 //    std::vector<std::string> cck_ip_stereo; // Corresponding configuration file keys (camera1, etc)
 //#endif
-    std::vector<ImageDirectorySinkParams> imgdir_params;
+    std::vector<file::ImageDirectorySinkParams> imgdir_params;
 //#ifdef WITH_MATRIXVISION
 //    std::vector<MvBlueFox3SinkParams> mvbluefox_params;
 //    std::vector<std::string> cck_mvbluefox; // Corresponding configuration file keys (camera1, etc)
@@ -72,8 +72,8 @@ public:
 //    std::vector<RealSense2SinkParams> realsense_params;
 //    std::vector<std::string> cck_realsense; // Corresponding configuration file keys (camera1, etc)
 //#endif
-    std::vector<VideoFileSinkParams> video_params;
-    std::vector<WebcamSinkParams> webcam_params;
+    std::vector<file::VideoFileSinkParams> video_params;
+    std::vector<webcam::WebcamSinkParams> webcam_params;
 
     // Filter all "camera[0-9,a-z]*" parameters out of the configuration:
     const std::vector<std::string> cam_config_names = GetCameraConfigParameterNames(config);
@@ -85,16 +85,19 @@ public:
       switch(sink_type)
       {
         case SinkType::IMAGE_DIR:
-          imgdir_params.push_back(ImageDirectorySinkParamsFromConfig(config, cam_config_name));
+          imgdir_params.push_back(file::ImageDirectorySinkParamsFromConfig(config, cam_config_name));
           break;
 
         case SinkType::VIDEO_FILE:
-          video_params.push_back(VideoFileSinkParamsFromConfig(config, cam_config_name));
+          video_params.push_back(file::VideoFileSinkParamsFromConfig(config, cam_config_name));
           break;
 
         case SinkType::WEBCAM:
-          webcam_params.push_back(WebcamSinkParamsFromConfig(config, cam_config_name));
+          webcam_params.push_back(webcam::WebcamSinkParamsFromConfig(config, cam_config_name));
           break;
+
+        //case SinkType::K4A:
+
 
         default:
           VCP_LOG_FAILURE("Sink type '" << sink_type << "' is not yet supported!");
@@ -142,13 +145,13 @@ public:
 
     // Initialize the individual captures
     for (const auto &p : imgdir_params)
-      AddSink(CreateImageDirectorySink(p), p);
+      AddSink(file::CreateImageDirectorySink(p), p);
 
     for (const auto &p : video_params)
-      AddSink(CreateVideoFileSink(p), p);
+      AddSink(file::CreateVideoFileSink(p), p);
 
     for (const auto &p : webcam_params)
-      AddSink(CreateWebcamSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p), p);
+      AddSink(webcam::CreateWebcamSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p), p);
 
 #ifdef WITH_IPCAMERA
     if (!ip_mono_params.empty())
