@@ -451,11 +451,15 @@ public:
       capture_->set(cv::CAP_PROP_FPS, params_.fps);
 #endif
     }
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Successfully opened webcam #" << params_.device_number);
     return true;
   }
 
   bool CloseDevice() override
   {
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Closing webcam #" << params_.device_number);
     capture_.reset();
     return true;
   }
@@ -471,6 +475,8 @@ public:
       return false;
     }
 
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Starting streaming thread for webcam #" << params_.device_number);
     continue_capture_ = true;
     stream_thread_ = std::thread(&WebcamSink::Receive, this);
     return true;
@@ -481,6 +487,8 @@ public:
   {
     if (continue_capture_)
     {
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Waiting for streaming thread to disconnect from webcam #" << params_.device_number);
       continue_capture_ = false;
       stream_thread_.join();
     }

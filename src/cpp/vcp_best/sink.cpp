@@ -223,12 +223,22 @@ std::string GetCalibrationFileFromConfig(const vcp::config::ConfigParams &config
   return GetOptionalStringFromConfig(config, cam_group, "calibration_file", std::string());
 }
 
+
 bool GetColorAsBgrFromConfig(const vcp::config::ConfigParams &config,
                              const std::string &cam_group,
                              std::vector<std::string> &configured_keys)
 {
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "color_as_bgr"), configured_keys.end());
   return GetOptionalBoolFromConfig(config, cam_group, "color_as_bgr", false);
+}
+
+
+bool GetVerbosityFlagFromConfig(const vcp::config::ConfigParams &config,
+                                const std::string &cam_group,
+                                std::vector<std::string> &configured_keys)
+{
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "verbose"), configured_keys.end());
+  return GetOptionalBoolFromConfig(config, cam_group, "verbose", false);
 }
 
 
@@ -286,6 +296,7 @@ SinkParams ParseBaseSinkParamsFromConfig(const vcp::config::ConfigParams &config
   const std::string sink_label = GetSinkLabelFromConfig(config, cam_group, configured_keys);
   const std::string calibration_file = GetCalibrationFileFromConfig(config, cam_group, configured_keys);
   const bool color_as_bgr = GetColorAsBgrFromConfig(config, cam_group, configured_keys);
+  const bool verbose = GetVerbosityFlagFromConfig(config, cam_group, configured_keys);
 
   return SinkParams(sink_type, frame_type, sink_label, calibration_file, cam_group, color_as_bgr);
 }

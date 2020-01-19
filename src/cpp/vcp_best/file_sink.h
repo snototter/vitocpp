@@ -12,11 +12,8 @@ namespace vcp
 namespace best
 {
 /** @brief Configuration parameters to "stream" from a video file. */
-class VideoFileSinkParams : public SinkParams
+struct VideoFileSinkParams : public SinkParams
 {
-public:
-  virtual ~VideoFileSinkParams() {}
-
   std::string filename;
   size_t first_frame;
   double fps;
@@ -35,11 +32,8 @@ public:
 
 
 /** @brief Configuration parameters to "stream" an image sequence (i.e. a folder of images). */
-class ImageDirectorySinkParams : public SinkParams
+struct ImageDirectorySinkParams : public SinkParams
 {
-public:
-  virtual ~ImageDirectorySinkParams() {}
-
   std::string directory;
   size_t first_frame;
   double fps;

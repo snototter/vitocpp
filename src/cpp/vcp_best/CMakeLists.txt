@@ -221,7 +221,7 @@ if (VCP_BEST_WITH_K4A)
 
   message("  [+] Enable Azure Kinect sensors")
 
-  if (VCP_WITH_K4A_MJPG)
+  if (VCP_BEST_WITH_K4A_MJPG)
     add_definitions(-DVCP_WITH_K4A_MJPG)
     message("      * Using JPG encoded K4A color stream")
   else()

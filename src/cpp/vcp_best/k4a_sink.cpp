@@ -12,12 +12,11 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 
-//TODO VCP_BEST_DEBUG_FRAMERATE
-//FIXME VCP_WITH_K4A_MJPG
-//FIXME capture/sink: VCP_WITH_K4A
-#ifdef VCP_WITH_K4A_STREAM_MJPG
+//FIXME k4a VCP_BEST_DEBUG_FRAMERATE
+//FIXME k4a capture/sink: VCP_WITH_K4A
+#ifdef VCP_WITH_K4A_MJPG
     #include <opencv2/highgui/highgui.hpp>
-#endif // VCP_WITH_K4A_STREAM_MJPG
+#endif // VCP_WITH_K4A_MJPG
 
 #include <k4a/k4a.h>
 #include <k4a/k4a.hpp>
@@ -27,11 +26,11 @@
 #include <vcp_utils/string_utils.h>
 #include <vcp_utils/timing_utils.h>
 
-// TODO may need to wait upon opening multiple devices: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/issues/676
-// TODO https://github.com/microsoft/Azure-Kinect-Sensor-SDK/issues/803  <== aligning two kinects fails (inaccurate factory calib)
-// TODO check official calib doc: https://docs.microsoft.com/en-us/azure/kinect-dk/use-calibration-functions
-// TODO calibration: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/calibration/main.cpp
-// TODO opencv transformation example: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/tree/develop/examples/opencv_compatibility
+//FIXME k4a may need to wait upon opening multiple devices: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/issues/676
+//FIXME k4a https://github.com/microsoft/Azure-Kinect-Sensor-SDK/issues/803  <== aligning two kinects fails (inaccurate factory calib)
+//FIXME k4a check official calib doc: https://docs.microsoft.com/en-us/azure/kinect-dk/use-calibration-functions
+//FIXME k4a calibration: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/calibration/main.cpp
+//FIXME k4a opencv transformation example: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/tree/develop/examples/opencv_compatibility
 namespace vcp
 {
 namespace best
@@ -339,90 +338,95 @@ public:
     continue_capture_(false),
     rgb_queue_(std::move(rgb_buffer)),
     depth_queue_(std::move(depth_buffer)),
-    rgbd_params_(params),
+    params_(params),
     rgb_stream_enabled_(false),
     depth_stream_enabled_(false),
-    k4a_device_(NULL)
+    k4a_device_(nullptr)
   {
     available_ = 0;
   }
 
   virtual ~K4ARGBDSink()
   {
-    Terminate();
-
-    if (k4a_device_)
-    {
-      k4a_device_close(k4a_device_);
-      k4a_device_ = NULL;
-    }
+    StopStreaming();
+    CloseDevice();
   }
 
   bool OpenDevice() override
   {
-      if (rgbd_params_.verbose)
-        VCP_LOG_INFO_DEFAULT("Opening Kinect Azure device");
+    if (k4a_device_)
+    {
+      VCP_LOG_FAILURE("Device already opened!");
+      return false;
+    }
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Opening Kinect Azure device");
 
-      if (!GetDevice(k4a_device_, params))
-      { //TODO check qtcreator issue (cannot set cmake options)
-        PVT_ABORT("Cannot open Kinect Azure device"); //TODO open/return false
-      }
+    if (!GetDevice(k4a_device_, params_))
+    {
+      VCP_LOG_FAILURE("Cannot open Kinect Azure device");
+      return false;
+    }
 
-      serial_number_ = GetSerialNumber(k4a_device_);
+    serial_number_ = GetSerialNumber(k4a_device_);
+    if (serial_number_.empty())
+      return false;
 
-      // Check if we need to dump the calibration:
-      calibration_file_ = params.write_calibration ? params.calibration_file : "";
-      if (params.write_calibration && calibration_file_.empty())
-        PVT_ABORT("If you want to dump the K4A calibration, you must specify the filename as calibration_file parameter!");
+    // Check if we need to dump the calibration:
+    calibration_file_ = params_.write_calibration ? params_.calibration_file : "";
+    if (params_.write_calibration && calibration_file_.empty())
+    {
+      VCP_LOG_FAILURE("If you want to dump the K4A calibration, you must specify the filename as calibration_file parameter!");
+      return false;
+    }
 
-      // The (crazy?) user could configure the sensor such that
-      // color/depth streams are disabled. In such cases, we
-      // will return empty matrices for the corresponding stream.
-      rgb_stream_enabled_ = params.color_resolution != K4A_COLOR_RESOLUTION_OFF;
-      depth_stream_enabled_ = params.depth_mode != K4A_DEPTH_MODE_OFF;
+    // The user could configure the sensor such that
+    // color/depth streams are disabled. In such cases, we
+    // will return empty matrices for the corresponding stream.
+    rgb_stream_enabled_ = params_.IsColorStreamEnabled();
+    depth_stream_enabled_ = params_.IsDepthStreamEnabled();
+    return true;
   }
 
-  bool
+  bool CloseDevice() override
+  {
+    if (k4a_device_)
+    {
+      k4a_device_close(k4a_device_);
+      k4a_device_ = nullptr;
+    }
+    return true;
+  }
 
-  void StartStream() override
+
+  bool StartStreaming() override
   {
     if (continue_capture_)
-      return;
+    {
+      VCP_LOG_FAILURE("K4A stream already running - ignoring StartStreaming() call.");
+      return false;
+    }
+
     continue_capture_ = true;
     stream_thread_ = std::thread(&K4ARGBDSink::Receive, this);
+    return true;
   }
 
-  void Terminate() override
+
+  bool StopStreaming() override
   {
     if (continue_capture_)
     {
       continue_capture_ = false;
       stream_thread_.join();
     }
+    return true;
   }
 
-  void GetNextFrame(cv::Mat &frame) override
-  {
-    // Only used for compatibility reasons to previous pvt
-    // versions, which assumed that a sensor delivers only
-    // a single image (not color and depth).
-    image_queue_mutex_.lock();
-    if (rgb_queue_->Empty() || depth_queue_->Empty())
-    {
-      frame = cv::Mat();
-    }
-    else
-    {
-      // Retrieve oldest image in queue.
-      frame = rgb_queue_->Front().clone();
-      rgb_queue_->PopFront();
-      depth_queue_->PopFront(); // Keep queues consistent
-    }
-    image_queue_mutex_.unlock();
-  }
 
-  std::vector<cv::Mat> GetNextFrame() override
+  std::vector<cv::Mat> Next() override
   {
+    //FIXME k4a IR16 ?
     cv::Mat rgb, depth;
     image_queue_mutex_.lock();
     if (rgb_queue_->Empty() || depth_queue_->Empty())
@@ -446,14 +450,51 @@ public:
   }
 
 
-  int IsAvailable() const override
+  int IsDeviceAvailable() const override
   {
     return available_;
+  }
+
+  size_t NumStreams() const override
+  {
+    return 2;
+    //FIXME k4a IR?
+  }
+
+  std::string StreamLabel(size_t stream_index) const override
+  {
+    switch (stream_index)
+    {
+      case 0:
+        return params_.sink_label + "-rgb";
+      case 1:
+        return params_.sink_label + "-depth";
+      case 2:
+      default:
+        VCP_ERROR("Stream #" << stream_index << " does not exist for K4A '" << params_.sink_label << "', S/N " << params_.serial_number);
+    //FIXME k4a IR?
+    }
+  }
+
+  FrameType FrameTypeAt(size_t stream_index) const override
+  {
+    switch (stream_index)
+    {
+      case 0:
+        return FrameType::RGBD_IMAGE;
+      case 1:
+        return FrameType::RGBD_DEPTH;
+      case 2:
+      default:
+        VCP_ERROR("Stream #" << stream_index << " does not exist for K4A '" << params_.sink_label << "', S/N " << params_.serial_number);
+    //FIXME k4a IR?
+    }
   }
 
 
   int IsFrameAvailable() const override
   {
+    //FIXME k4a IR?  a) add IR, b) true if ALL or ANY are available?
     image_queue_mutex_.lock();
     const bool empty = rgb_queue_->Empty() || depth_queue_->Empty();
     image_queue_mutex_.unlock();
@@ -462,14 +503,13 @@ public:
     return 1;
   }
 
-
 private:
   std::atomic<bool> continue_capture_;
   std::thread stream_thread_;
   mutable std::mutex image_queue_mutex_;
   std::unique_ptr<SinkBuffer> rgb_queue_;
   std::unique_ptr<SinkBuffer> depth_queue_;
-  K4AParams rgbd_params_;
+  K4AParams params_;
   std::string serial_number_;
   std::string calibration_file_;
   std::atomic<int> available_;
@@ -480,29 +520,29 @@ private:
 
   void Receive()
   {
-    if (rgbd_params_.verbose)
-      PVT_LOG_INFO_NOFILE("Starting K4A stream from device [" << serial_number_ << "]");
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Starting K4A stream from device [" << serial_number_ << "]");
 
     k4a_device_configuration_t config = K4A_DEVICE_CONFIG_INIT_DISABLE_ALL;
-    config.camera_fps = rgbd_params_.camera_fps;
-#ifdef PVT_K4A_COLOR_STREAM_MJPG
+    config.camera_fps = params_.camera_fps;
+#ifdef VCP_WITH_K4A_MJPG
     // Save bandwidth, but need to decode JPGs on-the-fly.
     config.color_format = K4A_IMAGE_FORMAT_COLOR_MJPG;
-    if (rgbd_params_.verbose)
-      PVT_LOG_INFO_NOFILE("Configuring K4A color stream as MJPG.");
-#else // PVT_K4A_COLOR_STREAM_MJPG
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Configuring K4A color stream as MJPG.");
+#else // VCP_WITH_K4A_MJPG
     // Use already decoded image data.
     config.color_format = K4A_IMAGE_FORMAT_COLOR_BGRA32;
-    if (rgbd_params_.verbose)
-      PVT_LOG_INFO_NOFILE("Configuring K4A color stream as BGRA32.");
-#endif // PVT_K4A_COLOR_STREAM_MJPG
-    config.color_resolution = rgbd_params_.color_resolution;
-    config.depth_delay_off_color_usec = rgbd_params_.depth_delay_off_color_usec;
-    config.depth_mode = rgbd_params_.depth_mode;
-    config.disable_streaming_indicator = rgbd_params_.disable_streaming_indicator;
-    config.subordinate_delay_off_master_usec = rgbd_params_.subordinate_delay_off_master_usec;
-    config.synchronized_images_only = rgbd_params_.synchronized_images_only;
-    config.wired_sync_mode = rgbd_params_.wired_sync_mode;
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Configuring K4A color stream as BGRA32.");
+#endif // VCP_WITH_K4A_MJPG
+    config.color_resolution = params_.color_resolution;
+    config.depth_delay_off_color_usec = params_.depth_delay_off_color_usec;
+    config.depth_mode = params_.depth_mode;
+    config.disable_streaming_indicator = params_.disable_streaming_indicator;
+    config.subordinate_delay_off_master_usec = params_.subordinate_delay_off_master_usec;
+    config.synchronized_images_only = params_.synchronized_images_only;
+    config.wired_sync_mode = params_.wired_sync_mode;
 
 
     // After setting the configuration, we can already query sensor information (since
@@ -510,18 +550,18 @@ private:
     // Query device calibration
     k4a_calibration_t sensor_calibration;
     if (k4a_device_get_calibration(k4a_device_, config.depth_mode, config.color_resolution, &sensor_calibration) != K4A_RESULT_SUCCEEDED)
-      PVT_ABORT("Failed to retrieve sensor calibration!");
+      VCP_ERROR("Failed to retrieve sensor calibration!");
 
     // Prepare transformation for image alignment if needed.
-    k4a_transformation_t transformation = NULL;
-    if (rgbd_params_.align_depth_to_color)
+    k4a_transformation_t transformation = nullptr;
+    if (params_.align_depth_to_color)
       transformation = k4a_transformation_create(&sensor_calibration);
 
     // Save calibration if requested.
-    if (rgbd_params_.write_calibration)
+    if (params_.write_calibration)
     {
       //TODO FIXME!!
-      PVT_LOG_FAILURE("TODO FIXME: need to save calibration!");
+      VCP_LOG_FAILURE("TODO FIXME: need to save calibration!");
       //TODO look into:
       // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/undistort/main.cpp
       // or even better:
@@ -534,11 +574,11 @@ private:
 
     // Check synchronisation status
     //TODO only relevant if we're in a multi-camera setup
-    if (rgbd_params_.verbose)
+    if (params_.verbose)
     {
       bool sync_in_connected, sync_out_connected;
       GetSyncJackStatus(k4a_device_, sync_in_connected, sync_out_connected);
-      PVT_LOG_INFO_NOFILE("K4A sync jack status" << std::endl
+      VCP_LOG_INFO_DEFAULT("K4A sync jack status" << std::endl
                           << "  IN:  " << (sync_in_connected ? "connected" : "not connected") << std::endl
                           << "  OUT: " << (sync_out_connected ? "connected" : "not connected"));
     }
@@ -552,7 +592,7 @@ private:
         k4a_device_close(k4a_device_);
         k4a_device_ = NULL;
       }
-      PVT_ABORT("Failed to start k4a device with S/N '" << serial_number_ << "'");
+      VCP_ERROR("Failed to start k4a device with S/N '" << serial_number_ << "'");
     }
 
     // From my K4A tests it seems that the color stream takes notably longer to start
@@ -560,6 +600,8 @@ private:
     // only depth/IR, but no color data.
     // The naive solution: skip "k4a captures" during start up until we get data for both
     // color and depth.
+    // FIXME remove and just deliver empty frames - synced depth + color can be enforced via
+    // config
     bool skip_initially_missing = true;
     // TODO: Alternatively, we might replace the missing color stream by IR16 instead (but
     // this would probably lead to exceptions on the pvt user's side (as s/he might expect
@@ -571,16 +613,16 @@ private:
     k4a_capture_t k4a_capture;
     while(continue_capture_)
     {
-      switch (k4a_device_get_capture(k4a_device_, &k4a_capture, rgbd_params_.capture_timeout_ms))
+      switch (k4a_device_get_capture(k4a_device_, &k4a_capture, params_.capture_timeout_ms))
       {
       case K4A_WAIT_RESULT_SUCCEEDED:
           break;
       case K4A_WAIT_RESULT_TIMEOUT:
-          PVT_LOG_WARNING("Capture request to K4A S/N '" << serial_number_ << "' timed out.");
+          VCP_LOG_WARNING("Capture request to K4A S/N '" << serial_number_ << "' timed out.");
           continue;
           break;
       case K4A_WAIT_RESULT_FAILED:
-          PVT_LOG_FAILURE("Failed to read a capture from K4A S/N '" << serial_number_ << "', aborting.");
+          VCP_LOG_FAILURE("Failed to read a capture from K4A S/N '" << serial_number_ << "', closing stream.");
           continue_capture_ = false;
           continue;
           break;
@@ -591,32 +633,28 @@ private:
       cv::Mat cvrgb;
       if (image)
       {
-//        INIT_TIC_TOC;
-//        TIC;
         // Image conversion based on https://stackoverflow.com/a/57222191/400948
         // Get image buffer and size
         uint8_t* buffer = k4a_image_get_buffer(image);
         const int rows = k4a_image_get_height_pixels(image);
         const int cols = k4a_image_get_width_pixels(image);
+
         // Create OpenCV Mat header pointing to the buffer (no copy yet!)
         cv::Mat buf(rows, cols, CV_8UC4, static_cast<void*>(buffer), cv::Mat::AUTO_STEP);
-#ifdef PVT_K4A_COLOR_STREAM_MJPG
-        // Stream is JPG encoded - decoding stream into 3840x2160x3
-        // image takes ~40 ms!
+#ifdef VCP_WITH_K4A_MJPG
+        // Stream is JPG encoded.
+        // Note that decoding a stream into a 3840x2160x3 image takes ~40 ms!
         cvrgb = cv::imdecode(buf, CV_LOAD_IMAGE_COLOR);
-//        TOC("Decoding");
-        PVT_LOG_INFO_NOFILE(".... " << cvrgb.rows << "x" << cvrgb.cols << "x" << cvrgb.channels());
-#else // PVT_K4A_COLOR_STREAM_MJPG
-        // Stream is BGRA32 - converting a 3840x2160x4 image to 3-channels
-        // only takes ~2 ms.
+#else
+        // Stream is BGRA32.
+        // Converting a 3840x2160x4 image to 3-channels only takes ~2 ms.
         // We need to drop the alpha channel anyways, so use cvtColor to make
         // the deep buffer copy:
-        if (rgbd_params_.color_as_bgr)
+        if (params_.color_as_bgr)
           cv::cvtColor(buf, cvrgb, CV_BGRA2BGR);
         else
           cv::cvtColor(buf, cvrgb, CV_BGRA2RGB);
-//        TOC("Copying k4a image buffer");
-#endif // PVT_K4A_COLOR_STREAM_MJPG
+#endif
 
         // Now it's safe to free the memory
         k4a_image_release(image);
@@ -626,7 +664,7 @@ private:
       {
         if (rgb_stream_enabled_)
         {
-          PVT_LOG_WARNING("No color image received!");
+          VCP_LOG_WARNING("No color image received!");
         }
       }
 
@@ -647,7 +685,7 @@ private:
         cv::Mat tmp;
 
         k4a_image_t aligned_depth_image = NULL;
-        if (rgbd_params_.align_depth_to_color)
+        if (params_.align_depth_to_color)
         {
           // Official warping example:
           // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/transformation/main.cpp
@@ -655,14 +693,14 @@ private:
                 cvrgb.cols * static_cast<int>(sizeof(uint16_t)), &aligned_depth_image)
                 != K4A_RESULT_SUCCEEDED)
           {
-            PVT_LOG_FAILURE("Cannot allocate k4a image buffer to warp depth to color!");
+            VCP_LOG_FAILURE("Cannot allocate k4a image buffer to warp depth to color!");
           }
           else
           {
             if (k4a_transformation_depth_image_to_color_camera(transformation, image, aligned_depth_image)
                 != K4A_RESULT_SUCCEEDED)
             {
-              PVT_LOG_FAILURE("Cannot align k4a depth image to color image!");
+              VCP_LOG_FAILURE("Cannot align k4a depth image to color image!");
             }
             else
             {
@@ -689,7 +727,7 @@ private:
         }
 
         // Deep copy:
-        if (rgbd_params_.depth_in_meters)
+        if (params_.depth_in_meters)
         {
           tmp.convertTo(cvdepth, CV_64FC1, 0.001, 0.0);
         }
@@ -710,7 +748,7 @@ private:
       {
         if (depth_stream_enabled_)
         {
-          PVT_LOG_WARNING_NOFILE("No depth data received!");
+          VCP_LOG_WARNING("No depth data received!");
         }
       }
 
@@ -724,7 +762,7 @@ private:
         // Only skip incomplete captures during startup
         if (!skip_initially_missing)
         {
-          PVT_LOG_WARNING("TODO RGB or depth is empty - increase error counter and abort if we cannot get a valid capture!");
+          VCP_LOG_WARNING("TODO RGB or depth is empty - increase error counter and abort if we cannot get a valid capture!");
           //TODO FIXME
         }
       }
@@ -759,41 +797,58 @@ private:
   {
     // Set color camera configuration:
     // - first, all which should be set to AUTO
-    for (const auto &p : rgbd_params_.color_control_auto)
+    for (const auto &p : params_.color_control_auto)
     {
       if (k4a_device_set_color_control(k4a_device_, p.command, K4A_COLOR_CONTROL_MODE_AUTO, 0) != K4A_RESULT_SUCCEEDED)
       {
-        PVT_LOG_FAILURE("Cannot adjust K4A color control setting: " << p);
+        VCP_LOG_FAILURE("Cannot adjust K4A color control setting: " << p);
       }
       else
       {
-        if (rgbd_params_.verbose)
-          PVT_LOG_INFO_NOFILE("Changed K4A color control: " << p);
+        if (params_.verbose)
+          VCP_LOG_INFO_DEFAULT("Changed K4A color control: " << p);
       }
     }
     // - second, all which should be set to MANUAL
-    for (const auto &p : rgbd_params_.color_control_manual)
+    for (const auto &p : params_.color_control_manual)
     {
       if (k4a_device_set_color_control(k4a_device_, p.command, K4A_COLOR_CONTROL_MODE_MANUAL, p.value) != K4A_RESULT_SUCCEEDED)
       {
-        PVT_LOG_FAILURE("Cannot adjust K4A color control setting: " << p);
+        VCP_LOG_FAILURE("Cannot adjust K4A color control setting: " << p);
       }
       else
       {
-        if (rgbd_params_.verbose)
-          PVT_LOG_INFO_NOFILE("Changed K4A color control: " << p);
+        if (params_.verbose)
+          VCP_LOG_INFO_DEFAULT("Changed K4A color control: " << p);
       }
     }
 
     // Finally, query current color camera configuration:
-    if (rgbd_params_.verbose)
+    if (params_.verbose)
     {
       for (const auto &p : GetCurrentColorControlSettings(k4a_device_))
-        PVT_LOG_INFO_NOFILE("K4A current color control settings: " << p);
+        VCP_LOG_INFO_DEFAULT("K4A current color control settings: " << p);
     }
   }
 };
 } // namespace k4a
+
+bool K4AParams::IsColorStreamEnabled() const
+{
+  return this->color_resolution != K4A_COLOR_RESOLUTION_OFF;
+}
+
+bool K4AParams::IsDepthStreamEnabled() const
+{
+  return this->depth_mode != K4A_DEPTH_MODE_OFF;
+}
+
+bool K4AParams::IsInfraredStreamEnabled() const
+{
+  //FIXME k4a - implement for IR stream
+  return false;
+}
+
 
 std::ostream &operator<< (std::ostream &out, const K4AColorControlSetting &s)
 {

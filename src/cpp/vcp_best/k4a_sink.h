@@ -28,22 +28,17 @@ struct K4AColorControlSetting
 };
 
 
-struct K4AParams
+struct K4AParams : SinkParams
 {
-  //TODO for multiple cameras, see depth offset: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/green_screen/main.cpp
+  //FIXME k4a: for multiple cameras, see depth stream offset: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/green_screen/main.cpp
 
   std::string serial_number; // Set to kEmptyK4ASerialNumber (or empty string) to apply these params to the first connected RealSense device.
 
-  // Path to the calibration file - needed to let the sink know,
-  // where to save the calibration data if "write_calibration" is true.
-  std::string calibration_file;
   bool write_calibration;     // If set, the (factory set) calibration will be written to the calibration_file
 
   bool align_depth_to_color;  // Each pixel of the depth map matches the corresponding pixel of the color image.
 
   int32_t capture_timeout_ms; // Timeout in milliseconds for a single k4a_device_get_capture() call
-
-  bool color_as_bgr;          // Sink returns BGR if true, RGB otherwise.
 
   k4a_color_resolution_t color_resolution;  // Color camera resolution mode
 
@@ -71,28 +66,45 @@ struct K4AParams
   // ... and one for manual settings:
   std::vector<K4AColorControlSetting> color_control_manual;
 
-  bool verbose;
 
-
-  K4AParams() : serial_number(kEmptyK4ASerialNumber),
-    calibration_file(),
-    write_calibration(false),
-    align_depth_to_color(true),
-    capture_timeout_ms(1000),
-    color_as_bgr(false),
-    color_resolution(K4A_COLOR_RESOLUTION_1080P),
-    depth_mode(K4A_DEPTH_MODE_NFOV_UNBINNED),
-    depth_in_meters(false),
-    camera_fps(K4A_FRAMES_PER_SECOND_15),
-    disable_streaming_indicator(false),
-    depth_delay_off_color_usec(0),
-    subordinate_delay_off_master_usec(0),
-    synchronized_images_only(true),
-    wired_sync_mode(K4A_WIRED_SYNC_MODE_STANDALONE),
-    color_control_auto(),
-    color_control_manual(),
-    verbose(false)
+  K4AParams(const SinkParams &params,
+            const std::string &serial_number=kEmptyK4ASerialNumber,
+            const bool write_calibration=false,
+            const bool align_depth_to_color=false,
+            const int32_t capture_timeout_ms=1000,
+            const k4a_color_resolution_t color_resolution=K4A_COLOR_RESOLUTION_1080P,
+            const k4a_depth_mode_t &depth_mode=K4A_DEPTH_MODE_NFOV_UNBINNED,
+            const bool depth_in_meters=false,
+            const k4a_fps_t &camera_fps=K4A_FRAMES_PER_SECOND_15,
+            const bool disable_streaming_indicator=false,
+            const int32_t depth_delay_off_color_usec=0,
+            const uint32_t subordinate_delay_off_master_usec=0,
+            const bool synchronized_images_only=true,
+            const k4a_wired_sync_mode_t &wired_sync_mode=K4A_WIRED_SYNC_MODE_STANDALONE,
+            const std::vector<K4AColorControlSetting> &color_control_auto=std::vector<K4AColorControlSetting>(),
+            const std::vector<K4AColorControlSetting> &color_control_manual=std::vector<K4AColorControlSetting>())
+    : SinkParams(params),
+      serial_number(serial_number),
+      write_calibration(write_calibration),
+      align_depth_to_color(align_depth_to_color),
+      capture_timeout_ms(capture_timeout_ms),
+      color_resolution(color_resolution),
+      depth_mode(depth_mode),
+      depth_in_meters(depth_in_meters),
+      camera_fps(camera_fps),
+      disable_streaming_indicator(disable_streaming_indicator),
+      depth_delay_off_color_usec(depth_delay_off_color_usec),
+      subordinate_delay_off_master_usec(subordinate_delay_off_master_usec),
+      synchronized_images_only(synchronized_images_only),
+      wired_sync_mode(wired_sync_mode),
+      color_control_auto(color_control_auto),
+      color_control_manual(color_control_manual)
   {}
+//FIXME k4a add IR stream
+
+  bool IsColorStreamEnabled() const;
+  bool IsDepthStreamEnabled() const;
+  bool IsInfraredStreamEnabled() const;
 };
 
 

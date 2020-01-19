@@ -61,6 +61,8 @@ public:
       return false;
     }
 
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("TimedVideoSink opened '" << params_.filename << "'");
     return true;
   }
 
@@ -68,6 +70,8 @@ public:
   {
     StopStreaming();
     capture_.reset();
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("TimedVideoSink closed '" << params_.filename << "'");
     return true;
   }
 
@@ -94,6 +98,8 @@ public:
       }
     }
 
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("TimedVideoSink starting thread to play back '" << params_.filename << "'");
     eof_ = false;
     continue_capture_ = true;
     stream_thread_ = std::thread(&TimedVideoFileSink::Receive, this);
@@ -104,6 +110,8 @@ public:
   {
     if (continue_capture_)
     {
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("TimedVideoSink waiting for playback thread on '" << params_.filename << "' to finish.");
       continue_capture_ = false;
       stream_thread_.join();
     }
@@ -227,7 +235,7 @@ private:
   }
 };
 
-
+//FIXME params_.verbose => VCP_LOG_INFO_DEFAULT
 /** @brief Replays a video frame-by-frame. Supports retrieving previous frames. */
 class VideoFileSink : public StreamSink
 {

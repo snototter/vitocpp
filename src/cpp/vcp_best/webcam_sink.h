@@ -8,11 +8,8 @@ namespace vcp
 namespace best
 {
 /** @brief Configuration parameters to stream from a webcam. */
-class WebcamSinkParams : public SinkParams
+struct WebcamSinkParams : public SinkParams
 {
-public:
-  virtual ~WebcamSinkParams() {}
-
   int device_number;
   cv::Size resolution;
   double fps;

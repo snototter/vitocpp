@@ -72,11 +72,8 @@ std::ostream &operator<<(std::ostream &stream, const SinkType &s);
 //std::string GetDefaultSinkLabel();
 
 /** @brief Base class to contain the parameters for a sink (see AxisSinkParams, RealsenseSinkParams, WebcamSinkParams, etc.) */
-class SinkParams
+struct SinkParams
 {
-public:
-  virtual ~SinkParams() {}
-
   /** @brief Type of this device (or how it is used, e.g. IP cameras may be used as monochrome or stereo setups). */
   SinkType sink_type;
 
@@ -99,11 +96,15 @@ public:
   /** @brief Should color images be returned as BGR (OpenCV) or RGB channels? */
   bool color_as_bgr;
 
+  /** @brief Should sink/device wrapper log verbosely? */
+  bool verbose;
+
 
   SinkParams(const SinkParams &other)
     : sink_type(other.sink_type), frame_type(other.frame_type),
       sink_label(other.sink_label), calibration_file(other.calibration_file),
-      configuration_key(other.configuration_key), color_as_bgr(other.color_as_bgr)
+      configuration_key(other.configuration_key), color_as_bgr(other.color_as_bgr),
+      verbose(other.verbose)
   {}
 
   SinkParams(const SinkType &stype,
@@ -111,11 +112,11 @@ public:
       const std::string &lbl,
       const std::string &calib_file=std::string(),
       const std::string &config_key=std::string(),
-      bool return_bgr=false)
+      bool return_bgr=false, bool verbose=false)
     : sink_type(stype), frame_type(ftype),
       sink_label(lbl), calibration_file(calib_file),
       configuration_key(config_key),
-      color_as_bgr(return_bgr)
+      color_as_bgr(return_bgr), verbose(verbose)
   {}
 };
 
