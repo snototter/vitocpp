@@ -26,7 +26,8 @@ enum class FrameType
   MONOCULAR,   /**< Most often, we deal with monocular image streams. */
   STEREO,      /**< Horizontal stereo (a single, concatenated frame consisting of the left and right image) */
   RGBD_IMAGE,  /**< Image stream from an RGBD device. */
-  RGBD_DEPTH   /**< Depth stream from an RGBD device. */
+  RGBD_DEPTH,  /**< Depth stream from an RGBD device, usually uint16. */
+  INFRARED     /**< Infrared stream (intensity values, usually uint16). */
 };
 
 
@@ -162,8 +163,22 @@ public:
     throw std::runtime_error("Sink does not support stream seeking!");
   }
 
-  //TODO doc
-  virtual int IsDeviceAvailable() const = 0; // Must be an int, because std::atomic uses stdbool.h which redefines "bool" and thus, breaks the compiler (pure virtual function)
+  /** @brief Returns 1 (true) if the physical device is ready/can be used to stream from.
+   *
+   * Note that the return value must be an int, because std::atomic uses stdbool.h (which
+   * redefines "bool" and thus, would break the build). As some sinks use std::atomic, we
+   * use this C-style workaround.
+   */
+  virtual int IsDeviceAvailable() const = 0;
+
+  /** @brief Returns the number of currently available frames (i.e. number of "streams" that
+   * are available). For most sinks, this will be 0 or 1. For RGBD or stereo sensors this
+   * number may be higher.
+   * Note that this does not return the size of the current frame queue for a single "stream".
+   * For example, if 15 RGB frames are enqueued and 10 depth frames (you should be worried about
+   * such a "totally off"-scenario, btw), this method returns 2 (there's both RGB and depth available).
+   */
+  virtual size_t NumAvailableFrames() const = 0;
 
   /** @brief Informs you whether the image queue is filled or empty. */
   virtual int IsFrameAvailable() const = 0;

@@ -26,7 +26,7 @@
 //#ifdef WITH_MATRIXVISION
 //  #include "capture_matrixvision.h"
 //#endif
-#ifdef VCP_WITH_REALSENSE2
+#ifdef VCP_BEST_WITH_REALSENSE2
   #include "realsense2_sink.h"
 #endif
 #include <chrono>
@@ -63,7 +63,7 @@ public:
 #ifdef VCP_BEST_WITH_K4A
     std::vector<k4a::K4ASinkParams> k4a_params;
 #endif
-//#ifdef WITH_REALSENSE2
+//#ifdef VCP_BEST_WITH_REALSENSE2
 //    std::vector<RealSense2SinkParams> realsense_params;
 //#endif
     std::vector<file::VideoFileSinkParams> video_params;
@@ -90,16 +90,16 @@ public:
           webcam_params.push_back(webcam::WebcamSinkParamsFromConfig(config, cam_config_name));
           break;
 
-#ifdef VCP_WITH_K4A
+#ifdef VCP_BEST_WITH_K4A
         case SinkType::K4A:
           k4a_params.push_back(k4a::K4ASinkParamsFromConfig(config, cam_config_name));
           break;
-#endif // VCP_WITH_K4A
-#ifdef VCP_WITH_REALSENSE2
+#endif // VCP_BEST_WITH_K4A
+#ifdef VCP_BEST_WITH_REALSENSE2
         case SinkType::REALSENSE:
           realsense2_params.push_back(rs2::RealSense2SinkParamsFromConfig(config, cam_config_name));
           break;
-#endif // VCP_WITH_REALSENSE2
+#endif // VCP_BEST_WITH_REALSENSE2
 
         default:
           VCP_LOG_FAILURE("Sink type '" << sink_type << "' is not yet supported!");
@@ -186,7 +186,7 @@ public:
     }
 #endif // WITH_MATRIXVISION
 
-#ifdef VCP_WITH_REALSENSE2
+#ifdef VCP_BEST_WITH_REALSENSE2
     for (const auto &p : realsense_params)
       AddSink(rs2::CreateRealSense2Sink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p), p);
     multiple_realsenses_ = realsense_params.size() > 1;
@@ -290,6 +290,16 @@ public:
         return false;
     }
     return true;
+  }
+
+
+  size_t NumAvailableFrames() const override
+  {
+    VCP_LOG_DEBUG("NumAvailableFrames()");
+    size_t num = 0;
+    for (const auto &sink : sinks_)
+      num += sink->NumAvailableFrames();
+    return num;
   }
 
 

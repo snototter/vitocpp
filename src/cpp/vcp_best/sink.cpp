@@ -29,6 +29,7 @@ std::string FrameTypeToString(const FrameType &s)
   MAKE_STREAMTYPE_TO_STRING_CASE(STEREO);
   MAKE_STREAMTYPE_TO_STRING_CASE(RGBD_IMAGE);
   MAKE_STREAMTYPE_TO_STRING_CASE(RGBD_DEPTH);
+  MAKE_STREAMTYPE_TO_STRING_CASE(INFRARED);
   MAKE_STREAMTYPE_TO_STRING_CASE(UNKNOWN);
   default:
     std::stringstream str;
@@ -68,6 +69,12 @@ FrameType FrameTypeFromString(const std::string &s)
       || lower.compare("rgbd-depth") == 0
       || lower.compare("rgbd_depth") == 0)
     return FrameType::RGBD_DEPTH;
+
+  if (lower.compare("infrared") == 0
+      || lower.compare("ir") == 0
+      || lower.compare("rgbd-infrared") == 0
+      || lower.compare("rgb-ir") == 0)
+    return FrameType::INFRARED;
 
   VCP_ERROR("FrameTypeFromString(): Cannot convert '" << s << "' to FrameType");
 }

@@ -33,6 +33,7 @@ void Stream(const std::string &config_file)
     return;
   }
 
+  const std::vector<std::string> frame_labels = capture->FrameLabels();
   VCP_LOG_INFO_DEFAULT(*capture);
 
   capture->WaitForInitialFrames(5000);
@@ -53,34 +54,40 @@ void Stream(const std::string &config_file)
       const auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(std::chrono::high_resolution_clock::now() - tp_query);
       if (duration.count() > 500)
         break;
+      VCP_LOG_INFO_DEFAULT("Capture has " << capture->NumAvailableFrames() << "/" << capture->NumStreams() << " available");
     }
 
-    // Grab the frames and check if all were available.
+    // Grab the frames and check which are available.
     frames = capture->Next();
     VCP_TOC_ASSIGN(elapsed_ms);
 
-    bool skip = frames.empty();
-    for (const auto &frame : frames)
+    std::vector<cv::Mat> valid;
+    for (size_t i = 0; i < frames.size(); ++i)
     {
-      if (frame.empty())
-        skip = true;
+      if (frames[i].empty())
+      {
+        VCP_LOG_WARNING_DEFAULT("No frame for " << frame_labels[i]);
+      }
+      else
+      {
+        valid.push_back(frames[i]);
+      }
     }
-    if (skip)
+    if (valid.empty())
     {
-      VCP_LOG_STREAM_NSEC(std::cerr, nullptr, nullptr, -1, "Invalid frames received, continue polling for " << (MAX_STREAMING_TIME_PER_CONFIG - elapsed_ms)/1000 << " sec.", 0.5);
+      VCP_LOG_FAILURE_DEFAULT("Invalid frames received, continue polling for " << (MAX_STREAMING_TIME_PER_CONFIG - elapsed_ms)/1000 << " sec.");
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
       continue;
     }
 
-
     // If they're available, display them. We make a collage (of resized
     // frames) if there are multiple streams to show.
     cv::Mat collage;
-    vcp::imvis::collage::Collage(frames, collage, 2, 0, cv::Size(640, 480));
+    vcp::imvis::collage::Collage(valid, collage, 2, 0, cv::Size(640, 480));
 
     // Display and let the user press ESC to exit.
     cv::imshow("Stream", collage);
-    int k = cv::waitKey(10);
+    int k = cv::waitKey(20);
     if ((k & 0xFF) == 27)
       break;
   }
@@ -100,6 +107,7 @@ int main(int argc, char **argv)
   const std::vector<std::string> configs = {
     "data-best/image_sequence.cfg",
     "data-best/video.cfg",
+    "data-best/k4a.cfg",
     "data-best/webcam.cfg"
   };
   for (const auto &c : configs)

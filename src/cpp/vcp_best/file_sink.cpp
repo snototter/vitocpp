@@ -155,6 +155,11 @@ public:
     return 1;
   }
 
+  size_t NumAvailableFrames() const override
+  {
+    return static_cast<int>(IsFrameAvailable());
+  }
+
   size_t NumStreams() const override
   {
     return 1;
@@ -427,6 +432,11 @@ public:
     return 0;
   }
 
+  size_t NumAvailableFrames() const override
+  {
+    return static_cast<int>(IsFrameAvailable());
+  }
+
   size_t NumStreams() const override
   {
     return 1;
@@ -608,6 +618,11 @@ public:
   int IsFrameAvailable() const override
   {
     return IsDeviceAvailable();
+  }
+
+  size_t NumAvailableFrames() const override
+  {
+    return static_cast<int>(IsFrameAvailable());
   }
 
 

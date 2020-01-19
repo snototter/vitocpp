@@ -394,10 +394,13 @@ std::vector<K4ADeviceInfo> ListK4ADevices(bool warn_if_no_devices)
 class K4ARGBDSink : public StreamSink
 {
 public:
-  K4ARGBDSink(const K4ASinkParams &params, std::unique_ptr<SinkBuffer> rgb_buffer, std::unique_ptr<SinkBuffer> depth_buffer) : StreamSink(),
+  K4ARGBDSink(const K4ASinkParams &params, std::unique_ptr<SinkBuffer> rgb_buffer,
+              std::unique_ptr<SinkBuffer> depth_buffer,
+              std::unique_ptr<SinkBuffer> ir_buffer) : StreamSink(),
     continue_capture_(false),
     rgb_queue_(std::move(rgb_buffer)),
     depth_queue_(std::move(depth_buffer)),
+    ir_queue_(std::move(ir_buffer)),
     params_(params),
     rgb_stream_enabled_(false),
     depth_stream_enabled_(false),
@@ -405,6 +408,13 @@ public:
     k4a_device_(nullptr)
   {
     available_ = 0;
+
+    // The user could configure the sensor such that
+    // color/depth streams are disabled. In such cases, we
+    // will return empty matrices for the corresponding stream.
+    rgb_stream_enabled_ = params_.IsColorStreamEnabled();
+    depth_stream_enabled_ = params_.IsDepthStreamEnabled();
+    ir_stream_enabled_ = params_.IsInfraredStreamEnabled();
   }
 
   virtual ~K4ARGBDSink()
@@ -440,13 +450,6 @@ public:
       VCP_LOG_FAILURE("If you want to dump the K4A calibration, you must specify the filename as calibration_file parameter!");
       return false;
     }
-
-    // The user could configure the sensor such that
-    // color/depth streams are disabled. In such cases, we
-    // will return empty matrices for the corresponding stream.
-    rgb_stream_enabled_ = params_.IsColorStreamEnabled();
-    depth_stream_enabled_ = params_.IsDepthStreamEnabled();
-    ir_stream_enabled_ = params_.IsInfraredStreamEnabled();
     return true;
   }
 
@@ -488,26 +491,45 @@ public:
 
   std::vector<cv::Mat> Next() override
   {
-    //FIXME k4a IR16 ?
-    cv::Mat rgb, depth;
+    std::vector<cv::Mat> res;
     image_queue_mutex_.lock();
-    if (rgb_queue_->Empty() || depth_queue_->Empty())
+    if (rgb_stream_enabled_)
     {
-      rgb = cv::Mat();
-      depth = cv::Mat();
+      if (rgb_queue_->Empty())
+      {
+        res.push_back(cv::Mat());
+      }
+      else
+      {
+        res.push_back(rgb_queue_->Front().clone());
+        rgb_queue_->PopFront();
+      }
     }
-    else
+    if (depth_stream_enabled_)
     {
-      // Retrieve oldest image in queue.
-      rgb = rgb_queue_->Front().clone();
-      rgb_queue_->PopFront();
-      depth = depth_queue_->Front().clone();
-      depth_queue_->PopFront();
+      if (depth_queue_->Empty())
+      {
+        res.push_back(cv::Mat());
+      }
+      else
+      {
+        res.push_back(depth_queue_->Front().clone());
+        depth_queue_->PopFront();
+      }
+    }
+    if (ir_stream_enabled_)
+    {
+      if (ir_queue_->Empty())
+      {
+        res.push_back(cv::Mat());
+      }
+      else
+      {
+        res.push_back(ir_queue_->Front().clone());
+        ir_queue_->PopFront();
+      }
     }
     image_queue_mutex_.unlock();
-    std::vector<cv::Mat> res;
-    res.push_back(rgb);
-    res.push_back(depth);
     return res;
   }
 
@@ -519,50 +541,70 @@ public:
 
   size_t NumStreams() const override
   {
-    return 2;
-    //FIXME k4a IR?
+    size_t num = 0;
+    if (rgb_stream_enabled_)
+      ++num;
+    if (depth_stream_enabled_)
+      ++num;
+    if (ir_stream_enabled_)
+      ++num;
+    return num;
   }
 
   std::string StreamLabel(size_t stream_index) const override
   {
-    switch (stream_index)
-    {
-      case 0:
-        return params_.sink_label + "-rgb";
-      case 1:
-        return params_.sink_label + "-depth";
-      case 2:
-      default:
-        VCP_ERROR("Stream #" << stream_index << " does not exist for K4A '" << params_.sink_label << "', S/N " << params_.serial_number);
-    //FIXME k4a IR?
-    }
+    std::vector<std::string> labels;
+    if (rgb_stream_enabled_)
+      labels.push_back(params_.sink_label + "-rgb");
+    if (depth_stream_enabled_)
+      labels.push_back(params_.sink_label + "-depth");
+    if (ir_stream_enabled_)
+      labels.push_back(params_.sink_label + "-ir");
+    return labels[stream_index];
   }
 
   FrameType FrameTypeAt(size_t stream_index) const override
   {
-    switch (stream_index)
-    {
-      case 0:
-        return FrameType::RGBD_IMAGE;
-      case 1:
-        return FrameType::RGBD_DEPTH;
-      case 2:
-      default:
-        VCP_ERROR("Stream #" << stream_index << " does not exist for K4A '" << params_.sink_label << "', S/N " << params_.serial_number);
-    //FIXME k4a IR?
-    }
+    std::vector<FrameType> types;
+    if (rgb_stream_enabled_)
+      types.push_back(FrameType::RGBD_IMAGE);
+    if (depth_stream_enabled_)
+      types.push_back(FrameType::RGBD_DEPTH);
+    if (ir_stream_enabled_)
+      types.push_back(FrameType::INFRARED);
+    return types[stream_index];
   }
 
 
   int IsFrameAvailable() const override
   {
-    //FIXME k4a IR?  a) add IR, b) true if ALL or ANY are available?
+    // Should only return true, if all enabled streams have a frame available.
+    bool available = true;
     image_queue_mutex_.lock();
-    const bool empty = rgb_queue_->Empty() || depth_queue_->Empty();
+    if (rgb_stream_enabled_ && rgb_queue_->Empty())
+      available = false;
+    if (depth_stream_enabled_ && depth_queue_->Empty())
+      available = false;
+    if (ir_stream_enabled_ && ir_queue_->Empty())
+      available = false;
     image_queue_mutex_.unlock();
-    if (empty)
-      return 0;
-    return 1;
+    if (available)
+      return 1;
+    return 0;
+  }
+
+  size_t NumAvailableFrames() const override
+  {
+    size_t num = 0;
+    image_queue_mutex_.lock();
+    if (rgb_stream_enabled_ && !rgb_queue_->Empty())
+        ++num;
+    if (depth_stream_enabled_ && !depth_queue_->Empty())
+        ++num;
+    if (ir_stream_enabled_ && !ir_queue_->Empty())
+        ++num;
+    image_queue_mutex_.unlock();
+    return num;
   }
 
 private:
@@ -571,6 +613,7 @@ private:
   mutable std::mutex image_queue_mutex_;
   std::unique_ptr<SinkBuffer> rgb_queue_;
   std::unique_ptr<SinkBuffer> depth_queue_;
+  std::unique_ptr<SinkBuffer> ir_queue_;
   K4ASinkParams params_;
   std::string serial_number_;
   std::string calibration_file_;
@@ -658,18 +701,6 @@ private:
       VCP_ERROR("Failed to start k4a device with S/N '" << serial_number_ << "'");
     }
 
-    // From my K4A tests it seems that the color stream takes notably longer to start
-    // than the depth/IR stream. Hence the first k4a_device_get_capture() calls return
-    // only depth/IR, but no color data.
-    // The naive solution: skip "k4a captures" during start up until we get data for both
-    // color and depth.
-    // FIXME remove and just deliver empty frames - synced depth + color can be enforced via
-    // config
-    bool skip_initially_missing = true;
-    // TODO: Alternatively, we might replace the missing color stream by IR16 instead (but
-    // this would probably lead to exceptions on the pvt user's side (as s/he might expect
-    // rgb/uint8 color images or None instead of changing between uint16 and uint8 types).
-
     // Now this sink is ready to publish images.
     available_ = 1;
 
@@ -690,162 +721,73 @@ private:
           continue;
           break;
       }
+      cv::Mat cvrgb, cvdepth, cvir;
+      k4a_image_t image = nullptr;
 
       // Probe for color image
-      k4a_image_t image = k4a_capture_get_color_image(k4a_capture);
-      cv::Mat cvrgb;
-      if (image)
+      if (rgb_stream_enabled_)
       {
-        // Image conversion based on https://stackoverflow.com/a/57222191/400948
-        // Get image buffer and size
-        uint8_t* buffer = k4a_image_get_buffer(image);
-        const int rows = k4a_image_get_height_pixels(image);
-        const int cols = k4a_image_get_width_pixels(image);
+        image = k4a_capture_get_color_image(k4a_capture);
+        if (image)
+        {
+          // Image conversion based on https://stackoverflow.com/a/57222191/400948
+          // Get image buffer and size
+          uint8_t* buffer = k4a_image_get_buffer(image);
+          const int rows = k4a_image_get_height_pixels(image);
+          const int cols = k4a_image_get_width_pixels(image);
 
-        // Create OpenCV Mat header pointing to the buffer (no copy yet!)
-        cv::Mat buf(rows, cols, CV_8UC4, static_cast<void*>(buffer), cv::Mat::AUTO_STEP);
+          // Create OpenCV Mat header pointing to the buffer (no copy yet!)
+          cv::Mat buf(rows, cols, CV_8UC4, static_cast<void*>(buffer), cv::Mat::AUTO_STEP);
 #ifdef VCP_BEST_WITH_K4A_MJPG
-        // Stream is JPG encoded.
-        // Note that decoding a stream into a 3840x2160x3 image takes ~40 ms!
-        cvrgb = cv::imdecode(buf, CV_LOAD_IMAGE_COLOR);
+          // Stream is JPG encoded.
+          // Note that decoding a stream into a 3840x2160x3 image takes ~40 ms!
+          cvrgb = cv::imdecode(buf, CV_LOAD_IMAGE_COLOR);
 #else
-        // Stream is BGRA32.
-        // Converting a 3840x2160x4 image to 3-channels only takes ~2 ms.
-        // We need to drop the alpha channel anyways, so use cvtColor to make
-        // the deep buffer copy:
-        if (params_.color_as_bgr)
-          cv::cvtColor(buf, cvrgb, CV_BGRA2BGR);
-        else
-          cv::cvtColor(buf, cvrgb, CV_BGRA2RGB);
+          // Stream is BGRA32.
+          // Converting a 3840x2160x4 image to 3-channels only takes ~2 ms.
+          // We need to drop the alpha channel anyways, so use cvtColor to make
+          // the deep buffer copy:
+          if (params_.color_as_bgr)
+            cv::cvtColor(buf, cvrgb, CV_BGRA2BGR);
+          else
+            cv::cvtColor(buf, cvrgb, CV_BGRA2RGB);
 #endif
-
-        // Now it's safe to free the memory
-        k4a_image_release(image);
-        image = NULL;
-      }
-      else
-      {
-        if (rgb_stream_enabled_)
+          // Now it's safe to free the memory
+          k4a_image_release(image);
+          image = NULL;
+        }
+        else
         {
           VCP_LOG_WARNING("No color image received!");
         }
       }
 
-      //FIXME k4a IR16 if depth is enabled
-//      // probe for a IR16 image
-//      image = k4a_capture_get_ir_image(k4a_capture);
-//      if (image != NULL)
-//      {
-//        PVT_LOG_INFO_NOFILE("IR16 received: " << k4a_image_get_width_pixels(image) << "x" << k4a_image_get_height_pixels(image));
-//        k4a_image_release(image);
-//      }
-
       // Probe for a depth16 image
-      image = k4a_capture_get_depth_image(k4a_capture);
-      cv::Mat cvdepth;
-      if (image != NULL)
+      if (depth_stream_enabled_)
       {
-        // OpenCV matrix header to point to the raw or warped depth data.
-        cv::Mat tmp;
-
-        k4a_image_t aligned_depth_image = NULL;
-        if (params_.align_depth_to_color)
-        {
-          // Official warping example:
-          // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/transformation/main.cpp
-          if (k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16, cvrgb.cols, cvrgb.rows,
-                cvrgb.cols * static_cast<int>(sizeof(uint16_t)), &aligned_depth_image)
-                != K4A_RESULT_SUCCEEDED)
-          {
-            VCP_LOG_FAILURE("Cannot allocate k4a image buffer to warp depth to color!");
-          }
-          else
-          {
-            if (k4a_transformation_depth_image_to_color_camera(transformation, image, aligned_depth_image)
-                != K4A_RESULT_SUCCEEDED)
-            {
-              VCP_LOG_FAILURE("Cannot align k4a depth image to color image!");
-            }
-            else
-            {
-              // Get image buffer and size
-              uint8_t* buffer = k4a_image_get_buffer(aligned_depth_image);
-              const int rows = k4a_image_get_height_pixels(aligned_depth_image);
-              const int cols = k4a_image_get_width_pixels(aligned_depth_image);
-              // Create OpenCV Mat header pointing to the buffer (no copy yet!)
-              tmp = cv::Mat(rows, cols, CV_16U, static_cast<void*>(buffer), k4a_image_get_stride_bytes(aligned_depth_image));
-            }
-          }
-        }
-        else
-        {
-          // Official depth conversion:
-          // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/green_screen/main.cpp
-
-          // Get image buffer and size
-          uint8_t* buffer = k4a_image_get_buffer(image);
-          const int rows = k4a_image_get_height_pixels(image);
-          const int cols = k4a_image_get_width_pixels(image);
-          // Create OpenCV Mat header pointing to the buffer (no copy yet!)
-          tmp = cv::Mat(rows, cols, CV_16U, static_cast<void*>(buffer), k4a_image_get_stride_bytes(image));
-        }
-
-        // Deep copy:
-        if (params_.depth_in_meters)
-        {
-          tmp.convertTo(cvdepth, CV_64FC1, 0.001, 0.0);
-        }
-        else
-        {
-          cvdepth = tmp.clone();
-        }
-        // Now it's safe to free the memory
-        k4a_image_release(image);
-        image = NULL;
-        if (aligned_depth_image)
-        {
-          k4a_image_release(aligned_depth_image);
-          aligned_depth_image = NULL;
-        }
+        image = k4a_capture_get_depth_image(k4a_capture);
+        cvdepth = Extract16U(image, transformation, true, cvrgb);
       }
-      else
+
+      // Probe for a IR16 image
+      if (ir_stream_enabled_)
       {
-        if (depth_stream_enabled_)
-        {
-          VCP_LOG_WARNING("No depth data received!");
-        }
+        image = k4a_capture_get_ir_image(k4a_capture);
+        cvir = Extract16U(image, transformation, false, cvrgb);
       }
 
       // Release capture
       k4a_capture_release(k4a_capture);
-      k4a_capture = NULL;
+      k4a_capture = nullptr;
 
-      if ((rgb_stream_enabled_&& cvrgb.empty()) ||
-          (depth_stream_enabled_ && cvdepth.empty()))
-      {
-        // Only skip incomplete captures during startup
-        if (!skip_initially_missing)
-        {
-          VCP_LOG_WARNING("TODO RGB or depth is empty - increase error counter and abort if we cannot get a valid capture!");
-          //TODO FIXME
-        }
-      }
-      else
-      {
-        skip_initially_missing = false;
-
-        //TODO convert depth readings to meters, if sensor has a depth-scale!
-        //            if (rgbd_params_.depth_in_meters)
-        //              cvdepth = FrameToDepth(depth, depth_size, depth_scale);
-        //            else
-        //              cvdepth = FrameToMat(depth, depth_size);
-        image_queue_mutex_.lock();
-        if (!cvrgb.empty() || !rgb_stream_enabled_)
-          rgb_queue_->PushBack(cvrgb.clone());
-        if (!cvdepth.empty() || !depth_stream_enabled_)
-          depth_queue_->PushBack(cvdepth.clone());
-        image_queue_mutex_.unlock();
-      }
+      image_queue_mutex_.lock();
+      if (rgb_stream_enabled_)
+        rgb_queue_->PushBack(cvrgb.clone());
+      if (depth_stream_enabled_)
+        depth_queue_->PushBack(cvdepth.clone());
+      if (ir_stream_enabled_)
+        ir_queue_->PushBack(cvir.clone());
+      image_queue_mutex_.unlock();
     }
     // Clean up
     if (k4a_capture)
@@ -855,6 +797,82 @@ private:
       k4a_transformation_destroy(transformation);
 
     k4a_device_stop_cameras(k4a_device_);
+  }
+
+
+  cv::Mat Extract16U(k4a_image_t &image, k4a_transformation_t &transformation, bool is_depth, const cv::Mat &cvrgb)
+  {
+    cv::Mat extracted;
+    if (image != nullptr)
+    {
+      // OpenCV matrix header to point to the raw or warped depth data.
+      cv::Mat tmp;
+
+      k4a_image_t aligned_depth_image = NULL;
+      if (params_.align_depth_to_color)
+      {
+        // Official warping example:
+        // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/transformation/main.cpp
+        if (k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16, cvrgb.cols, cvrgb.rows,
+              cvrgb.cols * static_cast<int>(sizeof(uint16_t)), &aligned_depth_image)
+              != K4A_RESULT_SUCCEEDED)
+        {
+          VCP_LOG_FAILURE("Cannot allocate k4a image buffer to warp " << (is_depth ? "depth" : "infrared") << " to color!");
+        }
+        else
+        {
+          if (k4a_transformation_depth_image_to_color_camera(transformation, image, aligned_depth_image)
+              != K4A_RESULT_SUCCEEDED)
+          {
+            VCP_LOG_FAILURE("Cannot align k4a " << (is_depth ? "depth" : "infrared") << " image to color image!");
+          }
+          else
+          {
+            // Get image buffer and size
+            uint8_t* buffer = k4a_image_get_buffer(aligned_depth_image);
+            const int rows = k4a_image_get_height_pixels(aligned_depth_image);
+            const int cols = k4a_image_get_width_pixels(aligned_depth_image);
+            // Create OpenCV Mat header pointing to the buffer (no copy yet!)
+            tmp = cv::Mat(rows, cols, CV_16U, static_cast<void*>(buffer), k4a_image_get_stride_bytes(aligned_depth_image));
+          }
+        }
+      }
+      else
+      {
+        // Official depth conversion:
+        // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/green_screen/main.cpp
+
+        // Get image buffer and size
+        uint8_t* buffer = k4a_image_get_buffer(image);
+        const int rows = k4a_image_get_height_pixels(image);
+        const int cols = k4a_image_get_width_pixels(image);
+        // Create OpenCV Mat header pointing to the buffer (no copy yet!)
+        tmp = cv::Mat(rows, cols, CV_16U, static_cast<void*>(buffer), k4a_image_get_stride_bytes(image));
+      }
+
+      // Deep copy:
+      if (params_.depth_in_meters)
+      {
+        tmp.convertTo(extracted, CV_64FC1, 0.001, 0.0);
+      }
+      else
+      {
+        extracted = tmp.clone();
+      }
+      // Now it's safe to free the memory
+      k4a_image_release(image);
+      image = NULL;
+      if (aligned_depth_image)
+      {
+        k4a_image_release(aligned_depth_image);
+        aligned_depth_image = NULL;
+      }
+    }
+    else
+    {
+      VCP_LOG_WARNING("No " << (is_depth ? "depth" : "infrared") << " data received!");
+    }
+    return extracted;
   }
 
   void SetColorControl()
@@ -955,12 +973,28 @@ K4ASinkParams K4ASinkParamsFromConfig(const vcp::config::ConfigParams &config, c
   const std::string cres = GetOptionalStringFromConfig(config, cam_param, "color_resolution", std::string());
   if (!cres.empty())
     params.color_resolution = k4a::StringToColorResolution(cres);
+  // Sanity check: if RGB stream is disabled, we cannot align depth to RGB, obviously:
+  if (!params.IsColorStreamEnabled() && params.align_depth_to_color)
+  {
+    VCP_LOG_FAILURE("Invalid K4A configuration: align_depth_to_color=true, but RGB stream is OFF - disabling alignment to continue.");
+    params.align_depth_to_color = false;
+  }
 
   // Depth mode
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "depth_mode"), configured_keys.end());
   const std::string dm = GetOptionalStringFromConfig(config, cam_param, "depth_mode", std::string());
   if (!dm.empty())
     params.depth_mode = k4a::StringToDepthMode(dm);
+
+  // Enable IR stream?
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "enable_infrared_stream"), configured_keys.end());
+  params.enable_infrared_stream = GetOptionalBoolFromConfig(config, cam_param, "enable_infrared_stream", false);
+  // Sanity check - IR requires enabled depth:
+  if (!params.IsDepthStreamEnabled() && params.enable_infrared_stream)
+  {
+    VCP_LOG_FAILURE("Invalid K4A configuration: enable_infrared_stream=true, but depth stream is OFF - enabling depth stream to continue.");
+    params.depth_mode = K4A_DEPTH_MODE_NFOV_UNBINNED;
+  }
 
   // Target/desired frame rate
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "fps"), configured_keys.end());
@@ -1032,9 +1066,12 @@ K4ASinkParams K4ASinkParamsFromConfig(const vcp::config::ConfigParams &config, c
 
 
 
-std::unique_ptr<StreamSink> CreateBufferedK4ASink(const K4ASinkParams &params, std::unique_ptr<SinkBuffer> rgb_buffer, std::unique_ptr<SinkBuffer> depth_buffer)
+std::unique_ptr<StreamSink> CreateBufferedK4ASink(const K4ASinkParams &params,
+                                                  std::unique_ptr<SinkBuffer> rgb_buffer,
+                                                  std::unique_ptr<SinkBuffer> depth_buffer,
+                                                  std::unique_ptr<SinkBuffer> ir_buffer)
 {
-  return std::unique_ptr<k4a::K4ARGBDSink>(new k4a::K4ARGBDSink(params, std::move(rgb_buffer), std::move(depth_buffer)));
+  return std::unique_ptr<k4a::K4ARGBDSink>(new k4a::K4ARGBDSink(params, std::move(rgb_buffer), std::move(depth_buffer), std::move(ir_buffer)));
 }
 
 

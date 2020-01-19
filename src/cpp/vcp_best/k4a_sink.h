@@ -133,7 +133,7 @@ K4ASinkParams K4ASinkParamsFromConfig(const vcp::config::ConfigParams &config, c
  * @brief Creates a StreamSink to capture from an Azure Kinect using libk4a.
  * @param sink_buffer A sink buffer which will be used as image queue.
  */
-std::unique_ptr<StreamSink> CreateBufferedK4ASink(const K4ASinkParams &params, std::unique_ptr<SinkBuffer> rgb_buffer, std::unique_ptr<SinkBuffer> depth_buffer);
+std::unique_ptr<StreamSink> CreateBufferedK4ASink(const K4ASinkParams &params, std::unique_ptr<SinkBuffer> rgb_buffer, std::unique_ptr<SinkBuffer> depth_buffer, std::unique_ptr<SinkBuffer> ir_buffer);
 
 /**
  * @brief Creates a StreamSink to capture from an Azure Kinect device, specify size of the image queue as template parameter.
@@ -141,7 +141,10 @@ std::unique_ptr<StreamSink> CreateBufferedK4ASink(const K4ASinkParams &params, s
 template <int BufferCapacity>
 std::unique_ptr<StreamSink> CreateK4ASink(const K4ASinkParams &params)
 {
-  return CreateBufferedK4ASink(params, std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()), std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()));
+  return CreateBufferedK4ASink(params,
+                               std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()),
+                               std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()),
+                               std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()));
 }
 
 std::vector<K4ADeviceInfo> ListK4ADevices(bool warn_if_no_devices=true);

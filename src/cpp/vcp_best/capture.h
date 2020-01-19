@@ -58,6 +58,14 @@ public:
   /** @brief Returns true if frames (from all devices) can be retrieved (i.e. have been enqueued). */
   virtual bool AreFramesAvailable() const = 0;
 
+  /** @brief Returns the number of available frames.
+   *
+   * Might be useful if one of your sinks stops working/streaming and you still want to continue
+   * processing, etc. In such a case, @see AreFramesAvailable() would return false, whereas here
+   * you get the actual number of frames and can decide yourself.
+   */
+  virtual size_t NumAvailableFrames() const = 0;
+
   /** @brief Initialize devices. */
   virtual bool OpenDevices() = 0;
 

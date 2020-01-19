@@ -399,10 +399,13 @@ public:
       const auto devices = vcp::utils::file::ListDirContents("/dev", [](const std::string &f) -> bool {
         if (vcp::utils::string::StartsWith(f, "video"))
         {
-          // We need to skip RealSense devices, as we cannot open them with default OpenCV settings
+          // We need to skip RealSense devices, as we cannot open them with default OpenCV settings.
+          // Similarly, we skip Azure Kinect devices, as we had some troubles with frequently failing
+          // color streams.
           const std::string name = vcp::utils::file::SlurpAsciiFile(
                 vcp::utils::file::FullFile("/sys/class/video4linux/", vcp::utils::file::FullFile(f, "name")));
-          return name.find("RealSense") == std::string::npos; // false, if the hardware info contains "RealSense"
+          // Return false for the directory list if the hardware info contains "RealSense" or "Azure Kinect"
+          return name.find("RealSense") == std::string::npos && name.find("Azure Kinect") == std::string::npos;
         }
         return false;
       }, true, true, true, &vcp::utils::file::filename_filter::CompareFileLengthsAndNames);
@@ -533,6 +536,11 @@ public:
     if (empty)
       return 0;
     return 1;
+  }
+
+  size_t NumAvailableFrames() const override
+  {
+    return static_cast<int>(IsFrameAvailable());
   }
 
   size_t NumStreams() const override
