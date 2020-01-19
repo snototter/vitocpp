@@ -254,11 +254,6 @@ bool GetVerbosityFlagFromConfig(const vcp::config::ConfigParams &config,
 }
 
 
-//std::string GetCameraTypeFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group)
-//{
-//  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "type"), configured_keys.end());
-//  return config.GetString(cam_group + ".sink_type"); // mandatory field, must be set
-//}
 
 FrameType GetFrameTypeFromConfig(const vcp::config::ConfigParams &config,
                                  const std::string &cam_group,
@@ -276,7 +271,9 @@ SinkType GetSinkTypeFromConfig(const vcp::config::ConfigParams &config,
     configured_keys->erase(std::remove(configured_keys->begin(), configured_keys->end(), "sink_type"), configured_keys->end());
   if (config.SettingExists(cam_group + ".sink_type"))
     return SinkTypeFromString(config.GetString(cam_group + ".sink_type"));
-  VCP_LOG_WARNING("Mandatory configuration parameter '" << cam_group << ".sink_type' is not specified, looking up the obsolete '" << cam_group << ".type'.");
+  if (config.SettingExists(cam_group + ".camera_type"))
+    return SinkTypeFromString(config.GetString(cam_group + ".camera_type"));
+  VCP_LOG_WARNING("Mandatory configuration parameter '" << cam_group << ".sink_type' (or '.camera_type') is not specified, looking up the obsolete '" << cam_group << ".type'.");
 
   if (configured_keys)
     configured_keys->erase(std::remove(configured_keys->begin(), configured_keys->end(), "type"), configured_keys->end());
