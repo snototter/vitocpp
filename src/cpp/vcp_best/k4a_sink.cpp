@@ -912,6 +912,11 @@ bool K4ASinkParams::IsInfraredStreamEnabled() const
   return this->enable_infrared_stream && IsDepthStreamEnabled();
 }
 
+bool K4ASinkParams::RequiresWiredSync() const
+{
+  return this->wired_sync_mode != K4A_WIRED_SYNC_MODE_STANDALONE;
+}
+
 
 std::ostream &operator<< (std::ostream &out, const K4AColorControlSetting &s)
 {

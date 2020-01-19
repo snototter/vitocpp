@@ -20,16 +20,15 @@
 //#ifdef WITH_IPCAMERA
 //  #include "capture_ipcam.h"
 //#endif
-//#ifdef VCP_BEST_WITH_K4A
-//  #include "capture_k4a.h"
-//#endif
+#ifdef VCP_BEST_WITH_K4A
+  #include "k4a_sink.h"
+#endif
 //#ifdef WITH_MATRIXVISION
 //  #include "capture_matrixvision.h"
 //#endif
-//#ifdef WITH_REALSENSE2
-//  #include "capture_realsense2.h"
-//  #include <chrono>
-//#endif
+#ifdef VCP_WITH_REALSENSE2
+  #include "realsense2_sink.h"
+#endif
 #include <chrono>
 
 namespace vcp
@@ -38,7 +37,8 @@ namespace best
 {
 
 #undef VCP_LOGGING_COMPONENT
-#define VCP_LOGGING_COMPONENT "vcp::best::capture"
+#define VCP_LOGGING_COMPONENT "vcp::best"
+
 class MultiDeviceCapture : public Capture
 {
 public:
@@ -51,37 +51,31 @@ public:
   void LoadConfig(const vcp::config::ConfigParams &config)
   {
     VCP_LOG_DEBUG("LoadConfig()");
-    //size_t num_cameras = GetNumCamerasFromConfig(config);
 
 //#ifdef WITH_IPCAMERA
 //    std::vector<MonoIpCameraSinkParams> ip_mono_params;
 //    std::vector<StereoIpCameraSinkParams> ip_stereo_params;
-//    std::vector<std::string> cck_ip_mono; // Corresponding configuration file keys (camera1, etc)
-//    std::vector<std::string> cck_ip_stereo; // Corresponding configuration file keys (camera1, etc)
 //#endif
     std::vector<file::ImageDirectorySinkParams> imgdir_params;
 //#ifdef WITH_MATRIXVISION
 //    std::vector<MvBlueFox3SinkParams> mvbluefox_params;
-//    std::vector<std::string> cck_mvbluefox; // Corresponding configuration file keys (camera1, etc)
 //#endif
-//#ifdef VCP_BEST_WITH_K4A
-//    std::vector<K4ASinkParams> k4a_params;
-//    std::vector<std::string> cck_k4a; // Corresponding configuration file keys (camera1, etc)
-//#endif
+#ifdef VCP_BEST_WITH_K4A
+    std::vector<k4a::K4ASinkParams> k4a_params;
+#endif
 //#ifdef WITH_REALSENSE2
 //    std::vector<RealSense2SinkParams> realsense_params;
-//    std::vector<std::string> cck_realsense; // Corresponding configuration file keys (camera1, etc)
 //#endif
     std::vector<file::VideoFileSinkParams> video_params;
     std::vector<webcam::WebcamSinkParams> webcam_params;
 
-    // Filter all "camera[0-9,a-z]*" parameters out of the configuration:
-    const std::vector<std::string> cam_config_names = GetCameraConfigParameterNames(config);
 
+    // Filter all "camera[0-9,a-z]*" and "sink[0-9,a-z]*" parameters out of the configuration:
+    const std::vector<std::string> cam_config_names = GetCameraConfigParameterNames(config);
+    // Parse those into the correct device/sink type configuration:
     for (const auto &cam_config_name : cam_config_names)
     {
       const SinkType sink_type = GetSinkTypeFromConfig(config, cam_config_name);
-
       switch(sink_type)
       {
         case SinkType::IMAGE_DIR:
@@ -96,14 +90,22 @@ public:
           webcam_params.push_back(webcam::WebcamSinkParamsFromConfig(config, cam_config_name));
           break;
 
-        //case SinkType::K4A:
-
+#ifdef VCP_WITH_K4A
+        case SinkType::K4A:
+          k4a_params.push_back(k4a::K4ASinkParamsFromConfig(config, cam_config_name));
+          break;
+#endif // VCP_WITH_K4A
+#ifdef VCP_WITH_REALSENSE2
+        case SinkType::REALSENSE:
+          realsense2_params.push_back(rs2::RealSense2SinkParamsFromConfig(config, cam_config_name));
+          break;
+#endif // VCP_WITH_REALSENSE2
 
         default:
           VCP_LOG_FAILURE("Sink type '" << sink_type << "' is not yet supported!");
           break;
       }
-
+    }
 //#ifdef WITH_IPCAMERA
 //      else if (IsMonocularIpCamera(cam_type))
 //      {
@@ -116,13 +118,6 @@ public:
 //        cck_ip_stereo.push_back(id.str());
 //      }
 //#endif // WITH_IPCAMERA
-//#ifdef VCP_BEST_WITH_K4A
-//      else if (IsK4A(cam_type))
-//      {
-//        k4a_params.push_back(K4ASinkParamsFromConfig(config, id.str()));
-//        cck_k4a.push_back(id.str());
-//      }
-//#endif // VCP_BEST_WITH_K4A
 //#ifdef WITH_MATRIXVISION
 //      else if (IsMatrixVision(cam_type))
 //      {
@@ -130,18 +125,6 @@ public:
 //        cck_mvbluefox.push_back(id.str());
 //      }
 //#endif // WITH_MATRIXVISION
-//#ifdef WITH_REALSENSE2
-//      else if (IsRealSense2(cam_type))
-//      {
-//        realsense_params.push_back(RealSense2SinkParamsFromConfig(config, id.str()));
-//        cck_realsense.push_back(id.str());
-//      }
-//#endif // WITH_REALSENSE2
-    }
-
-    // TODO if you extend the sinks, be sure to set label, calibration file, StreamType(s) and corresponding config key,
-    // since 'camera1' may be loaded after 'camera7' if you mix types, due to the following ordering!
-    // Additionally, be sure to add the correct SinkType!
 
     // Initialize the individual captures
     for (const auto &p : imgdir_params)
@@ -185,47 +168,7 @@ public:
 #endif // WITH_IPCAMERA
 
 #ifdef VCP_BEST_WITH_K4A
-    //FIXME k4a - add
-//    if (!k4a_params.empty())
-//    {
-//      bool k4a_requires_sync = false;
-//      if (k4a_params.size() > 1)
-//      {
-//        for (const auto &p : k4a_params)
-//        {
-//          if (p.device_params.wired_sync_mode != K4A_WIRED_SYNC_MODE_STANDALONE)
-//            k4a_requires_sync = true;
-//        }
-//      }
-
-//      if (k4a_requires_sync)
-//      {
-//        //TODO: we need a separate multi-k4a-capture class :-/
-//        // See best practices in green screen demo:
-//        // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/green_screen/MultiDeviceCapturer.h
-//        PVT_ABORT("Synchronization of multiple K4As is not yet supported!");
-//      }
-//      else
-//      {
-//        // Note: labels and calibration files will be modified when creating the k4a sinks (as one sink adds 2 frames)!
-//        std::vector<std::string> labels;
-//        std::vector<std::string> calibs;
-//        std::vector<StreamType> types;
-//        for (const auto &p : k4a_params)
-//        {
-//          sinks_.push_back(pvt::icc::CreateSink(p, labels, calibs, types));
-//          sink_types_.push_back(SinkType::K4A);
-//        }
-
-//        AddLabels(labels);
-//        AddCalibrationFiles(calibs);
-//        AddStreamTypes(types);
-//        // We need to add them twice (!) because a realsense has two streams, thus two consecutive sink indices
-//        AddCorrespondingConfigKeys(cck_k4a);
-//        AddCorrespondingConfigKeys(cck_k4a);
-//      }
-//    }
-//    // TODO check if k4a initialization requires a wait/sleep (similar to realsense devices, see use of multiple_realsenses_)
+    AddK4ASinks(k4a_params);
 #endif // VCP_BEST_WITH_K4A
 
 #ifdef WITH_MATRIXVISION
@@ -243,28 +186,11 @@ public:
     }
 #endif // WITH_MATRIXVISION
 
-#ifdef WITH_REALSENSE2
-    if (!realsense_params.empty())
-    {
-      // Note: labels and calibration files will be modified when creating the realsense sinks (as one sink adds 2 frames)!
-      std::vector<std::string> labels;
-      std::vector<std::string> calibs;
-      std::vector<StreamType> types;
-      for (const auto &p : realsense_params)
-      {
-        sinks_.push_back(pvt::icc::CreateSink(p, labels, calibs, types));
-        sink_types_.push_back(SinkType::REALSENSE);
-      }
-
-      AddLabels(labels);
-      AddCalibrationFiles(calibs);
-      AddStreamTypes(types);
-      // We need to add them twice (!) because a realsense has two streams, thus two consecutive sink indices
-      AddCorrespondingConfigKeys(cck_realsense);
-      AddCorrespondingConfigKeys(cck_realsense);
-    }
+#ifdef VCP_WITH_REALSENSE2
+    for (const auto &p : realsense_params)
+      AddSink(rs2::CreateRealSense2Sink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p), p);
     multiple_realsenses_ = realsense_params.size() > 1;
-#endif // WITH_REALSENSE2
+#endif
   }
 
   void AddSink(std::unique_ptr<StreamSink> sink, const SinkParams params)
@@ -277,6 +203,34 @@ public:
     }
     sinks_.push_back(std::move(sink));
   }
+
+#ifdef VCP_BEST_WITH_K4A
+    void AddK4ASinks(const std::vector<k4a::K4ASinkParams> &k4a_params)
+    {
+      // Check if there are multiple sync'ed K4A devices or not.
+      if (k4a_params.empty())
+        return;
+      bool k4a_requires_sync = false;
+      if (k4a_params.size() > 1)
+      {
+        for (const auto &p : k4a_params)
+          k4a_requires_sync |= p.RequiresWiredSync();
+      }
+
+      if (k4a_requires_sync)
+      {
+        //TODO: we need a separate multi-k4a-capture/sink class :-/
+        // See best practices in green screen demo:
+        // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/green_screen/MultiDeviceCapturer.h
+        VCP_ERROR("Synchronization of multiple K4As is not yet supported!");
+      }
+      else
+      {
+        for (const auto &p : k4a_params)
+          AddSink(k4a::CreateK4ASink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p), p);
+      }
+    }
+#endif // VCP_BEST_WITH_K4A
 
   virtual ~MultiDeviceCapture()
   {
@@ -372,8 +326,8 @@ public:
       if (multiple_realsenses_ && (i+1) < sinks_.size() &&
           sink_types_[i] == sink_types_[i+1] && sink_types_[i] == SinkType::REALSENSE)
       {
-        PVT_LOG_INFO("Pausing thread temporarily before starting the next RealSense stream!");
-        std::this_thread::sleep_for(std::chrono::milliseconds(1500));
+        VCP_LOG_INFO("Pausing capture initialization temporarily before starting the next RealSense stream!");
+        std::this_thread::sleep_for(std::chrono::milliseconds(1500)); // 1.5 sec worked okay-ish so far...
       }
 #endif // VCP_WITH_REALSENSE2
     }

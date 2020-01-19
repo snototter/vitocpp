@@ -111,6 +111,7 @@ struct K4ASinkParams : SinkParams
   bool IsColorStreamEnabled() const;
   bool IsDepthStreamEnabled() const;
   bool IsInfraredStreamEnabled() const;
+  bool RequiresWiredSync() const;
 };
 
 
