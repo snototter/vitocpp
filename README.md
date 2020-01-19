@@ -60,6 +60,10 @@ TODO (+ see iminspect)
   cmake ..
   make -j
   ```
+* Highly recommended examples (best/well documented, useful functionality):
+  * best_demo
+  * imvis_demo
+  * imutils_demo
 
 
 ### Python
