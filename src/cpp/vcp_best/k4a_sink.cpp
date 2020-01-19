@@ -13,10 +13,9 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 //FIXME k4a VCP_BEST_DEBUG_FRAMERATE
-//FIXME k4a capture/sink: VCP_WITH_K4A
-#ifdef VCP_WITH_K4A_MJPG
+#ifdef VCP_BEST_WITH_K4A_MJPG
     #include <opencv2/highgui/highgui.hpp>
-#endif // VCP_WITH_K4A_MJPG
+#endif
 
 #include <k4a/k4a.h>
 #include <k4a/k4a.hpp>
@@ -341,6 +340,7 @@ public:
     params_(params),
     rgb_stream_enabled_(false),
     depth_stream_enabled_(false),
+    ir_stream_enabled_(false),
     k4a_device_(nullptr)
   {
     available_ = 0;
@@ -385,6 +385,7 @@ public:
     // will return empty matrices for the corresponding stream.
     rgb_stream_enabled_ = params_.IsColorStreamEnabled();
     depth_stream_enabled_ = params_.IsDepthStreamEnabled();
+    ir_stream_enabled_ = params_.IsInfraredStreamEnabled();
     return true;
   }
 
@@ -515,6 +516,7 @@ private:
   std::atomic<int> available_;
   bool rgb_stream_enabled_;
   bool depth_stream_enabled_;
+  bool ir_stream_enabled_;
 
   k4a_device_t k4a_device_;
 
@@ -525,17 +527,17 @@ private:
 
     k4a_device_configuration_t config = K4A_DEVICE_CONFIG_INIT_DISABLE_ALL;
     config.camera_fps = params_.camera_fps;
-#ifdef VCP_WITH_K4A_MJPG
+#ifdef VCP_BEST_WITH_K4A_MJPG
     // Save bandwidth, but need to decode JPGs on-the-fly.
     config.color_format = K4A_IMAGE_FORMAT_COLOR_MJPG;
     if (params_.verbose)
       VCP_LOG_INFO_DEFAULT("Configuring K4A color stream as MJPG.");
-#else // VCP_WITH_K4A_MJPG
+#else // VCP_BEST_WITH_K4A_MJPG
     // Use already decoded image data.
     config.color_format = K4A_IMAGE_FORMAT_COLOR_BGRA32;
     if (params_.verbose)
       VCP_LOG_INFO_DEFAULT("Configuring K4A color stream as BGRA32.");
-#endif // VCP_WITH_K4A_MJPG
+#endif // VCP_BEST_WITH_K4A_MJPG
     config.color_resolution = params_.color_resolution;
     config.depth_delay_off_color_usec = params_.depth_delay_off_color_usec;
     config.depth_mode = params_.depth_mode;
@@ -641,7 +643,7 @@ private:
 
         // Create OpenCV Mat header pointing to the buffer (no copy yet!)
         cv::Mat buf(rows, cols, CV_8UC4, static_cast<void*>(buffer), cv::Mat::AUTO_STEP);
-#ifdef VCP_WITH_K4A_MJPG
+#ifdef VCP_BEST_WITH_K4A_MJPG
         // Stream is JPG encoded.
         // Note that decoding a stream into a 3840x2160x3 image takes ~40 ms!
         cvrgb = cv::imdecode(buf, CV_LOAD_IMAGE_COLOR);
@@ -668,6 +670,7 @@ private:
         }
       }
 
+      //FIXME k4a IR16 if depth is enabled
 //      // probe for a IR16 image
 //      image = k4a_capture_get_ir_image(k4a_capture);
 //      if (image != NULL)
@@ -845,8 +848,7 @@ bool K4AParams::IsDepthStreamEnabled() const
 
 bool K4AParams::IsInfraredStreamEnabled() const
 {
-  //FIXME k4a - implement for IR stream
-  return false;
+  return this->enable_infrared_stream && IsDepthStreamEnabled();
 }
 
 
@@ -880,7 +882,9 @@ bool IsK4A(const std::string &type_param)
     || type.compare("kinect-azure") == 0
     || type.compare("azure-kinect") == 0
     || type.compare("kinect_azure") == 0
-    || type.compare("azure_kinect") == 0)
+    || type.compare("azure_kinect") == 0
+    || type.compare("kinectazure") == 0
+    || type.compare("azurekinect") == 0)
   {
     return true;
   }

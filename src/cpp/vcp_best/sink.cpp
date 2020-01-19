@@ -8,6 +8,9 @@
 
 #include "file_sink.h"
 #include "webcam_sink.h"
+#ifdef VCP_BEST_WITH_K4A
+    #include "k4a_sink.h"
+#endif
 
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::best::sink"
@@ -88,7 +91,7 @@ std::string SinkTypeToString(const SinkType &s)
   MAKE_SINKTYPE_TO_STRING_CASE(IPCAM_MONOCULAR);
   MAKE_SINKTYPE_TO_STRING_CASE(IPCAM_STEREO);
 #endif
-#ifdef VCP_WITH_K4A
+#ifdef VCP_BEST_WITH_K4A
   MAKE_SINKTYPE_TO_STRING_CASE(K4A);
 #endif
 #ifdef VCP_WITH_MATRIXVISION
@@ -118,6 +121,8 @@ SinkType SinkTypeFromString(const std::string &s)
     return SinkType::VIDEO_FILE;
   else if (IsWebcamSink(s))
     return SinkType::WEBCAM;
+  else if (IsK4A(s))
+    return SinkType::K4A;
 //  std::string upper(s);
 //  vcp::utils::string::ToUpper(upper);
 //  MAKE_STRING_TO_SINKTYPE_IF(IMAGE_DIR, upper);
@@ -125,7 +130,7 @@ SinkType SinkTypeFromString(const std::string &s)
 //  MAKE_STRING_TO_SINKTYPE_IF(IPCAM_MONOCULAR, upper);
 //  MAKE_STRING_TO_SINKTYPE_IF(IPCAM_STEREO, upper);
 //#endif
-//#ifdef VCP_WITH_K4A
+//#ifdef VCP_BEST_WITH_K4A
 //  MAKE_STRING_TO_SINKTYPE_IF(K4A, upper);
 //#endif
 //#ifdef VCP_WITH_MATRIXVISION

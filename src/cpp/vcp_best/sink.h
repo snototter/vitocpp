@@ -51,7 +51,7 @@ enum class SinkType
   IPCAM_MONOCULAR,
   IPCAM_STEREO,
 #endif
-#ifdef VCP_WITH_K4A
+#ifdef VCP_BEST_WITH_K4A
   K4A,
 #endif
 #ifdef VCP_WITH_MATRIXVISION

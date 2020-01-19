@@ -7,6 +7,7 @@
 #include <opencv2/core/core.hpp>
 #include "sink.h"
 
+//FIXME make namespace vcp::best::file, vcp::best::webcam, vcp::best::k4a
 namespace vcp
 {
 namespace best

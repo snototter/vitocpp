@@ -44,6 +44,7 @@ struct K4AParams : SinkParams
 
   k4a_depth_mode_t depth_mode;  // Depth mode
   bool depth_in_meters;         // Convert depth to meters (otherwise the plain uint16 values will be returned)
+  bool enable_infrared_stream;  // If true (and depth is enabled), IR will be emitted (too).
 
   k4a_fps_t camera_fps;         // Target/desired framerate
 
@@ -75,6 +76,7 @@ struct K4AParams : SinkParams
             const k4a_color_resolution_t color_resolution=K4A_COLOR_RESOLUTION_1080P,
             const k4a_depth_mode_t &depth_mode=K4A_DEPTH_MODE_NFOV_UNBINNED,
             const bool depth_in_meters=false,
+            const bool enable_infrared_stream=false,
             const k4a_fps_t &camera_fps=K4A_FRAMES_PER_SECOND_15,
             const bool disable_streaming_indicator=false,
             const int32_t depth_delay_off_color_usec=0,
@@ -91,6 +93,7 @@ struct K4AParams : SinkParams
       color_resolution(color_resolution),
       depth_mode(depth_mode),
       depth_in_meters(depth_in_meters),
+      enable_infrared_stream(enable_infrared_stream),
       camera_fps(camera_fps),
       disable_streaming_indicator(disable_streaming_indicator),
       depth_delay_off_color_usec(depth_delay_off_color_usec),

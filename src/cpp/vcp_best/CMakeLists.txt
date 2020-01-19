@@ -212,7 +212,7 @@ endif()
 if (VCP_BEST_WITH_K4A)
   find_package(k4a REQUIRED)
 
-  add_definitions(-DVCP_WITH_K4A)
+  add_definitions(-DVCP_BEST_WITH_K4A)
 
   set(ICC_EXTERNAL_LIBS ${ICC_EXTERNAL_LIBS} k4a)
   set(PUBLIC_HEADERS ${PUBLIC_HEADERS} ${PUBLIC_K4A_STREAM_HEADERS})
@@ -222,7 +222,7 @@ if (VCP_BEST_WITH_K4A)
   message("  [+] Enable Azure Kinect sensors")
 
   if (VCP_BEST_WITH_K4A_MJPG)
-    add_definitions(-DVCP_WITH_K4A_MJPG)
+    add_definitions(-DVCP_BEST_WITH_K4A_MJPG)
     message("      * Using JPG encoded K4A color stream")
   else()
     message("      * Using raw BGRA32 K4A color stream")

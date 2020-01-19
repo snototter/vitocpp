@@ -20,7 +20,7 @@
 //#ifdef WITH_IPCAMERA
 //  #include "capture_ipcam.h"
 //#endif
-//#ifdef WITH_K4A
+//#ifdef VCP_BEST_WITH_K4A
 //  #include "capture_k4a.h"
 //#endif
 //#ifdef WITH_MATRIXVISION
@@ -64,7 +64,7 @@ public:
 //    std::vector<MvBlueFox3SinkParams> mvbluefox_params;
 //    std::vector<std::string> cck_mvbluefox; // Corresponding configuration file keys (camera1, etc)
 //#endif
-//#ifdef WITH_K4A
+//#ifdef VCP_BEST_WITH_K4A
 //    std::vector<K4ASinkParams> k4a_params;
 //    std::vector<std::string> cck_k4a; // Corresponding configuration file keys (camera1, etc)
 //#endif
@@ -113,13 +113,13 @@ public:
 //        cck_ip_stereo.push_back(id.str());
 //      }
 //#endif // WITH_IPCAMERA
-//#ifdef WITH_K4A
+//#ifdef VCP_BEST_WITH_K4A
 //      else if (IsK4A(cam_type))
 //      {
 //        k4a_params.push_back(K4ASinkParamsFromConfig(config, id.str()));
 //        cck_k4a.push_back(id.str());
 //      }
-//#endif // WITH_K4A
+//#endif // VCP_BEST_WITH_K4A
 //#ifdef WITH_MATRIXVISION
 //      else if (IsMatrixVision(cam_type))
 //      {
@@ -181,48 +181,49 @@ public:
     }
 #endif // WITH_IPCAMERA
 
-#ifdef WITH_K4A
-    if (!k4a_params.empty())
-    {
-      bool k4a_requires_sync = false;
-      if (k4a_params.size() > 1)
-      {
-        for (const auto &p : k4a_params)
-        {
-          if (p.device_params.wired_sync_mode != K4A_WIRED_SYNC_MODE_STANDALONE)
-            k4a_requires_sync = true;
-        }
-      }
+#ifdef VCP_BEST_WITH_K4A
+    //FIXME k4a - add
+//    if (!k4a_params.empty())
+//    {
+//      bool k4a_requires_sync = false;
+//      if (k4a_params.size() > 1)
+//      {
+//        for (const auto &p : k4a_params)
+//        {
+//          if (p.device_params.wired_sync_mode != K4A_WIRED_SYNC_MODE_STANDALONE)
+//            k4a_requires_sync = true;
+//        }
+//      }
 
-      if (k4a_requires_sync)
-      {
-        //TODO: we need a separate multi-k4a-capture class :-/
-        // See best practices in green screen demo:
-        // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/green_screen/MultiDeviceCapturer.h
-        PVT_ABORT("Synchronization of multiple K4As is not yet supported!");
-      }
-      else
-      {
-        // Note: labels and calibration files will be modified when creating the k4a sinks (as one sink adds 2 frames)!
-        std::vector<std::string> labels;
-        std::vector<std::string> calibs;
-        std::vector<StreamType> types;
-        for (const auto &p : k4a_params)
-        {
-          sinks_.push_back(pvt::icc::CreateSink(p, labels, calibs, types));
-          sink_types_.push_back(SinkType::K4A);
-        }
+//      if (k4a_requires_sync)
+//      {
+//        //TODO: we need a separate multi-k4a-capture class :-/
+//        // See best practices in green screen demo:
+//        // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/green_screen/MultiDeviceCapturer.h
+//        PVT_ABORT("Synchronization of multiple K4As is not yet supported!");
+//      }
+//      else
+//      {
+//        // Note: labels and calibration files will be modified when creating the k4a sinks (as one sink adds 2 frames)!
+//        std::vector<std::string> labels;
+//        std::vector<std::string> calibs;
+//        std::vector<StreamType> types;
+//        for (const auto &p : k4a_params)
+//        {
+//          sinks_.push_back(pvt::icc::CreateSink(p, labels, calibs, types));
+//          sink_types_.push_back(SinkType::K4A);
+//        }
 
-        AddLabels(labels);
-        AddCalibrationFiles(calibs);
-        AddStreamTypes(types);
-        // We need to add them twice (!) because a realsense has two streams, thus two consecutive sink indices
-        AddCorrespondingConfigKeys(cck_k4a);
-        AddCorrespondingConfigKeys(cck_k4a);
-      }
-    }
-    // TODO check if k4a initialization requires a wait/sleep (similar to realsense devices, see use of multiple_realsenses_)
-#endif // WITH_K4A
+//        AddLabels(labels);
+//        AddCalibrationFiles(calibs);
+//        AddStreamTypes(types);
+//        // We need to add them twice (!) because a realsense has two streams, thus two consecutive sink indices
+//        AddCorrespondingConfigKeys(cck_k4a);
+//        AddCorrespondingConfigKeys(cck_k4a);
+//      }
+//    }
+//    // TODO check if k4a initialization requires a wait/sleep (similar to realsense devices, see use of multiple_realsenses_)
+#endif // VCP_BEST_WITH_K4A
 
 #ifdef WITH_MATRIXVISION
     if (!mvbluefox_params.empty())
