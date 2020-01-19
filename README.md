@@ -10,14 +10,39 @@ Some of `vcp`'s highlights:
   --------------------------------------------------
          0  kinect-rgb    rgbd-image  sink-k4a  
          1  kinect-depth  rgbd-depth  sink-k4a
-         2  zed-stereo    stereo      sink-webcam 
-         3  ip-cam-axis   monocular   sink-axis
+         2  kinect-ir     infrared    sink-k4a
+         3  zed-stereo    stereo      sink-webcam 
+         4  ip-cam-axis   monocular   sink-axis
   --------------------------------------------------
     4 streams from 3 devices
     * Devices are available
     * Frames are enqueued
   ```
-  What if I told you that the corresponding configuration file simply looks like this: todo
+  What if I told you that the corresponding configuration file simply looks like this:
+  ```C++
+  // TODO adjust axis/ipcam parameters
+
+  sink-k4a = {
+    // Mandatory parameter, specifying the device/sink type.
+    sink_type = "k4a";
+    label = "kinect";
+
+    // Take any available Azure Kinect 4K.
+    serial_number = "";
+  };
+
+  sink-webcam = {
+    sink_type = "webcam";
+    label = "zed-stereo";
+    device_number = -1;
+  };
+
+  sink-axis = {
+    sink_type = "axis";
+    host = "192.168.1.1";
+  };
+  ```
+  Ok, easy is fine - but how complex can it get (if you don't want to use the default device settings)? This is explained here <= TODO add separate BESt readme!
 * Nice(r) visualizations with less effort than plain OpenCV (have you ever tried to render a 3D bounding box?)
 TODO example images (drawingXY)
 * Pseudocoloring for data visualization/analysis.
