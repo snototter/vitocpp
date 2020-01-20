@@ -3,7 +3,9 @@ project(vcp-bindings)
 
 set(PYVCP_LIBRARY_DESTINATION "${CMAKE_SOURCE_DIR}/vcp")
 
+#TODO https://stackoverflow.com/questions/16212538/cmake-depending-on-another-project
 #TODO do we really need 14 for the python bindings, or 11?
+#TODO install to VCP_ROOT_DIR/gen/python/vcp
 # Add C++-14 support
 IF(NOT WIN32)
   add_definitions(-std=c++14 -fPIC -Wall -Wpedantic -Wextra)
