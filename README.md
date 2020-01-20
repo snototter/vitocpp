@@ -158,19 +158,20 @@ Testing requires `gtest`, which you'll probably need to build yourself - this is
   * [ ] Monocular/stereo
   * [ ] RealSense
   * [ ] Azure Kinect
-    * [ ] Stream raw data
-    * [ ] Align RGB+D
+    * [x] Stream raw data
+    * [x] Align RGB+D
     * [ ] Query intrinsics
   * [ ] mvBlueFox
   * [ ] Axis, Mobotix, etc.
 * [ ] Python bindings
   * [ ] best
   * [ ] config - likely not needed
-  * [ ] imutils
-  * [ ] imvis
-  * [ ] math
+  * [x] imutils
+  * [x] imvis
+  * [x] math
   * [ ] ui
   * [x] utils
+* [ ] Move python demos (e.g. math2d/3d) to unit tests
 * [ ] Increase unit test coverage
 * [ ] C++ Tools/examples
   * [ ] Viewer

@@ -94,7 +94,7 @@ std::string SinkTypeToString(const SinkType &s)
   switch (s)
   {
   MAKE_SINKTYPE_TO_STRING_CASE(IMAGE_DIR);
-#ifdef VCP_WITH_IPCAMERA
+#ifdef VCP_BEST_WITH_IPCAMERA
   MAKE_SINKTYPE_TO_STRING_CASE(IPCAM_MONOCULAR);
   MAKE_SINKTYPE_TO_STRING_CASE(IPCAM_STEREO);
 #endif
@@ -130,6 +130,7 @@ SinkType SinkTypeFromString(const std::string &s)
     return SinkType::WEBCAM;
   else if (k4a::IsK4A(s))
     return SinkType::K4A;
+//  else if (ipcam::IsIpCamMono())//FIXME
 //  std::string upper(s);
 //  vcp::utils::string::ToUpper(upper);
 //  MAKE_STRING_TO_SINKTYPE_IF(IMAGE_DIR, upper);

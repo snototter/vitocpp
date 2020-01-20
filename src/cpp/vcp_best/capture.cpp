@@ -17,9 +17,9 @@
 #include "webcam_sink.h"
 
 //#include "rectifier.h"
-//#ifdef WITH_IPCAMERA
-//  #include "capture_ipcam.h"
-//#endif
+#ifdef VCP_BEST_WITH_IPCAMERA
+  #include "capture_ipcam.h"
+#endif
 #ifdef VCP_BEST_WITH_K4A
   #include "k4a_sink.h"
 #endif

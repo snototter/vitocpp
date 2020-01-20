@@ -48,7 +48,7 @@ std::ostream &operator<<(std::ostream &stream, const FrameType &s);
 enum class SinkType
 {
   IMAGE_DIR,
-#ifdef VCP_WITH_IPCAMERA
+#ifdef VCP_BEST_WITH_IPCAMERA
   IPCAM_MONOCULAR,
   IPCAM_STEREO,
 #endif

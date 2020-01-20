@@ -4,8 +4,8 @@ project(vcp_best)
 set(LIB_NAME ${PROJECT_NAME})
 message("Configuring module ${LIB_NAME}")
 
-#option(VCP_BEST_WITH_HTTP "Build HTTP streaming modules (requires CURL)." ON)
-#option(VCP_BEST_WITH_RTSP "Build RTSP streaming modules (requires live555 and ffmpeg)." ON)
+
+option(VCP_BEST_WITH_IPCAM "Build HTTP/RTSP streaming module (requires CURL, live555 and ffmpeg)." ON)
 #option(VCP_BEST_WITH_MATRIXVISION "Build MatrixVision streaming module (requires mvIMPACT_acquire SDK)." OFF)
 #option(VCP_BEST_WITH_REALSENSE2 "Build Intel RealSense streaming module (requires librealsense2)." OFF)
 option(VCP_BEST_WITH_K4A "Build Kinect 4 Azure streaming module (requires libk4a)." ON)
@@ -114,62 +114,48 @@ find_package(OpenCV REQUIRED)
 include_directories(${OpenCV_INCLUDE_DIRS})
 
 set(ICC_EXTERNAL_LIBS
-  ${OpenCV_LIBS}
+    ${OpenCV_LIBS}
 )
 
 
-#if (PVT_ICC_DEBUG_FRAMERATE)
-#  add_definitions(-DICC_DEBUG_FRAMERATE)
-#endif()
 
+if(VCP_BEST_WITH_IPCAM)
+    add_definitions(-DVCP_BEST_WITH_IPCAM -DVCP_BEST_WITH_IPCAM_HTTP -DVCP_BEST_WITH_IPCAM_RTSP)
+    set(PUBLIC_HEADERS ${PUBLIC_HEADERS} ipcam_sink.h)
+    set(SOURCES ${SOURCES} ipcam_sink.cpp)
 
-if(VCP_ICC_WITH_HTTP_STREAMING OR VCP_ICC_WITH_RTSP_STREAMING)
-  add_definitions(-DVCP_WITH_IPCAMERA)
-  set(PUBLIC_HEADERS ${PUBLIC_HEADERS} capture_ipcam.h)
-  set(SOURCES ${SOURCES} capture_ipcam.cpp)
-endif()
+    #################################################
+    # HTTP streaming
+    # Dependencies
+    find_package(CURL REQUIRED)
+    include_directories(${CURL_INCLUDE_DIRS})
+    set(ICC_EXTERNAL_LIBS ${ICC_EXTERNAL_LIBS} ${CURL_LIBS})
 
+    # Source
+    set(PUBLIC_HEADERS ${PUBLIC_HEADERS} ${PUBLIC_HTTP_STREAM_HEADERS})
+    set(PRIVATE_HEADERS ${PRIVATE_HEADERS} ${PRIVATE_HTTP_STREAM_HEADERS})
+    set(SOURCES ${SOURCES} ${HTTP_STREAM_SOURCES})
 
-if(VCP_ICC_WITH_HTTP_STREAMING)
-  # Dependencies
-  find_package(CURL REQUIRED)
-  include_directories(${CURL_INCLUDE_DIRS})
-  set(ICC_EXTERNAL_LIBS ${ICC_EXTERNAL_LIBS} ${CURL_LIBS})
+    #################################################
+    # RTSP streaming
+    ## FFMPEG - needed for h264 decoding
+    find_package(FFMPEG REQUIRED)
+    include_directories(${FFMPEG_INCLUDE_DIR})
 
-  add_definitions(-DVCP_WITH_IPCAMERA_HTTP)
+    ## Live555 - needed for RTSP streaming
+    find_package(LIVE555 REQUIRED)
+    include_directories(${LIVE555_INCLUDE_DIRS})
 
-  # Source
-  set(PUBLIC_HEADERS ${PUBLIC_HEADERS} ${PUBLIC_HTTP_STREAM_HEADERS})
-  set(PRIVATE_HEADERS ${PRIVATE_HEADERS} ${PRIVATE_HTTP_STREAM_HEADERS})
-  set(SOURCES ${SOURCES} ${HTTP_STREAM_SOURCES})
+    set(ICC_EXTERNAL_LIBS ${ICC_EXTERNAL_LIBS} ${LIVE555_LIBRARIES} ${FFMPEG_LIBRARIES})
 
-  message("  [+] Enable HTTP streaming")
+    # Source
+    set(PUBLIC_HEADERS ${PUBLIC_HEADERS} ${PUBLIC_RTSP_STREAM_HEADERS})
+    set(PRIVATE_HEADERS ${PRIVATE_HEADERS} ${PRIVATE_RTSP_STREAM_HEADERS})
+    set(SOURCES ${SOURCES} ${RTSP_STREAM_SOURCES})
+
+    message("  [+] Enable HTTP/RTSP streaming")
 else()
-  message("  [ ] Disable HTTP streaming")
-endif()
-
-
-if (PVT_ICC_WITH_RTSP_STREAMING)
-  ## FFMPEG - needed for h264 decoding
-  find_package(FFMPEG REQUIRED)
-  include_directories(${FFMPEG_INCLUDE_DIR})
-
-  ## Live555 - needed for RTSP streaming
-  find_package(LIVE555 REQUIRED)
-  include_directories(${LIVE555_INCLUDE_DIRS})
-
-  add_definitions(-DWITH_IPCAMERA_RTSP)
-
-  set(ICC_EXTERNAL_LIBS ${ICC_EXTERNAL_LIBS} ${LIVE555_LIBRARIES} ${FFMPEG_LIBRARIES})
-
-  # Source
-  set(PUBLIC_HEADERS ${PUBLIC_HEADERS} ${PUBLIC_RTSP_STREAM_HEADERS})
-  set(PRIVATE_HEADERS ${PRIVATE_HEADERS} ${PRIVATE_RTSP_STREAM_HEADERS})
-  set(SOURCES ${SOURCES} ${RTSP_STREAM_SOURCES})
-
-  message("  [+] Enable RTSP streaming")
-else()
-  message("  [ ] Disable RTSP streaming")
+    message("  [ ] Disable HTTP/RSTP streaming")
 endif()
 
 
