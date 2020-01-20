@@ -164,6 +164,13 @@ Testing requires `gtest`, which you'll probably need to build yourself - this is
   * [ ] mvBlueFox
   * [ ] Axis, Mobotix, etc.
 * [ ] Python bindings
+  * [ ] best
+  * [ ] config - likely not needed
+  * [ ] imutils
+  * [ ] imvis
+  * [ ] math
+  * [ ] ui
+  * [x] utils
 * [ ] Increase unit test coverage
 * [ ] C++ Tools/examples
   * [ ] Viewer

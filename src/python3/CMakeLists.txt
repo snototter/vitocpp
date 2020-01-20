@@ -45,7 +45,7 @@ find_package(pybind11 REQUIRED)
 include_directories(${PYBIND11_INCLUDE_DIRS})
 
 # VCP - prepare include directory and RPATH
-find_package(vcp REQUIRED COMPONENTS vcp_utils)
+find_package(vcp REQUIRED COMPONENTS vcp_utils vcp_imutils vcp_imvis vcp_math vcp_ui)
 include_directories(${VCP_INCLUDE_DIR})
 set(VCP_RPATH_ "${VCP_LIBRARY_DIR}")
 
@@ -62,7 +62,6 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 ##################################################################
 ## Common utils (file, etc.) module
 message(STATUS "[vcp-bindings] Configuring vcp.utils")
-find_package(vcp REQUIRED COMPONENTS vcp_utils)
 python_add_module(utils
   bindings/utils.cpp
 )
@@ -85,7 +84,6 @@ install(TARGETS
 ##################################################################
 ## Math 2D
 message(STATUS "[vcp-bindings] Configuring vcp.math2d")
-find_package(vcp REQUIRED COMPONENTS vcp_utils vcp_math)
 python_add_module(math2d
   bindings/math2d.cpp
   bindings/conversion/vcp_conversion.h
@@ -114,7 +112,6 @@ install(TARGETS
 ##################################################################
 ## Math 3D
 message(STATUS "[vcp-bindings] Configuring vcp.math3d")
-find_package(vcp REQUIRED COMPONENTS vcp_utils vcp_math)
 python_add_module(math3d
   bindings/math3d.cpp
   bindings/conversion/vcp_conversion.h
@@ -139,6 +136,60 @@ install(TARGETS
   ${PYTHON_INSTALL_CONFIGURATIONS}
   LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
 
+
+##################################################################
+## Image manipulation (imutils)
+message(STATUS "[vcp-bindings] Configuring vcp.imutils_cpp")
+python_add_module(imutils_cpp
+  bindings/imutils_cpp.cpp
+  bindings/conversion/np_cv_conversion.h
+  bindings/conversion/np_cv_conversion.cpp
+  bindings/conversion/cv_core_conversion.h
+  bindings/conversion/cv_core_conversion.cpp
+)
+target_link_libraries(imutils_cpp
+  ${PYTHON_LIBRARIES}
+  ${PVT_LIBRARIES}
+)
+set_target_properties(imutils_cpp PROPERTIES
+        ARCHIVE_OUTPUT_NAME imutils_cpp${ARCHIVE_OUTPUT_POSTFIX}
+        PREFIX ""
+        OUTPUT_NAME imutils_cpp
+        SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
+)
+install(TARGETS
+  imutils_cpp
+  ${PYTHON_INSTALL_CONFIGURATIONS}
+  LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
+
+
+
+##################################################################
+## Visualization utils
+message(STATUS "[vcp-bindings] Configuring vcp.imvis_cpp")
+python_add_module(imvis_cpp
+  bindings/imvis_cpp.cpp
+  bindings/conversion/vcp_conversion.h
+  bindings/conversion/vcp_conversion.cpp
+  bindings/conversion/np_cv_conversion.h
+  bindings/conversion/np_cv_conversion.cpp
+  bindings/conversion/cv_core_conversion.h
+  bindings/conversion/cv_core_conversion.cpp
+)
+target_link_libraries(imvis_cpp
+  ${PYTHON_LIBRARIES}
+  ${VCP_LIBRARIES}
+)
+set_target_properties(imvis_cpp PROPERTIES
+        ARCHIVE_OUTPUT_NAME imvis_cpp${ARCHIVE_OUTPUT_POSTFIX}
+        PREFIX ""
+        OUTPUT_NAME imvis_cpp
+        SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
+)
+install(TARGETS
+  imvis_cpp
+  ${PYTHON_INSTALL_CONFIGURATIONS}
+  LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
 
 ##################################################################
 # Add an uninstall target

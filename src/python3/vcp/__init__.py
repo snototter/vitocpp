@@ -5,7 +5,7 @@
 See VCP_ROOT_DIR/examples/python3 for an overview.
 """
 
-__all__ = ['utils']
+__all__ = ['imutils', 'imvis', 'math2d', 'math3d', 'utils']
 __author__ = 'snototter'
 
 # Load version
