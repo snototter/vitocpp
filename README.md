@@ -66,34 +66,51 @@ TODO (+ see iminspect)
   * Build the vcp libraries.
   * Build the python bindings.
   * Build the example applications.
-* If you've already installed the required packages, and simply want to build the library, it's as easy as
+* If you've already installed the required packages, and simply want to build the Clibrary, it's as easy as
   ```bash
+  # Build the C++ library
   $ cd $VCP_ROOT_DIR
   $ mkdir build && cd build
   $ cmake ..
   $ make -j install
-  # Afterwards, all library files can be found at <$VCP_ROOT_DIR/gen>
+  # Afterwards, all library files can be found at <VCP_ROOT_DIR/gen>
+
+  # Build the Python bindings
+  $ cd $VCP_ROOT_DIR/src/python3
+  $ mkdir build && cd build
+  $ cmake ..
+  $ make -j install
+  # Afterwards, the Python package can be loaded from <VCP_ROOT_DIR/src/python3/vcp>
   ```
+  #TODO install python package in /gen/python3?
 
 
 ## Examples
 ### C++
-* The C++ applications at `$VCP_ROOT_DIR/examples/cpp` demonstrate how you can use `vcp` from your own CMake projects. After building the vcp library, building these examples is as easy as:
+* The C++ applications at `<VCP_ROOT_DIR>/examples/cpp` demonstrate how you can use `vcp` from your own CMake projects. After building the vcp library, building these examples is as easy as:
   ```bash
   $ cd $VCP_ROOT_DIR/examples
-  mkdir build && cd build
-  cmake ..
-  make -j
+  $ mkdir build && cd build
+  $ cmake ..
+  $ make -j
   ```
 * Highly recommended examples (best/well documented, useful functionality):
-  * best_demo
-  * imvis_demo
-  * imutils_demo
+  * `best_demo`
+  * `imvis_demo` TODO
+  * `imutils_demo` TODO
 
 
 ### Python
-To be done!
-
+* You can find Python3 examples for all modules at `$VCP_ROOT_DIR/examples/python3`.
+  ```bash
+  $ cd $VCP_ROOT_DIR/examples/python3
+  # Set up the virtual environment
+  $ ./prepare_environment_py3.sh
+  $ source .venv3/bin/activate
+  $ python imvis_demo.py
+  ```
+* Highly recommended examples (best/well documented, useful functionality):
+  * To be done
 
 ## Tests
 While all of vcp has been tested "in-the-wild", unit tests are rather sparse, unfortunately.
