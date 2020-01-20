@@ -12,121 +12,153 @@ namespace best
 {
 namespace ipcam
 {
+/** @brief Supported IP camera protocols. */
 enum class IpProtocol
 {
   HTTP = 1,
   RTSP
 };
+
+/** @brief Overloaded ostream operator. */
 std::ostream &operator<<(std::ostream &stream, const IpProtocol &s);
 
-enum class IpStreamType
+/** @brief Maps a string (e.g. from configuration file) to IpProtocol enum. */
+IpProtocol IpProtocolFromString(const std::string &protocol);
+
+/** @brief Returns the string representation. */
+std::string IpProtocolToString(const IpProtocol &p);
+
+
+
+/** @brief Supported stream encodings. */
+enum class IpStreamEncoding
 {
   H264 = 1,
   MJPEG
 };
-std::ostream &operator<<(std::ostream &stream, const IpStreamType &s);
 
+/** @brief Overloaded ostream operator. */
+std::ostream &operator<<(std::ostream &stream, const IpStreamEncoding &s);
+
+/** @brief Maps a string (e.g. from configuration file) to IpStreamEncoding enum. */
+IpStreamEncoding IpStreamEncodingFromString(const std::string &stream_type);
+
+/** @brief Returns the string representation. */
+std::string IpStreamEncodingToString(const IpStreamEncoding &s);
+
+
+
+/** @brief Supported IP cameras. */
 enum class IpCameraType
 {
-  Generic = 1,
-  Axis,
-  Mobotix,
-  Hikvision
-  // TODO maybe add squire TPU (TrafficPTZ Ultimo)
+  Generic = 1, /**< Basically, all IP cameras are "generic" sinks, they only differ regarding their streaming URLs. */
+  Axis
+//  Mobotix,
+//  Hikvision
 };
+
+/** @brief Overloaded ostream operator. */
 std::ostream &operator<<(std::ostream &stream, const IpCameraType &cam);
 
-
-struct IpCameraParams
-{
-  IpCameraParams() : host(""), user(""), password(""), camera_type(IpCameraType::Generic),
-    protocol(IpProtocol::HTTP), stream_type(IpStreamType::H264),
-    frame_width(-1), frame_height(-1), frame_rate(-1), custom_url("")
-  {}
-
-  std::string host; // IP or hostname
-  std::string user;
-  std::string password;
-
-  IpCameraType camera_type;
-  IpProtocol protocol;
-  IpStreamType stream_type;
-
-  int frame_width;
-  int frame_height;
-  int frame_rate; // Must be an int for Axis (VAPIX Streaming API)
-
-  std::string custom_url; // Used to connect to a generic IP camera (you just provide IpProtocol, IpStreamType and this URL).
-
-  friend std::ostream &operator<< (std::ostream &out, const IpCameraParams &p);
-};
-
-struct IpStereoParams
-{
-  IpCameraParams left;
-  IpCameraParams right;
-};
-
-// Convenience wrappers/lookups
-IpProtocol IpProtocolFromString(const std::string &protocol);
-std::string IpProtocolToString(const IpProtocol &p);
-
-IpStreamType IpStreamTypeFromString(const std::string &stream_type);
-std::string IpStreamTypeToString(const IpStreamType &s);
-
+/** @brief Maps a string (e.g. from configuration file) to IpCameraType enum. */
 IpCameraType IpCameraTypeFromString(const std::string &camera_type);
+
+/** @brief Returns the string representation. */
 std::string IpCameraTypeToString(const IpCameraType &c);
 
-IpCameraParams IpCameraParamsFromConfigSetting(const vcp::config::ConfigParams &config, const std::string &setting);
-IpStereoParams IpStereoParamsFromConfigSetting(const vcp::config::ConfigParams &config, const std::string &setting);
 
-
-class MonoIpCameraSinkParams : public SinkParams
+/** @brief Configuration parameters for a single IP camera. */
+struct IpCameraDeviceParams
 {
-public:
-  MonoIpCameraSinkParams(const std::string &lbl, const std::string &calib_file, const StreamType &type,
-                   const ipcam::IpCameraParams &params)
-    : SinkParams(lbl, calib_file, type),
-      device_params(params) {}
-  virtual ~MonoIpCameraSinkParams() {}
+  std::string host;
+  std::string user;
+  std::string password;
+  IpCameraType ipcam_type;
+  IpProtocol protocol;
+  IpStreamEncoding stream_encoding;
+  int frame_width;
+  int frame_height;
+  int frame_rate; // Must be an int (e.g. VAPIX only supports integer frame rates)
+  std::string custom_url;
 
-  ipcam::IpCameraParams device_params;
+  IpCameraDeviceParams(
+      const std::string host,
+      const std::string user=std::string(),
+      const std::string pwd=std::string(),
+      const IpCameraType ipcam_type=IpCameraType::Generic,
+      const IpProtocol protocol=IpProtocol::RTSP,
+      const IpStreamEncoding stream_encoding=IpStreamEncoding::H264,
+      const int frame_width=-1,
+      const int frame_height=-1,
+      const int frame_rate=-1)
+    : host(host), user(user), password(pwd),
+      ipcam_type(ipcam_type), protocol(protocol), stream_encoding(stream_encoding),
+      frame_width(frame_width), frame_height(frame_height), frame_rate(frame_rate)
+  {}
 
-private:
-  MonoIpCameraSinkParams();
+
+  std::string GetStreamingUrl() const;
+};
+
+std::ostream &operator<< (std::ostream &out, const IpCameraDeviceParams &p);
+
+/** @brief Configuration parameters to stream from an IP camera. */
+struct MonocularIpCameraSinkParams : public SinkParams
+{
+  IpCameraDeviceParams ipcam_params;
+
+  MonocularIpCameraSinkParams(
+      const SinkParams &sink_params,
+      const IpCameraDeviceParams &ipcam_params)
+    : SinkParams(sink_params),
+      ipcam_params(ipcam_params)
+  {}
+
+  friend std::ostream &operator<< (std::ostream &out, const MonocularIpCameraSinkParams &p);
 };
 
 
-class StereoIpCameraSinkParams : public SinkParams
+/** @brief Configuration parameters to stream from two IP cameras which define a stereo setup. */
+struct StereoIpCameraSinkParams : public SinkParams
 {
-public:
-  StereoIpCameraSinkParams(const std::string &lbl, const std::string &calib_file, const StreamType &type,
-                      const ipcam::IpCameraParams &cam1, const ipcam::IpCameraParams &cam2)
-    : SinkParams(lbl, calib_file, type),
-      cam1_params(cam1), cam2_params(cam2) {}
-  virtual ~StereoIpCameraSinkParams() {}
+  IpCameraDeviceParams ipcam_params1;
+  IpCameraDeviceParams ipcam_params2;
 
-  ipcam::IpCameraParams cam1_params;
-  ipcam::IpCameraParams cam2_params;
+  StereoIpCameraSinkParams(
+      const SinkParams &sink_params,
+      const IpCameraDeviceParams &ipcam_params1,
+      const IpCameraDeviceParams &ipcam_params2)
+    : SinkParams(sink_params),
+      ipcam_params1(ipcam_params1),
+      ipcam_params2(ipcam_params2)
+  {}
 
-private:
-  StereoIpCameraSinkParams();
+  friend std::ostream &operator<< (std::ostream &out, const StereoIpCameraSinkParams &p);
 };
 
 
-MonoIpCameraSinkParams MonoIpCameraSinkParamsFromConfig(const pvt::config::ConfigParams &config, const std::string &cam_group);
+//FIXME
+//struct IpStereoParams
+//{
+//  IpCameraParams left;
+//  IpCameraParams right;
+//};
 
 
-StereoIpCameraSinkParams StereoIpCameraSinkParamsFromConfig(const pvt::config::ConfigParams &config, const std::string &cam_group);
 
 
-std::unique_ptr<StreamSink> CreateMonoIpCamSink(const std::vector<MonoIpCameraSinkParams> &params);
+MonocularIpCameraSinkParams MonocularIpCameraSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
+//FIXME IpStereoParams IpStereoParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &setting);
 
 
-std::unique_ptr<StreamSink> CreateStereoIpCamSink(const std::vector<StereoIpCameraSinkParams> &params);
+
+std::unique_ptr<StreamSink> CreateMonocularIpCameraSink(const std::vector<MonocularIpCameraSinkParams> &params);
 
 
-/** @brief Given a configuration file's camera "type" parameter, returns true if the camera is an IP cam (generic, axis, ...). */
+//std::unique_ptr<StreamSink> CreateStereoIpCameraSink(const std::vector<StereoIpCameraSinkParams> &params);
+
+
+/** @brief Given a configuration file's "camera_type" parameter, returns true if the camera is an IP cam (generic, axis, ...). */
 bool IsIpCamera(const std::string &camera_type);
 
 
