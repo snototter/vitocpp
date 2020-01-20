@@ -130,12 +130,12 @@ if __name__ == "__main__":
     #     print('Point {} is {} away from line {}, should be {}\n'.format(pt, dist, line, expected_line[i]))
 
     
-    # Rotate rect:
-    lena = imutils.imread('../../examples/data/lena.jpg', mode='RGB', flip_channels=True)
-    im_height, im_width = lena.shape[0], lena.shape[1]
+    # Rotate rect: #TODO not math related
+    rgb = imutils.imread('../../examples/data/flamingo.jpg', mode='RGB', flip_channels=False)
+    im_height, im_width = rgb.shape[0], rgb.shape[1]
     center = (im_width/2.0, im_height/2.0)
     rect = (im_width*3/4, im_height/2, 50, 80)
-    vis_img = imvis.draw_rects(lena, [rect], fill_opacity=0.4, line_width=2, dash_length=10, color=(220, 0, 255))
+    vis_img = imvis.draw_rects(rgb, [rect], fill_opacity=0.4, line_width=2, dash_length=10, color=(220, 0, 255))
 
     rotrect = imutils.rotate_rect(rect, center, np.deg2rad(5))
     vis_img = imvis.draw_rotated_rects(vis_img, [rotrect], fill_opacity=0.4, line_width=2, dash_length=10, color=(220, 0, 0))
@@ -237,7 +237,7 @@ if __name__ == "__main__":
     pt = (2,1)
     print('Distance {} to poly: {}, should be 0'.format(pt, math2d.distance_point_closed_polygon(pt, polygon)))
     pt = (3,2)
-    print('Distance {} to poly: {}, should less than 0.5'.format(pt, math2d.distance_point_closed_polygon(pt, polygon)))
+    print('Distance {} to poly: {}, should be less than 0.5'.format(pt, math2d.distance_point_closed_polygon(pt, polygon)))
     pt = (4.5,4)
     print('Distance {} to poly: {}, should be 0.5'.format(pt, math2d.distance_point_closed_polygon(pt, polygon)))
     print

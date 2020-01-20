@@ -149,7 +149,7 @@ python_add_module(imutils_cpp
 )
 target_link_libraries(imutils_cpp
   ${PYTHON_LIBRARIES}
-  ${PVT_LIBRARIES}
+  ${VCP_LIBRARIES}
 )
 set_target_properties(imutils_cpp PROPERTIES
         ARCHIVE_OUTPUT_NAME imutils_cpp${ARCHIVE_OUTPUT_POSTFIX}

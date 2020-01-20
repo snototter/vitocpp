@@ -10,6 +10,8 @@ from .imutils_cpp import *
 import vito
 from vito.imutils import *
 
+#TODO forward calls to vito instead - to add doc to man/help page
+
 
 # def imread(filename, mode='RGB', flip_channels=False):
 #     return vimutils.imread(filename, mode=mode, flip_channels=flip_channels)
