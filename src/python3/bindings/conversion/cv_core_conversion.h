@@ -434,7 +434,7 @@ public:
   bool load(handle src, bool)
   {
     bool valid;
-    cv::Size_<_Tp> r = pvt::python::conversion::PyObjectToSize<_Tp>(src.cast<py::object>(), &valid);
+    cv::Size_<_Tp> r = vcp::python::conversion::PyObjectToSize<_Tp>(src.cast<py::object>(), &valid);
     if (valid)
       value = r;
     return valid && !PyErr_Occurred();

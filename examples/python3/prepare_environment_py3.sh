@@ -9,8 +9,7 @@ then
   source ${venv}/bin/activate
   pip3 install --upgrade pip
   pip3 install -r ../../src/python3/requirements.txt
-  #pip3 install pur
-  #pur -r ../requirements.txt
+  pip3 install matplotlib
 
   # Set up OpenCV - assumes that you already installed it!
   echo "Trying to link to your OpenCV installation"

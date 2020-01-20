@@ -44,7 +44,7 @@ endif ()
 find_package(pybind11 REQUIRED)
 include_directories(${PYBIND11_INCLUDE_DIRS})
 
-# VCP
+# VCP - prepare include directory and RPATH
 find_package(vcp REQUIRED COMPONENTS vcp_utils)
 include_directories(${VCP_INCLUDE_DIR})
 set(VCP_RPATH_ "${VCP_LIBRARY_DIR}")
@@ -61,6 +61,8 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 ##################################################################
 ## Common utils (file, etc.) module
+message(STATUS "[vcp-bindings] Configuring vcp.utils")
+find_package(vcp REQUIRED COMPONENTS vcp_utils)
 python_add_module(utils
   bindings/utils.cpp
 )
@@ -76,6 +78,64 @@ set_target_properties(utils PROPERTIES
 )
 install(TARGETS
   utils
+  ${PYTHON_INSTALL_CONFIGURATIONS}
+  LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
+
+
+##################################################################
+## Math 2D
+message(STATUS "[vcp-bindings] Configuring vcp.math2d")
+find_package(vcp REQUIRED COMPONENTS vcp_utils vcp_math)
+python_add_module(math2d
+  bindings/math2d.cpp
+  bindings/conversion/vcp_conversion.h
+  bindings/conversion/vcp_conversion.cpp
+  bindings/conversion/np_cv_conversion.h
+  bindings/conversion/np_cv_conversion.cpp
+  bindings/conversion/cv_core_conversion.h
+  bindings/conversion/cv_core_conversion.cpp
+)
+target_link_libraries(math2d
+  ${PYTHON_LIBRARIES}
+  ${VCP_LIBRARIES}
+)
+set_target_properties(math2d PROPERTIES
+        ARCHIVE_OUTPUT_NAME math2d${ARCHIVE_OUTPUT_POSTFIX}
+        PREFIX ""
+        OUTPUT_NAME math2d
+        SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
+)
+install(TARGETS
+  math2d
+  ${PYTHON_INSTALL_CONFIGURATIONS}
+  LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
+
+
+##################################################################
+## Math 3D
+message(STATUS "[vcp-bindings] Configuring vcp.math3d")
+find_package(vcp REQUIRED COMPONENTS vcp_utils vcp_math)
+python_add_module(math3d
+  bindings/math3d.cpp
+  bindings/conversion/vcp_conversion.h
+  bindings/conversion/vcp_conversion.cpp
+  bindings/conversion/np_cv_conversion.h
+  bindings/conversion/np_cv_conversion.cpp
+  bindings/conversion/cv_core_conversion.h
+  bindings/conversion/cv_core_conversion.cpp
+)
+target_link_libraries(math3d
+  ${PYTHON_LIBRARIES}
+  ${VCP_LIBRARIES}
+)
+set_target_properties(math3d PROPERTIES
+        ARCHIVE_OUTPUT_NAME math3d${ARCHIVE_OUTPUT_POSTFIX}  # prevent name conflict for python2/3 outputs
+        PREFIX ""
+        OUTPUT_NAME math3d
+        SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
+)
+install(TARGETS
+  math3d
   ${PYTHON_INSTALL_CONFIGURATIONS}
   LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
 

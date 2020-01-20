@@ -12,7 +12,7 @@ namespace py = pybind11;
 #include <vcp_utils/vcp_logging.h>
 #include <vcp_utils/vcp_error.h>
 
-#include <vcp_visualization/drawing.h>
+#include <vcp_imvis/drawing.h>
 #include <vcp_math/geometry2d.h>
 #include <vcp_math/geometry3d.h>
 
@@ -34,7 +34,7 @@ py::tuple VecToTuple(const cv::Vec<_Tp,_Cn> &v)
 
 
 /** @brief Type conversion of 3D box coordinates to Box3d. */
-vcp::visualization::drawing::Box3d PyObjectToBox3d(const py::object &object);
+vcp::imvis::drawing::Box3d PyObjectToBox3d(const py::object &object);
 
 /** @brief Type conversion of 2D start/end coordinates to Line2d. */
 vcp::math::geo2d::Line2d PyObjectToLine2d(const py::object &object);
@@ -104,7 +104,7 @@ RotatedBoundingBox2d PyObjectToRotatedBoundingBox2d(const py::object &object);
 /** @brief Extend a Box3d object with attributes for visualization. */
 typedef struct
 {
-  vcp::visualization::drawing::Box3d box;
+  vcp::imvis::drawing::Box3d box;
   cv::Scalar color;
   std::string caption;
 
@@ -119,7 +119,7 @@ typedef struct
 
   void Clear()
   {
-    box = vcp::visualization::drawing::Box3d();
+    box = vcp::imvis::drawing::Box3d();
     color = cv::Scalar::all(-1.0);
     caption = std::string();
   }
@@ -147,7 +147,7 @@ typedef struct
 
   void Clear()
   {
-    line = pvt::math::geo2d::Line2d();
+    line = vcp::math::geo2d::Line2d();
     color = cv::Scalar::all(-1.0);
     is_dashed = false;
   }
@@ -167,10 +167,10 @@ namespace pybind11
 {
 namespace detail
 {
-template <> struct type_caster<vcp::visualization::drawing::Box3d>
+template <> struct type_caster<vcp::imvis::drawing::Box3d>
 {
 public:
-  PYBIND11_TYPE_CASTER(vcp::visualization::drawing::Box3d, _("Box3d (3x8 np.array or list/tuple of eight 3d corners)"));
+  PYBIND11_TYPE_CASTER(vcp::imvis::drawing::Box3d, _("Box3d (3x8 np.array or list/tuple of eight 3d corners)"));
 
   bool load(handle src, bool)
   {
@@ -178,7 +178,7 @@ public:
     return value.Valid() && !PyErr_Occurred();
   }
 
-  static handle cast(const vcp::visualization::drawing::Box3d &src, return_value_policy /* policy */, handle /* parent */)
+  static handle cast(const vcp::imvis::drawing::Box3d &src, return_value_policy /* policy */, handle /* parent */)
   {
     PyObject *box = PyDict_New();
     PyObject *top = src.Valid() ? PyTuple_New(4) : NULL;
@@ -280,9 +280,9 @@ public:
 
   static handle cast(const vcp::python::conversion::BoundingBox2d &src, return_value_policy policy, handle parent)
   {
-    VCP_UNUSED_ARG(src);
-    VCP_UNUSED_ARG(policy);
-    VCP_UNUSED_ARG(parent);
+    VCP_UNUSED_VAR(src);
+    VCP_UNUSED_VAR(policy);
+    VCP_UNUSED_VAR(parent);
     VCP_ERROR("Not yet implemented!");
   }
 };
@@ -301,9 +301,9 @@ public:
 
   static handle cast(const vcp::python::conversion::RotatedBoundingBox2d &src, return_value_policy policy, handle parent)
   {
-    VCP_UNUSED_ARG(src);
-    VCP_UNUSED_ARG(policy);
-    VCP_UNUSED_ARG(parent);
+    VCP_UNUSED_VAR(src);
+    VCP_UNUSED_VAR(policy);
+    VCP_UNUSED_VAR(parent);
     VCP_ERROR("Not yet implemented!");
   }
 };
@@ -322,9 +322,9 @@ public:
 
   static handle cast(const vcp::python::conversion::BoundingBox3d &src, return_value_policy policy, handle parent)
   {
-    VCP_UNUSED_ARG(src);
-    VCP_UNUSED_ARG(policy);
-    VCP_UNUSED_ARG(parent);
+    VCP_UNUSED_VAR(src);
+    VCP_UNUSED_VAR(policy);
+    VCP_UNUSED_VAR(parent);
     VCP_ERROR("Not yet implemented!");
   }
 };
@@ -342,11 +342,11 @@ public:
     return !value.empty() && !PyErr_Occurred();
   }
 
-  static handle cast(const vcp::python::conversion::VisLine2d &/*src*/, return_value_policy /* policy */, handle /* parent */)
+  static handle cast(const vcp::python::conversion::VisLine2d &src, return_value_policy policy, handle parent)
   {
-    VCP_UNUSED_ARG(src);
-    VCP_UNUSED_ARG(policy);
-    VCP_UNUSED_ARG(parent);
+    VCP_UNUSED_VAR(src);
+    VCP_UNUSED_VAR(policy);
+    VCP_UNUSED_VAR(parent);
     VCP_ERROR("Not yet implemented!");
   }
 };

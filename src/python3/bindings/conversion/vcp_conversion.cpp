@@ -17,9 +17,9 @@ namespace conversion
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::python::conversion"
 
-vcp::visualization::drawing::Box3d PyObjectToBox3d(const py::object &object)
+vcp::imvis::drawing::Box3d PyObjectToBox3d(const py::object &object)
 {
-  vcp::visualization::drawing::Box3d box;
+  vcp::imvis::drawing::Box3d box;
 
   if (object.is_none())
     return box;
@@ -29,7 +29,7 @@ vcp::visualization::drawing::Box3d PyObjectToBox3d(const py::object &object)
   {
     py::list list = py::cast<py::list>(object);
     if (py::len(list) < 8) // "<" because we may add additional elements for visualization
-      throw std::runtime_error("List must contain 8 corner points for a 3D box, given list holds " + std::to_string(py::len(list)));
+      VCP_ERROR("List must contain 8 corner points for a 3D box, given list holds " + std::to_string(py::len(list)));
 
     for (size_t i = 0; i < 4; ++i)
     {
@@ -41,7 +41,7 @@ vcp::visualization::drawing::Box3d PyObjectToBox3d(const py::object &object)
   {
     py::tuple tuple = py::cast<py::tuple>(object);
     if (py::len(tuple) < 8) // "<" because we may add additional elements for visualization
-      throw std::runtime_error("Tuple must contain 8 corner points for a 3D box, given tuple holds " + std::to_string(py::len(tuple)));
+      VCP_ERROR("Tuple must contain 8 corner points for a 3D box, given tuple holds " + std::to_string(py::len(tuple)));
 
     for (size_t i = 0; i < 4; ++i)
     {
@@ -70,7 +70,7 @@ vcp::math::geo2d::Line2d PyObjectToLine2d(const py::object &object)
   {
     py::list list = py::cast<py::list>(object);
     if (py::len(list) < 2) // "<" because we may add additional elements for visualization
-      throw std::runtime_error("List must contain 2 points for a Line2d, given list holds " + std::to_string(py::len(list)));
+      VCP_ERROR("List must contain 2 points for a Line2d, given list holds " + std::to_string(py::len(list)));
 
     const cv::Vec2d vfrom = PyObjectToVec<double, 2>(list[0], nullptr);
     const cv::Vec2d vto = PyObjectToVec<double, 2>(list[1], nullptr);
@@ -80,7 +80,7 @@ vcp::math::geo2d::Line2d PyObjectToLine2d(const py::object &object)
   {
     py::tuple tuple = py::cast<py::tuple>(object);
     if (py::len(tuple) < 2) // "<" because we may add additional elements for visualization
-      throw std::runtime_error("Tuple must contain 2 points for a Line2d, given tuple holds " + std::to_string(py::len(tuple)));
+      VCP_ERROR("Tuple must contain 2 points for a Line2d, given tuple holds " + std::to_string(py::len(tuple)));
 
     const cv::Vec2d vfrom = PyObjectToVec<double, 2>(tuple[0], nullptr);
     const cv::Vec2d vto = PyObjectToVec<double, 2>(tuple[1], nullptr);
@@ -105,7 +105,7 @@ vcp::math::geo3d::Line3d PyObjectToLine3d(const py::object &object)
   {
     py::list list = py::cast<py::list>(object);
     if (py::len(list) < 2) // "<" because we may add additional elements for visualization
-      throw std::runtime_error("List must contain 2 points for a Line3d, given list holds " + std::to_string(py::len(list)));
+      VCP_ERROR("List must contain 2 points for a Line3d, given list holds " + std::to_string(py::len(list)));
 
     const cv::Vec3d vfrom = PyObjectToVec<double, 3>(list[0], nullptr);
     const cv::Vec3d vto = PyObjectToVec<double, 3>(list[1], nullptr);
@@ -115,7 +115,7 @@ vcp::math::geo3d::Line3d PyObjectToLine3d(const py::object &object)
   {
     py::tuple tuple = py::cast<py::tuple>(object);
     if (py::len(tuple) < 2) // "<" because we may add additional elements for visualization
-      throw std::runtime_error("Tuple must contain 2 points for a Line3d, given tuple holds " + std::to_string(py::len(tuple)));
+      VCP_ERROR("Tuple must contain 2 points for a Line3d, given tuple holds " + std::to_string(py::len(tuple)));
 
     const cv::Vec3d vfrom = PyObjectToVec<double, 3>(tuple[0], nullptr);
     const cv::Vec3d vto = PyObjectToVec<double, 3>(tuple[1], nullptr);
@@ -144,7 +144,7 @@ BoundingBox2d PyObjectToBoundingBox2d(const py::object &object)
     const py::list list = object.cast<py::list>();
     size_t len = py::len(list);
     if (len == 0)
-      throw std::runtime_error("List must contain at least 1 element to convert to a BoundingBox2d!");
+      VCP_ERROR("List must contain at least 1 element to convert to a BoundingBox2d!");
 
     box.box = PyObjectToRect<int>(list[0], nullptr); // py::cast doesn't work
     if (len > 1 && !list[1].is_none())
@@ -159,7 +159,7 @@ BoundingBox2d PyObjectToBoundingBox2d(const py::object &object)
     const py::tuple tuple = object.cast<py::tuple>();
     size_t len = py::len(tuple);
     if (len == 0)
-      throw std::runtime_error("Tuple must contain at least 1 element to convert to a BoundingBox2d!");
+      VCP_ERROR("Tuple must contain at least 1 element to convert to a BoundingBox2d!");
 
     box.box = PyObjectToRect<int>(tuple[0], nullptr); // py::cast doesn't work
     if (len > 1 && !tuple[1].is_none())
@@ -196,7 +196,7 @@ RotatedBoundingBox2d PyObjectToRotatedBoundingBox2d(const py::object &object)
     const py::list list = object.cast<py::list>();
     size_t len = py::len(list);
     if (len == 0)
-      throw std::runtime_error("List must contain at least 1 element to convert to a RotatedBoundingBox2d!");
+      VCP_ERROR("List must contain at least 1 element to convert to a RotatedBoundingBox2d!");
 
     // 5 elements => only cx,cy,w,h,angle are provided
     // less than 5 elements, list[0] is the 5 element rotated rect
@@ -220,7 +220,7 @@ RotatedBoundingBox2d PyObjectToRotatedBoundingBox2d(const py::object &object)
     const py::tuple tuple = object.cast<py::tuple>();
     size_t len = py::len(tuple);
     if (len == 0)
-      throw std::runtime_error("Tuple must contain at least 1 element to convert to a RotatedBoundingBox2d!");
+      VCP_ERROR("Tuple must contain at least 1 element to convert to a RotatedBoundingBox2d!");
 
     // 5 elements => only cx,cy,w,h,angle are provided
     // less than 5 elements, list[0] is the 5 element rotated rect
@@ -266,7 +266,7 @@ BoundingBox3d PyObjectToBoundingBox3d(const py::object &object)
     const py::list list = object.cast<py::list>();
     size_t len = py::len(list);
     if (len == 0)
-      throw std::runtime_error("List must contain at least 1 element (i.e. a list/tuple of 8 corners) to convert to a BoundingBox3d!");
+      VCP_ERROR("List must contain at least 1 element (i.e. a list/tuple of 8 corners) to convert to a BoundingBox3d!");
 
     box.box = PyObjectToBox3d(list[0]);
     if (len > 1 && !list[1].is_none())
@@ -279,7 +279,7 @@ BoundingBox3d PyObjectToBoundingBox3d(const py::object &object)
     const py::tuple tuple = object.cast<py::tuple>();
     size_t len = py::len(tuple);
     if (len == 0)
-      throw std::runtime_error("Tuple must contain at least 1 element (i.e. a list/tuple of 8 corners) to convert to a BoundingBox3d!");
+      VCP_ERROR("Tuple must contain at least 1 element (i.e. a list/tuple of 8 corners) to convert to a BoundingBox3d!");
 
     box.box = PyObjectToBox3d(tuple[0]);
     if (len > 1 && !tuple[1].is_none())
@@ -312,7 +312,7 @@ VisLine2d PyObjectToVisLine2d(const py::object &object)
     const py::list list = object.cast<py::list>();
     size_t len = py::len(list);
     if (len < 2)
-      throw std::runtime_error("List must contain at least 2 elements to convert to a Line2d!");
+      VCP_ERROR("List must contain at least 2 elements to convert to a Line2d!");
 
     line.line = vcp::math::geo2d::Line2d(PyObjectToVec<double,2>(list[0], nullptr), PyObjectToVec<double,2>(list[1], nullptr)); // py::cast does not always work (e.g. if list[i] is a np.array)
     if (len > 2 && !list[2].is_none())
@@ -325,7 +325,7 @@ VisLine2d PyObjectToVisLine2d(const py::object &object)
     const py::tuple tuple = object.cast<py::tuple>();
     size_t len = py::len(tuple);
     if (len == 0)
-      throw std::runtime_error("Tuple must contain at least 2 elements to convert to a Line2d!");
+      VCP_ERROR("Tuple must contain at least 2 elements to convert to a Line2d!");
 
     line.line = vcp::math::geo2d::Line2d(PyObjectToVec<double,2>(tuple[0], nullptr), PyObjectToVec<double,2>(tuple[1], nullptr)); // py::cast does not always work (e.g. if list[i] is a np.array)
     if (len > 2 && !tuple[2].is_none())

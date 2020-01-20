@@ -92,10 +92,10 @@ inline int NDArrayTypeToMatDepth(const py::dtype &dtype)
     return CV_64F;
   if (dtype.is(py::dtype::of<bool>()))
   {
-    PVT_LOG_WARNING("Cannot check if we deal with a packed boolean ndarray. Naively assuming that we can cast np.bool to uint8!");
+    VCP_LOG_WARNING("Cannot check if we deal with a packed boolean ndarray. Naively assuming that we can cast np.bool to uint8!");
     return CV_8U;
   }
-  VCP_ERROR("PVT cannot cast the given numpy.dtype ("
+  VCP_ERROR("Cannot cast the given numpy.dtype ("
            + py::cast<std::string>(py::str(py::cast<py::handle>(dtype)))
            + ") to cv::Mat depth!");
 }
@@ -105,9 +105,9 @@ cv::Mat NDArrayToMat(const py::array &ndarray)
 {
   if (ndarray.ndim() < 1 || ndarray.ndim() > 3)//(ndarray.ndim() != 2 && ndarray.ndim() != 3)
   {
-    throw std::runtime_error("PVT can only convert 1D np.arrays or 2D images "
-                             "(i.e. 2D and 3D NumPy ndarrays) to cv::Mat, you tried with array.ndim()=="
-                             + std::to_string(ndarray.ndim()));
+    VCP_ERROR("VCP can only convert 1D np.arrays or 2D images "
+               "(i.e. 2D and 3D NumPy ndarrays) to cv::Mat, you tried with array.ndim()=="
+               + std::to_string(ndarray.ndim()));
   }
 
   const py::dtype dtype = ndarray.dtype();
@@ -127,7 +127,7 @@ cv::Mat NDArrayToMat(const py::array &ndarray)
 
     mat.create(rows, cols, CV_MAKE_TYPE(depth, channels));
     if (!mat.isContinuous())
-      throw std::runtime_error("cv::Mat is not continuous after creation!"); // there must be something wrong!
+      VCP_ERROR("cv::Mat is not continuous after creation!"); // there must be something wrong!
 
     std::memcpy(mat.data, ndarray.data(), rows * cols * channels * dtype.itemsize());
   }
@@ -149,8 +149,7 @@ cv::Mat NDArrayToMat(const py::array &ndarray)
 
       mat.create(rows, cols, CV_MAKE_TYPE(depth, channels));
       if (!mat.isContinuous())
-        throw std::runtime_error("cv::Mat is not continuous after creation!"); // there must be something wrong!
-      //PVT_CHECK(mat.isContinuous());
+        VCP_ERROR("cv::Mat is not continuous after creation!"); // there must be something wrong!
 
       std::memcpy(mat.data, ndarray.data(), rows * cols * channels * dtype.itemsize());
       mat = mat.t();
@@ -220,13 +219,13 @@ cv::Mat NDArrayToMat(const py::array &ndarray)
 py::array MatToNDArray(const cv::Mat &mat)
 {
   if (mat.empty())
-    throw std::runtime_error("cv::Mat is empty, cannot convert to numpy.array!");
+    VCP_ERROR("cv::Mat is empty, cannot convert to numpy.array!");
 
   // OpenCV Mat documentation: https://docs.opencv.org/2.4/modules/core/doc/basic_structures.html#mat
   // 2D matrices are stored row-major (row-by-row), 3D are stored plane-by-plane, ...
   if (mat.dims > 2)
   {
-    throw std::runtime_error("PVT only supports converting 1D or 2D cv::Mat to np.array, you requested mat.dims=" + std::to_string(mat.dims));
+    VCP_ERROR("VCP only supports converting 1D or 2D cv::Mat to np.array, you requested mat.dims=" + std::to_string(mat.dims));
   }
 
   const py::dtype dtype = MatDepthToNDArrayType(mat.depth());
@@ -254,7 +253,7 @@ py::array MatToNDArray(const cv::Mat &mat)
       VCP_LOG_INFO_DEFAULT("---- Convert non-continuous MAT to c-contiguous NDArray, need to copy row-by-row");
       for (ssize_t i = 0; i < ndarray.ndim(); ++i)
       {
-        PVT_LOG_INFO_NOFILE("  Dim[" << i << "], shape = " << ndarray.shape(i) << ", stride = " << ndarray.strides(i));
+        VCP_LOG_INFO_DEFAULT("  Dim[" << i << "], shape = " << ndarray.shape(i) << ", stride = " << ndarray.strides(i));
       }
 #endif
       // Nice summary of whenever Mat is not continuous: https://stackoverflow.com/questions/33665241/is-opencv-matrix-data-guaranteed-to-be-continuous
@@ -274,11 +273,11 @@ py::array MatToNDArray(const cv::Mat &mat)
     // magic (custom) ndarray allocator which does fancy memory alignment and
     // padding.
     // This is clearly no intended use case for VCP ;-)
-    VCP_ERROR("PVT cannot convert cv::Mat to numpy.array because the pybind11::array() is not C_CONTIGUOUS after creation!");
+    VCP_ERROR("Cannot convert cv::Mat to numpy.array because the pybind11::array() is not C_CONTIGUOUS after creation!");
   }
   return ndarray;
 }
 
 } // namespace conversion
 } // namespace python
-} // namespace pvt
+} // namespace vcp

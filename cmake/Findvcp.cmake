@@ -50,12 +50,12 @@ set(QUERY_STRING_DEBUG_LIB "d")
 # First, find out which modules the user requested
 list(FIND VCP_MODULES vcp_best      REQUESTED_BEST)
 list(FIND VCP_MODULES vcp_bgm       REQUESTED_BGM)
-    # list(FIND VCP_MODULES vcp_config    REQUESTED_CONFIG)  # Only requires pvt_utils
+    # list(FIND VCP_MODULES vcp_config    REQUESTED_CONFIG)  # Only requires vcp_utils
 list(FIND VCP_MODULES vcp_imutils   REQUESTED_IMUTILS)
 list(FIND VCP_MODULES vcp_imvis     REQUESTED_IMVIS)
     # list(FIND VCP_MODULES vcp_math      REQUESTED_MATH)  # No dependencies (uses header-only def's of other modules if needed)
 list(FIND VCP_MODULES vcp_tracking  REQUESTED_TRACKING)
-    # list(FIND VCP_MODULES vcp_ui        REQUESTED_UI)  # Only requires pvt_utils
+    # list(FIND VCP_MODULES vcp_ui        REQUESTED_UI)  # Only requires vcp_utils
 
 # ... then, add dependencies (e.g. vcp_imvis uses vcp_math)
 if(REQUESTED_BEST GREATER 0)
