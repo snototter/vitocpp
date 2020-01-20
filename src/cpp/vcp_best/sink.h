@@ -48,7 +48,7 @@ std::ostream &operator<<(std::ostream &stream, const FrameType &s);
 enum class SinkType
 {
   IMAGE_DIR,
-#ifdef VCP_BEST_WITH_IPCAMERA
+#ifdef VCP_BEST_WITH_IPCAM
   IPCAM_MONOCULAR,
   IPCAM_STEREO,
 #endif
@@ -212,6 +212,10 @@ double GetOptionalDoubleFromConfig(const vcp::config::ConfigParams &config, cons
 /** @brief Look up an optional boolean with parameter name [cam_group].[key]. To look up only [key], [cam_group] can be empty. */
 bool GetOptionalBoolFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group, const std::string &key, bool default_value);
 
+
+std::string GetSinkTypeStringFromConfig(const vcp::config::ConfigParams &config,
+                                        const std::string &cam_group,
+                                        std::vector<std::string> *configured_keys=nullptr);
 
 SinkType GetSinkTypeFromConfig(const vcp::config::ConfigParams &config,
                                const std::string &cam_group,

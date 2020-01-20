@@ -10,6 +10,8 @@ namespace best
 {
 namespace ipcam
 {
+namespace http
+{
 /**
  * @brief Creates a StreamSink to receive MJPEG over HTTP.
  * @param stream_url Full URL (including parameters, authentication, etc.)
@@ -27,6 +29,7 @@ std::unique_ptr<StreamSink> CreateHttpMjpegSink(const std::string &stream_url)
   return CreateBufferedHttpMjpegSink(stream_url, std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()));
 }
 
+} // namespace http
 } // namespace ipcam
 } // namespace best
 } // namespace vcp

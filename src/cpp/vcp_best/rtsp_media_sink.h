@@ -1,5 +1,5 @@
-#ifndef __PVT_ICC_RTSP_LIVE555_MEDIA_SINK_H__
-#define __PVT_ICC_RTSP_LIVE555_MEDIA_SINK_H__
+#ifndef __VCP_BEST_RTSP_LIVE555_MEDIA_SINK_H__
+#define __VCP_BEST_RTSP_LIVE555_MEDIA_SINK_H__
 
 #include "rtsp_sink.h"
 
@@ -7,9 +7,13 @@
 
 #include <liveMedia.hh>
 
-namespace pvt
+namespace vcp
 {
-namespace icc
+namespace best
+{
+namespace ipcam
+{
+namespace rtsp
 {
 /**
  * @brief Base class to receive media streams via RTSP. Subclasses must provide the decoding functionality.
@@ -54,6 +58,7 @@ protected:
   // callback signature. Handling instance is passed as client_data.
   static void afterGettingFrame(void *client_data, unsigned frame_size, unsigned num_truncated_bytes, struct timeval presentation_time, unsigned duration_in_microseconds);
 
+  //TODO clean up
   // Invoked by realizing classes to log stats for an incoming frame (upon console)
 //  void logReceivedFrame(unsigned frame_size, unsigned num_truncated_bytes, struct timeval presentation_time);
 
@@ -87,7 +92,9 @@ protected:
 RtspMediaSink *CreateRtspMjpegMediaSink(UsageEnvironment &env, MediaSubsession &subsession, const RtspStreamParams &params, void (*callback_frame_received)(const cv::Mat &, void *), void *callback_user_data);
 RtspMediaSink *CreateRtspH264MediaSink(UsageEnvironment &env, MediaSubsession &subsession, const RtspStreamParams &params, void (*callback_frame_received)(const cv::Mat &, void *), void *callback_user_data);
 
-} // namespace icc
-} // namespace pvt
+} // namespace rtsp
+} // namespace ipcam
+} // namespace best
+} // namespace vcp
 
-#endif // __PVT_ICC_RTSP_LIVE555_MEDIA_SINK_H__
+#endif // __VCP_BEST_RTSP_LIVE555_MEDIA_SINK_H__

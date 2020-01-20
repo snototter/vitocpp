@@ -11,6 +11,8 @@ namespace best
 {
 namespace ipcam
 {
+namespace rtsp
+{
 // Supported stream types.
 enum class RtspStreamType
 {
@@ -29,7 +31,7 @@ enum class RtspProtocol
 
 /**
  * @brief Parameters required to set up a RTSP stream.
- */
+ */ //FIXME change to RtspSinkParams : SinkParams!
 struct RtspStreamParams
 {
   // We almost exclusively receive unicast streams, RTSP over TCP is de-facto standard, see e.g. https://cardinalpeak.com/blog/the-many-ways-to-stream-video-using-rtp-and-rtsp/
@@ -93,6 +95,7 @@ std::unique_ptr<StreamSink> CreateMultiRtspStreamSink(const std::vector<RtspStre
   return CreateBufferedMultiRtspStreamSink(params, std::move(sink_buffers));
 }
 
+} // namespace rtsp
 } // namespace ipcam
 } // namespace best
 } // namespace vcp

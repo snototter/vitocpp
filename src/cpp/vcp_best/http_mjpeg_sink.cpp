@@ -17,6 +17,10 @@ namespace best
 {
 namespace ipcam
 {
+namespace http
+{
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::best::ipcam::http"
 /**
  * @brief The MJPEG over HTTP stream sink
  */
@@ -196,6 +200,7 @@ std::unique_ptr<StreamSink> CreateBufferedHttpMjpegSink(const std::string &strea
   return std::unique_ptr<HttpMjpegSink>(new HttpMjpegSink(stream_url, std::move(sink_buffer)));
 }
 
+} // namespace http
 } // namespace ipcam
 } // namespace best
 } // namespace vcp

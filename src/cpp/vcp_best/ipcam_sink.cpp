@@ -250,14 +250,71 @@ IpCameraDeviceParams ParseIpCameraDeviceParamsFromConfig(const vcp::config::Conf
   const std::string host = config.GetString(prefix + ".host" + postfix);
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "host" + postfix), configured_keys.end());
 
+
+  // In a stereo setup, user/pwd can be given once ("user"/"password") or for each device separately ("user_left"/"password_left")
   std::string user = std::string();
   if (config.SettingExists(prefix + ".user" + postfix))
   {
     user = config.GetString(prefix + ".user" + postfix);
     configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "user" + postfix), configured_keys.end());
   }
+  else if (config.SettingExists(prefix + ".user"))
+  {
+    user = config.GetString(prefix + ".user");
+    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "user"), configured_keys.end());
+  }
 
-  //FIXME add rest
+  std::string pwd = std::string();
+  if (config.SettingExists(prefix + ".password" + postfix))
+  {
+    user = config.GetString(prefix + ".password" + postfix);
+    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "password" + postfix), configured_keys.end());
+  }
+  else if (config.SettingExists(prefix + ".pwd" + postfix))
+  {
+    user = config.GetString(prefix + ".pwd" + postfix);
+    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "pwd" + postfix), configured_keys.end());
+  }
+  else if (config.SettingExists(prefix + ".password"))
+  {
+    user = config.GetString(prefix + ".password");
+    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "password"), configured_keys.end());
+  }
+  else if (config.SettingExists(prefix + ".pwd"))
+  {
+    user = config.GetString(prefix + ".pwd");
+    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "pwd"), configured_keys.end());
+  }
+
+  const IpCameraType ipcam_type = IpCameraTypeFromString(GetSinkTypeStringFromConfig(config, prefix, &configured_keys));
+
+  const IpProtocol protocol =
+      config.SettingExists(prefix + ".protocol") ? IpProtocolFromString(config.GetString(prefix + ".protocol")) : IpProtocol::RTSP;
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "protocol"), configured_keys.end());
+
+  const IpStreamEncoding stream_encoding =
+      config.SettingExists(prefix + ".encoding") ? IpStreamEncodingFromString(config.GetString(prefix + ".encoding")) : IpStreamEncoding::H264;
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "encoding"), configured_keys.end());
+
+  const int frame_width =
+      config.SettingExists(prefix + ".frame_width") ? config.GetInteger(prefix + ".frame_width") : -1;
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "frame_width"), configured_keys.end());
+
+  const int frame_height =
+      config.SettingExists(prefix + ".frame_height") ? config.GetInteger(prefix + ".frame_height") : -1;
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "frame_height"), configured_keys.end());
+
+  int frame_rate = -1;
+  if (config.SettingExists(prefix + ".frame_rate"))
+  {
+    frame_rate = config.GetInteger(prefix + ".frame_rate");
+    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "frame_rate"), configured_keys.end());
+  }
+  else if (config.SettingExists(prefix + ".fps"))
+  {
+    frame_rate = config.GetInteger(prefix + ".fps");
+    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "fps"), configured_keys.end());
+  }
   return IpCameraDeviceParams(host, user, pwd, ipcam_type, protocol, stream_encoding, frame_width, frame_height, frame_rate);
 }
 
@@ -417,7 +474,7 @@ public:
         if (p.verbose)
           VCP_LOG_INFO_DEFAULT("Connecting to '" << p.ipcam_params.ipcam_type
                                << "' at: " << vcp::utils::string::ObscureUrlAuthentication(url));
-        sinks_.push_back(CreateHttpMjpegSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(url));
+        sinks_.push_back(http::CreateHttpMjpegSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(url));
 
         // TODO nice-to-have would be a camera-specific start-up routine (e.g. enabling/disabling overlays, etc.)
       }
@@ -430,17 +487,18 @@ public:
 #ifdef VCP_BEST_WITH_IPCAM_RTSP
       // We support MJPEG and H264 over RTSP
       int split_column = 0;
-      std::vector<RtspStreamParams> cam_params;
+      std::vector<rtsp::RtspStreamParams> cam_params;
       for (const auto &p : params)
       {
         if (p.ipcam_params.protocol != params[0].ipcam_params.protocol)
           VCP_ERROR("All IP cameras must use the same streaming protocol!");
 
-        RtspStreamType stream_type;
+        // FIXME replace by RtspSinkParams.parse/fromX
+        rtsp::RtspStreamType stream_type;
         switch(p.ipcam_params.stream_encoding)
         {
           case IpStreamEncoding::MJPEG:
-            stream_type = RtspStreamType::MJPEG;
+            stream_type = rtsp::RtspStreamType::MJPEG;
             break;
           case IpStreamEncoding::H264:
             stream_type = RtspStreamType::H264;
@@ -469,9 +527,9 @@ public:
         multi_rtsp_splits_.push_back(split_column);
         multi_rtsp_heights_.push_back(p.ipcam_params.frame_height);
       }
-      sinks_.push_back(std::move(CreateMultiRtspStreamSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(cam_params)));
+      sinks_.push_back(std::move(rtsp::CreateMultiRtspStreamSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(cam_params)));
 #else // VCP_BEST_WITH_IPCAM_RTSP
-      VCP_ERROR("You need to compile PVT with RTSP streaming enabled!");
+      VCP_ERROR("You need to compile VCP with RTSP streaming enabled!");
 #endif // VCP_BEST_WITH_IPCAM_RTSP
     }
     else
@@ -548,22 +606,26 @@ public:
 
   std::vector<cv::Mat> Next() override
   {
-    //FIXME
     std::vector<cv::Mat> frames;
     frames.reserve(sinks_.size());
     for (size_t i = 0; i < sinks_.size(); ++i)
     {
-      cv::Mat frame;
-      sinks_[i]->GetNextFrame(frame);
+      const std::vector<cv::Mat> sink_frames = sinks_[i]->Next();
 
       if (multi_rtsp_splits_.size() < 2)
       {
-        frames.push_back(frame);
+        // This is not a multi-rtsp cue.
+        frames.insert(frames.end(), sink_frames.begin(), sink_frames.end());
       }
       else
       {
-        // We use a multi-rtsp cue with multiple streams.
+        // We use a multi-rtsp cue with multiple streams (concatenated
+        // into a single cv::Mat).
         // Thus, we have to split the incoming frame.
+        if (sink_frames.size() != 1)
+          VCP_ERROR("MultiRtspStreamSink returned " << sink_frames.size() << " frames instead of 1!");
+
+        cv::Mat frame = sink_frames[0];
         int from = 0;
         for (size_t j = 0; j < multi_rtsp_splits_.size(); ++j)
         {
@@ -574,7 +636,6 @@ public:
           else
           {
             int to = multi_rtsp_splits_[j];
-//            const cv::Rect roi(from, 0, to-from, frame.rows);
             const cv::Rect roi(from, 0, to-from, multi_rtsp_heights_[j]);
             cv::Mat split = frame(roi).clone();
             frames.push_back(split);

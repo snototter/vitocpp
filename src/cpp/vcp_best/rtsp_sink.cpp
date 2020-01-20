@@ -4,7 +4,7 @@
 #include <mutex>
 #include <atomic>
 #include <deque>
-#ifdef ICC_DEBUG_FRAMERATE
+#ifdef ICC_DEBUG_FRAMERATE //FIXME!
   #include <chrono>
   #include <iomanip>
   #include <pvt_utils/string_utils.h>
@@ -13,13 +13,18 @@
 #include "rtsp_media_sink.h"
 #include "rtsp_client.h"
 
-#include <pvt_utils/pvt_error.h>
-#include <pvt_utils/pvt_logging.h>
+#include <vcp_utils/vcp_error.h>
 
-namespace pvt
+namespace vcp
 {
-namespace icc
+namespace best
 {
+namespace ipcam
+{
+namespace rtsp
+{
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::best::ipcam::rtsp"
 /**
  * @brief RTSP stream sink.
  */
@@ -341,5 +346,7 @@ std::unique_ptr<StreamSink> CreateBufferedMultiRtspStreamSink(const std::vector<
   return std::unique_ptr<MultiRtspStreamSink>(new MultiRtspStreamSink(params, std::move(sink_buffers)));
 }
 
-} // namespace icc
-} // namespace pvt
+} // namespace rtsp
+} // namespace ipcam
+} // namespace best
+} // namespace vcp

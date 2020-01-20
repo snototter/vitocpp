@@ -38,10 +38,9 @@ extern "C"
 }
 #endif
 
-#include <pvt_utils/pvt_error.h>
-#include <pvt_utils/pvt_logging.h>
+#include <vcp_utils/vcp_error.h>
 
-// av_frame_alloc was added in lavc 55.28.1 (not available on my Ubuntu 14.04)
+// av_frame_alloc was added in lavc 55.28.1 (not available on Ubuntu 14.04)
 #if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(55,28,1)
   //#define av_frame_alloc avcodec_alloc_frame
   //#define USE_DEPRECATED_PICTURE_API
@@ -51,10 +50,16 @@ extern "C"
 // Define the size of the buffer that we'll use (10MB)
 #define RTSP_MEDIA_SINK_RECEIVE_BUFFER_SIZE 10485760
 
-namespace pvt
+namespace vcp
 {
-namespace icc
+namespace best
 {
+namespace ipcam
+{
+namespace rtsp
+{
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::best::ipcam::rtsp"
 //-----------------------------------------------------------------------------
 // MediaSink base class
 RtspMediaSink::~RtspMediaSink()
@@ -437,5 +442,7 @@ RtspMediaSink *CreateRtspH264MediaSink(UsageEnvironment &env, MediaSubsession &s
   return new RtspH264MediaSink(env, subsession, params, callback_frame_received, callback_user_data);
 }
 
-} // namespace icc
-} // namespace pvt
+} // namespace rtsp
+} // namespace ipcam
+} // namespace best
+} // namespace vcp

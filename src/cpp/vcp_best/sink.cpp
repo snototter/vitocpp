@@ -11,6 +11,9 @@
 #ifdef VCP_BEST_WITH_K4A
     #include "k4a_sink.h"
 #endif
+#ifdef VCP_BEST_WITH_IPCAM
+    #include "ipcam_sink.h"
+#endif
 
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::best::sink"
@@ -130,6 +133,10 @@ SinkType SinkTypeFromString(const std::string &s)
     return SinkType::WEBCAM;
   else if (k4a::IsK4A(s))
     return SinkType::K4A;
+  else if (ipcam::IsMonocularIpCamera(s))
+    return SinkType::IPCAM_MONOCULAR;
+  else if (ipcam::IsStereoIpCamera(s))
+    return SinkType::IPCAM_STEREO;
 //  else if (ipcam::IsIpCamMono())//FIXME
 //  std::string upper(s);
 //  vcp::utils::string::ToUpper(upper);
@@ -264,24 +271,42 @@ FrameType GetFrameTypeFromConfig(const vcp::config::ConfigParams &config,
   return FrameTypeFromString(GetOptionalStringFromConfig(config, cam_group, "frame_type", FrameTypeToString(FrameType::UNKNOWN)));
 }
 
-SinkType GetSinkTypeFromConfig(const vcp::config::ConfigParams &config,
-                               const std::string &cam_group,
-                               std::vector<std::string> *configured_keys)
+
+std::string GetSinkTypeStringFromConfig(const vcp::config::ConfigParams &config,
+                                        const std::string &cam_group,
+                                        std::vector<std::string> *configured_keys)
 {
   if (configured_keys)
     configured_keys->erase(std::remove(configured_keys->begin(), configured_keys->end(), "sink_type"), configured_keys->end());
   if (config.SettingExists(cam_group + ".sink_type"))
-    return SinkTypeFromString(config.GetString(cam_group + ".sink_type"));
+    return config.GetString(cam_group + ".sink_type");
   if (config.SettingExists(cam_group + ".camera_type"))
-    return SinkTypeFromString(config.GetString(cam_group + ".camera_type"));
+    return config.GetString(cam_group + ".camera_type");
   VCP_LOG_WARNING("Mandatory configuration parameter '" << cam_group << ".sink_type' (or '.camera_type') is not specified, looking up the obsolete '" << cam_group << ".type'.");
 
   if (configured_keys)
     configured_keys->erase(std::remove(configured_keys->begin(), configured_keys->end(), "type"), configured_keys->end());
   if (config.SettingExists(cam_group + ".type"))
-    return SinkTypeFromString(config.GetString(cam_group + ".type"));
+    return config.GetString(cam_group + ".type");
 
-  VCP_ERROR("Invalid configuration: Neither '" << cam_group << ".sink_type' nor the (obsolete) '" << cam_group << ".type' has been set. Cannot deduce sink type.");
+  return std::string();
+}
+
+
+SinkType GetSinkTypeFromConfig(const vcp::config::ConfigParams &config,
+                               const std::string &cam_group,
+                               std::vector<std::string> *configured_keys)
+{
+  const std::string camera_type = GetSinkTypeStringFromConfig(config, cam_group, configured_keys);
+
+  if (camera_type.empty())
+  {
+    VCP_ERROR("Invalid configuration: Neither '" << cam_group << ".sink_type' nor the (obsolete) '" << cam_group << ".type' has been set. Cannot deduce sink type.");
+  }
+  else
+  {
+    return SinkTypeFromString(camera_type);
+  }
 }
 
 
