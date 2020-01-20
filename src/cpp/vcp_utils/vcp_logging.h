@@ -40,11 +40,11 @@
 // Macro abstractions which prefix the proper log severity/level
 //
 // Logs a DEBUG notification to stdout.
-#define VCP_LOG_DEBUG_LOCATION(msg)      VCP_LOG_STREAM(std::cout, "\033[34;1mDEBUG\033[0m", __FILE__, __LINE__, msg)
-#define VCP_LOG_DEBUG_DEFAULT(msg)       VCP_LOG_STREAM(std::cout, "\033[34;1mDEBUG\033[0m", nullptr, -1, msg)
+#define VCP_LOG_DEBUG_LOCATION(msg)      VCP_LOG_STREAM(std::cout, "\033[34;1mDEBUG  \033[0m", __FILE__, __LINE__, msg)
+#define VCP_LOG_DEBUG_DEFAULT(msg)       VCP_LOG_STREAM(std::cout, "\033[34;1mDEBUG  \033[0m", nullptr, -1, msg)
 // Logs a INFO/status notification to stdout.
-#define VCP_LOG_INFO_LOCATION(msg)       VCP_LOG_STREAM(std::cout, "\033[36;1mINFO\033[0m", __FILE__, __LINE__, msg)
-#define VCP_LOG_INFO_DEFAULT(msg)        VCP_LOG_STREAM(std::cout, "\033[36;1mINFO\033[0m", nullptr, -1, msg)
+#define VCP_LOG_INFO_LOCATION(msg)       VCP_LOG_STREAM(std::cout, "\033[36;1mINFO   \033[0m", __FILE__, __LINE__, msg)
+#define VCP_LOG_INFO_DEFAULT(msg)        VCP_LOG_STREAM(std::cout, "\033[36;1mINFO   \033[0m", nullptr, -1, msg)
 // Logs a WARNING to stderr.
 #define VCP_LOG_WARNING_LOCATION(msg)    VCP_LOG_STREAM(std::cerr, "\033[35;1mWARNING\033[0m", __FILE__, __LINE__, msg)
 #define VCP_LOG_WARNING_DEFAULT(msg)     VCP_LOG_STREAM(std::cerr, "\033[35;1mWARNING\033[0m", nullptr, -1, msg)

@@ -119,7 +119,7 @@ foreach(module ${VCP_MODULES})
 
     # Derive the library directory from the selected library.
     get_filename_component(_LIB_DIR "${CURRENT_LIBRARY}" PATH)
-    get_filename_component(CVP_LIBRARY_DIR "${_LIB_DIR}" REALPATH)
+    get_filename_component(VCP_LIBRARY_DIR "${_LIB_DIR}" REALPATH)
 
     # Append this module's library to the list
     set(VCP_LIBRARIES ${VCP_LIBRARIES} ${CURRENT_LIBRARY})
