@@ -3,6 +3,7 @@
 #include <vcp_utils/vcp_error.h>
 #include <vcp_utils/timing_utils.h>
 #include <vcp_imvis/collage.h>
+#include <vcp_imvis/pseudocolor.h>
 #include <vcp_config/config_params.h>
 #include <vcp_best/capture.h>
 #include <opencv2/highgui.hpp>
@@ -70,7 +71,14 @@ void Stream(const std::string &config_file)
       }
       else
       {
-        valid.push_back(frames[i]);
+        if (frames[i].depth() != CV_8U)
+        {
+          cv::Mat vis;
+          vcp::imvis::pseudocolor::Colorize(frames[i], vcp::imvis::pseudocolor::ColorMap::Turbo, vis, 0, 3000);
+          valid.push_back(vis);
+        }
+        else
+          valid.push_back(frames[i]);
       }
     }
     if (valid.empty())
@@ -83,7 +91,7 @@ void Stream(const std::string &config_file)
     // If they're available, display them. We make a collage (of resized
     // frames) if there are multiple streams to show.
     cv::Mat collage;
-    vcp::imvis::collage::Collage(valid, collage, 2, 0, cv::Size(640, 480));
+    vcp::imvis::collage::Collage(valid, collage, 2, 0, cv::Size(800, 600));
 
     // Display and let the user press ESC to exit.
     cv::imshow("Stream", collage);
@@ -105,10 +113,10 @@ int main(int argc, char **argv)
   VCP_UNUSED_VAR(argv);
 
   const std::vector<std::string> configs = {
-    "data-best/ipcam.cfg"/*,
-    "data-best/image_sequence.cfg",
-    "data-best/video.cfg",
     "data-best/k4a.cfg",
+    /*"data-best/ipcam.cfg",
+    /*"data-best/image_sequence.cfg",
+    "data-best/video.cfg",
     "data-best/webcam.cfg"*/
   };
   for (const auto &c : configs)

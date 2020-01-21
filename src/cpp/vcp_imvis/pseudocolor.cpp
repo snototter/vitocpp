@@ -854,10 +854,12 @@ void Colorize(const cv::Mat &values, const ColorMap &colormap, cv::Mat &colored,
   switch(values.type())
   {
   case CV_8UC1:  ColorLookup<unsigned char>(values, map, colored, limit_from, limit_to); break;
+  case CV_16UC1: ColorLookup<unsigned short>(values, map, colored, limit_from, limit_to); break;
+  case CV_16SC1: ColorLookup<short>(values, map, colored, limit_from, limit_to); break;
   case CV_32FC1: ColorLookup<float>(values, map, colored, limit_from, limit_to); break;
   case CV_32SC1: ColorLookup<int>(values, map, colored, limit_from, limit_to); break;
   case CV_64FC1: ColorLookup<double>(values, map, colored, limit_from, limit_to); break;
-  default: VCP_ERROR("Colorize(): Image type not supported!"); break;
+  default: VCP_ERROR("Colorize(): Image type '" << vcp::imutils::CVMatDepthToString(values.depth()) << "' is not supported!"); break;
   }
 }
 

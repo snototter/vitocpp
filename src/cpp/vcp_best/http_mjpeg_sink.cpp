@@ -110,6 +110,7 @@ public:
 
   bool OpenDevice() override
   {
+    //TODO check if host is up via libcurl (?)
     if (params_.verbose)
       VCP_LOG_INFO_DEFAULT("Opening IP camera connection: " << params_);
 
