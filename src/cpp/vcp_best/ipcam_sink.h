@@ -93,7 +93,8 @@ struct IpCameraSinkParams : SinkParams
   std::string user;
   std::string password;
   IpCameraType ipcam_type;
-  IpApplicationProtocol protocol;
+  IpApplicationProtocol application_protocol;
+  IpTransportProtocol transport_protocol;
   IpStreamEncoding stream_encoding;
   int frame_width;
   int frame_height;
@@ -102,19 +103,21 @@ struct IpCameraSinkParams : SinkParams
 
   IpCameraSinkParams(
       const SinkParams &sink_params,
-      const std::string host,
-      const std::string user=std::string(),
-      const std::string pwd=std::string(),
-      const IpCameraType ipcam_type=IpCameraType::Generic,
-      const IpApplicationProtocol protocol=IpApplicationProtocol::RTSP,
-      const IpStreamEncoding stream_encoding=IpStreamEncoding::H264,
-      const int frame_width=-1,
-      const int frame_height=-1,
-      const int frame_rate=-1,
-      const std::string &custom_url=std::string())
+      const std::string &host,
+      const std::string &user,
+      const std::string &pwd,
+      const IpCameraType &ipcam_type,
+      const IpApplicationProtocol &app_protocol,
+      const IpTransportProtocol &transport_protocol,
+      const IpStreamEncoding &stream_encoding,
+      const int frame_width,
+      const int frame_height,
+      const int frame_rate,
+      const std::string &custom_url)
     : SinkParams(sink_params),
       host(host), user(user), password(pwd),
-      ipcam_type(ipcam_type), protocol(protocol), stream_encoding(stream_encoding),
+      ipcam_type(ipcam_type), application_protocol(app_protocol),
+      transport_protocol(transport_protocol), stream_encoding(stream_encoding),
       frame_width(frame_width), frame_height(frame_height), frame_rate(frame_rate),
       stream_url(custom_url)
   {}
@@ -122,89 +125,8 @@ struct IpCameraSinkParams : SinkParams
 
 std::ostream &operator<< (std::ostream &out, const IpCameraSinkParams &p);
 
-
-///** @brief Configuration parameters for a single IP camera. */
-//struct IpCameraDeviceParams
-//{
-//  std::string host;
-//  std::string user;
-//  std::string password;
-//  IpCameraType ipcam_type;
-//  IpApplicationProtocol protocol;
-//  IpStreamEncoding stream_encoding;
-//  int frame_width;
-//  int frame_height;
-//  int frame_rate; // Must be an int (e.g. VAPIX only supports integer frame rates)
-//  std::string custom_url;
-
-//  IpCameraDeviceParams(
-//      const std::string host,
-//      const std::string user=std::string(),
-//      const std::string pwd=std::string(),
-//      const IpCameraType ipcam_type=IpCameraType::Generic,
-//      const IpApplicationProtocol protocol=IpApplicationProtocol::RTSP,
-//      const IpStreamEncoding stream_encoding=IpStreamEncoding::H264,
-//      const int frame_width=-1,
-//      const int frame_height=-1,
-//      const int frame_rate=-1)
-//    : host(host), user(user), password(pwd),
-//      ipcam_type(ipcam_type), protocol(protocol), stream_encoding(stream_encoding),
-//      frame_width(frame_width), frame_height(frame_height), frame_rate(frame_rate)
-//  {}
-
-
-//  std::string GetStreamingUrl() const;
-//};
-//std::ostream &operator<< (std::ostream &out, const IpCameraDeviceParams &p);
-
-///** @brief Configuration parameters to stream from an IP camera. */
-//struct MonocularIpCameraSinkParams : public SinkParams
-//{
-//  IpCameraDeviceParams ipcam_params;
-
-//  MonocularIpCameraSinkParams(
-//      const SinkParams &sink_params,
-//      const IpCameraDeviceParams &ipcam_params)
-//    : SinkParams(sink_params),
-//      ipcam_params(ipcam_params)
-//  {}
-
-//  friend std::ostream &operator<< (std::ostream &out, const MonocularIpCameraSinkParams &p);
-//};
-
-
-///** @brief Configuration parameters to stream from two IP cameras which define a stereo setup. */
-//struct StereoIpCameraSinkParams : public SinkParams
-//{
-//  IpCameraDeviceParams ipcam_params1;
-//  IpCameraDeviceParams ipcam_params2;
-
-//  StereoIpCameraSinkParams(
-//      const SinkParams &sink_params,
-//      const IpCameraDeviceParams &ipcam_params1,
-//      const IpCameraDeviceParams &ipcam_params2)
-//    : SinkParams(sink_params),
-//      ipcam_params1(ipcam_params1),
-//      ipcam_params2(ipcam_params2)
-//  {}
-
-//  friend std::ostream &operator<< (std::ostream &out, const StereoIpCameraSinkParams &p);
-//};
-
-
-//FIXME
-//struct IpStereoParams
-//{
-//  IpCameraParams left;
-//  IpCameraParams right;
-//};
-
-
-
-
 IpCameraSinkParams MonocularIpCameraSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
 std::pair<IpCameraSinkParams, IpCameraSinkParams> StereoIpCameraSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
-//FIXME IpStereoParams IpStereoParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &setting);
 
 
 

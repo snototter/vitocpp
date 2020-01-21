@@ -16,9 +16,9 @@
 #include "file_sink.h"
 #include "webcam_sink.h"
 
-//#include "rectifier.h"
-#ifdef VCP_BEST_WITH_IPCAMERA
-  #include "capture_ipcam.h"
+//FIXME #include "rectifier.h"
+#ifdef VCP_BEST_WITH_IPCAM
+  #include "ipcam_sink.h"
 #endif
 #ifdef VCP_BEST_WITH_K4A
   #include "k4a_sink.h"
@@ -45,6 +45,7 @@ public:
   MultiDeviceCapture(const vcp::config::ConfigParams &config) : Capture()
   {
     VCP_LOG_DEBUG("MultiDeviceCapture()");
+    num_devices_ = 0;
     LoadConfig(config);
   }
 
@@ -52,11 +53,10 @@ public:
   {
     VCP_LOG_DEBUG("LoadConfig()");
 
-//#ifdef WITH_IPCAMERA
-//    std::vector<MonoIpCameraSinkParams> ip_mono_params;
-//    std::vector<StereoIpCameraSinkParams> ip_stereo_params;
-//#endif
     std::vector<file::ImageDirectorySinkParams> imgdir_params;
+#ifdef VCP_BEST_WITH_IPCAM
+    std::vector<ipcam::IpCameraSinkParams> ipcam_params;
+#endif
 //#ifdef WITH_MATRIXVISION
 //    std::vector<MvBlueFox3SinkParams> mvbluefox_params;
 //#endif
@@ -89,7 +89,19 @@ public:
         case SinkType::WEBCAM:
           webcam_params.push_back(webcam::WebcamSinkParamsFromConfig(config, cam_config_name));
           break;
+#ifdef VCP_BEST_WITH_IPCAM
+        case SinkType::IPCAM_MONOCULAR:
+          ipcam_params.push_back(ipcam::MonocularIpCameraSinkParamsFromConfig(config, cam_config_name));
+          break;
 
+        case SinkType::IPCAM_STEREO:
+          {
+            const auto &stereo_params = ipcam::StereoIpCameraSinkParamsFromConfig(config, cam_config_name);
+            ipcam_params.push_back(stereo_params.first);
+            ipcam_params.push_back(stereo_params.second);
+          }
+          break;
+#endif
 #ifdef VCP_BEST_WITH_K4A
         case SinkType::K4A:
           k4a_params.push_back(k4a::K4ASinkParamsFromConfig(config, cam_config_name));
@@ -106,18 +118,6 @@ public:
           break;
       }
     }
-//#ifdef WITH_IPCAMERA
-//      else if (IsMonocularIpCamera(cam_type))
-//      {
-//        ip_mono_params.push_back(MonoIpCameraSinkParamsFromConfig(config, id.str()));
-//        cck_ip_mono.push_back(id.str());
-//      }
-//      else if (IsStereoIpCamera(cam_type))
-//      {
-//        ip_stereo_params.push_back(StereoIpCameraSinkParamsFromConfig(config, id.str()));
-//        cck_ip_stereo.push_back(id.str());
-//      }
-//#endif // WITH_IPCAMERA
 //#ifdef WITH_MATRIXVISION
 //      else if (IsMatrixVision(cam_type))
 //      {
@@ -128,14 +128,18 @@ public:
 
     // Initialize the individual captures
     for (const auto &p : imgdir_params)
-      AddSink(file::CreateImageDirectorySink(p), p);
+      AddSink(file::CreateImageDirectorySink(p));
 
     for (const auto &p : video_params)
-      AddSink(file::CreateVideoFileSink(p), p);
+      AddSink(file::CreateVideoFileSink(p));
 
     for (const auto &p : webcam_params)
-      AddSink(webcam::CreateWebcamSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p), p);
+      AddSink(webcam::CreateWebcamSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p));
 
+#ifdef VCP_BEST_WITH_IPCAM
+    // Empty vector is gracefully handled by AddSink(nullptr)
+    AddSink(ipcam::CreateIpCameraSink(ipcam_params));
+#endif
 #ifdef WITH_IPCAMERA
     if (!ip_mono_params.empty())
     {
@@ -191,13 +195,20 @@ public:
       AddSink(rs2::CreateRealSense2Sink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p), p);
     multiple_realsenses_ = realsense_params.size() > 1;
 #endif
+
+    num_devices_ = 0;
+    for (const auto &s : sinks_)
+      num_devices_ += s->NumDevices();
   }
 
-  void AddSink(std::unique_ptr<StreamSink> sink, const SinkParams params)
+  void AddSink(std::unique_ptr<StreamSink> sink)
   {
+    if (sink == nullptr)
+      return;
+
     for (size_t i = 0; i < sink->NumStreams(); ++i)
     {
-      sink_params_.push_back(params);
+      sink_params_.push_back(sink->SinkParamsAt(i));
       frame_types_.push_back(sink->FrameTypeAt(i));
       frame_labels_.push_back(sink->StreamLabel(i));
     }
@@ -227,7 +238,7 @@ public:
       else
       {
         for (const auto &p : k4a_params)
-          AddSink(k4a::CreateK4ASink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p), p);
+          AddSink(k4a::CreateK4ASink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p));
       }
     }
 #endif // VCP_BEST_WITH_K4A
@@ -248,7 +259,7 @@ public:
 
   size_t NumDevices() const override
   {
-    return sinks_.size();
+    return num_devices_;
   }
 
   std::vector<std::string> ConfigurationKeys() const override
@@ -440,6 +451,7 @@ private:
   std::vector<FrameType> frame_types_; // Note: they will be per stream/frame, not per device
   std::vector<SinkParams> sink_params_; // Note: they will be per stream/frame, not per device
   std::vector<std::string> frame_labels_;
+  size_t num_devices_;
 #ifdef VCP_BEST_DEBUG_FRAMERATE
   std::chrono::high_resolution_clock::time_point prev_frame_timestamp_;
   double ms_between_frames_;

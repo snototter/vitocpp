@@ -186,11 +186,16 @@ public:
   /** @brief Returns the number of streams/frames this sink delivers upon Next() - or, if supported, Previous() and FastForward(). */
   virtual size_t NumStreams() const = 0;
 
+  /** @brief Returns the number of physical devices - usually 1 (might differ for example for IP camera streams - 1 device can serve multiple streams). */
+  virtual size_t NumDevices() const = 0;
+
   //TODO doc
   //virtual SinkType Type(size_t stream_index) const = 0;
   virtual FrameType FrameTypeAt(size_t stream_index) const = 0;
 
   virtual std::string StreamLabel(size_t stream_index) const = 0;
+
+  virtual SinkParams SinkParamsAt(size_t stream_index) const = 0;
 };
 
 

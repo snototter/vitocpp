@@ -105,10 +105,11 @@ int main(int argc, char **argv)
   VCP_UNUSED_VAR(argv);
 
   const std::vector<std::string> configs = {
+    "data-best/ipcam.cfg"/*,
     "data-best/image_sequence.cfg",
     "data-best/video.cfg",
     "data-best/k4a.cfg",
-    "data-best/webcam.cfg"
+    "data-best/webcam.cfg"*/
   };
   for (const auto &c : configs)
     Stream(c);

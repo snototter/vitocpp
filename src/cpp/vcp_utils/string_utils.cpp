@@ -165,7 +165,7 @@ std::string ObscureUrlAuthentication(const std::string &url)
   if (at_pos == std::string::npos)
     return url;
 
-  const std::string obscured = "<userinfo>" + clipped.substr(at_pos);
+  const std::string obscured = "<auth>" + clipped.substr(at_pos);
   if (has_protocol)
     return protocol + obscured;
   return obscured;

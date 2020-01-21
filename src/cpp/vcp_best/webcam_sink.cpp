@@ -73,6 +73,14 @@ namespace webcam
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::best::webcam"
 
+
+std::ostream &operator<< (std::ostream &out, const WebcamSinkParams &p)
+{
+  out << p.sink_label << ", device " << p.device_number;
+  return out;
+}
+
+
 #ifdef WITH_FFMPEG
 #error "This needs to be properly investigated - currently, we observe "rolling shutter"-like effects for HD webcams"
   class WebcamSink : public StreamSink
@@ -387,6 +395,9 @@ public:
 
   bool OpenDevice() override
   {
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Opening webcam: " << params_);
+
     if (capture_ && capture_->isOpened())
     {
       VCP_LOG_FAILURE("Webcam #" << params_.device_number << " already opened - ignoring OpenDevice() call");
@@ -416,7 +427,8 @@ public:
       }
 
       params_.device_number = std::atoi(devices[0].substr(5).c_str()); // Strip the beginning 'video'
-      VCP_LOG_DEBUG("Trying to open webcam /dev/" << devices[0]);
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Trying to open webcam /dev/" << devices[0]);
 #else
       VCP_LOG_FAILURE("Searching for a webcam is only supported on unix-based operating systems!");
       return false
@@ -455,8 +467,6 @@ public:
       capture_->set(cv::CAP_PROP_FPS, params_.fps);
 #endif
     }
-    if (params_.verbose)
-      VCP_LOG_INFO_DEFAULT("Successfully opened webcam #" << params_.device_number);
     return true;
   }
 
@@ -558,6 +568,17 @@ public:
   {
     VCP_UNUSED_VAR(stream_index);
     return params_.sink_label;
+  }
+
+  SinkParams SinkParamsAt(size_t stream_index) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return params_;
+  }
+
+  size_t NumDevices() const override
+  {
+    return 1;
   }
 
 private:

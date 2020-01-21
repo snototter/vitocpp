@@ -34,6 +34,8 @@ public:
       params_(params), eof_(true)
   {
     VCP_LOG_DEBUG("TimedVideoFileSink()");
+    if (params_.fps <= 0.0)
+      VCP_ERROR("Frame rate for a TimedVideoFileSink must be > 0.");
   }
 
   virtual ~TimedVideoFileSink()
@@ -171,10 +173,21 @@ public:
     return params_.frame_type;
   }
 
+  SinkParams SinkParamsAt(size_t stream_index) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return params_;
+  }
+
   std::string StreamLabel(size_t stream_index) const override
   {
     VCP_UNUSED_VAR(stream_index);
     return params_.sink_label;
+  }
+
+  size_t NumDevices() const override
+  {
+    return 1;
   }
 
 private:
@@ -442,6 +455,12 @@ public:
     return 1;
   }
 
+  SinkParams SinkParamsAt(size_t stream_index) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return params_;
+  }
+
   FrameType FrameTypeAt(size_t stream_index) const override
   {
     VCP_UNUSED_VAR(stream_index);
@@ -452,6 +471,11 @@ public:
   {
     VCP_UNUSED_VAR(stream_index);
     return params_.sink_label;
+  }
+
+  size_t NumDevices() const override
+  {
+    return 1;
   }
 
 private:
@@ -475,9 +499,11 @@ public:
     VCP_LOG_DEBUG("~ImageDirectorySink()");
   }
 
+  //TODO log if params.verbose for all file sinks
   bool OpenDevice() override
   {
-    VCP_LOG_DEBUG("OpenDevice()");
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Opening image sequence '" << params_.directory << "'");
     if (!vcp::utils::file::IsDir(params_.directory))
     {
       VCP_LOG_FAILURE("Cannot access '" << params_.directory << "'");
@@ -643,6 +669,18 @@ public:
   {
     VCP_UNUSED_VAR(stream_index);
     return params_.sink_label;
+  }
+
+
+  SinkParams SinkParamsAt(size_t stream_index) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return params_;
+  }
+
+  size_t NumDevices() const override
+  {
+    return 1;
   }
 
 

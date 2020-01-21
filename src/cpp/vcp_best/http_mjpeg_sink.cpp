@@ -4,12 +4,21 @@
 #include <mutex>
 #include <atomic>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
+// TODO add DEBUG FRAMERATE code
+
+// TODO we should use this opencv version selection for every file :-/
+#if CV_VERSION_MAJOR > 2
+  #include <opencv2/core.hpp>
+  #include <opencv2/highgui.hpp>
+  #include <opencv2/imgproc.hpp>
+#else
+  #include <opencv2/core/core.hpp>
+  #include <opencv2/highgui/highgui.hpp>
+  #include <opencv2/imgproc/imgproc.hpp>
+#endif
 
 #include "curl_file_handling.h"
 #include <vcp_utils/vcp_error.h>
-#include <vcp_utils/string_utils.h>
 
 namespace vcp
 {
@@ -101,23 +110,29 @@ public:
 
   bool OpenDevice() override
   {
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Opening IP camera connection: " << params_);
+
     if (mjpg_stream_)
     {
-      VCP_LOG_FAILURE("HTTP/MJPEG stream '" << params_.stream_url << "' is already initialized.");
+      VCP_LOG_FAILURE("HTTP/MJPEG stream is already initialized: " << params_);
       return false;
     }
-    if (params_.verbose)
-      VCP_LOG_INFO_DEFAULT("Opening HTTP/MJPEG stream '" << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url) << "'");
+    if (params_.transport_protocol != IpTransportProtocol::TCP)
+      VCP_LOG_WARNING("HTTP/MJPEG streams can only use TCP (curl default): " << params_);
+
     mjpg_stream_ = url_fopen(&mjpg_multi_handle_, params_.stream_url.c_str(), "r");
     return mjpg_stream_ != nullptr;
   }
 
   bool CloseDevice() override
   {
+    StopStreaming();
+
     if (mjpg_stream_)
     {
       if (params_.verbose)
-        VCP_LOG_INFO_DEFAULT("Closing HTTP/MJPEG stream '" << params_.stream_url << "'");
+        VCP_LOG_INFO_DEFAULT("Closing IP camera connection: '" << params_ << "'");
       url_fclose(&mjpg_multi_handle_, mjpg_stream_);
       mjpg_stream_ = nullptr;
     }
@@ -128,12 +143,12 @@ public:
   {
     if (!mjpg_stream_)
     {
-      VCP_LOG_FAILURE("Cannot open HTTP/MJPEG stream '" << params_.stream_url << "'");
+      VCP_LOG_FAILURE("IP camera has not been opened yet: " << params_);
       return false;
     }
 
     if (params_.verbose)
-      VCP_LOG_INFO_DEFAULT("Starting HTTP/MJPEG stream '" << params_.stream_url << "'");
+      VCP_LOG_INFO_DEFAULT("Starting IP camera stream " << params_);
 
     continue_stream_ = true;
     stream_thread_ = std::thread(&HttpMjpegSink::Receive, this);
@@ -145,12 +160,23 @@ public:
     if (continue_stream_)
     {
       if (params_.verbose)
-        VCP_LOG_INFO_DEFAULT("Stopping HTTP/MJPEG stream '" << params_.stream_url << "'");
+        VCP_LOG_INFO_DEFAULT("Stopping IP camera stream: " << params_);
       // Stop receiver thread.
       continue_stream_ = false;
       stream_thread_.join();
     }
     return true;
+  }
+
+  SinkParams SinkParamsAt(size_t stream_index) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return params_;
+  }
+
+  size_t NumDevices() const override
+  {
+    return 1;
   }
 
 
@@ -185,7 +211,7 @@ private:
       if (jpeg_bytes == 0)
       {
         //TODO camera reboot should be detected here!
-        VCP_LOG_FAILURE("No bytes have been received");
+        VCP_LOG_FAILURE("IP camera received no bytes: " << params_);
         ++frame_drop_cnt;
         if (frame_drop_cnt > 10000)
         {
@@ -202,7 +228,7 @@ private:
 
       if (!frame_data)
       {
-        VCP_LOG_FAILURE("Cannot allocate frame buffer");
+        VCP_LOG_FAILURE("Cannot allocate frame buffer: " << params_);
         continue;
       }
 
@@ -211,7 +237,7 @@ private:
 
       if(!frame_data)
       {
-        VCP_LOG_FAILURE("Cannot retrieve frame data from URL handle");
+        VCP_LOG_FAILURE("Cannot retrieve frame data from URL handle: " << params_);
         continue;
       }
 
@@ -220,7 +246,12 @@ private:
       // Finished reading a frame, now convert!
 
       cv::Mat buf(1, jpeg_bytes, CV_8UC1, (void *)frame_data);
-      cv::Mat frame = cv::imdecode(buf, CV_LOAD_IMAGE_COLOR);
+      cv::Mat decoded = cv::imdecode(buf, CV_LOAD_IMAGE_UNCHANGED);
+      cv::Mat frame;
+      if (params_.color_as_bgr)
+        frame = decoded;
+      else
+        cv::cvtColor(decoded, frame, CV_BGR2RGB);
 
       image_queue_mutex_.lock();
       image_queue_->PushBack(frame.clone());

@@ -113,7 +113,13 @@ public:
   virtual size_t NumStreams() const = 0;
 
 
-  /** @brief returns the number of devices/sinks (NOT the number of streams/frames). */
+  /** @brief returns the number of devices/sinks (NOT the number of streams/frames).
+   *
+   * While this number corresponds to the number of "software sinks" used in VCP,
+   * it may not be exactly the number of physical devices: For example, you could
+   * configure 2 IP streams from the same device, one configured by its IP and the
+   * other by its hostname. Handling such cases would be too complex.
+   */
   virtual size_t NumDevices() const = 0;
 
 

@@ -7,7 +7,6 @@
 #include <opencv2/core/core.hpp>
 #include "sink.h"
 
-//FIXME make namespace vcp::best::file, vcp::best::webcam, vcp::best::k4a
 namespace vcp
 {
 namespace best
@@ -67,7 +66,7 @@ VideoFileSinkParams VideoFileSinkParamsFromConfig(const vcp::config::ConfigParam
 /** @brief Parses the configuration group "cam_param" into an ImageDirectorySinkParams configuration. */
 ImageDirectorySinkParams ImageDirectorySinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
 
-//FIXME replace by templated (create buffered sink...) version!
+//FIXME replace by templated (create buffered sink...) version (and delete sink buffer for seekable videofilesink)
 /** @brief Returns a StreamSink wrapper to access video files. */
 std::unique_ptr<StreamSink> CreateVideoFileSink(const VideoFileSinkParams &params);
 

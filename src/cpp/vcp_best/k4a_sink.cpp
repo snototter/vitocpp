@@ -577,6 +577,19 @@ public:
   }
 
 
+  SinkParams SinkParamsAt(size_t stream_index) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return params_;
+  }
+
+
+  size_t NumDevices() const override
+  {
+    return 1;
+  }
+
+
   int IsFrameAvailable() const override
   {
     // Should only return true, if all enabled streams have a frame available.

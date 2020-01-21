@@ -28,6 +28,9 @@ struct WebcamSinkParams : public SinkParams
   {}
 };
 
+std::ostream &operator<< (std::ostream &out, const WebcamSinkParams &p);
+
+
 /** @brief Given the cameraXX.type (configuration) parameter, checks if the configuration belongs to a WebcamSink. */
 bool IsWebcamSink(const std::string &type_param);
 
