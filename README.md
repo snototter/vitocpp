@@ -1,6 +1,7 @@
 # vitocpp (VCP)
 C++/Python 3 utilities for common vision tasks, e.g. streaming, visualization or image manipulation.
 
+<b>Note:</b> As of 01/2020 this repository is <b>WIP</b>, I'm rewriting my utilities (especially simplifying the streaming module) over the next couple of months.
 
 ## What is it good for?
 Some of `vcp`'s highlights:
@@ -12,19 +13,20 @@ Some of `vcp`'s highlights:
          1  kinect-depth  rgbd-depth  sink-k4a
          2  kinect-ir     infrared    sink-k4a
          3  zed-stereo    stereo      sink-webcam 
-         4  ip-cam-axis   monocular   sink-axis
+         4  ipcam-left    monocular   sink-axis
+         5  ipcam-right   monocular   sink-axis
   --------------------------------------------------
-    4 streams from 3 devices
+    6 streams from 4 devices
     * Devices are available
     * Frames are enqueued
   ```
   What if I told you that the corresponding configuration file simply looks like this:
   ```C++
-  // TODO adjust axis/ipcam parameters
-
   sink-k4a = {
     // Mandatory parameter, specifying the device/sink type.
     sink_type = "k4a";
+
+    // Optional custom label.
     label = "kinect";
 
     // Take any available Azure Kinect 4K.
@@ -32,17 +34,27 @@ Some of `vcp`'s highlights:
   };
 
   sink-webcam = {
+    // ZED acts like any other webcam...
     sink_type = "webcam";
+
+    // ... except that it yields a single frame, with left and right view concatenated.
+    frame_type = "stereo";
+  
+    // Optional custom label.
     label = "zed-stereo";
+
+    // It's the first/only webcam plugged in.
     device_number = -1;
   };
 
   sink-axis = {
-    sink_type = "axis";
-    host = "192.168.1.1";
+    sink_type = "axis-stereo";
+    label = "ipcam";
+    host_left = "192.168.1.20";
+    host_right = "192.168.1.21";
   };
   ```
-  Ok, easy is fine - but how complex can it get (if you don't want to use the default device settings)? This is explained here <= TODO add separate BESt readme!
+  TODO add separate BESt README to show more complex configs (e.g. adjusting RealSense/K4A/MatrixVision camera parameters).
 * Nice(r) visualizations with less effort than plain OpenCV (have you ever tried to render a 3D bounding box?)
 TODO example images (drawingXY)
 * Pseudocoloring for data visualization/analysis.
@@ -153,9 +165,11 @@ Testing requires `gtest`, which you'll probably need to build yourself - this is
   * [ ] Rectify streams
   * [x] File sinks
   * [x] Webcam sink
-  * [ ] HTTP sink
+  * [x] HTTP sink
   * [ ] RTSP sink
   * [ ] Monocular/stereo
+    * [x] Stereo IP cam streams as separate monocular sinks
+    * [ ] "Real" stereo cams (e.g. ZED) could be split in VCP or by the library user (currently, the latter is preferred)
   * [ ] RealSense
   * [ ] Azure Kinect
     * [x] Stream raw data
