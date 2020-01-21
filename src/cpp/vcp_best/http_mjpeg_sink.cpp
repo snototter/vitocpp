@@ -8,8 +8,8 @@
 #include <opencv2/highgui/highgui.hpp>
 
 #include "curl_file_handling.h"
-
 #include <vcp_utils/vcp_error.h>
+#include <vcp_utils/string_utils.h>
 
 namespace vcp
 {
@@ -27,43 +27,42 @@ namespace http
 class HttpMjpegSink: public StreamSink
 {
 public:
-  HttpMjpegSink(const std::string &stream_url, std::unique_ptr<SinkBuffer> sink_buffer) : StreamSink(),
-    mjpg_stream_(nullptr), mjpg_multi_handle_(nullptr), continue_stream_(false),
-    stream_url_(stream_url), is_stream_available_(false), image_queue_(std::move(sink_buffer))
+  HttpMjpegSink(const IpCameraSinkParams &params, std::unique_ptr<SinkBuffer> sink_buffer) : StreamSink(),
+    params_(params), mjpg_stream_(nullptr), mjpg_multi_handle_(nullptr), continue_stream_(false),
+    is_stream_available_(false), image_queue_(std::move(sink_buffer))
   {
   }
 
   virtual ~HttpMjpegSink()
   {
-    CloseStream();
+    CloseDevice();
   }
 
-  void StartStream() override
-  {
-    InitStream(stream_url_);
-    stream_thread_ = std::thread(&HttpMjpegSink::Receive, this);
-  }
 
-  void Terminate() override
+  std::vector<cv::Mat> Next() override
   {
-    CloseStream();
-  }
-
-  void GetNextFrame(cv::Mat &frame) override
-  {
+    std::vector<cv::Mat> frames;
     image_queue_mutex_.lock();
     if (image_queue_->Empty())
     {
-      frame = cv::Mat();
+      frames.push_back(cv::Mat());
     }
     else
     {
       // Retrieve oldest image in queue.
-      frame = image_queue_->Front().clone();
+      frames.push_back(image_queue_->Front().clone());
       image_queue_->PopFront();
     }
     image_queue_mutex_.unlock();
+    return frames;
   }
+
+
+  size_t NumAvailableFrames() const override
+  {
+    return static_cast<size_t>(IsFrameAvailable());
+  }
+
 
   int IsDeviceAvailable() const override
   {
@@ -71,6 +70,7 @@ public:
       return 1;
     return 0;
   }
+
 
   int IsFrameAvailable() const override
   {
@@ -82,32 +82,88 @@ public:
     return 1;
   }
 
+  size_t NumStreams() const override
+  {
+    return 1;
+  }
+
+  FrameType FrameTypeAt(size_t stream_index) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return params_.frame_type;
+  }
+
+  std::string StreamLabel(size_t stream_index) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return params_.sink_label;
+  }
+
+  bool OpenDevice() override
+  {
+    if (mjpg_stream_)
+    {
+      VCP_LOG_FAILURE("HTTP/MJPEG stream '" << params_.stream_url << "' is already initialized.");
+      return false;
+    }
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Opening HTTP/MJPEG stream '" << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url) << "'");
+    mjpg_stream_ = url_fopen(&mjpg_multi_handle_, params_.stream_url.c_str(), "r");
+    return mjpg_stream_ != nullptr;
+  }
+
+  bool CloseDevice() override
+  {
+    if (mjpg_stream_)
+    {
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Closing HTTP/MJPEG stream '" << params_.stream_url << "'");
+      url_fclose(&mjpg_multi_handle_, mjpg_stream_);
+      mjpg_stream_ = nullptr;
+    }
+    return true;
+  }
+
+  bool StartStreaming() override
+  {
+    if (!mjpg_stream_)
+    {
+      VCP_LOG_FAILURE("Cannot open HTTP/MJPEG stream '" << params_.stream_url << "'");
+      return false;
+    }
+
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Starting HTTP/MJPEG stream '" << params_.stream_url << "'");
+
+    continue_stream_ = true;
+    stream_thread_ = std::thread(&HttpMjpegSink::Receive, this);
+    return true;
+  }
+
+  bool StopStreaming() override
+  {
+    if (continue_stream_)
+    {
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Stopping HTTP/MJPEG stream '" << params_.stream_url << "'");
+      // Stop receiver thread.
+      continue_stream_ = false;
+      stream_thread_.join();
+    }
+    return true;
+  }
+
+
 private:
+  IpCameraSinkParams params_;
   URL_FILE *mjpg_stream_;
   CURLM *mjpg_multi_handle_;
   bool continue_stream_;
-  std::string stream_url_;
 
   std::thread stream_thread_;
   std::atomic<bool> is_stream_available_;
   mutable std::mutex image_queue_mutex_;
   std::unique_ptr<SinkBuffer> image_queue_;
-
-  void InitStream(const std::string &stream_url)
-  {
-    if (mjpg_stream_)
-    {
-      VCP_ERROR("HttpMJPEGSink on '" << stream_url << "' already initialized");
-    }
-
-    mjpg_stream_ = url_fopen(&mjpg_multi_handle_, stream_url.c_str(), "r");
-
-    if (!mjpg_stream_)
-    {
-      PVT_EXIT("Cannot open MJPEG stream to " << stream_url);
-    }
-    continue_stream_ = true;
-  }
 
   void Receive()
   {
@@ -128,13 +184,11 @@ private:
 
       if (jpeg_bytes == 0)
       {
-        //TODO detect camera reboot here!!!!!
-        PVT_LOG_FAILURE("No bytes have been received");
+        //TODO camera reboot should be detected here!
+        VCP_LOG_FAILURE("No bytes have been received");
         ++frame_drop_cnt;
         if (frame_drop_cnt > 10000)
         {
-          //continue_stream_ = false; // Otherwise we'll end up in a resource deadlock
-          //CloseStream();
           is_stream_available_ = false;
         }
         continue;
@@ -148,7 +202,7 @@ private:
 
       if (!frame_data)
       {
-        PVT_LOG_FAILURE("Cannot allocate frame buffer");
+        VCP_LOG_FAILURE("Cannot allocate frame buffer");
         continue;
       }
 
@@ -157,7 +211,7 @@ private:
 
       if(!frame_data)
       {
-        PVT_LOG_FAILURE("Cannot retrieve frame data from URL handle");
+        VCP_LOG_FAILURE("Cannot retrieve frame data from URL handle");
         continue;
       }
 
@@ -174,30 +228,11 @@ private:
       delete[] frame_data;
     }
   }
-
-  void CloseStream()
-  {
-    if (continue_stream_)
-    {
-      // Stop receiver thread.
-      continue_stream_ = false;
-
-      stream_thread_.join();
-    }
-    if (mjpg_stream_)
-    {
-      PVT_LOG_TIMED("Closing Stream");
-      // Close stream.
-      url_fclose(&mjpg_multi_handle_, mjpg_stream_);
-      mjpg_stream_ = nullptr;
-      PVT_LOG_TIMED("Stream closed!");
-    }
-  }
 };
 
-std::unique_ptr<StreamSink> CreateBufferedHttpMjpegSink(const std::string &stream_url, std::unique_ptr<SinkBuffer> sink_buffer)
+std::unique_ptr<StreamSink> CreateBufferedHttpMjpegSink(const IpCameraSinkParams &params, std::unique_ptr<SinkBuffer> sink_buffer)
 {
-  return std::unique_ptr<HttpMjpegSink>(new HttpMjpegSink(stream_url, std::move(sink_buffer)));
+  return std::unique_ptr<HttpMjpegSink>(new HttpMjpegSink(params, std::move(sink_buffer)));
 }
 
 } // namespace http

@@ -21,7 +21,7 @@ namespace best
 {
 namespace ipcam
 {
-std::string GetAxisRtspUrl(const IpCameraDeviceParams &p)
+std::string GetAxisRtspUrl(const IpCameraSinkParams &p)
 {
   std::string codec;
   if (p.stream_encoding == IpStreamEncoding::MJPEG)
@@ -48,7 +48,7 @@ std::string GetAxisRtspUrl(const IpCameraDeviceParams &p)
 }
 
 
-std::string GetAxisHttpUrl(const IpCameraDeviceParams &p)
+std::string GetAxisHttpUrl(const IpCameraSinkParams &p)
 {
   if (p.stream_encoding != IpStreamEncoding::MJPEG)
     VCP_ERROR("Axis can only stream MJPEG over HTTP, either change stream type or protocol!");
@@ -65,11 +65,11 @@ std::string GetAxisHttpUrl(const IpCameraDeviceParams &p)
 }
 
 
-std::string GetAxisUrl(const IpCameraDeviceParams &p)
+std::string GetAxisUrl(const IpCameraSinkParams &p)
 {
-  if (p.protocol == IpProtocol::HTTP)
+  if (p.protocol == IpApplicationProtocol::HTTP)
     return GetAxisHttpUrl(p);
-  if (p.protocol == IpProtocol::RTSP)
+  if (p.protocol == IpApplicationProtocol::RTSP)
     return GetAxisRtspUrl(p);
   VCP_ERROR("Protocol type for Axis streaming must be HTTP or RTSP");
 }
@@ -77,7 +77,7 @@ std::string GetAxisUrl(const IpCameraDeviceParams &p)
 
 //std::string GetMobotixUrl(const pvt::icc::ipcam::IpCameraParams &p)
 //{
-//  if (p.protocol == ipcam::IpProtocol::HTTP && p.stream_type == ipcam::IpStreamEncoding::MJPEG)
+//  if (p.protocol == ipcam::IpApplicationProtocol::HTTP && p.stream_type == ipcam::IpStreamEncoding::MJPEG)
 //  {
 //    std::stringstream url;
 //    url << "http://";
@@ -92,7 +92,7 @@ std::string GetAxisUrl(const IpCameraDeviceParams &p)
 
 //std::string GetHikvisionUrl(const pvt::icc::ipcam::IpCameraParams &p)
 //{
-//  if (p.protocol == ipcam::IpProtocol::RTSP && p.stream_type == ipcam::IpStreamEncoding::H264)
+//  if (p.protocol == ipcam::IpApplicationProtocol::RTSP && p.stream_type == ipcam::IpStreamEncoding::H264)
 //  {
 //    std::stringstream url;
 //    url << "rtsp://";
@@ -105,37 +105,72 @@ std::string GetAxisUrl(const IpCameraDeviceParams &p)
 //}
 
 
-std::ostream &operator<<(std::ostream &stream, const IpProtocol &s)
+std::ostream &operator<<(std::ostream &stream, const IpApplicationProtocol &s)
 {
-  stream << IpProtocolToString(s);
+  stream << IpApplicationProtocolToString(s);
   return stream;
 }
 
 
-std::string IpProtocolToString(const IpProtocol &p)
+std::string IpApplicationProtocolToString(const IpApplicationProtocol &p)
 {
   switch(p)
   {
-    case IpProtocol::HTTP:
+    case IpApplicationProtocol::HTTP:
       return "http";
-    case IpProtocol::RTSP:
+    case IpApplicationProtocol::RTSP:
       return "rtsp";
     default:
-      VCP_ERROR("IP protocol '" << static_cast<int>(p) << "' is not yet mapped.");
+      VCP_ERROR("IP application protocol '" << static_cast<int>(p) << "' is not yet mapped.");
   }
 }
 
 
-IpProtocol IpProtocolFromString(const std::string &protocol)
+IpApplicationProtocol IpApplicationProtocolFromString(const std::string &protocol)
 {
   std::string lower(protocol);
   vcp::utils::string::ToLower(lower);
   if (lower.compare("http") == 0)
-    return IpProtocol::HTTP;
+    return IpApplicationProtocol::HTTP;
   if (lower.compare("rtsp") == 0)
-    return IpProtocol::RTSP;
+    return IpApplicationProtocol::RTSP;
 
-  VCP_ERROR("Protocol '" << protocol << "' not yet mapped.");
+  VCP_ERROR("IP application protocol '" << protocol << "' not yet mapped.");
+}
+
+
+
+std::ostream &operator<<(std::ostream &stream, const IpTransportProtocol &s)
+{
+  stream << IpTransportProtocolToString(s);
+  return stream;
+}
+
+
+std::string IpTransportProtocolToString(const IpTransportProtocol &p)
+{
+  switch(p)
+  {
+    case IpTransportProtocol::TCP:
+      return "tcp";
+    case IpTransportProtocol::UDP:
+      return "udp";
+    default:
+      VCP_ERROR("IP transport protocol '" << static_cast<int>(p) << "' is not yet mapped.");
+  }
+}
+
+
+IpTransportProtocol IpTransportProtocolFromString(const std::string &protocol)
+{
+  std::string lower(protocol);
+  vcp::utils::string::ToLower(lower);
+  if (lower.compare("tcp") == 0)
+    return IpTransportProtocol::TCP;
+  if (lower.compare("udp") == 0)
+    return IpTransportProtocol::UDP;
+
+  VCP_ERROR("IP transport protocol '" << protocol << "' not yet mapped.");
 }
 
 
@@ -216,9 +251,9 @@ std::string IpCameraTypeToString(const IpCameraType &c)
 }
 
 
-std::ostream &operator<< (std::ostream &out, const IpCameraDeviceParams &p)
+std::ostream &operator<< (std::ostream &out, const IpCameraSinkParams &p)
 {
-  out << "IP Camera: " << p.host << IpProtocolToString(p.protocol) << "/" << IpStreamEncodingToString(p.stream_encoding);
+  out << "IP Camera: " << p.host << IpApplicationProtocolToString(p.protocol) << "/" << IpStreamEncodingToString(p.stream_encoding);
   if (p.frame_width > 0 && p.frame_height > 0)
     out << ", " << p.frame_width << " x " << p.frame_height;
   if (p.frame_rate > 0)
@@ -226,265 +261,250 @@ std::ostream &operator<< (std::ostream &out, const IpCameraDeviceParams &p)
   return out;
 }
 
-std::string IpCameraDeviceParams::GetStreamingUrl() const
+std::string GetStreamingUrl(const IpCameraSinkParams &p)
 {
-  // If you need to find a new streaming URL, you might find it at https://www.ispyconnect.com/man.aspx?n=Siqura
-  switch(ipcam_type)
+  // If you need to search for a new streaming URL, you might find it at https://www.ispyconnect.com/man.aspx?n=Siqura
+  switch(p.ipcam_type)
   {
     case ipcam::IpCameraType::Generic:
-      return custom_url;
+      return p.stream_url;
     case ipcam::IpCameraType::Axis:
-      return GetAxisUrl(*this);
+      return GetAxisUrl(p);
 //    case ipcam::IpCameraType::Mobotix:
 //      return GetMobotixUrl(this);
 //    case ipcam::IpCameraType::Hikvision:
 //      return GetHikvisionUrl(this);
     default:
-      VCP_ERROR("URL lookup for IpCameraType '" << ipcam_type << "' is not yet implemented.");
+      VCP_ERROR("URL lookup for IpCameraType '" << p.ipcam_type << "' is not yet implemented.");
   }
 }
 
-
-IpCameraDeviceParams ParseIpCameraDeviceParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &prefix, const std::string &postfix, std::vector<std::string> &configured_keys)
+// Internal helper
+IpCameraSinkParams ParseIpCameraSinkParams(const vcp::config::ConfigParams &config, const std::string &cam_param, const std::string &postfix)
 {
-  const std::string host = config.GetString(prefix + ".host" + postfix);
-  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "host" + postfix), configured_keys.end());
+  std::vector<std::string> configured_keys = config.ListConfigGroupParameters(cam_param);
+  const SinkParams sink_params = ParseBaseSinkParamsFromConfig(config, cam_param, configured_keys);
 
+  const std::string host = config.GetString(cam_param + ".host" + postfix);
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "host" + postfix), configured_keys.end());
 
   // In a stereo setup, user/pwd can be given once ("user"/"password") or for each device separately ("user_left"/"password_left")
   std::string user = std::string();
-  if (config.SettingExists(prefix + ".user" + postfix))
+  if (config.SettingExists(cam_param + ".user" + postfix))
   {
-    user = config.GetString(prefix + ".user" + postfix);
+    user = config.GetString(cam_param + ".user" + postfix);
     configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "user" + postfix), configured_keys.end());
   }
-  else if (config.SettingExists(prefix + ".user"))
+  else if (config.SettingExists(cam_param + ".user"))
   {
-    user = config.GetString(prefix + ".user");
+    user = config.GetString(cam_param + ".user");
     configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "user"), configured_keys.end());
   }
 
   std::string pwd = std::string();
-  if (config.SettingExists(prefix + ".password" + postfix))
+  if (config.SettingExists(cam_param + ".password" + postfix))
   {
-    user = config.GetString(prefix + ".password" + postfix);
+    user = config.GetString(cam_param + ".password" + postfix);
     configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "password" + postfix), configured_keys.end());
   }
-  else if (config.SettingExists(prefix + ".pwd" + postfix))
+  else if (config.SettingExists(cam_param + ".pwd" + postfix))
   {
-    user = config.GetString(prefix + ".pwd" + postfix);
+    user = config.GetString(cam_param + ".pwd" + postfix);
     configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "pwd" + postfix), configured_keys.end());
   }
-  else if (config.SettingExists(prefix + ".password"))
+  else if (config.SettingExists(cam_param + ".password"))
   {
-    user = config.GetString(prefix + ".password");
+    user = config.GetString(cam_param + ".password");
     configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "password"), configured_keys.end());
   }
-  else if (config.SettingExists(prefix + ".pwd"))
+  else if (config.SettingExists(cam_param + ".pwd"))
   {
-    user = config.GetString(prefix + ".pwd");
+    user = config.GetString(cam_param + ".pwd");
     configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "pwd"), configured_keys.end());
   }
 
-  const IpCameraType ipcam_type = IpCameraTypeFromString(GetSinkTypeStringFromConfig(config, prefix, &configured_keys));
+  const IpCameraType ipcam_type = IpCameraTypeFromString(GetSinkTypeStringFromConfig(config, cam_param, &configured_keys));
 
-  const IpProtocol protocol =
-      config.SettingExists(prefix + ".protocol") ? IpProtocolFromString(config.GetString(prefix + ".protocol")) : IpProtocol::RTSP;
+  const IpApplicationProtocol protocol =
+      config.SettingExists(cam_param + ".protocol") ? IpApplicationProtocolFromString(config.GetString(cam_param + ".protocol")) : IpApplicationProtocol::RTSP;
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "protocol"), configured_keys.end());
 
   const IpStreamEncoding stream_encoding =
-      config.SettingExists(prefix + ".encoding") ? IpStreamEncodingFromString(config.GetString(prefix + ".encoding")) : IpStreamEncoding::H264;
+      config.SettingExists(cam_param + ".encoding") ? IpStreamEncodingFromString(config.GetString(cam_param + ".encoding")) : IpStreamEncoding::H264;
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "encoding"), configured_keys.end());
 
   const int frame_width =
-      config.SettingExists(prefix + ".frame_width") ? config.GetInteger(prefix + ".frame_width") : -1;
+      config.SettingExists(cam_param + ".frame_width") ? config.GetInteger(cam_param + ".frame_width") : -1;
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "frame_width"), configured_keys.end());
 
   const int frame_height =
-      config.SettingExists(prefix + ".frame_height") ? config.GetInteger(prefix + ".frame_height") : -1;
+      config.SettingExists(cam_param + ".frame_height") ? config.GetInteger(cam_param + ".frame_height") : -1;
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "frame_height"), configured_keys.end());
 
   int frame_rate = -1;
-  if (config.SettingExists(prefix + ".frame_rate"))
+  if (config.SettingExists(cam_param + ".frame_rate"))
   {
-    frame_rate = config.GetInteger(prefix + ".frame_rate");
+    frame_rate = config.GetInteger(cam_param + ".frame_rate");
     configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "frame_rate"), configured_keys.end());
   }
-  else if (config.SettingExists(prefix + ".fps"))
+  else if (config.SettingExists(cam_param + ".fps"))
   {
-    frame_rate = config.GetInteger(prefix + ".fps");
+    frame_rate = config.GetInteger(cam_param + ".fps");
     configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "fps"), configured_keys.end());
   }
-  return IpCameraDeviceParams(host, user, pwd, ipcam_type, protocol, stream_encoding, frame_width, frame_height, frame_rate);
-}
-
-MonocularIpCameraSinkParams MonocularIpCameraSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param)
-{
-  std::vector<std::string> configured_keys = config.ListConfigGroupParameters(cam_param);
-  const SinkParams sink_params = ParseBaseSinkParamsFromConfig(config, cam_param, configured_keys);
-  const IpCameraDeviceParams ipcam_params = ParseIpCameraDeviceParamsFromConfig(config, cam_param, std::string(), configured_keys);
 
   WarnOfUnusedParameters(cam_param, configured_keys);
+  // FIXME add custom_url
+  const std::string custom_url; //TODO TODO TODO
 
-  return MonocularIpCameraSinkParams(sink_params, ipcam_params);
+  IpCameraSinkParams params(sink_params, host, user, pwd, ipcam_type, protocol, stream_encoding, frame_width, frame_height, frame_rate, custom_url);
+  params.stream_url = GetStreamingUrl(params);
+  return params;
 }
-//FIXME stereo: parseipcam... postfix = '_left'
-//IpCameraParams IpCameraParamsFromConfigSetting(const pvt::config::ConfigParams &config, const std::string &setting)
-//{
-//  vcp::best::ipcam::IpCameraParams p;
-//  // Get the camera type:
-//  p.camera_type = ipcam::IpCameraTypeFromString(config.GetString(setting + ".type"));
-
-//  // How should we retrieve the IP camera's stream?
-//  p.protocol = ipcam::IpProtocolFromString(config.GetString(setting + ".protocol"));
-//  p.stream_type = ipcam::IpStreamEncodingFromString(config.GetString(setting + ".stream_type"));
 
 
-//  if (p.camera_type == ipcam::IpCameraType::Generic)
-//  {
-//    p.custom_url = config.GetString(setting + ".custom_url");
-//  }
-//  else
-//  {
-//    const std::string k_host = setting + ".host";
-//    p.host = config.GetString(k_host);
-
-//    const std::string k_usr = setting + ".user";
-//    if (config.SettingExists(k_usr))
-//    {
-//      p.user = config.GetString(k_usr);
-
-//      // If there's a user, there must be a password!
-//      p.password = config.GetString(setting + ".password");
-//    }
-//  }
-
-//  // Details about the stream:
-//  p.frame_height = config.GetInteger(setting + ".frame_height");
-//  p.frame_width = config.GetInteger(setting + ".frame_width");
-//  p.frame_rate = config.GetInteger(setting + ".frame_rate");
-
-//  return p;
-//}
+IpCameraSinkParams MonocularIpCameraSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param)
+{
+  return ParseIpCameraSinkParams(config, cam_param, std::string());
+}
 
 
-//IpStereoParams IpStereoParamsFromConfigSetting(const pvt::config::ConfigParams &config, const std::string &setting)
-//{
-//  pvt::icc::ipcam::IpStereoParams p;
-//  // Get the camera type:
-//  p.left.camera_type = ipcam::IpCameraTypeFromString(config.GetString(setting + ".type"));
-//  p.right.camera_type = p.left.camera_type;
-
-//  if (p.left.camera_type == ipcam::IpCameraType::Generic)
-//  {
-//    p.left.custom_url = config.GetString(setting + ".custom_url_left");
-//    p.right.custom_url = config.GetString(setting + ".custom_url_right");
-//  }
-//  else
-//  {
-//    p.left.host = config.GetString(setting + ".host_left");
-
-//    // left camera
-//    const std::string k_usr_left = setting + ".user_left";
-//    if (config.SettingExists(k_usr_left))
-//    {
-//      p.left.user = config.GetString(k_usr_left);
-
-//      // If there's a user, there must be a password!
-//      p.left.password = config.GetString(setting + ".password_left");
-//    }
-
-
-//    // right camera
-//    p.right.host = config.GetString(setting + ".host_right");
-//    const std::string k_usr = setting + ".user_right";
-//    if (config.SettingExists(k_usr))
-//    {
-//      p.right.user = config.GetString(k_usr);
-//      p.right.password = config.GetString(setting + ".password_right");
-//    }
-//  }
-
-//  // For now, the remaining params (streaming type, etc) are the same for both cameras in the stereo setup!
-//  // IF YOU WANT TO CHANGE THAT (i.e. allow different streaming types for
-//  // the two cameras of the stereo setup), ALSO CHANGE THE C'TOR OF
-//  // pvt::tools::capture::axis::AxisStereoCapture !!!!
-
-//  // How should we retrieve the IP camera's stream?
-//  p.left.protocol = ipcam::IpProtocolFromString(config.GetString(setting + ".protocol"));
-//  p.right.protocol = p.left.protocol;
-//  p.left.stream_type = ipcam::IpStreamEncodingFromString(config.GetString(setting + ".stream_type"));
-//  p.right.stream_type = p.left.stream_type;
-
-//  // Details about the stream:
-//  p.left.frame_height = config.GetInteger(setting + ".frame_height");
-//  p.right.frame_height = p.left.frame_height;
-//  p.left.frame_width = config.GetInteger(setting + ".frame_width");
-//  p.right.frame_width = p.left.frame_width;
-//  p.left.frame_rate = config.GetInteger(setting + ".frame_rate");
-//  p.right.frame_rate = p.left.frame_rate;
-
-//  return p;
-//}
-
-
-
+std::pair<IpCameraSinkParams, IpCameraSinkParams> StereoIpCameraSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param)
+{
+  IpCameraSinkParams left = ParseIpCameraSinkParams(config, cam_param, "_left");
+  IpCameraSinkParams right = ParseIpCameraSinkParams(config, cam_param, "_right");
+  left.sink_label = left.sink_label + "-left";
+  right.sink_label = right.sink_label + "-right";
+  return std::make_pair(left, right);
+}
 
 
 /**
- * @brief The GenericMonocularIpCamSink class
+ * @brief The GenericIpCameraSink class
  *
- * This was adapted from our initial Axis-only streaming class.
  * Currently, we support HTTP/MJPEG, RTSP/H264, RTSP/MJPEG streams.
- *
- * To use a different camera brand, specify the custom url (@see CreateGenericIpCamSink()).
+ * Streams may be re-ordered by their protocol, i.e. Next() returns frames of HTTP
+ * cameras first, then RTSP.
+ * Anyways, you should be aware that mixing both HTTP and RTSP sources is not the
+ * best idea.
  *
  * Axis streaming URLs that worked (test yourself with vlc <url>):
- * * http://root:root@192.168.0.50/axis-cgi/mjpg/video.cgi?resolution=320x240&fps=10
- * * rtsp://root:root@192.168.0.50/axis-media/media.amp?videocodec=h264&resolution=480x270&fps=25
- * * rtsp://root:root@192.168.0.50/axis-media/media.amp?videocodec=jpeg&resolution=480x270&fps=25
+ * * http://user:pwd@192.168.0.50/axis-cgi/mjpg/video.cgi?resolution=320x240&fps=10
+ * * rtsp://user:pwd@192.168.0.47/axis-media/media.amp?videocodec=h264&resolution=480x270&fps=25
+ * * rtsp://user:pwd@192.168.0.91/axis-media/media.amp?videocodec=jpeg&resolution=480x270&fps=25
  *
  * Our Axis didn't support MPEG4 over RTSP (so we didn't implement it):
- * * rtsp://root:root@192.168.0.50/axis-media/media.amp?videocodec=mpeg4&resolution=480x270&fps=25
  */
-class GenericMonocularIpCamSink : public StreamSink
+class GenericIpCameraSink : public StreamSink
 {
 public:
-  virtual ~GenericMonocularIpCamSink() {}
 
-  GenericMonocularIpCamSink(const std::vector<MonocularIpCameraSinkParams> &params)
+  GenericIpCameraSink(const std::vector<IpCameraSinkParams> &params)
     : StreamSink()
   {
-    // Check protocol
-    if (params[0].ipcam_params.protocol == IpProtocol::HTTP)
+    // Group parameters by their protocol
+    for (const auto &p : params)
+    {
+      switch(p.protocol)
+      {
+        case IpApplicationProtocol::HTTP:
+          params_http_.push_back(p);
+          break;
+
+        case IpApplicationProtocol::RTSP:
+          params_rtsp_.push_back(p);
+          break;
+
+        default:
+          VCP_ERROR("IP camera protocol '" << p.protocol << "' is not yet supported.");
+      }
+    }
+  }
+
+  virtual ~GenericIpCameraSink()
+  {
+    CloseDevice();
+  }
+
+
+  int IsDeviceAvailable() const override
+  {
+    for (size_t i = 0; i < sinks_.size(); ++i)
+    {
+      if (!sinks_[i]->IsDeviceAvailable())
+        return 0;
+    }
+    return 1;
+  }
+
+
+  int IsFrameAvailable() const override
+  {
+    for (size_t i = 0; i < sinks_.size(); ++i)
+    {
+      if (!sinks_[i]->IsFrameAvailable())
+        return 0;
+    }
+    return 1;
+  }
+
+
+  size_t NumAvailableFrames() const override
+  {
+    size_t num = 0;
+    for (const auto &s : sinks_)
+      num += static_cast<size_t>(s->IsFrameAvailable());
+    return num;
+  }
+
+
+  size_t NumStreams() const override
+  {
+    return params_http_.size() + params_rtsp_.size();
+  }
+
+
+  FrameType FrameTypeAt(size_t stream_index) const override
+  {
+    if (stream_index < params_http_.size())
+      return params_http_[stream_index].frame_type;
+    else
+      return params_rtsp_[stream_index - params_http_.size()].frame_type;
+  }
+
+
+  std::string StreamLabel(size_t stream_index) const override
+  {
+    if (stream_index < params_http_.size())
+      return params_http_[stream_index].sink_label;
+    else
+      return params_rtsp_[stream_index - params_http_.size()].sink_label;
+  }
+
+
+  bool OpenDevice() override
+  {
+    for (const auto &p : params_http_)
     {
 #ifdef VCP_BEST_WITH_IPCAM_HTTP
-      if (params[0].ipcam_params.stream_encoding != IpStreamEncoding::MJPEG)
-        VCP_ERROR("Currently, we only support MJPEG over HTTP, not " << params[0].ipcam_params.stream_encoding << ".");
+      if (p.stream_encoding != IpStreamEncoding::MJPEG)
+        VCP_ERROR("Currently, we only support MJPEG over HTTP, not '" << p.stream_encoding << "'.");
 
-      for (const auto &p : params)
-      {
-        if (p.ipcam_params.protocol != params[0].ipcam_params.protocol)
-          VCP_ERROR("All IP cameras must use the same streaming protocol!");
+      if (p.stream_url.empty())
+        VCP_ERROR("Invalid/empty streaming URL for IP camera: " << p);
 
-        const std::string url = p.ipcam_params.GetStreamingUrl();
-        if (url.empty())
-          VCP_ERROR("IP camera URL must not be empty!");
-
-        if (p.verbose)
-          VCP_LOG_INFO_DEFAULT("Connecting to '" << p.ipcam_params.ipcam_type
-                               << "' at: " << vcp::utils::string::ObscureUrlAuthentication(url));
-        sinks_.push_back(http::CreateHttpMjpegSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(url));
-
-        // TODO nice-to-have would be a camera-specific start-up routine (e.g. enabling/disabling overlays, etc.)
-      }
+      sinks_.push_back(http::CreateHttpMjpegSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p));
+      // TODO nice-to-have would be a camera-specific start-up routine (e.g. enabling/disabling overlays, etc.)
 #else // VCP_BEST_WITH_IPCAM_HTTP
       VCP_ERROR("You need to compile VCP with HTTP streaming enabled!");
 #endif // VCP_BEST_WITH_IPCAM_HTTP
     }
-    else if (params[0].ipcam_params.protocol == IpProtocol::RTSP)
+
+
+    for (const auto &p : params_rtsp_)
     {
 #ifdef VCP_BEST_WITH_IPCAM_RTSP
+#error "Not yet implemented"
       // We support MJPEG and H264 over RTSP
       int split_column = 0;
       std::vector<rtsp::RtspStreamParams> cam_params;
@@ -532,60 +552,20 @@ public:
       VCP_ERROR("You need to compile VCP with RTSP streaming enabled!");
 #endif // VCP_BEST_WITH_IPCAM_RTSP
     }
-    else
-      VCP_ERROR("Protocol '" << params[0].ipcam_params.protocol << "' not supported/implemented for IP camera captures.");
-  }
 
-
-  int IsDeviceAvailable() const override
-  {
+    // Finally, open the actual streams/devices.
+    bool success = true;
     for (size_t i = 0; i < sinks_.size(); ++i)
-    {
-      if (!sinks_[i]->IsDeviceAvailable())
-        return 0;
-    }
-    return 1;
-  }
-
-
-  int IsFrameAvailable() const override
-  {
-    for (size_t i = 0; i < sinks_.size(); ++i)
-    {
-      if (!sinks_[i]->IsFrameAvailable())
-        return 0;
-    }
-    return 1;
-  }
-
-  size_t NumAvailableFrames() const override
-  {
-    //FIXME
-  }
-
-  size_t NumStreams() const override
-  {
-    //FIXME
-  }
-
-  FrameType FrameTypeAt(size_t stream_index) const override
-  {
-    //FIXME
-  }
-
-  std::string StreamLabel(size_t stream_index) const override
-  {
-    //FIXME
-  }
-
-  bool OpenDevice() override
-  {
-    //FIXME
+      success &= sinks_[i]->OpenDevice();
+    return success;
   }
 
   bool CloseDevice() override
   {
-    //FIXME
+    bool success = true;
+    for (size_t i = 0; i < sinks_.size(); ++i)
+      success &= sinks_[i]->CloseDevice();
+    return success;
   }
 
   bool StartStreaming() override
@@ -600,57 +580,31 @@ public:
   {
     bool success = true;
     for (size_t i = 0; i < sinks_.size(); ++i)
-      success &= sinks_[i]->StartStreaming();
+      success &= sinks_[i]->StopStreaming();
     return success;
   }
 
   std::vector<cv::Mat> Next() override
   {
     std::vector<cv::Mat> frames;
-    frames.reserve(sinks_.size());
     for (size_t i = 0; i < sinks_.size(); ++i)
     {
-      const std::vector<cv::Mat> sink_frames = sinks_[i]->Next();
-
-      if (multi_rtsp_splits_.size() < 2)
-      {
-        // This is not a multi-rtsp cue.
-        frames.insert(frames.end(), sink_frames.begin(), sink_frames.end());
-      }
-      else
-      {
-        // We use a multi-rtsp cue with multiple streams (concatenated
-        // into a single cv::Mat).
-        // Thus, we have to split the incoming frame.
-        if (sink_frames.size() != 1)
-          VCP_ERROR("MultiRtspStreamSink returned " << sink_frames.size() << " frames instead of 1!");
-
-        cv::Mat frame = sink_frames[0];
-        int from = 0;
-        for (size_t j = 0; j < multi_rtsp_splits_.size(); ++j)
-        {
-          if (frame.empty())
-          {
-            frames.push_back(frame);
-          }
-          else
-          {
-            int to = multi_rtsp_splits_[j];
-            const cv::Rect roi(from, 0, to-from, multi_rtsp_heights_[j]);
-            cv::Mat split = frame(roi).clone();
-            frames.push_back(split);
-            from = to;
-          }
-        }
-      }
+      // HttpMjpegSinks yield one frame each.
+      // Fort RTSP, however, we have one "multi-sink"
+      // which sets up the streaming environment and does
+      // all the nasty stuff to get the decoded images.
+      // Then, this "multi-sink" returns all frames in a vector.
+      //FIXME simplify rtsp sink: no image concatenation anymore!
+      const std::vector<cv::Mat> query = sinks_[i]->Next();
+      frames.insert(frames.end(), query.begin(), query.end());
     }
     return frames;
   }
 
 
 private:
-  std::vector<int> multi_rtsp_splits_;
-  std::vector<int> multi_rtsp_heights_;
+  std::vector<IpCameraSinkParams> params_http_;
+  std::vector<IpCameraSinkParams> params_rtsp_;
   std::vector<std::unique_ptr<StreamSink>> sinks_;
 };
 
@@ -666,7 +620,7 @@ public:
   {
     // Check protocol
     num_stereo_cameras_ = params.size();
-    if (params[0].cam1_params.protocol == pvt::icc::ipcam::IpProtocol::HTTP)
+    if (params[0].cam1_params.protocol == pvt::icc::ipcam::IpApplicationProtocol::HTTP)
     {
 #ifdef VCP_BEST_WITH_IPCAM_HTTP
       is_rtsp_ = false;
@@ -692,7 +646,7 @@ public:
       PVT_ABORT("You need to compile PVT with HTTP streaming enabled!");
 #endif // VCP_BEST_WITH_IPCAM_HTTP
     }
-    else if (params[0].cam1_params.protocol == pvt::icc::ipcam::IpProtocol::RTSP)
+    else if (params[0].cam1_params.protocol == pvt::icc::ipcam::IpApplicationProtocol::RTSP)
     {
 #ifdef VCP_BEST_WITH_IPCAM_RTSP
       is_rtsp_ = true;
@@ -876,9 +830,9 @@ private:
 
 
 
-std::unique_ptr<StreamSink> CreateMonocularIpCameraSink(const std::vector<MonocularIpCameraSinkParams> &params)
+std::unique_ptr<StreamSink> CreateIpCameraSink(const std::vector<IpCameraSinkParams> &params)
 {
-  return std::unique_ptr<GenericMonocularIpCamSink>(new GenericMonocularIpCamSink(params));
+  return std::unique_ptr<GenericIpCameraSink>(new GenericIpCameraSink(params));
 }
 
 

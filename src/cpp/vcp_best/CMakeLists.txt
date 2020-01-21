@@ -120,10 +120,11 @@ set(ICC_EXTERNAL_LIBS
 
 
 if(VCP_BEST_WITH_IPCAM)
-    add_definitions(-DVCP_BEST_WITH_IPCAM -DVCP_BEST_WITH_IPCAM_HTTP -DVCP_BEST_WITH_IPCAM_RTSP)
+#    add_definitions(-DVCP_BEST_WITH_IPCAM -DVCP_BEST_WITH_IPCAM_HTTP -DVCP_BEST_WITH_IPCAM_RTSP)
+    add_definitions(-DVCP_BEST_WITH_IPCAM -DVCP_BEST_WITH_IPCAM_HTTP)
+#FIXME re-enable  rtsp
     set(PUBLIC_HEADERS ${PUBLIC_HEADERS} ipcam_sink.h)
     set(SOURCES ${SOURCES} ipcam_sink.cpp)
-
     #################################################
     # HTTP streaming
     # Dependencies
@@ -136,6 +137,7 @@ if(VCP_BEST_WITH_IPCAM)
     set(PRIVATE_HEADERS ${PRIVATE_HEADERS} ${PRIVATE_HTTP_STREAM_HEADERS})
     set(SOURCES ${SOURCES} ${HTTP_STREAM_SOURCES})
 
+if(0)
     #################################################
     # RTSP streaming
     ## FFMPEG - needed for h264 decoding
@@ -152,7 +154,7 @@ if(VCP_BEST_WITH_IPCAM)
     set(PUBLIC_HEADERS ${PUBLIC_HEADERS} ${PUBLIC_RTSP_STREAM_HEADERS})
     set(PRIVATE_HEADERS ${PRIVATE_HEADERS} ${PRIVATE_RTSP_STREAM_HEADERS})
     set(SOURCES ${SOURCES} ${RTSP_STREAM_SOURCES})
-
+endif(0)
     message("  [+] Enable HTTP/RTSP streaming")
 else()
     message("  [ ] Disable HTTP/RSTP streaming")

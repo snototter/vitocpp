@@ -25,10 +25,11 @@
 #include <vcp_utils/string_utils.h>
 #include <vcp_utils/timing_utils.h>
 
-//FIXME k4a may need to wait upon opening multiple devices: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/issues/676
+//Calibration: https://github.com/microsoft/Azure_Kinect_ROS_Driver/search?q=K4ACalibrationTransformData&unscoped_q=K4ACalibrationTransformData
+/////FIXME k4a may need to wait upon opening multiple devices: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/issues/676 ==> start sequentially, use parallel
 //FIXME k4a https://github.com/microsoft/Azure-Kinect-Sensor-SDK/issues/803  <== aligning two kinects fails (inaccurate factory calib)
 //FIXME k4a check official calib doc: https://docs.microsoft.com/en-us/azure/kinect-dk/use-calibration-functions
-//FIXME k4a calibration: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/calibration/main.cpp
+//////FIXME k4a calibration: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/calibration/main.cpp
 //FIXME k4a opencv transformation example: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/tree/develop/examples/opencv_compatibility
 namespace vcp
 {
