@@ -5,16 +5,33 @@
 #include <chrono>
 #include <ctime>
 
-// TODO doc
-// VCP_LOG_LOCATION
-// * Default macros use ANSI color codes to colorize the log severity.
-// * DEBUG and INFO messages are logged to std::cout
-// * WARNING and FAILURE messages are logged to std::cerr
+// TODO needs a doxygen tag to include this info:
+/**
+ * VCP_LOG_<X> logs <X> = {DEBUG, INFO, WARNING, FAILURE} messages
+ * if VCP_LOG_LEVEL_<X> or lower is defined.
+ * These VCP_LOG_X macros use ANSI color codes to colorize the
+ * log severity.
+ * DEBUG and INFO messages are logged to std::cout.
+ * WARNING and FAILURE messages are logged to std::cerr.
+ * If VCP_LOG_LOCATION is defined, the log message will be extended
+ * by file and line number.
+ *
+ * Otherwise, use VCP_LOG_<X>_DEFAULT (without file info) or
+ * VCP_LOG_<X>_LOCATION (with file info). These will always print
+ * the message, no matter if VCP_LOG_LEVEL<X> is set or not.
+ *
+ * if VCP_LOGGING_COMPONENT is a valid const char *, it will be
+ * printed before the message (to identify the component which
+ * logged this message).
+ */
 
-//TODO skip if empty, else do undef, def
-#define VCP_LOGGING_COMPONENT nullptr
+
 
 #define VCP_UNUSED_VAR(var) (void)(var)
+
+
+#define VCP_LOGGING_COMPONENT nullptr
+
 
 //----------------------------------------------------------------
 // Generic/base macros, use only if you know what you are doing.
@@ -52,6 +69,23 @@
 #define VCP_LOG_FAILURE_LOCATION(msg)    VCP_LOG_STREAM(std::cerr, "\033[31;1mFAILURE\033[0m", __FILE__, __LINE__, msg)
 #define VCP_LOG_FAILURE_DEFAULT(msg)     VCP_LOG_STREAM(std::cerr, "\033[31;1mFAILURE\033[0m", nullptr, -1, msg)
 
+//----------------------------------------------------------------
+// Macro abstractions which prefix the proper log severity/level
+// and ensure that only a single message is printed every N seconds
+//
+
+// Debug to stdout.
+#define VCP_LOG_DEBUG_LOCATION_NSEC(msg, nsec)      VCP_LOG_STREAM_NSEC(std::cout, "\033[34;1mDEBUG  \033[0m", __FILE__, __LINE__, msg, nsec)
+#define VCP_LOG_DEBUG_DEFAULT_NSEC(msg, nsec)       VCP_LOG_STREAM_NSEC(std::cout, "\033[34;1mDEBUG  \033[0m", nullptr, -1, msg, nsec)
+// Status notification to stdout.
+#define VCP_LOG_INFO_LOCATION_NSEC(msg, nsec)       VCP_LOG_STREAM_NSEC(std::cout, "\033[36;1mINFO   \033[0m", __FILE__, __LINE__, msg, nsec)
+#define VCP_LOG_INFO_DEFAULT_NSEC(msg, nsec)        VCP_LOG_STREAM_NSEC(std::cout, "\033[36;1mINFO   \033[0m", nullptr, -1, msg, nsec)
+// Warning to stderr.
+#define VCP_LOG_WARNING_LOCATION_NSEC(msg, nsec)    VCP_LOG_STREAM_NSEC(std::cerr, "\033[35;1mWARNING\033[0m", __FILE__, __LINE__, msg, nsec)
+#define VCP_LOG_WARNING_DEFAULT_NSEC(msg, nsec)     VCP_LOG_STREAM_NSEC(std::cerr, "\033[35;1mWARNING\033[0m", nullptr, -1, msg, nsec)
+// Failure to stderr.
+#define VCP_LOG_FAILURE_LOCATION_NSEC(msg, nsec)    VCP_LOG_STREAM_NSEC(std::cerr, "\033[31;1mFAILURE\033[0m", __FILE__, __LINE__, msg, nsec)
+#define VCP_LOG_FAILURE_DEFAULT_NSEC(msg, nsec)     VCP_LOG_STREAM_NSEC(std::cerr, "\033[31;1mFAILURE\033[0m", nullptr, -1, msg, nsec)
 
 //----------------------------------------------------------------
 // Macros intended to be used by library users/module devs.
@@ -65,11 +99,14 @@
 #ifdef VCP_LOG_LEVEL_DEBUG
     #ifdef VCP_LOG_LOCATION
         #define VCP_LOG_DEBUG(msg) VCP_LOG_DEBUG_LOCATION(msg)
+        #define VCP_LOG_DEBUG_NSEC(msg, nsec) VCP_LOG_DEBUG_LOCATION_NSEC(msg, nsec)
     #else // VCP_LOG_LOCATION
         #define VCP_LOG_DEBUG(msg) VCP_LOG_DEBUG_DEFAULT(msg)
+        #define VCP_LOG_DEBUG_NSEC(msg, nsec) VCP_LOG_DEBUG_DEFAULT_NSEC(msg, nsec)
     #endif // VCP_LOG_LOCATION
 #else // VCP_LOG_ENABLE_DEBUG
     #define VCP_LOG_DEBUG(msg) do {} while(0)
+    #define VCP_LOG_DEBUG_NSEC(msg, nsec) do {} while(0)
 #endif // VCP_LOG_ENABLE_DEBUG
 //
 //
@@ -77,11 +114,14 @@
 #if defined(VCP_LOG_LEVEL_DEBUG) || defined(VCP_LOG_LEVEL_INFO)
     #ifdef VCP_LOG_LOCATION
         #define VCP_LOG_INFO(msg)  VCP_LOG_INFO_LOCATION(msg)
+        #define VCP_LOG_INFO_NSEC(msg, nsec)  VCP_LOG_INFO_LOCATION_NSEC(msg, nsec)
     #else // VCP_LOG_LOCATION
         #define VCP_LOG_INFO(msg)  VCP_LOG_INFO_DEFAULT(msg)
+        #define VCP_LOG_INFO_NSEC(msg, nsec)  VCP_LOG_INFO_DEFAULT_NSEC(msg, nsec)
     #endif // VCP_LOG_LOCATION
 #else
     #define VCP_LOG_INFO(msg)  do {} while(0)
+    #define VCP_LOG_INFO_NSEC(msg, nsec)  do {} while(0)
 #endif
 //
 //
@@ -89,32 +129,25 @@
 #if defined(VCP_LOG_LEVEL_DEBUG) || defined(VCP_LOG_LEVEL_INFO) || defined(VCP_LOG_LEVEL_WARNING)
     #ifdef VCP_LOG_LOCATION
         #define VCP_LOG_WARNING(msg)  VCP_LOG_WARNING_LOCATION(msg)
+        #define VCP_LOG_WARNING_NSEC(msg, nsec)  VCP_LOG_WARNING_LOCATION_NSEC(msg, nsec)
     #else // VCP_LOG_LOCATION
         #define VCP_LOG_WARNING(msg)  VCP_LOG_WARNING_DEFAULT(msg)
+        #define VCP_LOG_WARNING_NSEC(msg, nsec)  VCP_LOG_WARNING_DEFAULT_NSEC(msg, nsec)
     #endif // VCP_LOG_LOCATION
 #else
     #define VCP_LOG_WARNING(msg)  do {} while(0)
+    #define VCP_LOG_WARNING_NSEC(msg, nsec)  do {} while(0)
 #endif
 //
 //
 // Always log FAILURE messages
 #ifdef VCP_LOG_LOCATION
     #define VCP_LOG_FAILURE(msg)    VCP_LOG_FAILURE_LOCATION(msg)
+    #define VCP_LOG_FAILURE_NSEC(msg, nsec)  VCP_LOG_FAILURE_LOCATION_NSEC(msg, nsec)
 #else // VCP_LOG_LOCATION
     #define VCP_LOG_FAILURE(msg)    VCP_LOG_FAILURE_DEFAULT(msg)
+    #define VCP_LOG_FAILURE_NSEC(msg, nsec)  VCP_LOG_FAILURE_DEFAULT_NSEC(msg, nsec)
 #endif // VCP_LOG_LOCATION
-
-
-// FIXME: clean up
-//// Log message every nsec
-//#define PVT_LOG_NSEC(nsec, msg) (vcp::utils::logging::LogNSec(std::cout, "\033[36;1mINFO\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg, nsec));
-//#define PVT_LOG_NOFILE_NSEC(nsec, msg) (vcp::utils::logging::LogNSec(std::cout, nullptr, nullptr, -1, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg, nsec));
-//// Logs a warning to stderr.
-////#define PVT_LOG_WARNING(msg) (vcp::utils::logging::Log(std::cerr, "\033[35;1mWARNING\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
-////#define PVT_LOG_WARNING_NOFILE(msg) (vcp::utils::logging::Log(std::cerr, "\033[35;1mWARNING\033[0m", nullptr, -1, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
-//#define PVT_LOG_WARNING_NSEC(nsec, msg) (vcp::utils::logging::LogNSec(std::cerr, "\033[35;1mWARNING\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg, nsec));
-//#define PVT_LOG_INFO(msg) (vcp::utils::logging::Log(std::cout, "\033[36;1mINFO\033[0m", __FILE__, __LINE__, vcp::utils::logging::LogData<vcp::utils::logging::None>() << msg))
-
 
 
 #ifndef NOINLINE_ATTRIBUTE

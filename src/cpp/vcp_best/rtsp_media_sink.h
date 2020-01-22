@@ -24,23 +24,16 @@ public:
   virtual ~RtspMediaSink();
 
 protected:
-  RtspMediaSink(UsageEnvironment &env, MediaSubsession &subsession, const RtspStreamParams &params, void (*callback_frame_received)(const cv::Mat &, void *), void *callback_user_data);
+  RtspMediaSink(UsageEnvironment &env, MediaSubsession &subsession, const IpCameraSinkParams &params, void (*callback_frame_received)(const cv::Mat &, void *), void *callback_user_data);
 
-  //virtual void DecodeFrame(unsigned frame_size, unsigned num_truncated_bytes, struct timeval presentation_time, unsigned duration_in_microseconds, cv::Mat &decoded_frame) = 0;
   virtual void DecodeFrame(unsigned frame_size, unsigned num_truncated_bytes, struct timeval presentation_time, unsigned duration_in_microseconds) = 0;
 
   u_int8_t *receive_buffer_;
   MediaSubsession& subsession_;
-//  AxisCameraParams camera_params;
   size_t num_received_frames_;
-//  size_t num_snapshots;
-//  std::string wnd_name;
-//  std::ofstream fs_timestamps;
-//  cv::VideoWriter video_writer;
-//  cv::Mat latest_frame;
   bool has_been_rtcp_synchronized_;
 
-  // Image frame dimensions (required to decode the packages).
+  // Image frame dimensions (required to decode the data packages).
   int frame_width_;
   int frame_height_;
 
@@ -89,8 +82,16 @@ protected:
 //  }
 };
 
-RtspMediaSink *CreateRtspMjpegMediaSink(UsageEnvironment &env, MediaSubsession &subsession, const RtspStreamParams &params, void (*callback_frame_received)(const cv::Mat &, void *), void *callback_user_data);
-RtspMediaSink *CreateRtspH264MediaSink(UsageEnvironment &env, MediaSubsession &subsession, const RtspStreamParams &params, void (*callback_frame_received)(const cv::Mat &, void *), void *callback_user_data);
+RtspMediaSink *CreateRtspMjpegMediaSink(UsageEnvironment &env,
+                                        MediaSubsession &subsession,
+                                        const IpCameraSinkParams &params,
+                                        void (*callback_frame_received)(const cv::Mat &, void *),
+                                        void *callback_user_data);
+RtspMediaSink *CreateRtspH264MediaSink(UsageEnvironment &env,
+                                       MediaSubsession &subsession,
+                                       const IpCameraSinkParams &params,
+                                       void (*callback_frame_received)(const cv::Mat &, void *),
+                                       void *callback_user_data);
 
 } // namespace rtsp
 } // namespace ipcam

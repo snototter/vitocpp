@@ -68,7 +68,7 @@ RtspMediaSink::~RtspMediaSink()
     delete[] receive_buffer_;
 }
 
-RtspMediaSink::RtspMediaSink(UsageEnvironment &env, MediaSubsession &subsession, const RtspStreamParams &params, void (*callback_frame_received)(const cv::Mat &, void *), void *callback_user_data)
+RtspMediaSink::RtspMediaSink(UsageEnvironment &env, MediaSubsession &subsession, const IpCameraSinkParams &params, void (*callback_frame_received)(const cv::Mat &, void *), void *callback_user_data)
   : MediaSink(env), receive_buffer_(nullptr), subsession_(subsession),
     num_received_frames_(0), has_been_rtcp_synchronized_(false),
     frame_width_(params.frame_width), frame_height_(params.frame_height),
@@ -106,7 +106,7 @@ void RtspMediaSink::afterGettingFrame(void *client_data, unsigned frame_size, un
 class RtspMjpegMediaSink : public RtspMediaSink
 {
 public:
-  RtspMjpegMediaSink(UsageEnvironment &env, MediaSubsession &subsession, const RtspStreamParams &params, void (*callback_frame_received)(const cv::Mat &, void *), void *callback_user_data)
+  RtspMjpegMediaSink(UsageEnvironment &env, MediaSubsession &subsession, const IpCameraSinkParams &params, void (*callback_frame_received)(const cv::Mat &, void *), void *callback_user_data)
     : RtspMediaSink(env, subsession, params, callback_frame_received, callback_user_data)
   {
   }
@@ -121,7 +121,7 @@ protected:
     // We've just received a frame of data.
     if (num_truncated_bytes > 0)
     {
-      PVT_LOG_FAILURE("Received corrupt JPEG frame");
+      VCP_LOG_FAILURE("Received corrupt JPEG frame");
     }
     else
     {
@@ -141,7 +141,7 @@ protected:
 class RtspH264MediaSink : public RtspMediaSink
 {
 public:
-  RtspH264MediaSink(UsageEnvironment &env, MediaSubsession &subsession, const RtspStreamParams &params, void (*callback_frame_received)(const cv::Mat &, void *), void *callback_user_data)
+  RtspH264MediaSink(UsageEnvironment &env, MediaSubsession &subsession, const IpCameraSinkParams &params, void (*callback_frame_received)(const cv::Mat &, void *), void *callback_user_data)
     : RtspMediaSink(env, subsession, params, callback_frame_received, callback_user_data)
   {
     fSPropParameterSetsStr = subsession.fmtp_spropparametersets();
@@ -154,7 +154,7 @@ public:
 
     codec = avcodec_find_decoder(AV_CODEC_ID_H264);
     if(!codec)
-      PVT_EXIT("Cannot find the H264 codec");
+      VCP_ERROR("Cannot find the H264 codec");
 
     codec_context = avcodec_alloc_context3(codec);
     // For some codecs we need to explicitly set the frame dimension as these are not encoded in the bitstream
@@ -168,25 +168,26 @@ public:
     if (codec->capabilities & CODEC_CAP_DELAY)
       codec_context->flags |= AV_CODEC_FLAG_LOW_DELAY;
 
-//    codec_context->flags2 |= CODEC_FLAG2_CHUNKS; // live555 should gather the NAL units for us, and tell us, once a "frame" (i.e. NALU) is ready, so
-    // there's no need to tell the decoder to watch out for truncated buffers
+    // live555 should gather the NAL units for us, and tell us, once a "frame" (i.e. NALU) is ready, so
+    // there's no need to tell the decoder to watch out for truncated buffers. Thus, we don't need:
+//    codec_context->flags2 |= CODEC_FLAG2_CHUNKS;
 
     if(avcodec_open2(codec_context, codec, NULL) < 0)
-      PVT_EXIT("Cannot open the H264 codec");
+      VCP_ERROR("Cannot open the H264 codec");
 
     picture = av_frame_alloc();
     if (!picture)
-      PVT_EXIT("Cannot allocate decoding picture");
+      VCP_ERROR("Cannot allocate decoding picture");
 
     parser = av_parser_init(AV_CODEC_ID_H264);
     if(!parser)
-      PVT_EXIT("Cannot create the H264 parser");
+      VCP_ERROR("Cannot create the H264 parser");
 
     convert_ctx = NULL;
 
     picture_bgr = av_frame_alloc();
     if (!picture_bgr)
-      PVT_EXIT("Cannot allocate BGR frame");
+      VCP_ERROR("Cannot allocate BGR frame");
 
 #ifdef USE_DEPRECATED_PICTURE_API
     // Required on my 14.04 standard installation
@@ -196,7 +197,7 @@ public:
 #endif
     buffer_bgr_picture = (uint8_t *)av_malloc(bytes*sizeof(uint8_t));
     if (!buffer_bgr_picture)
-      PVT_EXIT("Cannot allocate BGR frame buffer");
+      VCP_ERROR("Cannot allocate BGR frame buffer");
 
 #ifdef USE_DEPRECATED_PICTURE_API
     avpicture_fill((AVPicture *)picture_bgr, buffer_bgr_picture, AV_PIX_FMT_RGB24, frame_width_, frame_height_);
@@ -206,7 +207,7 @@ public:
 
     pkt = av_packet_alloc();
     if (!pkt)
-      PVT_EXIT("Cannot allocate AVPacket");
+      VCP_ERROR("Cannot allocate AVPacket");
 
     // Initialize the additional zero padding (for damaged incoming frames)
     std::memset(zero_padding, 0, AV_INPUT_BUFFER_PADDING_SIZE);
@@ -264,7 +265,7 @@ protected:
   {
     int ret = avcodec_send_packet(codec_context, pkt);
     if (ret < 0)
-      PVT_ABORT("Error sending a packet for decoding, capture '" << stream_id_ << "'");
+      VCP_ERROR("Error sending a packet for decoding, capture '" << stream_id_ << "'");
 
     while (ret >= 0)
     {
@@ -275,7 +276,7 @@ protected:
       }
       else if (ret < 0)
       {
-        PVT_ABORT("Error sending a packet for decoding, capture '" << stream_id_ << "'");
+        VCP_ERROR("Error sending a packet for decoding, capture '" << stream_id_ << "'");
       }
 
       // Create converter upon first invocation
@@ -285,7 +286,7 @@ protected:
                                      picture->width, picture->height, AV_PIX_FMT_BGR24,
                                      SWS_FAST_BILINEAR, NULL, NULL, NULL); // SWS_BICUBIC
         if (!convert_ctx)
-         PVT_ABORT("Cannot create SWS conversion context");
+         VCP_ERROR("Cannot create SWS conversion context");
       }
 
       const int slice_height = sws_scale(convert_ctx, picture->data, picture->linesize, 0,
@@ -293,14 +294,14 @@ protected:
       if (slice_height > 0)
       {
         if (frame_width_ != picture->width || frame_height_ != picture->height)
-          PVT_ABORT("Incorrect configuration of capture '" << stream_id_ << "': expected a "
+          VCP_ERROR("Incorrect configuration of capture '" << stream_id_ << "': expected a "
                     << frame_width_ << "x" << frame_height_ << " stream, but received packets for " << picture->width << "x" << picture->height);
 
         cv::Mat dec(picture->height, picture->width, CV_8UC3, picture_bgr->data[0], picture_bgr->linesize[0]);
        (*this->callback_frame_received_)(dec, this->callback_user_data_);
         ++num_received_frames_;
 #ifdef DEBUG_RTSP_H264_DECODING
-        PVT_LOG_INFO_NOFILE("Decoded frame " << num_received_frames_ << " vs " << codec_context->frame_number << " with delay [# of frames]: " << codec_context->delay);
+        VCP_LOG_INFO_DEFAULT("Decoded frame " << num_received_frames_ << " vs " << codec_context->frame_number << " with delay [# of frames]: " << codec_context->delay);
 #endif // DEBUG_RTSP_H264_DECODING
       }
     }
@@ -313,7 +314,7 @@ protected:
     // and finally https://libav.org/documentation/doxygen/master/decode__video_8c_source.html
 
 #ifdef DEBUG_RTSP_H264_DECODING
-    PVT_LOG_INFO_NOFILE("Hex dump of received 'frame' (should be a complete NALU):");
+    VCP_LOG_DEBUG_DEFAULT("Hex dump of received 'frame' (should be a complete NALU):");
     for (unsigned int i = 0; i < std::min((unsigned)48,frame_size); ++i)
     {
       if (i > 0 && i % 16 == 0)
@@ -324,15 +325,16 @@ protected:
     std::cout.copyfmt(std::ios(NULL)); // restore manipulators
 #endif // DEBUG_RTSP_H264_DECODING
 
-//    // h264 AVCC encodes the length as little endian at the beginning of a frame:
-    // seems like we don't get AVCC encoded payloads (even if "vlc" would tell us, that a stream is h264/avc
-//    int avcc_frame_size = (receive_buffer_[0]<<0) | (receive_buffer_[1]<<8) | (receive_buffer_[2]<<16) | (receive_buffer_[3]<<24);
-//    PVT_LOG_INFO("If AVCC, frame size is: " << avcc_frame_size << " vs live555 frame_size: " << frame_size);
+    // h264 AVCC encodes the length as little endian at the beginning of a frame:
+    // It seems like we don't get AVCC encoded payloads (even if "vlc" would tell us
+    // that a stream is h264/avc:
+// //    int avcc_frame_size = (receive_buffer_[0]<<0) | (receive_buffer_[1]<<8) | (receive_buffer_[2]<<16) | (receive_buffer_[3]<<24);
+// //    VCP_LOG_INFO("If AVCC, frame size is: " << avcc_frame_size << " vs live555 frame_size: " << frame_size);
 
     const unsigned nal_unit_type = receive_buffer_[0] & 0x1f;
 #ifdef DEBUG_RTSP_H264_DECODING
     if (nal_unit_type != 1)
-      PVT_LOG_WARNING_NOFILE("Received NALU: " << nal_unit_type); // Make it a warning, so we see it easier in the console spam
+      VCP_LOG_FAILURE_DEFAULT("[No failure] Received NALU: " << nal_unit_type); // Make it a warning, so we see it easier in the console spam
 #endif // DEBUG_RTSP_H264_DECODING
 
     // Every camera is special:
@@ -345,7 +347,7 @@ protected:
     if (!first_full_frame_arrived)
     {
       frame_buffer.clear();
-      PVT_LOG_WARNING_NSEC(0.5, "Skipping incoming packets for capture '" << stream_id_ << "' until we find SPS/PPS.");
+      VCP_LOG_WARNING_NSEC("Skipping incoming packets for capture '" << stream_id_ << "' until we find SPS/PPS.", 0.5);
       continuePlaying();
       return;
     }
@@ -375,9 +377,7 @@ protected:
     AppendData(&zero_padding[0], AV_INPUT_BUFFER_PADDING_SIZE);
 
     if (num_truncated_bytes > 0)
-    {
-      PVT_LOG_FAILURE("Capture '" << stream_id_ << "' dropped " << num_truncated_bytes << " bytes - expect decoding errors!");
-    }
+      VCP_LOG_FAILURE("Capture '" << stream_id_ << "' dropped " << num_truncated_bytes << " bytes - expect decoding errors!");
 
     int data_size = frame_buffer.size() - AV_INPUT_BUFFER_PADDING_SIZE;
     uint8_t *data = &frame_buffer[0];
@@ -387,7 +387,7 @@ protected:
     {
       int len = av_parser_parse2(parser, codec_context, &pkt->data, &pkt->size, data, data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
       if (len < 0)
-        PVT_ABORT("Error while parsing h264 stream, capture '" << stream_id_ << "'");
+        VCP_ERROR("Error while parsing h264 stream, capture '" << stream_id_ << "'");
       data += len;
       data_size -= len;
       consumed += len;
@@ -409,7 +409,7 @@ private:
   bool fHaveWrittenFirstFrame;
   bool fNeedsMoreBytes;
 
-  bool first_full_frame_arrived; // We skip "network frames" until the first full image frame (NALU 5) or at least the stream description (NALU 7/8) arrived.
+  bool first_full_frame_arrived; // We skip "network frames" until the first full image frame (NALU 5) or at least the session description (NALU 7/8) arrived.
   std::vector<uint8_t> frame_buffer; // stores received bytes + sdp format stuff
 
   AVCodec* codec; // the AVCodec* which represents the H264 decoder
@@ -432,12 +432,12 @@ private:
 };
 
 
-RtspMediaSink *CreateRtspMjpegMediaSink(UsageEnvironment &env, MediaSubsession &subsession, const RtspStreamParams &params, void (*callback_frame_received)(const cv::Mat &, void *), void *callback_user_data)
+RtspMediaSink *CreateRtspMjpegMediaSink(UsageEnvironment &env, MediaSubsession &subsession, const IpCameraSinkParams &params, void (*callback_frame_received)(const cv::Mat &, void *), void *callback_user_data)
 {
   return new RtspMjpegMediaSink(env, subsession, params, callback_frame_received, callback_user_data);
 }
 
-RtspMediaSink *CreateRtspH264MediaSink(UsageEnvironment &env, MediaSubsession &subsession, const RtspStreamParams &params, void (*callback_frame_received)(const cv::Mat &, void *), void *callback_user_data)
+RtspMediaSink *CreateRtspH264MediaSink(UsageEnvironment &env, MediaSubsession &subsession, const IpCameraSinkParams &params, void (*callback_frame_received)(const cv::Mat &, void *), void *callback_user_data)
 {
   return new RtspH264MediaSink(env, subsession, params, callback_frame_received, callback_user_data);
 }

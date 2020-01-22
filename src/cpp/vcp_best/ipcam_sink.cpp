@@ -37,7 +37,15 @@ std::string GetAxisRtspUrl(const IpCameraSinkParams &p)
     rtsp << p.user << ":" << p.password << "@";
 
   rtsp << p.host << "/axis-media/media.amp";
-  rtsp << "?videocodec=" << codec << "&resolution=" << p.frame_width << "x" << p.frame_height << "&fps=" << p.frame_rate << "&audio=0";
+  rtsp << "?videocodec=" << codec << "&audio=0";
+
+  if (p.frame_width <= 0 || p.frame_height <= 0)
+    VCP_ERROR("You must specify 'frame_width' and 'frame_height' for axis stream: '" << p.sink_label << "'.");
+  rtsp << "&resolution=" << p.frame_width << 'x' << p.frame_height;
+
+  if (p.frame_rate > 0)
+    rtsp << "&fps=" << p.frame_rate;
+
   // Append &clock=1 if you want a clock overlay
 
   // If you increase the Axis parameter videokeyframeinterval, this causes more frequent
@@ -560,53 +568,10 @@ public:
     }
 
 
-    for (const auto &p : params_rtsp_)
+    if (!params_rtsp_.empty())
     {
 #ifdef VCP_BEST_WITH_IPCAM_RTSP
-#error "Not yet implemented"
-      // We support MJPEG and H264 over RTSP
-      int split_column = 0;
-      std::vector<rtsp::RtspStreamParams> cam_params;
-      for (const auto &p : params)
-      {
-        if (p.ipcam_params.protocol != params[0].ipcam_params.protocol)
-          VCP_ERROR("All IP cameras must use the same streaming protocol!");
-
-        // FIXME replace by IpCameraSinkParams
-        rtsp::RtspStreamType stream_type;
-        switch(p.ipcam_params.stream_encoding)
-        {
-          case IpStreamEncoding::MJPEG:
-            stream_type = rtsp::RtspStreamType::MJPEG;
-            break;
-          case IpStreamEncoding::H264:
-            stream_type = RtspStreamType::H264;
-            break;
-          default:
-            VCP_ERROR("Streaming '" << p.ipcam_params.stream_encoding << "' over RTSP is not supported.");
-        }
-
-        RtspStreamParams cam_param;
-        cam_param.stream_url = p.ipcam_params.GetStreamingUrl();
-        cam_param.stream_type = stream_type;
-        cam_param.frame_width = p.ipcam_params.frame_width;
-        cam_param.frame_height = p.ipcam_params.frame_height;
-        cam_param.verbosity_level = p.verbose ? 1 : 0;
-        // UDP is preferred but our Axis cams will kill the RTSP over UDP streams
-        // after a few seconds (up to few minutes at most). Thus, we accept the TCP overhead (as long
-        // as we can reliably stream our data).
-        cam_param.protocol = RtspProtocol::TCP;
-
-        cam_params.push_back(cam_param);
-
-        if (p.verbose)
-          VCP_LOG_INFO_DEFAULT("Connecting to '" << p.ipcam_params.ipcam_type << "' at: " << vcp::utils::string::ObscureUrlAuthentication(cam_param.stream_url));
-
-        split_column += p.ipcam_params.frame_width;
-        multi_rtsp_splits_.push_back(split_column);
-        multi_rtsp_heights_.push_back(p.ipcam_params.frame_height);
-      }
-      sinks_.push_back(std::move(rtsp::CreateMultiRtspStreamSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(cam_params)));
+      sinks_.push_back(std::move(rtsp::CreateMultiRtspStreamSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(params_rtsp_)));
 #else // VCP_BEST_WITH_IPCAM_RTSP
       VCP_ERROR("You need to compile VCP with RTSP streaming enabled!");
 #endif // VCP_BEST_WITH_IPCAM_RTSP

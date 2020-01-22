@@ -40,6 +40,11 @@ public:
     params_(params), mjpg_stream_(nullptr), mjpg_multi_handle_(nullptr), continue_stream_(false),
     is_stream_available_(false), image_queue_(std::move(sink_buffer))
   {
+    if (!(params.application_protocol == IpApplicationProtocol::HTTP
+          && params.stream_encoding == IpStreamEncoding::MJPEG))
+      VCP_ERROR("Invalid protocol/encoding ("
+                << params.application_protocol << "/" << params.stream_encoding
+                << ") for HTTP/MJPEG sink.");
   }
 
   virtual ~HttpMjpegSink()

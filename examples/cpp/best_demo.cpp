@@ -4,8 +4,10 @@
 #include <vcp_utils/timing_utils.h>
 #include <vcp_imvis/collage.h>
 #include <vcp_imvis/pseudocolor.h>
+#include <vcp_imvis/drawing.h>
 #include <vcp_config/config_params.h>
 #include <vcp_best/capture.h>
+#include <vcp_utils/string_utils.h>
 #include <opencv2/highgui.hpp>
 #include <chrono>
 #include <thread>
@@ -40,9 +42,13 @@ void Stream(const std::string &config_file)
   capture->WaitForInitialFrames(5000);
 
   VCP_TIC;
+  int fucker = 0;
   std::chrono::high_resolution_clock::time_point tp_query;
   while (capture->AreDevicesAvailable() && elapsed_ms < MAX_STREAMING_TIME_PER_CONFIG)
   {
+if(++fucker > 100)
+  break;
+
     std::vector<cv::Mat> frames;
     // Since this demo only displays the streams, we might be too
     // fast (querying for the next set of frames).
@@ -71,14 +77,17 @@ void Stream(const std::string &config_file)
       }
       else
       {
+        cv::Mat vis;
         if (frames[i].depth() != CV_8U)
         {
-          cv::Mat vis;
           vcp::imvis::pseudocolor::Colorize(frames[i], vcp::imvis::pseudocolor::ColorMap::Turbo, vis, 0, 3000);
-          valid.push_back(vis);
         }
         else
-          valid.push_back(frames[i]);
+          vis = frames[i];
+        vcp::imvis::drawing::DrawTextBox(vis, frame_labels[i] + " (" + vcp::utils::string::ToStr(vis.cols) + "x" + vcp::utils::string::ToStr(vis.rows) + ")",
+                                         cv::Point(0, 0), vcp::imvis::drawing::textanchor::TOP | vcp::imvis::drawing::textanchor::LEFT,
+                                         5, 0.5);
+        valid.push_back(vis);
       }
     }
     if (valid.empty())
@@ -113,8 +122,8 @@ int main(int argc, char **argv)
   VCP_UNUSED_VAR(argv);
 
   const std::vector<std::string> configs = {
-    "data-best/k4a.cfg",
-    /*"data-best/ipcam.cfg",
+    "data-best/ipcam.cfg",
+    /*"data-best/k4a.cfg",
     /*"data-best/image_sequence.cfg",
     "data-best/video.cfg",
     "data-best/webcam.cfg"*/
