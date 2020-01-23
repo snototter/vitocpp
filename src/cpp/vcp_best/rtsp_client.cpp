@@ -110,6 +110,8 @@ void shutdownStream(RTSPClient* rtsp_client)
   VcpRtspClient *vcp_client = dynamic_cast<VcpRtspClient*>(rtsp_client);
   StreamClientState& scs = vcp_client->scs_;
 
+  VCP_LOG_DEBUG("shutdownStream() '" << vcp::utils::string::ObscureUrlAuthentication(vcp_client->params_.stream_url) << "'");
+
   // First, check whether any subsessions have still to be closed:
   if (scs.session != NULL)
   {
@@ -153,6 +155,8 @@ void continueAfterDESCRIBE(RTSPClient* rtsp_client, int result_code, char *resul
     UsageEnvironment &env = rtsp_client->envir();
     VcpRtspClient *vcp_client = static_cast<VcpRtspClient*>(rtsp_client);
     StreamClientState &scs = vcp_client->scs_;
+
+    VCP_LOG_DEBUG("continueAfterDESCRIBE() '" << vcp::utils::string::ObscureUrlAuthentication(vcp_client->params_.stream_url) << "'");
 
     if (result_code != 0)
     {
@@ -207,6 +211,8 @@ void setupNextSubsession(RTSPClient* rtsp_client)
   UsageEnvironment& env = rtsp_client->envir();
   VcpRtspClient *vcp_client = dynamic_cast<VcpRtspClient*>(rtsp_client);
   StreamClientState& scs = vcp_client->scs_;
+
+  VCP_LOG_DEBUG("setupNextSubsession() '" << vcp::utils::string::ObscureUrlAuthentication(vcp_client->params_.stream_url) << "'");
 
   scs.subsession = scs.iter->next();
   if (scs.subsession != NULL)
@@ -264,6 +270,8 @@ void continueAfterSETUP(RTSPClient* rtsp_client, int result_code, char* result_s
     VcpRtspClient *vcp_client = dynamic_cast<VcpRtspClient*>(rtsp_client);
     UsageEnvironment& env = rtsp_client->envir();
     StreamClientState& scs = vcp_client->scs_;
+
+    VCP_LOG_DEBUG("continueAfterSETUP() '" << vcp::utils::string::ObscureUrlAuthentication(vcp_client->params_.stream_url) << "'");
 
     if (scs.subsession == NULL)
     {
@@ -337,6 +345,8 @@ void continueAfterPLAY(RTSPClient* rtsp_client, int result_code, char* result_st
     VcpRtspClient *vcp_client = dynamic_cast<VcpRtspClient*>(rtsp_client);
     StreamClientState &scs = vcp_client->scs_;
 
+    VCP_LOG_DEBUG("continueAfterPLAY() '" << vcp::utils::string::ObscureUrlAuthentication(vcp_client->params_.stream_url) << "'");
+
     if (result_code != 0)
     {
       VCP_LOG_FAILURE("Client '" << vcp::utils::string::ObscureUrlAuthentication(vcp_client->params_.stream_url)
@@ -376,6 +386,8 @@ void subsessionAfterPlaying(void *client_data)
 {
   MediaSubsession* subsession = (MediaSubsession*)client_data;
   RTSPClient* rtsp_client = (RTSPClient*)(subsession->miscPtr);
+  VcpRtspClient *vcp_client = dynamic_cast<VcpRtspClient*>(rtsp_client);
+  VCP_LOG_DEBUG("subsessionAfterPlaying() '" << vcp::utils::string::ObscureUrlAuthentication(vcp_client->params_.stream_url) << "'");
 
   // Begin by closing this subsession's stream:
   Medium::close(subsession->sink);
@@ -400,6 +412,7 @@ void subsessionByeHandler(void *client_data)
   MediaSubsession* subsession = (MediaSubsession*)client_data;
   RTSPClient* rtsp_client = (RTSPClient*)subsession->miscPtr;
   VcpRtspClient *vcp_client = dynamic_cast<VcpRtspClient*>(rtsp_client);
+  VCP_LOG_DEBUG("subsessionByeHandler() '" << vcp::utils::string::ObscureUrlAuthentication(vcp_client->params_.stream_url) << "'");
 
   if (vcp_client && vcp_client->params_.verbose)
     VCP_LOG_INFO_DEFAULT("Client '" << vcp::utils::string::ObscureUrlAuthentication(vcp_client->params_.stream_url)
@@ -412,11 +425,12 @@ void subsessionByeHandler(void *client_data)
 
 void streamTimerHandler(void* client_data)
 {
-  VcpRtspClient* rtsp_client = (VcpRtspClient*)client_data;
-  rtsp_client->scs_.streamTimerTask = NULL;
+  VcpRtspClient* vcp_client = (VcpRtspClient*)client_data;
+  vcp_client->scs_.streamTimerTask = NULL;
+  VCP_LOG_DEBUG("streamTimerHandler() '" << vcp::utils::string::ObscureUrlAuthentication(vcp_client->params_.stream_url) << "'");
 
   // Shut down the stream:
-  shutdownStream(rtsp_client);
+  shutdownStream(vcp_client);
 }
 
 
@@ -450,8 +464,9 @@ public:
   }
 
 
-  void OpenSdpFile(const IpCameraSinkParams &params, void (*frame_callback)(const cv::Mat &, void *), void *callback_param)
+  bool OpenSdpFile(const IpCameraSinkParams &params, void (*frame_callback)(const cv::Mat &, void *), void *callback_param)
   {
+    VCP_LOG_DEBUG("OpenSdpFile() '" << params.stream_url << "'");
     InitEnvironment();
 
     const std::string filename = vcp::utils::string::StartsWith(params.stream_url, "file://") ? params.stream_url.substr(7) : params.stream_url;
@@ -459,7 +474,7 @@ public:
     if (sdp_description.empty())
     {
       VCP_LOG_FAILURE("Cannot load the session description, check SDP file: '" << filename << "'");
-      return;
+      return false;
     }
 
     VcpRtspClient* vcp_client = new VcpRtspClient(*environment_, params, frame_callback, callback_param);
@@ -468,7 +483,7 @@ public:
       VCP_LOG_FAILURE("Failed to create a RTSP client for URL \""
                       << vcp::utils::string::ObscureUrlAuthentication(params.stream_url)
                       << "\": " << environment_->getResultMsg());
-      return;
+      return false;
     }
 
     client_list_mutex_.lock();
@@ -491,17 +506,18 @@ public:
       VCP_LOG_FAILURE("Failed to create a MediaSession for client '"
                       << vcp::utils::string::ObscureUrlAuthentication(vcp_client->params_.stream_url)
                       << "': " << env.getResultMsg());
-      return;
+      return false;
     }
     else if (!scs.session->hasSubsessions())
     {
       VCP_LOG_FAILURE("Client '" << vcp::utils::string::ObscureUrlAuthentication(vcp_client->params_.stream_url)
                       << "': this session has no media subsessions (i.e., no \"m=\" lines)");
-      return;
+      return false;
     }
 
     // Then, create and set up our data source objects for the session.
     scs.iter = new MediaSubsessionIterator(*scs.session);
+    bool success = false;
     while ((scs.subsession = scs.iter->next()) != NULL)
     {
       if (strcmp(scs.subsession->mediumName(), vcp_client->single_medium_subsession_.c_str()) != 0)
@@ -560,22 +576,23 @@ public:
                                  << "' set up a data sink for the \""
                                  << scs.subsession->mediumName() << "\" subsession.");
 
+          success = true;
           // a hack to let subsession handler functions get the "RTSPClient" from the subsession
           scs.subsession->miscPtr = vcp_client;
           scs.subsession->sink->startPlaying(*(scs.subsession->rtpSource()), NULL, NULL);
         }
       }
     }
+    return success;
   }
 
 
-  void OpenUrl(const IpCameraSinkParams &params, void (*frame_callback)(const cv::Mat &, void *), void *callback_param) override
+  bool OpenUrl(const IpCameraSinkParams &params, void (*frame_callback)(const cv::Mat &, void *), void *callback_param) override
   {
     if (vcp::utils::string::StartsWith(params.stream_url, "file://"))
-    {
-      OpenSdpFile(params, frame_callback, callback_param);
-      return;
-    }
+      return OpenSdpFile(params, frame_callback, callback_param);
+
+    VCP_LOG_DEBUG("OpenUrl() '" << vcp::utils::string::ObscureUrlAuthentication(params.stream_url) << "'");
 
     InitEnvironment();
     // Begin by creating a "RTSPClient" object.  Note that there is a separate "RTSPClient" object for each stream that we wish
@@ -586,7 +603,7 @@ public:
       VCP_LOG_FAILURE("Failed to create a RTSP client for URL \""
                       << vcp::utils::string::ObscureUrlAuthentication(params.stream_url)
                       << "\": " << environment_->getResultMsg());
-      return;
+      return false;
     }
 
     client_list_mutex_.lock();
@@ -599,6 +616,7 @@ public:
     // Note that this command - like all RTSP commands - is sent asynchronously; we do not block, waiting for a response.
     // Instead, the following function call returns immediately, and we handle the RTSP response later, from within the event loop:
     rtsp_client->sendDescribeCommand(continueAfterDESCRIBE);
+    return true;
   }
 
   void DoEventLoop() override

@@ -505,6 +505,8 @@ public:
         VCP_LOG_INFO_DEFAULT("Waiting for streaming thread to disconnect from webcam #" << params_.device_number);
       continue_capture_ = false;
       stream_thread_.join();
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Disconnected from webcam #" << params_.device_number);
     }
     return true;
   }

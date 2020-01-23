@@ -408,6 +408,7 @@ public:
     ir_stream_enabled_(false),
     k4a_device_(nullptr)
   {
+    VCP_LOG_DEBUG("K4ARGBDSink::K4ARGBDSink()");
     available_ = 0;
 
     // The user could configure the sensor such that
@@ -420,12 +421,13 @@ public:
 
   virtual ~K4ARGBDSink()
   {
-    StopStreaming();
+    VCP_LOG_DEBUG("K4ARGBDSink::~K4ARGBDSink()");
     CloseDevice();
   }
 
   bool OpenDevice() override
   {
+    VCP_LOG_DEBUG("K4ARGBDSink::OpenDevice()");
     if (k4a_device_)
     {
       VCP_LOG_FAILURE("Device already opened!");
@@ -456,8 +458,10 @@ public:
 
   bool CloseDevice() override
   {
+    StopStreaming();
     if (k4a_device_)
     {
+      VCP_LOG_DEBUG("K4ARGBDSink::CloseDevice()");
       k4a_device_close(k4a_device_);
       k4a_device_ = nullptr;
     }
@@ -467,6 +471,7 @@ public:
 
   bool StartStreaming() override
   {
+    VCP_LOG_DEBUG("K4ARGBDSink::StartStreaming()");
     if (continue_capture_)
     {
       VCP_LOG_FAILURE("K4A stream already running - ignoring StartStreaming() call.");
@@ -483,8 +488,13 @@ public:
   {
     if (continue_capture_)
     {
+      VCP_LOG_DEBUG("K4ARGBDSink::StopStreaming()");
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Closing k4a receiver thread.");
       continue_capture_ = false;
       stream_thread_.join();
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("k4a receiver thread has terminated.");
     }
     return true;
   }

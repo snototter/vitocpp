@@ -30,7 +30,7 @@ struct fcurl_data
 typedef struct fcurl_data URL_FILE;
 
 /* exported functions */
-URL_FILE *url_fopen(CURLM **multi_handle, const char *url,const char *operation);
+URL_FILE *url_fopen(CURLM **multi_handle, const char *url, const char *operation, long timeout_ms=1500);
 int url_fclose(CURLM **multi_handle, URL_FILE *file);
 int url_feof(URL_FILE *file);
 size_t url_fread(CURLM *multi_handle, void *ptr, size_t size, size_t nmemb, URL_FILE *file);

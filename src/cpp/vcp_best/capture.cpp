@@ -47,14 +47,14 @@ class MultiDeviceCapture : public Capture
 public:
   MultiDeviceCapture(const vcp::config::ConfigParams &config) : Capture()
   {
-    VCP_LOG_DEBUG("MultiDeviceCapture()");
+    VCP_LOG_DEBUG("MultiDeviceCapture::MultiDeviceCapture()");
     num_devices_ = 0;
     LoadConfig(config);
   }
 
   void LoadConfig(const vcp::config::ConfigParams &config)
   {
-    VCP_LOG_DEBUG("LoadConfig()");
+    VCP_LOG_DEBUG("MultiDeviceCapture::LoadConfig()");
 
     std::vector<file::ImageDirectorySinkParams> imgdir_params;
 #ifdef VCP_BEST_WITH_IPCAM
@@ -248,8 +248,7 @@ public:
 
   virtual ~MultiDeviceCapture()
   {
-    VCP_LOG_DEBUG("~MultiDeviceCapture()");
-    StopStreams();
+    VCP_LOG_DEBUG("MultiDeviceCapture::~MultiDeviceCapture()");
     CloseDevices();
     for (size_t i = 0; i < sinks_.size(); ++i)
       sinks_[i].reset();
@@ -319,7 +318,7 @@ public:
 
   bool OpenDevices() override
   {
-    VCP_LOG_DEBUG("OpenDevices()");
+    VCP_LOG_DEBUG("MultiDeviceCapture::OpenDevices()");
     bool success = true;
     for (size_t i = 0; i < sinks_.size(); ++i)
       success = success && sinks_[i]->OpenDevice();
@@ -329,7 +328,8 @@ public:
 
   bool CloseDevices() override
   {
-    VCP_LOG_DEBUG("CloseDevices()");
+    StopStreams();
+    VCP_LOG_DEBUG("MultiDeviceCapture::CloseDevices()");
     bool success = true;
     for (size_t i = 0; i < sinks_.size(); ++i)
       success = success && sinks_[i]->CloseDevice();
@@ -339,7 +339,7 @@ public:
 
   bool StartStreams() override
   {
-    VCP_LOG_DEBUG("StartStreams()");
+    VCP_LOG_DEBUG("MultiDeviceCapture::StopStreams()");
     bool success = true;
     for (size_t i = 0; i < sinks_.size(); ++i)
     {
@@ -364,6 +364,7 @@ public:
 
   bool WaitForInitialFrames(double timeout_ms) const override
   {
+    VCP_LOG_DEBUG("MultiDeviceCapture::WaitForInitialFrames()");
     std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     double elapsed_ms = 0;
     while (elapsed_ms < timeout_ms)
@@ -373,20 +374,22 @@ public:
         available = available && sinks_[i]->IsFrameAvailable();
       if (available)
         return true;
+      VCP_LOG_INFO_NSEC("Not all sinks are ready. Continue waiting for "
+                        << std::fixed << std::setprecision(2) << (std::max(timeout_ms - elapsed_ms, 0.0) / 1000) << " sec.", 0.5);
       std::this_thread::sleep_for(std::chrono::milliseconds(50));
 
       const auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(
                 std::chrono::high_resolution_clock::now() - start);
       elapsed_ms = duration.count();
     }
-    VCP_LOG_FAILURE("Not all sinks are ready. Waited for " << elapsed_ms/1000 << " sec.");
+    VCP_LOG_FAILURE("Not all sinks are ready. Aborting after " << std::fixed << std::setprecision(2) << elapsed_ms/1000 << " sec.");
     return false;
   }
 
 
   bool StopStreams() override
   {
-    VCP_LOG_DEBUG("StopStreams()");
+    VCP_LOG_DEBUG("MultiDeviceCapture::StopStreams()");
     bool success = true;
     for (size_t i = 0; i < sinks_.size(); ++i)
       success = success && sinks_[i]->StopStreaming();

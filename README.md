@@ -5,55 +5,11 @@ C++/Python 3 utilities for common vision tasks, e.g. streaming, visualization or
 
 ## What is it good for?
 Some of `vcp`'s highlights:
-* Best effort multi-device streaming. Suppose you have a capturing setup similar to this:
-  ```
-    Stream  Label         Type        Config. Param
-  --------------------------------------------------
-         0  kinect-rgb    rgbd-image  sink-k4a  
-         1  kinect-depth  rgbd-depth  sink-k4a
-         2  kinect-ir     infrared    sink-k4a
-         3  zed-stereo    stereo      sink-webcam 
-         4  ipcam-left    monocular   sink-axis
-         5  ipcam-right   monocular   sink-axis
-  --------------------------------------------------
-    6 streams from 4 devices
-    * Devices are available
-    * Frames are enqueued
-  ```
-  What if I told you that the corresponding configuration file simply looks like this:
+* Best effort multiple device streaming. Useful for quick camera tests and whenever (guaranteed) synchronisation isn't crucial. The goal of this module is to stream from multiple devices simultaneously, without having the ROS overhead. A simple configuration file like this:
   ```C++
-  sink-k4a = {
-    // Mandatory parameter, specifying the device/sink type.
-    sink_type = "k4a";
-
-    // Optional custom label.
-    label = "kinect";
-
-    // Take any available Azure Kinect 4K.
-    serial_number = "";
-  };
-
-  sink-webcam = {
-    // ZED acts like any other webcam...
-    sink_type = "webcam";
-
-    // ... except that it yields a single frame, with left and right view concatenated.
-    frame_type = "stereo";
-  
-    // Optional custom label.
-    label = "zed-stereo";
-
-    // It's the first/only webcam plugged in.
-    device_number = -1;
-  };
-
-  sink-axis = {
-    sink_type = "axis-stereo";
-    label = "ipcam";
-    host_left = "192.168.1.20";
-    host_right = "192.168.1.21";
-  };
+  TODO add
   ```
+  allows you to process all streams both in C++ and python. For more details, look into the provided examples.
   TODO add separate BESt README to show more complex configs (e.g. adjusting RealSense/K4A/MatrixVision camera parameters).
 * Nice(r) visualizations with less effort than plain OpenCV (have you ever tried to render a 3D bounding box?)
 TODO example images (drawingXY)

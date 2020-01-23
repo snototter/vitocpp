@@ -40,6 +40,7 @@ public:
     params_(params), mjpg_stream_(nullptr), mjpg_multi_handle_(nullptr), continue_stream_(false),
     is_stream_available_(false), image_queue_(std::move(sink_buffer))
   {
+    VCP_LOG_DEBUG("HttpMjpegSink::HttpMjpegSink()");
     if (!(params.application_protocol == IpApplicationProtocol::HTTP
           && params.stream_encoding == IpStreamEncoding::MJPEG))
       VCP_ERROR("Invalid protocol/encoding ("
@@ -49,6 +50,7 @@ public:
 
   virtual ~HttpMjpegSink()
   {
+    VCP_LOG_DEBUG("HttpMjpegSink::~HttpMjpegSink()");
     CloseDevice();
   }
 
@@ -115,7 +117,7 @@ public:
 
   bool OpenDevice() override
   {
-    //TODO check if host is up via libcurl (?)
+    VCP_LOG_DEBUG("HttpMjpegSink::OpenDevice()");
     if (params_.verbose)
       VCP_LOG_INFO_DEFAULT("Opening IP camera connection: " << params_);
 
@@ -137,6 +139,7 @@ public:
 
     if (mjpg_stream_)
     {
+      VCP_LOG_DEBUG("HttpMjpegSink::CloseDevice()");
       if (params_.verbose)
         VCP_LOG_INFO_DEFAULT("Closing IP camera connection: '" << params_ << "'");
       url_fclose(&mjpg_multi_handle_, mjpg_stream_);
@@ -147,6 +150,7 @@ public:
 
   bool StartStreaming() override
   {
+    VCP_LOG_DEBUG("HttpMjpegSink::StartStreaming()");
     if (!mjpg_stream_)
     {
       VCP_LOG_FAILURE("IP camera has not been opened yet: " << params_);
@@ -165,11 +169,14 @@ public:
   {
     if (continue_stream_)
     {
+      VCP_LOG_DEBUG("HttpMjpegSink::StopStreaming()");
       if (params_.verbose)
         VCP_LOG_INFO_DEFAULT("Stopping IP camera stream: " << params_);
       // Stop receiver thread.
       continue_stream_ = false;
       stream_thread_.join();
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Successfully stopped IP camera stream: " << params_);
     }
     return true;
   }
@@ -217,9 +224,9 @@ private:
       if (jpeg_bytes == 0)
       {
         //TODO camera reboot should be detected here!
-        VCP_LOG_FAILURE("IP camera received no bytes: " << params_);
+        VCP_LOG_FAILURE_NSEC("IP camera received no bytes: " << params_, 0.25);
         ++frame_drop_cnt;
-        if (frame_drop_cnt > 10000)
+        if (frame_drop_cnt > 1000)
         {
           is_stream_available_ = false;
         }

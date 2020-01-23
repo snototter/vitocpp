@@ -43,7 +43,11 @@ void Stream(const std::string &config_file)
   const std::vector<std::string> frame_labels = capture->FrameLabels();
   VCP_LOG_INFO_DEFAULT("Successfully started capture:" << std::endl << *capture);
 
-  capture->WaitForInitialFrames(5000);
+  if (!capture->WaitForInitialFrames(5000))
+  {
+    VCP_LOG_FAILURE("Didn't receive an initial set of frames - aborting.");
+    return;
+  }
 
   VCP_TIC;
   std::chrono::high_resolution_clock::time_point tp_query;
@@ -142,7 +146,7 @@ int main(int argc, char **argv)
 
   const std::vector<std::string> configs = {
     "data-best/k4a.cfg",
-    /*"data-best/ipcam.cfg",
+    "data-best/ipcam.cfg",
     /*"data-best/image_sequence.cfg",
     "data-best/video.cfg",
     "data-best/webcam.cfg"*/

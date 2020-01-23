@@ -22,6 +22,8 @@ namespace best
 {
 namespace ipcam
 {
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::best::ipcam"
 std::string GetAxisRtspUrl(const IpCameraSinkParams &p)
 {
   std::string codec;
@@ -450,6 +452,7 @@ public:
   GenericIpCameraSink(const std::vector<IpCameraSinkParams> &params)
     : StreamSink()
   {
+    VCP_LOG_DEBUG("GenericIpCameraSink::GenericIpCameraSink()");
     // Group parameters by their protocol
     for (const auto &p : params)
     {
@@ -471,6 +474,7 @@ public:
 
   virtual ~GenericIpCameraSink()
   {
+    VCP_LOG_DEBUG("GenericIpCameraSink::~GenericIpCameraSink()");
     CloseDevice();
   }
 
@@ -551,6 +555,7 @@ public:
 
   bool OpenDevice() override
   {
+    VCP_LOG_DEBUG("GenericIpCameraSink::OpenDevice()");
     for (const auto &p : params_http_)
     {
 #ifdef VCP_BEST_WITH_IPCAM_HTTP
@@ -586,6 +591,7 @@ public:
 
   bool CloseDevice() override
   {
+    VCP_LOG_DEBUG("GenericIpCameraSink::CloseDevice()");
     bool success = true;
     for (size_t i = 0; i < sinks_.size(); ++i)
       success &= sinks_[i]->CloseDevice();
@@ -594,6 +600,7 @@ public:
 
   bool StartStreaming() override
   {
+    VCP_LOG_DEBUG("GenericIpCameraSink::StartStreaming()");
     bool success = true;
     for (size_t i = 0; i < sinks_.size(); ++i)
       success &= sinks_[i]->StartStreaming();
@@ -602,6 +609,7 @@ public:
 
   bool StopStreaming() override
   {
+    VCP_LOG_DEBUG("GenericIpCameraSink::StopStreaming()");
     bool success = true;
     for (size_t i = 0; i < sinks_.size(); ++i)
       success &= sinks_[i]->StopStreaming();
@@ -633,240 +641,12 @@ private:
 };
 
 
-/*
-class GenericStereoIpCamSink : public StreamSink
-{
-public:
-  virtual ~GenericStereoIpCamSink() {}
-
-  GenericStereoIpCamSink(const std::vector<StereoIpCameraSinkParams> &params, std::string (*GetUrlFn)(const pvt::icc::ipcam::IpCameraParams &)=GetIpCameraUrl)
-    : StreamSink()
-  {
-    // Check protocol
-    num_stereo_cameras_ = params.size();
-    if (params[0].cam1_params.protocol == pvt::icc::ipcam::IpApplicationProtocol::HTTP)
-    {
-#ifdef VCP_BEST_WITH_IPCAM_HTTP
-      is_rtsp_ = false;
-      if (params[0].cam1_params.stream_type != pvt::icc::ipcam::IpStreamEncoding::MJPEG)
-        PVT_ABORT("Cannot stream '" << ipcam::IpStreamEncodingToString(params[0].cam1_params.stream_type) << "' over HTTP!");
-
-      for (const auto &p : params)
-      {
-        if ((p.cam1_params.protocol != params[0].cam1_params.protocol) ||
-            (p.cam2_params.protocol != params[0].cam1_params.protocol))
-          PVT_ABORT("All IP stereo cameras must use the same streaming protocol!");
-
-        const std::string url_left = GetUrlFn(p.cam1_params);
-        const std::string url_right = GetUrlFn(p.cam2_params);
-
-        PVT_LOG_INFO("Connecting to '" << p.cam1_params.camera_type << "' stereo setup at: "
-                     << pvt::utils::string::ObscureUrlAuthentication(url_left) << " and "
-                     << pvt::utils::string::ObscureUrlAuthentication(url_right));
-        sinks_.push_back(pvt::icc::CreateHttpMjpegSink<PVT_ICC_CIRCULAR_SINK_BUFFER_CAPACITY>(url_left));
-        sinks_.push_back(pvt::icc::CreateHttpMjpegSink<PVT_ICC_CIRCULAR_SINK_BUFFER_CAPACITY>(url_right));
-      }
-#else // VCP_BEST_WITH_IPCAM_HTTP
-      PVT_ABORT("You need to compile PVT with HTTP streaming enabled!");
-#endif // VCP_BEST_WITH_IPCAM_HTTP
-    }
-    else if (params[0].cam1_params.protocol == pvt::icc::ipcam::IpApplicationProtocol::RTSP)
-    {
-#ifdef VCP_BEST_WITH_IPCAM_RTSP
-      is_rtsp_ = true;
-      // Due to whatever reason, RTSP streaming with live555 only works with one
-      // sink (but multiple clients).
-      // So we just set up a single sink and store the frame splits.
-      int split_column = 0;
-      std::vector<pvt::icc::RtspStreamParams> cam_params;
-      for (const auto &p : params)
-      {
-        // Left camera
-        if ((p.cam1_params.protocol != params[0].cam1_params.protocol) ||
-            (p.cam2_params.protocol != params[0].cam1_params.protocol))
-          PVT_ABORT("All IP cameras must use the same streaming protocol!");
-
-        // RTSP supports MJPEG and H264
-        pvt::icc::RtspStreamType stream_type;
-        if (p.cam1_params.stream_type == pvt::icc::ipcam::IpStreamEncoding::MJPEG)
-          stream_type = pvt::icc::RtspStreamType::MJPEG;
-        else if (p.cam1_params.stream_type == pvt::icc::ipcam::IpStreamEncoding::H264)
-          stream_type = pvt::icc::RtspStreamType::H264;
-        else
-          PVT_ABORT("Stream type '" << ipcam::IpStreamEncodingToString(p.cam1_params.stream_type) << "' not supported!");
-
-        pvt::icc::RtspStreamParams cam_param_left;
-        cam_param_left.stream_url = GetUrlFn(p.cam1_params);
-        cam_param_left.stream_type = stream_type;
-        cam_param_left.frame_width = p.cam1_params.frame_width;
-        cam_param_left.frame_height = p.cam1_params.frame_height;
-        // UDP is preferred but our Axis cams will kill the RTSP over UDP streams
-        // after a few seconds/minutes. Thus, we accept the TCP overhead (as long
-        // as we can reliably stream our data).
-        cam_param_left.protocol = pvt::icc::RtspProtocol::TCP;
-
-
-        // Right camera
-        if (p.cam2_params.stream_type != params[0].cam1_params.stream_type)
-          PVT_ABORT("All IP cameras must use the same stream type (Video encoding)!");
-
-        pvt::icc::RtspStreamParams cam_param_right;
-        cam_param_right.stream_url = GetUrlFn(p.cam2_params);
-        cam_param_right.stream_type = stream_type;
-        cam_param_right.frame_width = p.cam2_params.frame_width;
-        cam_param_right.frame_height = p.cam2_params.frame_height;
-        cam_param_right.protocol = cam_param_left.protocol;
-
-
-        PVT_LOG_INFO("Connecting to '" << p.cam1_params.camera_type << "' stereo setup at: "
-                     << pvt::utils::string::ObscureUrlAuthentication(cam_param_left.stream_url) << " and "
-                     << pvt::utils::string::ObscureUrlAuthentication(cam_param_right.stream_url));
-        cam_params.push_back(cam_param_left);
-        cam_params.push_back(cam_param_right);
-        split_column += (cam_param_left.frame_width + cam_param_right.frame_width);
-        multi_rtsp_splits_.push_back(split_column);
-      }
-      sinks_.push_back(pvt::icc::CreateMultiRtspStreamSink<PVT_ICC_CIRCULAR_SINK_BUFFER_CAPACITY>(cam_params));
-#else // VCP_BEST_WITH_IPCAM_RTSP
-      PVT_ABORT("You need to compile PVT with RTSP streaming enabled!");
-#endif // VCP_BEST_WITH_IPCAM_RTSP
-    }
-    else
-      VCP_ERROR("Protocol not supported/implemented for our Axis stereo captures!");
-  }
-
-
-  int IsDeviceAvailable() const override
-  {
-    for (size_t i = 0; i < sinks_.size(); ++i)
-    {
-      if (!sinks_[i]->IsDeviceAvailable())
-        return 0;
-    }
-    return 1;
-  }
-
-
-  int IsFrameAvailable() const override
-  {
-    for (size_t i = 0; i < sinks_.size(); ++i)
-    {
-      if (!sinks_[i]->IsFrameAvailable())
-        return 0;
-    }
-    return 1;
-  }
-
-  bool OpenDevice() override
-  {
-    bool success = true;
-    for (size_t i = 0; i < sinks_.size(); ++i)
-      success &= sinks_[i]->OpenDevice();
-    return success;
-  }
-
-  bool CloseDevice() override
-  {
-    bool success = true;
-    for (size_t i = 0; i < sinks_.size(); ++i)
-      success &= sinks_[i]->CloseDevice();
-    return success;
-  }
-
-  bool StartStreaming() override
-  {
-    bool success = true;
-    for (size_t i = 0; i < sinks_.size(); ++i)
-      success &= sinks_[i]->StartStreaming();
-    return success;
-  }
-
-  std::vector<cv::Mat> Next() override
-  {
-    std::vector<cv::Mat> frames;
-    frames.reserve(num_stereo_cameras_);
-
-    if (is_rtsp_)
-    {
-      // Currently, there should only be 1 MultiRtspSink - otherwise, the streaming
-      // gets pretty unreliable (as tested in our setups).
-      // Since this might change (e.g. if we update live555 or switch to a different
-      // streaming library), we still loop over all sinks.
-      for (size_t i = 0; i < sinks_.size(); ++i)
-      {
-        cv::Mat frame;
-        sinks_[i]->GetNextFrame(frame);
-
-        if (multi_rtsp_splits_.size() < 2)
-        {
-          frames.push_back(frame);
-        }
-        else
-        {
-          // We use a multi-rtsp cue with multiple streams.
-          // Thus, we have to split the incoming frame.
-          int from = 0;
-          for (size_t j = 0; j < multi_rtsp_splits_.size(); ++j)
-          {
-            if (frame.empty())
-            {
-              frames.push_back(frame);
-            }
-            else
-            {
-              int to = multi_rtsp_splits_[j];
-              const cv::Rect roi(from, 0, to-from, frame.rows);
-              cv::Mat split = frame(roi).clone();
-              frames.push_back(split);
-              from = to;
-            }
-          }
-        }
-      }
-    }
-    else
-    {
-      // With HTTP streams, we have 1 camera per sink, so the first
-      // stereo camera consists of sinks[0] and sinks[1], etc.
-
-      for (size_t i = 0; i < sinks_.size(); i+=2)
-      {
-        // Concatenate left and right frame
-        cv::Mat left, right;
-        sinks_[i]->GetNextFrame(left);
-        sinks_[i+1]->GetNextFrame(right);
-        frames.push_back(pvt::imutils::ColumnStack(left, right));
-      }
-    }
-
-    return frames;
-  }
-
-private:
-  size_t num_stereo_cameras_;
-  bool is_rtsp_;
-  std::vector<int> multi_rtsp_splits_;
-  std::vector<std::unique_ptr<StreamSink>> sinks_;
-};
-//FIXME!
-*/
-
-
-
-
 std::unique_ptr<StreamSink> CreateIpCameraSink(const std::vector<IpCameraSinkParams> &params)
 {
   if (params.empty())
     return nullptr;
   return std::unique_ptr<GenericIpCameraSink>(new GenericIpCameraSink(params));
 }
-
-
-//FIXMEstd::unique_ptr<StreamSink> CreateStereoIpCamerSink(const std::vector<StereoIpCameraSinkParams> &params)
-//{
-//  return std::unique_ptr<GenericStereoIpCamSink>(new GenericStereoIpCamSink(params, GetIpCameraUrl));
-//}
-
 
 bool IsGenericIpCameraMonocular(const std::string &camera_type)
 {

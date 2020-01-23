@@ -29,7 +29,7 @@ public:
    *
    * To open an SDP (session description protocol) file, pass in a "file://<path>/<to>/<file>" URL.
    */
-  virtual void OpenUrl(const IpCameraSinkParams &params,
+  virtual bool OpenUrl(const IpCameraSinkParams &params,
                        void (*frame_callback)(const cv::Mat &, void *),
                        void *callback_param) = 0;
 

@@ -50,36 +50,6 @@ protected:
   // Hook to be invoked once a data frame arrived. Must be static to match the
   // callback signature. Handling instance is passed as client_data.
   static void afterGettingFrame(void *client_data, unsigned frame_size, unsigned num_truncated_bytes, struct timeval presentation_time, unsigned duration_in_microseconds);
-
-  //TODO clean up
-  // Invoked by realizing classes to log stats for an incoming frame (upon console)
-//  void logReceivedFrame(unsigned frame_size, unsigned num_truncated_bytes, struct timeval presentation_time);
-
-  // Provides a live view (and the ability to terminate by hitting ESC)
-//  void showLiveStream(const cv::Mat &frame);
-
-// Save frames:
-  // Member function pointer invoked by realizations
-//  bool (AxisRTSPSink::*handleOutput)(const cv::Mat &, size_t, struct timeval, bool);
-//  bool outputSingleFrame(const cv::Mat &frame, size_t frame_nr, struct timeval presentation_time, bool valid_frame);
-//  bool appendToVideo(const cv::Mat &frame, size_t frame_nr, struct timeval presentation_time, bool valid_frame);
-//  bool outputNothing(const cv::Mat &frame, size_t frame_nr, struct timeval presentation_time, bool valid_frame);
-
-//  inline void logTimeStamp(size_t frame_nr, struct timeval presentation_time)
-//  {
-//    fs_timestamps << frame_nr << ";" << presentation_time.tv_sec << ";" << presentation_time.tv_usec << ";";
-//    if (!has_been_rtcp_synchronized)
-//    {
-//      fs_timestamps << "0";
-//      if (fSubsession.rtpSource() != NULL && fSubsession.rtpSource()->hasBeenSynchronizedUsingRTCP())
-//        has_been_rtcp_synchronized = true;
-//    }
-//    fs_timestamps << std::endl;
-//  }
-//  inline void logInvalidFrame(struct timeval presentation_time)
-//  {
-//    fs_timestamps << "-1;" << presentation_time.tv_sec << ";" << presentation_time.tv_usec << ";" << std::endl;
-//  }
 };
 
 RtspMediaSink *CreateRtspMjpegMediaSink(UsageEnvironment &env,

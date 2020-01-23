@@ -40,6 +40,7 @@ public:
   MultiRtspStreamSink(const std::vector<IpCameraSinkParams> &params, std::vector<std::unique_ptr<SinkBuffer>> sink_buffers) :
     StreamSink(), image_queues_(std::move(sink_buffers)), rtsp_client_env_(nullptr), verbose_(false)
   {
+    VCP_LOG_DEBUG("MultiRtspStreamSink::MultiRtspStreamSink()");
     if (params.empty())
       VCP_ERROR("Cannot create a MultiRtspStreamSink without any configured streams.");
 
@@ -67,24 +68,27 @@ public:
 
   virtual ~MultiRtspStreamSink()
   {
+    VCP_LOG_DEBUG("MultiRtspStreamSink::~MultiRtspStreamSink()");
     CloseDevice();
   }
 
   bool OpenDevice() override
   {
+    VCP_LOG_DEBUG("MultiRtspStreamSink::OpenDevice()");
     return true;
   }
 
 
   bool CloseDevice() override
   {
+    VCP_LOG_DEBUG("MultiRtspStreamSink::CloseDevice()");
     return StopStreaming();
   }
 
 
   bool StartStreaming() override
   {
-
+    VCP_LOG_DEBUG("MultiRtspStreamSink::StartStreaming()");
     if (rtsp_client_env_)
     {
       VCP_LOG_FAILURE("RTSP client environment is already initialized.");
@@ -107,22 +111,26 @@ public:
         VCP_LOG_INFO_DEFAULT("Starting all " << params_.size() << " RTSP streams.");
     }
 
+    bool success = false;
     for (size_t i = 0; i < params_.size(); ++i)
-      rtsp_client_env_->OpenUrl(params_[i], &MultiRtspStreamSink::ReceiveFrameCallback, &callback_data_[i]);
+      success |= rtsp_client_env_->OpenUrl(params_[i], &MultiRtspStreamSink::ReceiveFrameCallback, &callback_data_[i]);
 
     stream_thread_ = std::thread(&MultiRtspStreamSink::RunEventLoop, this);
-    return true;
+    return success;
   }
 
   bool StopStreaming() override
   {
+    VCP_LOG_DEBUG("MultiRtspStreamSink::StopStreaming()");
     if (rtsp_client_env_)
     {
       if (verbose_)
-        VCP_LOG_INFO_DEFAULT("Closing all RTSP streams.");
+        VCP_LOG_INFO_DEFAULT("Closing the RTSP client environment.");
       rtsp_client_env_->TerminateEventLoop();
       stream_thread_.join();
       rtsp_client_env_.reset();
+      if (verbose_)
+        VCP_LOG_INFO_DEFAULT("RTSP client environment has terminated.");
     }
     return true;
   }

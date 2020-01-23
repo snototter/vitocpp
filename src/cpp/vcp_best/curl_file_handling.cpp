@@ -67,7 +67,7 @@ static int fill_buffer(CURLM *multi_handle, URL_FILE *file, size_t want)
     FD_ZERO(&fdexcep);
 
     /* set a suitable timeout to fail on */
-    timeout.tv_sec = 60; /* 1 minute */
+    timeout.tv_sec = 5;
     timeout.tv_usec = 0;
 
     curl_multi_timeout(multi_handle, &curl_timeo);
@@ -129,7 +129,7 @@ static int use_buffer(URL_FILE *file,int want)
   return 0;
 }
 
-URL_FILE *url_fopen(CURLM **multi_handle, const char *url,const char *operation)
+URL_FILE *url_fopen(CURLM **multi_handle, const char *url, const char *operation, long timeout_ms)
 {
   /* this code could check for URLs or types in the 'url' and
      basicly use the real fopen() for standard files */
@@ -154,6 +154,7 @@ URL_FILE *url_fopen(CURLM **multi_handle, const char *url,const char *operation)
     curl_easy_setopt(file->handle.curl, CURLOPT_WRITEDATA, file);
     curl_easy_setopt(file->handle.curl, CURLOPT_VERBOSE, 0L);
     curl_easy_setopt(file->handle.curl, CURLOPT_WRITEFUNCTION, write_callback);
+    curl_easy_setopt(file->handle.curl, CURLOPT_TIMEOUT_MS, timeout_ms);
     // Allow any authorization mode CURL knows (required for Axis MJPEG Streaming via "http://usr:pwd@host" URLs)
     // The default scheme works fine with Mobotix cameras, though!
     curl_easy_setopt(file->handle.curl, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
@@ -163,10 +164,9 @@ URL_FILE *url_fopen(CURLM **multi_handle, const char *url,const char *operation)
 
     curl_multi_add_handle(*multi_handle, file->handle.curl);
 
-    /* lets start the fetch */
-    curl_multi_perform(*multi_handle, &file->still_running);
-
-    if((file->buffer_pos == 0) && (!file->still_running)) {
+    // Start fetching.
+    CURLMcode cc = curl_multi_perform(*multi_handle, &file->still_running);
+    if(cc == CURLM_OK && (file->buffer_pos == 0) && (!file->still_running)) {
       /* if still_running is 0 now, we should return NULL */
 
       /* make sure the easy handle is not in the multi handle anymore */
@@ -248,7 +248,7 @@ size_t url_fread(CURLM *multi_handle, void *ptr, size_t size, size_t nmemb, URL_
   case CFTYPE_CURL:
     want = nmemb * size;
 
-    fill_buffer(multi_handle, file,want);
+    fill_buffer(multi_handle, file, want);
 
     /* check if theres data in the buffer - if not fill_buffer()
      * either errored or EOF */
@@ -287,14 +287,13 @@ char *url_fgets(CURLM *multi_handle, char *ptr, size_t size, URL_FILE *file)
     break;
 
   case CFTYPE_CURL:
-    fill_buffer(multi_handle, file,want);
+    fill_buffer(multi_handle, file, want);
 
-    /* check if theres data in the buffer - if not fill either errored or
-     * EOF */
+    // check if there's data in the buffer
     if(!file->buffer_pos)
       return NULL;
 
-    /* ensure only available data is considered */
+    // ensure only available data is considered
     if(file->buffer_pos < want)
       want = file->buffer_pos;
 
@@ -307,9 +306,9 @@ char *url_fgets(CURLM *multi_handle, char *ptr, size_t size, URL_FILE *file)
       }
     }
 
-    /* xfer data to caller */
+    // transfer data to caller
     memcpy(ptr, file->buffer, want);
-    ptr[want]=0;/* allways null terminate */
+    ptr[want]=0; // Null termination
 
     use_buffer(file,want);
 
