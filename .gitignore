@@ -2,6 +2,8 @@ build/
 gen/
 external/live/
 external/pybind11*/
+external/v*.tar.gz
+external/live555-latest.tar.gz
 *~
 *.user*
 *.autosave

@@ -20,14 +20,14 @@ else
 fi
 
 echo
-echo "[VCP] Found VCP_ROOT_DIR at '${VCP_ROOT_DIR}'"
+echo "[vcp] Found VCP_ROOT_DIR at '${VCP_ROOT_DIR}'"
 echo
 
 
 ##############################################################################
 # Ensure that all required packages are installed
 ##############################################################################
-echo "[VCP] Checking requirements"
+echo "[vcp] Checking requirements"
 echo
 "$VCP_SCRIPT_DIR"/setup-dependencies-ubuntu-18.04.sh
 OPT_PKG_FLAGS=$?
@@ -57,7 +57,7 @@ fi
 ##############################################################################
 # Set up external (non-packaged) libraries
 ##############################################################################
-echo "[VCP] Preparing 3rd party libraries"
+echo "[vcp] Preparing 3rd party libraries"
 echo
 # Remember current working directory to return here
 CURR_WORK_DIR=$(pwd)
@@ -66,12 +66,16 @@ cd ${VCP_ROOT_DIR}/external
 ##### live555 for RTSP stream handling
 if [ "${BUILD555}" ]; then
   if [ ! -d "live" ]; then
-      echo "  [VCP] Building live555"
+      echo "  [vcp] Building live555"
+      echo "  [vcp] Grabbing latest live555"
+      echo "        If there are errors, use the frozen but known-to-be-working"
+      echo "        ./external/live555<version>.tar.gz instead"
       echo
-      tar zxf live.2020.01.11.tar.gz
+      wget http://www.live555.com/liveMedia/public/live555-latest.tar.gz
+      tar zxf live555-latest.tar.gz
       cd live
       ./genMakefiles linux-64bit
-      make -j
+      make -j > /dev/null
       ## I prefer not to '(make) install' live555. VCP takes care of adjusting
       ## the library linkage paths.
       cd ..
@@ -79,12 +83,17 @@ if [ "${BUILD555}" ]; then
 fi
 ##############################################################################
 ##### pybind11 for Python bindings
-PYBIND_NAME=pybind11-2.4.3
+PYBIND_VERSION=2.4.3
+PYBIND_NAME=pybind11-${PYBIND_VERSION}
 if [ ! -d "${PYBIND_NAME}" ]; then
-    echo "  [VCP] Building pybind11"
+    echo "  [vcp] Building pybind11"
+    echo "  [vcp] Grabbing pybind11 v${PYBIND_VERSION}"
+    echo "        If there are errors, use the frozen but known-to-be-working"
+    echo "        ./external/pybind11-<version>.tar.gz instead"
     echo
-    tar zxf ${PYBIND_NAME}.tar.gz
-    cd $PYBIND_NAME
+    wget https://github.com/pybind/pybind11/archive/v${PYBIND_VERSION}.tar.gz
+    tar zxf v${PYBIND_VERSION}.tar.gz
+    cd ${PYBIND_NAME}
     mkdir -p build
     cd build
     ## Set local(!) install path
@@ -100,7 +109,7 @@ cd ..
 ##############################################################################
 # Configure, build and (locally) install C++ libraries
 ##############################################################################
-echo "  [VCP] Building VCP C++ libraries"
+echo "[vcp] Building VCP C++ libraries"
 echo
 mkdir -p build
 cd build
@@ -113,7 +122,7 @@ cd ..
 ##############################################################################
 # Configure, build and (locally) install Python wrappers
 ##############################################################################
-echo "  [VCP] Building VCP python3 bindings"
+echo "[vcp] Building vcp python3 bindings"
 echo
 cd src/python3
 mkdir -p build
@@ -127,7 +136,7 @@ cd ../../..
 ##############################################################################
 # Configure, build and (locally) install Python wrappers
 ##############################################################################
-echo "  [VCP] Building C++ examples"
+echo "[vcp] Building C++ examples"
 echo
 
 cd examples
