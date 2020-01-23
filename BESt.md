@@ -1,5 +1,8 @@
 # BESt - Best Effort Streaming
-## Streaming Examples: IP Cameras (Axis)
+## Streaming Example: Webcam, Image Sequence & Video File
+## Streaming Example: Azure Kinect (K4A)
+## Streaming Example: RealSense
+## Streaming Example: IP Cameras (Axis)
 ```c++
 // 4 image streams (1 stereo + 2 monocular) from 2 physical devices.
 

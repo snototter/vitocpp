@@ -118,23 +118,27 @@ Testing requires `gtest`, which you'll probably need to build yourself - this is
   * [ ] Load intrinsics
   * [ ] Load extrinsics
   * [ ] Rectify streams
+    * [ ] Mono
+    * [ ] Stereo
+    * [ ] RGB+D
   * [x] File sinks
   * [x] Webcam sink
   * [x] HTTP sink
-  * [ ] RTSP sink
-  * [ ] Monocular/stereo
+  * [x] RTSP sink
+  * [x] Monocular/stereo
     * [x] Stereo IP cam streams as separate monocular sinks
-    * [ ] "Real" stereo cams (e.g. ZED) could be split in VCP or by the library user (currently, the latter is preferred)
+    * [x] "Real" stereo cams (e.g. ZED) could be split in VCP or by the library user (currently, the latter is preferred)
   * [ ] RealSense
   * [ ] Azure Kinect
     * [x] Stream raw data
     * [x] Align RGB+D
     * [ ] Query intrinsics
   * [ ] mvBlueFox
-  * [ ] Axis, Mobotix, etc.
+  * [x] Axis
+  * [ ] Mobotix, etc.
 * [ ] Python bindings
   * [ ] best
-  * [ ] config - likely not needed
+  * [ ] config - needed for 'best' configuration
   * [x] imutils
   * [x] imvis
   * [x] math
