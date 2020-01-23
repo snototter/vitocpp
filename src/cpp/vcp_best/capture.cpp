@@ -374,7 +374,7 @@ public:
         available = available && sinks_[i]->IsFrameAvailable();
       if (available)
         return true;
-      VCP_LOG_INFO_NSEC("Not all sinks are ready. Continue waiting for "
+      VCP_LOG_WARNING_NSEC("Not all sinks are ready. Continue waiting for "
                         << std::fixed << std::setprecision(2) << (std::max(timeout_ms - elapsed_ms, 0.0) / 1000) << " sec.", 0.5);
       std::this_thread::sleep_for(std::chrono::milliseconds(50));
 

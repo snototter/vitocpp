@@ -1,5 +1,31 @@
 # BESt - Best Effort Streaming
 ## Streaming Example: Webcam, Image Sequence & Video File
+```c++
+// 4 image streams (1 stereo + 2 monocular) from 2 physical devices.
+
+camera-webcam = {
+  // Required
+  sink_type = "webcam";
+  // Required. On Unix, -1 selects the first available webcam.
+  device_number = -1;
+}
+
+camera-video-playback = {
+  // Required
+  sink_type = "video";
+  // Required.
+  video = "/path/to/video";
+  // Optional
+  fps = 20;
+}
+
+camera-sequence = {
+  // Required
+  sink_type = "image-sequence";
+  // Required.
+  directory = "/path/to/image-directory";
+}
+```
 ## Streaming Example: Azure Kinect (K4A)
 ## Streaming Example: RealSense
 ## Streaming Example: IP Cameras (Axis)
