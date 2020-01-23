@@ -1,8 +1,7 @@
 # BESt - Best Effort Streaming
 ## Streaming Examples: IP Cameras (Axis)
 ```c++
-// * Stream from 2 physical devices.
-// * 4 Image streams (stereo + each monocular).
+// 4 image streams (1 stereo + 2 monocular) from 2 physical devices.
 
 camera-rtsp-stereo = {
   // Required
@@ -77,7 +76,7 @@ camera-mono-http = {
   encoding = "mjpeg";
 
   // Required
-  host = "192.168.0.50";
+  host = "192.168.0.51";
 
   // Optional
   fps = 20;

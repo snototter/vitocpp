@@ -9,13 +9,12 @@ Some of `vcp`'s highlights:
   ```C++
   TODO add
   ```
-  allows you to process all streams both in C++ and python. For more details, look into the provided examples.
-  TODO add separate BESt README to show more complex configs (e.g. adjusting RealSense/K4A/MatrixVision camera parameters).
-* Nice(r) visualizations with less effort than plain OpenCV (have you ever tried to render a 3D bounding box?)
+  allows you to process all streams both in C++ and python. For more details, see the [separate BESt.md documentation](BESt.md).
+* Nice(r) visualizations with less effort than plain OpenCV - have you ever tried rendering a 3D bounding box?
 TODO example images (drawingXY)
 * Pseudocoloring for data visualization/analysis.
-TODO (+ see iminspect)
-* Geometry utilities - besides enabling all the visualizations above, you can also do basic geometry tasks (e.g. computing tangents of circles, line (segment) intersection, and quite a lot more).
+  Back when I started working on this library, OpenCV didn't provide pseudocoloring capabilities. The `vcp::imvis` module allows visualization via common color maps (the ones you may know from MATLAB, matplotlib, etc.).
+* Geometry utilities - besides enabling most of the fancy visualizations within `vcp::imvis`, you can also do basic geometry tasks with the `vcp::math` module (e.g. computing tangents of circles, line (segment) intersection, and quite a lot more).
 * C++ utilities - for basic file/path and string manipulation (if you want to avoid heavier dependencies, such as Boost).
 
 
