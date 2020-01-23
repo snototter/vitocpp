@@ -133,29 +133,19 @@ SinkType SinkTypeFromString(const std::string &s)
     return SinkType::WEBCAM;
   else if (k4a::IsK4A(s))
     return SinkType::K4A;
+#ifdef VCP_BEST_WITH_IPCAM
   else if (ipcam::IsMonocularIpCamera(s))
     return SinkType::IPCAM_MONOCULAR;
   else if (ipcam::IsStereoIpCamera(s))
     return SinkType::IPCAM_STEREO;
-//  else if (ipcam::IsIpCamMono())//FIXME
-//  std::string upper(s);
-//  vcp::utils::string::ToUpper(upper);
-//  MAKE_STRING_TO_SINKTYPE_IF(IMAGE_DIR, upper);
-//#ifdef VCP_WITH_IPCAMERA
-//  MAKE_STRING_TO_SINKTYPE_IF(IPCAM_MONOCULAR, upper);
-//  MAKE_STRING_TO_SINKTYPE_IF(IPCAM_STEREO, upper);
-//#endif
-//#ifdef VCP_BEST_WITH_K4A
-//  MAKE_STRING_TO_SINKTYPE_IF(K4A, upper);
-//#endif
+#endif // VCP_BEST_WITH_IPCAM
+
 //#ifdef VCP_WITH_MATRIXVISION
 //  MAKE_STRING_TO_SINKTYPE_IF(MVBLUEFOX3, upper);
 //#endif
 //#ifdef VCP_WITH_REALSENSE2
 //  MAKE_STRING_TO_SINKTYPE_IF(REALSENSE, upper);
 //#endif
-//  MAKE_STRING_TO_SINKTYPE_IF(VIDEO_FILE, upper);
-//  MAKE_STRING_TO_SINKTYPE_IF(WEBCAM, upper);
   VCP_ERROR("SinkTypeFromString(): Representation '" << s << "' not yet handled.");
 }
 
