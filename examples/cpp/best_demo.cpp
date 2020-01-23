@@ -1,7 +1,12 @@
 #include <iostream>
+#include <iomanip>
+#include <sstream>
+#include <chrono>
+#include <thread>
 
 #include <vcp_utils/vcp_error.h>
 #include <vcp_utils/timing_utils.h>
+#include <vcp_imutils/matutils.h>
 #include <vcp_imvis/collage.h>
 #include <vcp_imvis/pseudocolor.h>
 #include <vcp_imvis/drawing.h>
@@ -9,8 +14,7 @@
 #include <vcp_best/capture.h>
 #include <vcp_utils/string_utils.h>
 #include <opencv2/highgui.hpp>
-#include <chrono>
-#include <thread>
+
 
 // Terminate the streaming demo after X ms (if there would be more incoming data).
 #define MAX_STREAMING_TIME_PER_CONFIG 20000
@@ -66,7 +70,7 @@ void Stream(const std::string &config_file)
 
     // Again, the following is only needed for this demo.
     // We filter invalid frames, colorize depth/IR streams, etc.
-    std::vector<cv::Mat> valid;
+    std::vector<cv::Mat> valid_raw, valid_vis;
     for (size_t i = 0; i < frames.size(); ++i)
     {
       if (frames[i].empty())
@@ -82,10 +86,11 @@ void Stream(const std::string &config_file)
         }
         else
           vis = frames[i];
-        valid.push_back(vis);
+        valid_raw.push_back(frames[i]);
+        valid_vis.push_back(vis);
       }
     }
-    if (valid.empty())
+    if (valid_raw.empty())
     {
       VCP_LOG_FAILURE_DEFAULT("Invalid frames received, continue polling for " << (MAX_STREAMING_TIME_PER_CONFIG - elapsed_ms)/1000 << " sec.");
       std::this_thread::sleep_for(std::chrono::milliseconds(200));
@@ -96,12 +101,20 @@ void Stream(const std::string &config_file)
     cv::Mat collage;
     const cv::Size fixed_size = cv::Size(800, 600);
     const int num_per_row = 2;
-    vcp::imvis::collage::Collage(valid, collage, num_per_row, 0, fixed_size);
+    vcp::imvis::collage::Collage(valid_vis, collage, num_per_row, 0, fixed_size);
 
     // Overlay the sink label and original frame resolution.
-    for (size_t i = 0; i < valid.size(); ++i)
+    for (size_t i = 0; i < valid_raw.size(); ++i)
     {
-      vcp::imvis::drawing::DrawTextBox(collage, frame_labels[i] + " (" + vcp::utils::string::ToStr(valid[i].cols) + "x" + vcp::utils::string::ToStr(valid[i].rows) + ")",
+      double minv, maxv;
+      cv::minMaxIdx(valid_raw[i], &minv, &maxv);
+      std::stringstream overlay;
+      overlay << frame_labels[i] << " "
+              << vcp::utils::string::ToStr(valid_raw[i].cols) << "x"
+              << vcp::utils::string::ToStr(valid_raw[i].rows) << " "
+              << vcp::imutils::CVMatDepthToString(valid_raw[i].type(), valid_raw[i].channels()).substr(3) // Skip CV_ prefix
+              << " [" << std::setw(5) << std::right << minv << ", " << std::setw(5) << std::right << maxv << "]";
+      vcp::imvis::drawing::DrawTextBox(collage, overlay.str(),
           cv::Point((i % num_per_row) * fixed_size.width, (i / num_per_row) * fixed_size.height),
           vcp::imvis::drawing::textanchor::TOP | vcp::imvis::drawing::textanchor::LEFT,
           10, 0.5, cv::Scalar(255, 0, 0), cv::Scalar::all(-1),
@@ -128,8 +141,8 @@ int main(int argc, char **argv)
   VCP_UNUSED_VAR(argv);
 
   const std::vector<std::string> configs = {
-    "data-best/ipcam.cfg",
-    /*"data-best/k4a.cfg",
+    "data-best/k4a.cfg",
+    /*"data-best/ipcam.cfg",
     /*"data-best/image_sequence.cfg",
     "data-best/video.cfg",
     "data-best/webcam.cfg"*/

@@ -638,6 +638,49 @@ private:
 
   k4a_device_t k4a_device_;
 
+  void GetCalibration(k4a_calibration_t sensor_calibration)
+  {
+    //FIXME if depth or color is disabled, this won't work
+    if (sensor_calibration.color_camera_calibration.intrinsics.type != K4A_CALIBRATION_LENS_DISTORTION_MODEL_BROWN_CONRADY
+        || sensor_calibration.depth_camera_calibration.intrinsics.type != K4A_CALIBRATION_LENS_DISTORTION_MODEL_BROWN_CONRADY)
+      VCP_ERROR("Currently, we only support the Brown/Conrady lens distortion model.");
+// TODO see https://github.com/microsoft/Azure_Kinect_ROS_Driver/blob/8c6964fcc30827b476d6c18076e291fc22daa702/src/k4a_calibration_transform_data.cpp
+    //getDepthCameraInfo(sensor_msgs::CameraInfo& camera_info)
+    k4a_calibration_intrinsic_parameters_t ic = sensor_calibration.color_camera_calibration.intrinsics.parameters;
+    const cv::Mat K_c = (cv::Mat_<double>(3, 3)
+                   << ic.param.fx, 0.0, ic.param.cx,
+                   0.0, ic.param.fy, ic.param.cy,
+                   0.0, 0.0, 1.0);
+    const cv::Mat D_c = (cv::Mat_<double>(8, 1)
+                   << ic.param.k1, ic.param.k2, ic.param.p1, ic.param.p2, ic.param.k3, ic.param.k4, ic.param.k5, ic.param.k6);
+
+    k4a_calibration_intrinsic_parameters_t id = sensor_calibration.depth_camera_calibration.intrinsics.parameters;
+    const cv::Mat K_d = (cv::Mat_<double>(3, 3)
+                   << id.param.fx, 0.0, id.param.cx,
+                   0.0, id.param.fy, id.param.cy,
+                   0.0, 0.0, 1.0);
+    const cv::Mat D_d = (cv::Mat_<double>(8, 1)
+                   << id.param.k1, id.param.k2, id.param.p1, id.param.p2, id.param.k3, id.param.k4, id.param.k5, id.param.k6);
+    // To transform from a source to a target 3D coordinate system, use the parameters stored
+    // under extrinsics[source][target].
+    k4a_calibration_extrinsics_t e = sensor_calibration.extrinsics[K4A_CALIBRATION_TYPE_DEPTH][K4A_CALIBRATION_TYPE_COLOR];
+    cv::Mat R_d2c;
+    if (params_.align_depth_to_color)
+      R_d2c = (cv::Mat_<double>(3, 3) << e.rotation[0], e.rotation[1], e.rotation[2], e.rotation[3], e.rotation[4], e.rotation[5], e.rotation[6], e.rotation[7], e.rotation[8]);
+    else
+      R_d2c = cv::Mat::eye(3, 3, CV_64FC1);
+
+    cv::Mat t_d2c;
+    if (params_.align_depth_to_color)
+      t_d2c = (cv::Mat_<double>(3, 1) << e.translation[0], e.translation[1], e.translation[2]);
+    else
+      t_d2c = cv::Mat::zeros(3, 1, CV_64FC1);
+
+    VCP_LOG_FAILURE("TODO store calibration, test calibration:" << std::endl << "Rd2c: " << R_d2c << std::endl << "td2c: " << t_d2c);
+
+    VCP_LOG_FAILURE("Distortion coefficients: " << std::endl << "C: " << D_c << std::endl << "D: " << D_d);
+  }
+
   void Receive()
   {
     if (params_.verbose)
@@ -682,6 +725,7 @@ private:
     {
       //TODO FIXME!!
       VCP_LOG_FAILURE("TODO FIXME: need to save calibration!");
+      GetCalibration(sensor_calibration);
       //TODO look into:
       // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/undistort/main.cpp
       // or even better:
@@ -814,6 +858,8 @@ private:
   }
 
 
+  // Currently as of libk4a-1.3, only depth can be warped to color (not the IR stream, although it's the
+  // same uint16 pixel format...
   cv::Mat Extract16U(k4a_image_t &image, k4a_transformation_t &transformation, bool is_depth, const cv::Mat &cvrgb)
   {
     cv::Mat extracted;
@@ -823,12 +869,14 @@ private:
       cv::Mat tmp;
 
       k4a_image_t aligned_depth_image = NULL;
-      if (params_.align_depth_to_color)
+      if (is_depth && params_.align_depth_to_color) // Alignment only works for depth imag (libk4a-1.3)
       {
         // Official warping example:
         // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/transformation/main.cpp
-        if (k4a_image_create(K4A_IMAGE_FORMAT_DEPTH16, cvrgb.cols, cvrgb.rows,
-              cvrgb.cols * static_cast<int>(sizeof(uint16_t)), &aligned_depth_image)
+        if (k4a_image_create(
+                K4A_IMAGE_FORMAT_DEPTH16,
+                cvrgb.cols, cvrgb.rows,
+                cvrgb.cols * static_cast<int>(sizeof(uint16_t)), &aligned_depth_image)
               != K4A_RESULT_SUCCEEDED)
         {
           VCP_LOG_FAILURE("Cannot allocate k4a image buffer to warp " << (is_depth ? "depth" : "infrared") << " to color!");
