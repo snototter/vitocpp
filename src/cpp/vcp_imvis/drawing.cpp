@@ -1112,7 +1112,10 @@ void DrawTextBox(cv::Mat &image, const std::string &text, const cv::Point &pos, 
   vcp::imutils::ClipRectangleToImageBoundaries(bg_box, image.size());
 
   // Fill the background
-  DrawRect(image, bg_box, bg_color, fill_opacity, -1);
+  if (bg_color[0] < 0 || bg_color[1] < 0 || bg_color[2] < 0)
+    DrawRect(image, bg_box, ComplementaryColor(font_color, false), fill_opacity, -1);
+  else
+    DrawRect(image, bg_box, bg_color, fill_opacity, -1);
 
   // Draw the text
   cv::putText(image, text, text_pos_bl, font_face, font_scale, font_color, thickness);

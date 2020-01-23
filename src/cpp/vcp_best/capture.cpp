@@ -31,6 +31,9 @@
 #endif
 #include <chrono>
 
+//FIXME add WaitForNext(timeout)
+//FIXME rename isFrameAvailable
+
 namespace vcp
 {
 namespace best
@@ -280,7 +283,7 @@ public:
     return frame_types_;
   }
 
-  bool AreDevicesAvailable() const override
+  bool AreAllDevicesAvailable() const override
   {
     VCP_LOG_DEBUG("AreDevicesAvailable()");
     for (size_t i = 0; i < sinks_.size(); ++i)
@@ -292,9 +295,9 @@ public:
   }
 
 
-  bool AreFramesAvailable() const override
+  bool AreAllFramesAvailable() const override
   {
-    VCP_LOG_DEBUG("AreFramesAvailable()");
+    VCP_LOG_DEBUG("AreAllFramesAvailable()");
     for (size_t i = 0; i < sinks_.size(); ++i)
     {
       if (!sinks_[i]->IsFrameAvailable())
@@ -465,8 +468,8 @@ private:
 std::ostream& operator<<(std::ostream & os, const Capture &cap)
 {
   // Query all interesting fields.
-  const bool av_devs = cap.AreDevicesAvailable();
-  const bool av_frames = cap.AreFramesAvailable();
+  const bool av_devs = cap.AreAllDevicesAvailable();
+  const bool av_frames = cap.AreAllFramesAvailable();
   const size_t nd = cap.NumDevices();
   const size_t ns = cap.NumStreams();
   const auto ftypes = cap.FrameTypes();

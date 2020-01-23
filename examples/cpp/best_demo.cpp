@@ -26,36 +26,32 @@ void Stream(const std::string &config_file)
   std::unique_ptr<vcp::best::Capture> capture = vcp::best::CreateCapture(*config);
   if (!capture->OpenDevices())
   {
-    VCP_LOG_FAILURE("Couldn't initialize devices!");
+    VCP_LOG_FAILURE("Couldn't initialize streaming devices!");
     return;
   }
 
   if (!capture->StartStreams())
   {
-    VCP_LOG_FAILURE_DEFAULT("Couldn't start capturing!");
+    VCP_LOG_FAILURE_DEFAULT("Couldn't start streams!");
     return;
   }
 
   const std::vector<std::string> frame_labels = capture->FrameLabels();
-  VCP_LOG_INFO_DEFAULT(*capture);
+  VCP_LOG_INFO_DEFAULT("Successfully started capture:" << std::endl << *capture);
 
   capture->WaitForInitialFrames(5000);
 
   VCP_TIC;
-  int fucker = 0;
   std::chrono::high_resolution_clock::time_point tp_query;
-  while (capture->AreDevicesAvailable() && elapsed_ms < MAX_STREAMING_TIME_PER_CONFIG)
+  while (capture->AreAllDevicesAvailable() && elapsed_ms < MAX_STREAMING_TIME_PER_CONFIG)
   {
-if(++fucker > 100)
-  break;
-
     std::vector<cv::Mat> frames;
     // Since this demo only displays the streams, we might be too
     // fast (querying for the next set of frames).
     // The following loop briefly delays the main thread if no
     // frames are available (up to 500 ms).
     tp_query = std::chrono::high_resolution_clock::now();
-    while (!capture->AreFramesAvailable())
+    while (!capture->AreAllFramesAvailable())
     {
       std::this_thread::sleep_for(std::chrono::milliseconds(15));
       const auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(std::chrono::high_resolution_clock::now() - tp_query);
@@ -64,10 +60,12 @@ if(++fucker > 100)
       VCP_LOG_INFO_DEFAULT("Capture has " << capture->NumAvailableFrames() << "/" << capture->NumStreams() << " available");
     }
 
-    // Grab the frames and check which are available.
+    // Grab the frames.
     frames = capture->Next();
     VCP_TOC_ASSIGN(elapsed_ms);
 
+    // Again, the following is only needed for this demo.
+    // We filter invalid frames, colorize depth/IR streams, etc.
     std::vector<cv::Mat> valid;
     for (size_t i = 0; i < frames.size(); ++i)
     {
@@ -84,9 +82,6 @@ if(++fucker > 100)
         }
         else
           vis = frames[i];
-        vcp::imvis::drawing::DrawTextBox(vis, frame_labels[i] + " (" + vcp::utils::string::ToStr(vis.cols) + "x" + vcp::utils::string::ToStr(vis.rows) + ")",
-                                         cv::Point(0, 0), vcp::imvis::drawing::textanchor::TOP | vcp::imvis::drawing::textanchor::LEFT,
-                                         5, 0.5);
         valid.push_back(vis);
       }
     }
@@ -97,10 +92,21 @@ if(++fucker > 100)
       continue;
     }
 
-    // If they're available, display them. We make a collage (of resized
-    // frames) if there are multiple streams to show.
+    // Make a collage (of resized frames) if there are multiple streams to show.
     cv::Mat collage;
-    vcp::imvis::collage::Collage(valid, collage, 2, 0, cv::Size(800, 600));
+    const cv::Size fixed_size = cv::Size(800, 600);
+    const int num_per_row = 2;
+    vcp::imvis::collage::Collage(valid, collage, num_per_row, 0, fixed_size);
+
+    // Overlay the sink label and original frame resolution.
+    for (size_t i = 0; i < valid.size(); ++i)
+    {
+      vcp::imvis::drawing::DrawTextBox(collage, frame_labels[i] + " (" + vcp::utils::string::ToStr(valid[i].cols) + "x" + vcp::utils::string::ToStr(valid[i].rows) + ")",
+          cv::Point((i % num_per_row) * fixed_size.width, (i / num_per_row) * fixed_size.height),
+          vcp::imvis::drawing::textanchor::TOP | vcp::imvis::drawing::textanchor::LEFT,
+          10, 0.5, cv::Scalar(255, 0, 0), cv::Scalar::all(-1),
+          cv::FONT_HERSHEY_PLAIN, 1.5, 2);
+    }
 
     // Display and let the user press ESC to exit.
     cv::imshow("Stream", collage);
@@ -109,7 +115,7 @@ if(++fucker > 100)
       break;
   }
   VCP_LOG_INFO_DEFAULT("Closing stream after " << elapsed_ms/1000 << " sec." << std::endl
-                       << "       Devices are " << (capture->AreDevicesAvailable() ? "still" : "not")
+                       << "       Devices are " << (capture->AreAllDevicesAvailable() ? "still" : "not")
                        << " available.");
 
   capture.reset();

@@ -121,9 +121,7 @@ public:
       if (verbose_)
         VCP_LOG_INFO_DEFAULT("Closing all RTSP streams.");
       rtsp_client_env_->TerminateEventLoop();
-      VCP_LOG_FAILURE("Joining.");
       stream_thread_.join();
-      VCP_LOG_FAILURE("DONE.");
       rtsp_client_env_.reset();
     }
     return true;
@@ -266,7 +264,7 @@ protected:
       ms_between_frames_[sink_idx] = ms_ema_alpha * duration.count() + (1.0 - ms_ema_alpha) * ms_between_frames_[sink_idx];
 
     VCP_LOG_DEBUG_DEFAULT("MultiRtspStreamSink received frame after " << std::fixed << std::setw(5) << duration.count() << " ms, "
-                        << std::setw(5) << (1000.0 / ms_between_frames_[sink_idx]) << " fps, stream '"
+                        << std::setw(5) << (1000.0 / ms_between_frames_[sink_idx]) << " fps, '"
                         << vcp::utils::string::ClipUrl(params_[sink_idx].stream_url) << "'");
 #endif // VCP_BEST_DEBUG_FRAMERATE
   }

@@ -50,10 +50,10 @@ public:
   double duration;
 };
 
-class VCPRtspClient: public RTSPClient
+class VcpRtspClient: public RTSPClient
 {
 public:
-  VCPRtspClient(UsageEnvironment& env, const IpCameraSinkParams &params,
+  VcpRtspClient(UsageEnvironment& env, const IpCameraSinkParams &params,
                 void (*frame_callback)(const cv::Mat &, void *), void *callback_param,
                 char const* applicationName = NULL, portNumBits tunnelOverHTTPPortNum = 0)
     : RTSPClient(env, params.stream_url.c_str(),
@@ -72,7 +72,8 @@ public:
     single_medium_subsession_ = "video";
   }
 
-  virtual ~VCPRtspClient() { VCP_LOG_FAILURE("FOOOOOOFUCKER");}
+  virtual ~VcpRtspClient()
+  {}
 
 // deliberately public:
   size_t id_;
@@ -106,7 +107,7 @@ void streamTimerHandler(void* client_data);
 // Implementation of the RTSP response handlers
 void shutdownStream(RTSPClient* rtsp_client)
 {
-  VCPRtspClient *vcp_client = dynamic_cast<VCPRtspClient*>(rtsp_client);
+  VcpRtspClient *vcp_client = dynamic_cast<VcpRtspClient*>(rtsp_client);
   StreamClientState& scs = vcp_client->scs_;
 
   // First, check whether any subsessions have still to be closed:
@@ -141,7 +142,6 @@ void shutdownStream(RTSPClient* rtsp_client)
   if (vcp_client->params_.verbose)
     VCP_LOG_INFO_DEFAULT("Closing stream for client '" << vcp::utils::string::ObscureUrlAuthentication(vcp_client->params_.stream_url) << "'");
   Medium::close(rtsp_client);
-  VCP_LOG_FAILURE("CLOSED THE MEDIUM");
   // Note that this will also cause this stream's "StreamClientState" structure to get reclaimed.
 }
 
@@ -151,7 +151,7 @@ void continueAfterDESCRIBE(RTSPClient* rtsp_client, int result_code, char *resul
   {
     // alias
     UsageEnvironment &env = rtsp_client->envir();
-    VCPRtspClient *vcp_client = static_cast<VCPRtspClient*>(rtsp_client);
+    VcpRtspClient *vcp_client = static_cast<VcpRtspClient*>(rtsp_client);
     StreamClientState &scs = vcp_client->scs_;
 
     if (result_code != 0)
@@ -205,7 +205,7 @@ void continueAfterDESCRIBE(RTSPClient* rtsp_client, int result_code, char *resul
 void setupNextSubsession(RTSPClient* rtsp_client)
 {
   UsageEnvironment& env = rtsp_client->envir();
-  VCPRtspClient *vcp_client = dynamic_cast<VCPRtspClient*>(rtsp_client);
+  VcpRtspClient *vcp_client = dynamic_cast<VcpRtspClient*>(rtsp_client);
   StreamClientState& scs = vcp_client->scs_;
 
   scs.subsession = scs.iter->next();
@@ -261,7 +261,7 @@ void continueAfterSETUP(RTSPClient* rtsp_client, int result_code, char* result_s
 {
   do
   {
-    VCPRtspClient *vcp_client = dynamic_cast<VCPRtspClient*>(rtsp_client);
+    VcpRtspClient *vcp_client = dynamic_cast<VcpRtspClient*>(rtsp_client);
     UsageEnvironment& env = rtsp_client->envir();
     StreamClientState& scs = vcp_client->scs_;
 
@@ -334,7 +334,7 @@ void continueAfterPLAY(RTSPClient* rtsp_client, int result_code, char* result_st
   do
   {
     UsageEnvironment &env = rtsp_client->envir();
-    VCPRtspClient *vcp_client = dynamic_cast<VCPRtspClient*>(rtsp_client);
+    VcpRtspClient *vcp_client = dynamic_cast<VcpRtspClient*>(rtsp_client);
     StreamClientState &scs = vcp_client->scs_;
 
     if (result_code != 0)
@@ -399,7 +399,7 @@ void subsessionByeHandler(void *client_data)
 {
   MediaSubsession* subsession = (MediaSubsession*)client_data;
   RTSPClient* rtsp_client = (RTSPClient*)subsession->miscPtr;
-  VCPRtspClient *vcp_client = dynamic_cast<VCPRtspClient*>(rtsp_client);
+  VcpRtspClient *vcp_client = dynamic_cast<VcpRtspClient*>(rtsp_client);
 
   if (vcp_client && vcp_client->params_.verbose)
     VCP_LOG_INFO_DEFAULT("Client '" << vcp::utils::string::ObscureUrlAuthentication(vcp_client->params_.stream_url)
@@ -412,7 +412,7 @@ void subsessionByeHandler(void *client_data)
 
 void streamTimerHandler(void* client_data)
 {
-  VCPRtspClient* rtsp_client = (VCPRtspClient*)client_data;
+  VcpRtspClient* rtsp_client = (VcpRtspClient*)client_data;
   rtsp_client->scs_.streamTimerTask = NULL;
 
   // Shut down the stream:
@@ -462,7 +462,7 @@ public:
       return;
     }
 
-    VCPRtspClient* vcp_client = new VCPRtspClient(*environment_, params, frame_callback, callback_param);
+    VcpRtspClient* vcp_client = new VcpRtspClient(*environment_, params, frame_callback, callback_param);
     if (vcp_client == NULL)
     {
       VCP_LOG_FAILURE("Failed to create a RTSP client for URL \""
@@ -580,7 +580,7 @@ public:
     InitEnvironment();
     // Begin by creating a "RTSPClient" object.  Note that there is a separate "RTSPClient" object for each stream that we wish
     // to receive (even if more than one stream uses the same "rtsp://" URL).
-    VCPRtspClient* rtsp_client = new VCPRtspClient(*environment_, params, frame_callback, callback_param);
+    VcpRtspClient* rtsp_client = new VcpRtspClient(*environment_, params, frame_callback, callback_param);
     if (rtsp_client == NULL)
     {
       VCP_LOG_FAILURE("Failed to create a RTSP client for URL \""

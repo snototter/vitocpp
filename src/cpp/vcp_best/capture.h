@@ -33,19 +33,28 @@ namespace best
  * Who in the right mind would want to do that? ;-) We do, frequently!
  *
  * Workflow:
- * 1. Create capture object via vcp::best::CreateCapture().
- * 2. Open() devices, so they can be properly initialized.
- *    Check if initialization succeeded: AreDevicesAvailable().
+ * 1. Write a configuration and create the capture object
+ *    via vcp::best::CreateCapture().
+ * 2. OpenDevices(), so they can be properly initialized.
+ *    Check if initialization succeeded: AreAllDevicesAvailable().
  * 3. Start() streaming.
+ *    Additionally, you may want to wait until the first set of first
+ *    is available, @see WaitForInitialFrames(). Some devices take quite
+ *    long to start up.
  * 4. Next() - empty cv::Mat entries correspond to missing
  *    frames.
- *    You can query if frames are available for all sinks, via AreFramesAvailable().
- *    However, this is NOT guaranteed to work if you use @see FastForward()
- *    or @see Previous(). The issue is that the user may choose to arbitrarily
- *    query the next/previous frames on those sinks.
- * 5. Stop() streaming.
- * 6. Repeat 4-6 if you want to restart streaming.
- * 7. Close() or simply shut down - Capture will gracefully shut down anyways.
+ *    * You can query if frames are available for all sinks, via @see AreAllFramesAvailable().
+ *      However, this is NOT guaranteed to work if you use @see FastForward()
+ *      or @see Previous(). The issue is that the user may choose to arbitrarily
+ *      query the next/previous frames on those sinks.
+ *    * You can check how many valid frames are available, via @see NumAvailableFrames().
+ * 5. StopStreaming() or simply shut down - Capture will gracefully shut down anyways.
+ * 6. Repeat 3-5 if you want to restart streaming.
+ *    Note: didn't test restarting exhaustively, so there may some devices
+ *    that don't support that.
+ * 7. CloseDevices() or simply shut down - Capture will gracefully shut down anyways.
+ *
+ * // TODO doc numframes/numdevices/configurationkeys/etc.
  */
 class Capture
 {
@@ -53,15 +62,15 @@ public:
   virtual ~Capture() {}
 
   /** @brief Returns true if the capturing device/s is/are available. */
-  virtual bool AreDevicesAvailable() const = 0;
+  virtual bool AreAllDevicesAvailable() const = 0;
 
   /** @brief Returns true if frames (from all devices) can be retrieved (i.e. have been enqueued). */
-  virtual bool AreFramesAvailable() const = 0;
+  virtual bool AreAllFramesAvailable() const = 0;
 
   /** @brief Returns the number of available frames.
    *
    * Might be useful if one of your sinks stops working/streaming and you still want to continue
-   * processing, etc. In such a case, @see AreFramesAvailable() would return false, whereas here
+   * processing, etc. In such a case, @see AreAllFramesAvailable() would return false, whereas here
    * you get the actual number of frames and can decide yourself.
    */
   virtual size_t NumAvailableFrames() const = 0;
