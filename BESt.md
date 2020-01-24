@@ -29,7 +29,9 @@ camera-sequence = {
 ## Streaming Example: Azure Kinect (K4A)
 ## Streaming Example: RealSense
 ## Streaming Example: IP Cameras (Axis)
+
 ```c++
+//TODO split into 2 examples, 1 mono, 1 stereo
 // 4 image streams (1 stereo + 2 monocular) from 2 physical devices.
 
 camera-rtsp-stereo = {
