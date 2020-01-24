@@ -13,6 +13,14 @@ int main(int argc, char **argv)
   VCP_UNUSED_VAR(argv);
   std::unique_ptr<vcp::config::ConfigParams> ec = vcp::config::CreateEmptyConfigParamsCpp();
   ec->SetInteger("int_at_root", 1);
+  try
+  {
+    ec->SetString("fo o", "ba r");
+  }
+  catch (std::exception &e)
+  {
+    VCP_LOG_FAILURE("Cannot set parameter: " << e.what());
+  }
   ec->SetInteger("group_at_root.int", 2);
   ec->SetString("group_at_root.child.a_string", "somestring");
   ec->SetString("group_at_root.child.a_string", "overwritten!");
@@ -29,7 +37,7 @@ int main(int argc, char **argv)
 
   ec->SaveConfiguration("fubar.txt");
   for (const auto &s : ec->ListConfigParameters())
-    VCP_LOG_INFO_DEFAULT(s);
+    VCP_LOG_INFO_DEFAULT(s << ": '" << ec->AsString(s) << "'");
 
 
 //  // Libconfig supports:
