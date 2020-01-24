@@ -3,6 +3,23 @@ C++/Python 3 utilities for common vision tasks, e.g. streaming, visualization or
 
 <b>Note:</b> As of 01/2020 this repository is <b>WIP</b>, I'm rewriting my utilities (especially simplifying the streaming module) over the next couple of months.
 
+```
+Current status:
+cloc --exclude-dir=.venv3,build,external,gen --exclude-lang=make .
+-------------------------------------------------------------------------------
+Language                     files          blank        comment           code
+-------------------------------------------------------------------------------
+C++                             51           2985           1810          15479
+C/C++ Header                    43           1250           1326           3256
+CMake                           20            350            444           1542
+Python                          11            282            420            587
+Markdown                         2             42              0            247
+Bourne Shell                     3             38             65            193
+-------------------------------------------------------------------------------
+SUM:                           130           4947           4065          21304
+-------------------------------------------------------------------------------
+```
+
 ## What is it good for?
 Some of `vcp`'s highlights:
 * Best effort multiple device streaming. Useful for quick camera tests and whenever (guaranteed) synchronisation isn't crucial. The goal of this module is to stream from multiple devices simultaneously, without having the ROS overhead. A simple configuration file like this:
@@ -128,6 +145,7 @@ Testing requires `gtest`, which you'll probably need to build yourself - this is
   * [x] Monocular/stereo
     * [x] Stereo IP cam streams as separate monocular sinks
     * [x] "Real" stereo cams (e.g. ZED) could be split in VCP or by the library user (currently, the latter is preferred)
+    * [ ] Add frame-type stereo-left, stereo-right for rectification
   * [ ] RealSense
   * [ ] Azure Kinect
     * [x] Stream raw data
@@ -136,6 +154,7 @@ Testing requires `gtest`, which you'll probably need to build yourself - this is
   * [ ] mvBlueFox
   * [x] Axis
   * [ ] Mobotix, etc.
+  * [x] Live viewer
 * [ ] Python bindings
   * [ ] best
   * [ ] config - needed for 'best' configuration
