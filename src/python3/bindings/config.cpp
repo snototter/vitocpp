@@ -79,6 +79,8 @@ PYBIND11_MODULE(config, m)
   m.doc() = "Configuration module to load/process libconfig++-ish configuration\n"
             "files, heavily used by the vcp.best video streaming module.";
 
+
+  // Class definition
   py::class_<vpc::ConfigWrapper>(m, "Config")
       .def(py::init<>())
       .def("load_libconfig", &vpc::ConfigWrapper::LoadLibconfigFile,
@@ -101,6 +103,16 @@ PYBIND11_MODULE(config, m)
            py::arg("param_name"))
       .def("__getitem__", &vpc::ConfigWrapper::AsString,
            "Return the string representation of param_name.", py::arg("param_name"))
+// List params
+      .def("list_parameters", &vpc::ConfigWrapper::ListAllParameters,
+           "Return a list of all configured parameters.")
+      .def("list_1st_level_children", &vpc::ConfigWrapper::ListFirstLevelChildren,
+           "Return a list of all first-level children of\n"
+           "the given parameter. Pass an empty parameter name\n"
+           "to retrieve the first level, i.e. the root node's\n"
+           "children.\n"
+           ":returns: a list of parameter names (strings).",
+           py::arg("param_name"))
 // Get/set scalar
       .def("get_string", &vpc::ConfigWrapper::GetString, "Returns param_name as string.", py::arg("param_name"))
       .def("set_string", &vpc::ConfigWrapper::SetString, "Sets a string parameter.", py::arg("param_name"), py::arg("value"))

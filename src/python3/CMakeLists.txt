@@ -51,7 +51,7 @@ find_package(pybind11 REQUIRED)
 include_directories(${PYBIND11_INCLUDE_DIRS})
 
 # VCP - prepare include directory and RPATH
-find_package(vcp REQUIRED COMPONENTS vcp_utils vcp_imutils vcp_imvis vcp_math vcp_ui)
+find_package(vcp REQUIRED) # COMPONENTS vcp_utils vcp_imutils vcp_imvis vcp_math vcp_ui vcp_config)
 include_directories(${VCP_INCLUDE_DIR})
 set(VCP_RPATH_ "${VCP_LIBRARY_DIR}")
 

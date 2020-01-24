@@ -3,7 +3,6 @@
 
 #include <string>
 #include <memory>
-#include <exception>
 #include <vcp_config/config_params.h>
 #include <vcp_utils/vcp_error.h>
 
@@ -31,6 +30,7 @@ public:
   // Disable copying
   ConfigWrapper(const ConfigWrapper&) = delete;
   ConfigWrapper &operator=(const ConfigWrapper&) = delete;
+
 
   virtual ~ConfigWrapper() {}
 
@@ -89,6 +89,18 @@ public:
   std::string AsString (const std::string &param_name)
   {
     return params_->AsString(param_name);
+  }
+
+  /** @brief Return a list of all configured parameters. */
+  std::vector<std::string> ListAllParameters() const
+  {
+    return params_->ListConfigParameters();
+  }
+
+  /** @brief Return a list of all first-level children of the given parameter. Pass empty parameter name to retrieve the first level, i.e. the root node's children. */
+  std::vector<std::string> ListFirstLevelChildren(const std::string &param_name) const
+  {
+    return params_->ListConfigGroupParameters(param_name);
   }
 
 
