@@ -243,7 +243,7 @@ if __name__ == "__main__":
     
 
     collage = imvis.make_collage([vis_boxes2, vis_fancy, vis_img], padding=5, bg_color=(255,255,255))
-    imvis.imshow(collage, title="Drawing primitives (highly cluttered)", flip_channels=True)
+    imvis.imshow(collage, title="Drawing primitives (highly cluttered)")
 
     
     ## TODO For data augmentation, see augmentation_demo.py (rotated bounding boxes, rotating and clipping, etc.)
