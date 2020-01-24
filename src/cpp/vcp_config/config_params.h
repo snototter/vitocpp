@@ -166,7 +166,7 @@ public:
   /** @brief Returns a string representation of the corresponding parameter. */
   virtual std::string AsString(const std::string &param_name) const = 0;
 
-  /** @brief Return a list of all parameters under the given parameter name.
+  /** @brief Returns a list of all parameters under the given parameter name.
    *
    * Can be used to verify a config file, e.g. check if the user provided additional
    * keys (which might indicate a potential typo).
@@ -174,6 +174,9 @@ public:
    * Pass empty param_name to query all children of the root node.
    */
   virtual std::vector<std::string> ListConfigGroupParameters(const std::string &param_name) const = 0;
+
+  /** @brief Returns a list of all parameter names within this configuration. */
+  virtual std::vector<std::string> ListConfigParameters() const = 0;
 
 protected:
   ConfigParams() {}

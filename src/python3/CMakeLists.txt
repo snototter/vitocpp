@@ -1,6 +1,12 @@
 cmake_minimum_required(VERSION 3.1)
 project(vcp-bindings)
 
+#TODO move to utils
+#TODO check https://stackoverflow.com/questions/10984442/how-to-detect-c11-support-of-a-compiler-with-cmake
+foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
+  message("${i}")
+endforeach()
+
 set(PYVCP_LIBRARY_DESTINATION "${CMAKE_SOURCE_DIR}/vcp")
 
 #TODO https://stackoverflow.com/questions/16212538/cmake-depending-on-another-project
@@ -8,7 +14,7 @@ set(PYVCP_LIBRARY_DESTINATION "${CMAKE_SOURCE_DIR}/vcp")
 #TODO install to VCP_ROOT_DIR/gen/python/vcp
 # Add C++-14 support
 IF(NOT WIN32)
-  add_definitions(-std=c++14 -fPIC -Wall -Wpedantic -Wextra)
+  add_definitions(-std=c++11 -fPIC -Wall -Wpedantic -Wextra)
 ENDIF(NOT WIN32)
 
 # We need python3 - use our custom cmake script
@@ -77,6 +83,28 @@ set_target_properties(utils PROPERTIES
 )
 install(TARGETS
   utils
+  ${PYTHON_INSTALL_CONFIGURATIONS}
+  LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
+
+
+##################################################################
+## Config module - needed for configuration of BESt
+python_add_module(config
+  bindings/config.cpp
+  bindings/config.h
+)
+target_link_libraries(config
+  ${PYTHON_LIBRARIES}
+  ${VCP_LIBRARIES}
+)
+set_target_properties(config PROPERTIES
+        ARCHIVE_OUTPUT_NAME config${ARCHIVE_OUTPUT_POSTFIX}
+        PREFIX ""
+        OUTPUT_NAME config
+        SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
+)
+install(TARGETS
+  config
   ${PYTHON_INSTALL_CONFIGURATIONS}
   LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
 

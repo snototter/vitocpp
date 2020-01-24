@@ -5,6 +5,7 @@
 #include <algorithm>
 #include <utility>
 #include <exception>
+#include "vcp_error.h"
 
 
 namespace vcp
@@ -106,7 +107,7 @@ std::vector<_To> SortByExternalVector(const std::vector<_To> &data, const std::v
     return std::vector<_To>();
 
   if (keys.size() != data.size())
-    throw std::runtime_error("Vector size does not match!");
+    VCP_ERROR("Vector size does not match!");
 
   // Sort the indices
   const std::vector<size_t> indices = GetSortedIndices<_Ts>(keys, cmp);

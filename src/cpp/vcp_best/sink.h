@@ -6,6 +6,7 @@
 #include <exception>
 #include <opencv2/core/core.hpp>
 #include <vcp_config/config_params.h>
+#include <vcp_utils/vcp_error.h>
 #include "sink_buffer.h"
 
 namespace vcp
@@ -153,14 +154,14 @@ public:
   /** @brief Classes which support backwards seeking must overwrite this method. */
   virtual std::vector<cv::Mat> Previous()
   {
-    throw std::runtime_error("Sink does not support stream seeking!");
+    VCP_ERROR("Sink does not support stream seeking!");
   }
 
 
   /** @brief Classes which support skipping frames must overwrite this method. */
   virtual std::vector<cv::Mat> FastForward(size_t /*num_frames*/)
   {
-    throw std::runtime_error("Sink does not support stream seeking!");
+    VCP_ERROR("Sink does not support stream seeking!");
   }
 
   /** @brief Returns 1 (true) if the physical device is ready/can be used to stream from.

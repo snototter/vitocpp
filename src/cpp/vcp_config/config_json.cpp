@@ -180,7 +180,9 @@ void ConstructConfigParam(const json &elem, ConfigParams &params, const std::str
         params.SetDoubleKeyValueList(param_name, values);
       }
       else
-        throw std::runtime_error("Only int/double/string arrays are currently supported");
+      {
+        VCP_ERROR("Only int/double/string arrays are currently supported");
+      }
     }
     else if (v.is_string())
     {
@@ -192,7 +194,7 @@ void ConstructConfigParam(const json &elem, ConfigParams &params, const std::str
     }
     else
     {
-      throw std::runtime_error("Type of " + root + "." + it.key() + " is not supported");
+      VCP_ERROR("Type of " + root + "." + it.key() + " is not supported");
     }
   }
 }

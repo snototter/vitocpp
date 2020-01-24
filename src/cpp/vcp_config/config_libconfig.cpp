@@ -107,12 +107,12 @@ T GetParam(const libconfig::Config &cfg, const std::string &param_name)
   return CastSetting<T>(setting);
 }
 
-/** @brief Return a list of all parameters under the given parameter name. */
+/** @brief Return a list of all parameters directly under the given parameter name. */
 std::vector<std::string> ListChildren(const libconfig::Config &config, const std::string &param_name)
 {
   std::vector<std::string> child_params;
   const libconfig::Setting &setting = param_name.empty() ? config.getRoot() : GetSetting(config, param_name);
-  if (setting.isAggregate())
+  if (setting.isGroup())
   {
     for (int i = 0; i < setting.getLength(); ++i)
     {
@@ -120,6 +120,34 @@ std::vector<std::string> ListChildren(const libconfig::Config &config, const std
     }
   }
   return child_params;
+}
+
+/** @brief Returns a list of all parameters (full tree) under the given node. */
+std::vector<std::string> ListAllParameterNames(const libconfig::Setting &node, const std::string &prefix)
+{
+  std::vector<std::string> names;
+  if (node.isRoot() || node.isGroup())
+  {
+    const std::string next_prefix =
+        prefix.empty() ?
+          (node.isRoot() ? std::string() : std::string(node.getName()))
+          : std::string(prefix + "." + std::string(node.getName()));
+    for (int i = 0; i < node.getLength(); ++i)
+    {
+      const auto child_names = ListAllParameterNames(node[i], next_prefix);
+      names.reserve(names.size() + std::distance(child_names.begin(), child_names.end()));
+      names.insert(names.end(), child_names.begin(), child_names.end());
+    }
+  }
+  else
+  {
+    std::string n(node.getName());
+    if (prefix.empty()) // If we're at the root level
+      names.push_back(n);
+    else
+      names.push_back(prefix + "." + n);
+  }
+  return names;
 }
 
 
@@ -623,7 +651,7 @@ void SingleSettingToString(libconfig::Setting &node, std::ostream &out)
   }
   else
   {
-    throw std::runtime_error("Type of config::Setting is not supported in vcp::config::libconfig_wrapper::SingleSettingToString(), check param '" + node.getPath() + "'");
+    VCP_ERROR("Type of config::Setting is not supported in vcp::config::libconfig_wrapper::SingleSettingToString(), check param '" + node.getPath() + "'");
   }
 }
 
@@ -828,7 +856,7 @@ public:
     }
     catch (const libconfig::SettingNotFoundException &)
     {
-      throw std::runtime_error("Setting '" + param_name + "' not found");
+      VCP_ERROR("Setting '" + param_name + "' not found");
     }
     return str.str();
   }
@@ -836,6 +864,12 @@ public:
   std::vector<std::string> ListConfigGroupParameters(const std::string &param_name) const override
   {
     return ListChildren(config_, param_name);
+  }
+
+
+  std::vector<std::string> ListConfigParameters() const override
+  {
+    return ListAllParameterNames(config_.getRoot(), std::string());
   }
 
 

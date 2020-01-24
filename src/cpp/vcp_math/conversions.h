@@ -45,7 +45,8 @@ inline cv::Vec3d ToVec3d(const cv::Mat &pt)
   case CV_32S: return ToVec3dUtil<int>(pt);
   case CV_32F: return ToVec3dUtil<float>(pt);
   case CV_64F: return ToVec3dUtil<double>(pt);
-  default: throw std::runtime_error("Cannot convert cv::Mat to cv::Vec3d, wrong matrix element depth");
+  default:
+      VCP_ERROR("Cannot convert cv::Mat to cv::Vec3d, wrong matrix element depth");
   }
 }
 

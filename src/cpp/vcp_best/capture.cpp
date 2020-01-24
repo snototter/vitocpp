@@ -942,5 +942,5 @@ std::unique_ptr<Capture> CreateCapture(const vcp::config::ConfigParams &config)
 //  return std::unique_ptr<RectifiedCaptureImpl>(new RectifiedCaptureImpl(config, force_loading_extrinsics));
 //}
 
-} // namespace icc
-} // namespace pvt
+} // namespace best
+} // namespace vcp

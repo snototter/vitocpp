@@ -12,23 +12,24 @@ int main(int argc, char **argv)
   VCP_UNUSED_VAR(argc);
   VCP_UNUSED_VAR(argv);
   std::unique_ptr<vcp::config::ConfigParams> ec = vcp::config::CreateEmptyConfigParamsCpp();
-//  ec->CreateSettingsGroup("subgroup2", "group2"); // Should abort
-//  ec->SetInteger("fubar", 23); // Should abort
   ec->SetInteger("int_at_root", 1);
-  ec->SetInteger("group1.int", 2);
-  ec->SetString("group1.s1.s2.astring", "somestring");
-  ec->SetString("group1.s1.s2.astring", "overwritten!");
-  ec->SetIntegerArray("intarr", {1,2,3,4});
-  ec->SetIntegerArray("intarr", {5,6,7});
-  ec->SetDoubleArray("group1.s1.s23.darr", {1, 2.3});
-  ec->SetStringArray("group1.strarr", {"foo", "bar"});
+  ec->SetInteger("group_at_root.int", 2);
+  ec->SetString("group_at_root.child.a_string", "somestring");
+  ec->SetString("group_at_root.child.a_string", "overwritten!");
+  ec->SetIntegerArray("int_arr_at_root", {1,2,3,4});
+  ec->SetIntegerArray("group_at_root.child.int_arr", {5,6,7});
+//  ec->SetDoubleArray("group1.s1.s23.darr", {1, 2.3});
+//  ec->SetStringArray("group1.strarr", {"foo", "bar"});
   ec->SetRectangle("rect", 0,1,100,3425);
-  ec->SetSize2D("group1.size", 50,70);
+  ec->SetSize2D("group_at_root.size", 50,70);
   ec->SetIntegerPolygon("poly", {{0,1}, {0,2}, {17,59}});
+  ec->SetDouble("SoMe.Really.Very.deep.val", 23);
 
   ec->SetIntegerPolygons("multipoly", {{{0,1}, {0,2}}, {{1,2,3},{4,5,6},{7,8}}});
 
   ec->SaveConfiguration("fubar.txt");
+  for (const auto &s : ec->ListConfigParameters())
+    VCP_LOG_INFO_DEFAULT(s);
 
 
 //  // Libconfig supports:
