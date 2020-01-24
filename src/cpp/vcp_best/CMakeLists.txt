@@ -90,10 +90,8 @@ set(PUBLIC_HEADERS
     file_sink.h
     webcam_sink.h
     capture.h
-#  capture_file.h
-#  capture_webcam.h
 #  rectifier.h
-#  liveview.h
+    liveview.h
 )
 set(PRIVATE_HEADERS)
 
@@ -103,10 +101,8 @@ set(SOURCES
     file_sink.cpp
     webcam_sink.cpp
     capture.cpp
-#  capture_file.cpp
-#  capture_webcam.cpp
 #  rectifier.cpp
-#  liveview.cpp
+    liveview.cpp
 )
 
 # All need OpenCV for image conversion

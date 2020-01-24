@@ -125,10 +125,10 @@ void ComputeCollageSize(const std::vector<cv::Mat> &images, const cv::Size &fixe
     for (size_t col = 0; col < num_images_per_row && img_idx < num_images; ++col, ++img_idx)
     {
       cv::Size img_size;
-      if (!IsValidSize(fixed_size))
-        img_size = ComputeRescaledSize(images[img_idx], fixed_size, nullptr);
-      else
+      if (IsValidSize(fixed_size))
         img_size = fixed_size;
+      else
+        img_size = ComputeRescaledSize(images[img_idx], fixed_size, nullptr);
 
       if (col == 0)
       {

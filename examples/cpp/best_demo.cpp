@@ -12,6 +12,7 @@
 #include <vcp_imvis/drawing.h>
 #include <vcp_config/config_params.h>
 #include <vcp_best/capture.h>
+#include <vcp_best/liveview.h>
 #include <vcp_utils/string_utils.h>
 #include <opencv2/highgui.hpp>
 
@@ -48,6 +49,12 @@ void Stream(const std::string &config_file)
     VCP_LOG_FAILURE("Didn't receive an initial set of frames - aborting.");
     return;
   }
+
+  // A separate live view thread would be overkill for this simple demo.
+//  auto viewer = vcp::best::liveview::CreateLiveView<5>(
+//        vcp::best::liveview::LiveViewParams(
+//          "Live View", cv::Size(1920, 1200), 10));
+//  viewer->Start();
 
   VCP_TIC;
   std::chrono::high_resolution_clock::time_point tp_query;
@@ -124,6 +131,11 @@ void Stream(const std::string &config_file)
           10, 0.5, cv::Scalar(255, 0, 0), cv::Scalar::all(-1),
           cv::FONT_HERSHEY_PLAIN, 1.5, 2);
     }
+
+//    viewer->PushImageRequest(collage);
+//    VCP_LOG_FAILURE("Viewer fps: " << viewer->GetRequestFrameRate() << " vs " << viewer->GetDisplayFrameRate());
+//    int k = viewer->GetLastUserInput();
+
 
     // Display and let the user press ESC to exit.
     cv::imshow("Stream", collage);
