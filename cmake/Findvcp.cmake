@@ -38,6 +38,9 @@ if(vcp_FIND_COMPONENTS)
         string(TOLOWER ${component} _COMPONENT)
         set(VCP_MODULES ${VCP_MODULES} ${_COMPONENT})
     endforeach()
+else()
+    # Add all modules by default
+    set(VCP_MODULES ${VCP_MODULES} vcp_best vcp_config vcp_imutils vcp_imvis vcp_math vcp_ui)
 endif()
 
 ##############################################################################
