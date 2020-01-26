@@ -7,9 +7,16 @@
 #include <pybind11/stl.h>
 namespace py = pybind11;
 
-namespace vcp {
-namespace python {
-namespace config {
+
+//-----------------------------------------------------------------------------
+// Wrapper/Helper code
+
+namespace vcp
+{
+namespace python
+{
+namespace config
+{
 
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::python::config"
@@ -72,6 +79,9 @@ void ConfigWrapper::EnsureAbsolutePaths(const std::vector<std::string> &param_na
 } // namespace python
 } // namespace vcp
 
+
+//-----------------------------------------------------------------------------
+// Python module declarations
 
 PYBIND11_MODULE(config, m)
 {

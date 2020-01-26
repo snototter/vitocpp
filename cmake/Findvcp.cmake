@@ -34,12 +34,14 @@ set(VCP_MODULES "vcp_utils")
 ##############################################################################
 # Add additional modules requested within find_package:
 if(vcp_FIND_COMPONENTS)
+    set(VCP_MOD_FIND_MSG "Selected")
     foreach(component ${vcp_FIND_COMPONENTS})
         string(TOLOWER ${component} _COMPONENT)
         set(VCP_MODULES ${VCP_MODULES} ${_COMPONENT})
     endforeach()
 else()
     # Add all modules by default
+    set(VCP_MOD_FIND_MSG "Configured all")
     set(VCP_MODULES ${VCP_MODULES} vcp_best vcp_config vcp_imutils vcp_imvis vcp_math vcp_ui)
 endif()
 
@@ -244,7 +246,7 @@ endif()
 if(VCP_FOUND)
   if(NOT vcp_FIND_QUIETLY)
     message(STATUS "[vcp] Include directory: ${VCP_INCLUDE_DIR}")
-    message(STATUS "[vcp] Selected modules:  ${VCP_MODULES}")
+    message(STATUS "[vcp] ${VCP_MOD_FIND_MSG} modules:  ${VCP_MODULES}")
 #message(STATUS "[vcp] Libraries: ${VCP_LIBRARIES}")
   endif()
 else()

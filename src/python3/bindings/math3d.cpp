@@ -7,6 +7,10 @@
 
 // TODO move to math3d! geo2d::GetProjectionOfHorizon(const cv::Mat &K, const cv::Mat &R, const cv::Mat &t, const cv::Size &image_size)
 
+
+//-----------------------------------------------------------------------------
+// Wrapper/Helper code
+
 namespace vpc = vcp::python::conversion;
 namespace geo3d = vcp::math::geo3d;
 
@@ -94,6 +98,9 @@ py::list ProjectPointsOntoImagePlane(const std::vector<cv::Vec3d> &pts_world,
 } // namespace python
 } // namespace vcp
 
+
+//-----------------------------------------------------------------------------
+// Python module declarations
 
 PYBIND11_MODULE(math3d, m)
 {

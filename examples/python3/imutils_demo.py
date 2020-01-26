@@ -9,7 +9,7 @@ import cv2
 import numpy as np
 
 # Add path to the vcp package
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'src', 'python3'))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'gen'))
 from vcp import imutils
 from vcp import imvis
 

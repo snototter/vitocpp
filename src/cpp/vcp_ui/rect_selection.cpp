@@ -80,6 +80,11 @@ void RectMouseCallback(int event, int x, int y, int /*flags*/, void* user_data)
     }
     break;
 
+  case CV_EVENT_MBUTTONUP:
+    params->roi = cv::Rect(0, 0, 0, 0);
+    params->selection_done = true;
+    break;
+
   case CV_EVENT_RBUTTONUP:
     params->selection_done = true;
     break;
@@ -188,7 +193,9 @@ std::string RectSelectionUsage()
         << "* Confirm the selected rectangle by:" << std::endl
         << "  o Clicking with the RMB" << std::endl
         << "  o Keyboard: 'c', 'q' or return" << std::endl
-        << "* Abort selection by hitting ESC" << std::endl
+        << "* Abort selection by:" << std::endl
+        << "  o Clicking with the MMB" << std::endl
+        << "  o Keyboard: ESC" << std::endl
         << "* Reset the rectangle by pressing 'r'" << std::endl
         << std::endl;
   return usage.str();

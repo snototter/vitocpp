@@ -17,6 +17,7 @@ namespace ui
  *   - Left mouse button down: start drawing the rectangle from the current position
  *   - Mouse move (while LMB pressed): draw/resize the rectangle
  *   - Left mouse button up: finish rectangle selection
+ *   - Middle mouse button up: abort selection
  *   - Right mouse button: confirm selection, i.e. close the UI
  *   - Keyboard:
  *     -# <code>'q'</code>/<code>'Q'</code>/<code>'c'</code>/<code>'C'</code>/'return': quit and confirm selection, i.e. close the UI

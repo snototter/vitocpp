@@ -21,6 +21,10 @@
   #include <opencv2/imgproc/imgproc.hpp>
 #endif
 
+
+//-----------------------------------------------------------------------------
+// Wrapper/Helper code
+
 namespace vcp
 {
 namespace python
@@ -435,6 +439,8 @@ cv::Mat DrawErrorEllipse99(const cv::Mat &image, const cv::Vec2d &mean, const cv
 } // namespace vcp
 
 
+//-----------------------------------------------------------------------------
+// Python module declarations
 
 PYBIND11_MODULE(imvis_cpp, m)
 {

@@ -7,7 +7,7 @@ import sys
 import time
 
 # Add path to the vcp package
-sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'src', 'python3'))
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'gen'))
 import vcp.utils as vutils
 
 

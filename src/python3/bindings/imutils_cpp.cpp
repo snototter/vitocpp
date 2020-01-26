@@ -7,6 +7,9 @@
 #include <vcp_math/geometry2d.h>
 
 
+//-----------------------------------------------------------------------------
+// Wrapper/Helper code
+
 namespace vcp
 {
 namespace python
@@ -68,6 +71,9 @@ py::tuple ResizeAspectAwareWrapper(const cv::Mat &image, const cv::Size &new_siz
 } // namespace python
 } // namespace vcp
 
+
+//-----------------------------------------------------------------------------
+// Python module declarations
 
 PYBIND11_MODULE(imutils_cpp, m)
 {

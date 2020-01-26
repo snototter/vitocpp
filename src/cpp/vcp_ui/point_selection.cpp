@@ -16,8 +16,8 @@ typedef struct {
   bool selection_done; /**< Indicates, whether the user wants to quit the selection process. */
   bool selection_valid; /**< Indicates, whether the user selected a valid point. */
   bool changed; /**< Indicates that the user did 'something', i.e. we need to redraw the visualization. */
-  bool discard_previous; /**< Indicates that the user wants to remove the previously stored point. */
   bool add_point; /**< Needed for multi-point selection. */
+  cv::Point discard_at; /**< Indicates that the user wants to remove the point closest to this positoin (if x/y >= 0). */
 } CallbackParameter;
 
 void PointMouseCallback(int event, int x, int y, int /*flags*/, void* user_data)
@@ -35,6 +35,11 @@ void PointMouseCallback(int event, int x, int y, int /*flags*/, void* user_data)
     params->selection_done = true;
     params->changed = true;
     break;
+
+  case CV_EVENT_MBUTTONUP:
+    params->selection_valid = false;
+    params->selection_done = true;
+    break;
   }
 }
 
@@ -47,23 +52,24 @@ void MultiPointsMouseCallback(int event, int x, int y, int /*flags*/, void* user
     params->point = cv::Point(x, y);
     params->selection_done = false;
     params->selection_valid = true;
-    params->discard_previous = false;
     params->add_point = true;
-    params->changed = true;
-    break;
-
-  case CV_EVENT_RBUTTONUP:
-    params->selection_done = false;
-    params->discard_previous = true;
-    params->add_point = false;
+    params->discard_at = cv::Point(-1, -1);
     params->changed = true;
     break;
 
   case CV_EVENT_MBUTTONUP:
+    params->selection_done = false;
+    params->add_point = false;
+    params->discard_at = cv::Point(x, y);
+    params->changed = true;
+    break;
+
+  case CV_EVENT_RBUTTONUP:
     params->selection_valid = true;
     params->selection_done = true;
     params->add_point = false;
-    params->changed = true;
+    params->discard_at = cv::Point(-1, -1);
+    params->changed = false;
     break;
   }
 }
@@ -136,7 +142,7 @@ std::vector<cv::Point> SelectPoints(const cv::Mat &image, const cv::Scalar &poin
   params.selection_done = false;
   params.selection_valid = false;
   params.changed = false;
-  params.discard_previous = false;
+  params.discard_at = cv::Point(-1, -1);
   params.add_point = false;
 
   cv::namedWindow(window_name);
@@ -156,6 +162,17 @@ std::vector<cv::Point> SelectPoints(const cv::Mat &image, const cv::Scalar &poin
     case '\x1b': // ESC
       params.selection_valid = false;
       params.selection_done = true;
+      break;
+
+    case 'r':
+      // Remove the last point
+      if (!points.empty())
+      {
+        params.selection_done = false;
+        params.add_point = false;
+        params.discard_at = points[points.size()-1];
+        params.changed = true;
+      }
       break;
 
     case 10: // LF
@@ -179,11 +196,28 @@ std::vector<cv::Point> SelectPoints(const cv::Mat &image, const cv::Scalar &poin
     {
       params.changed = false;
 
-      if (params.discard_previous)
+      // Delete point closest to given position
+      if (params.discard_at.x >= 0 && params.discard_at.y >= 0)
       {
-        if (points.size() > 0)
-          points.pop_back();
-        params.discard_previous = false;
+        if (!points.empty())
+        {
+          //points.pop_back();
+          cv::Point diff = points[0] - params.discard_at;
+          int min_sqdist = diff.x * diff.x + diff.y * diff.y;
+          size_t min_idx = 0;
+          for (size_t idx = 1; idx < points.size(); ++idx)
+          {
+            diff = points[idx] - params.discard_at;
+            const int sqdist = diff.x * diff.x + diff.y * diff.y;
+            if (sqdist < min_sqdist)
+            {
+              min_idx = idx;
+              min_sqdist = sqdist;
+            }
+          }
+          points.erase(points.begin() + min_idx);
+        }
+        params.discard_at = cv::Point(-1, -1);
       }
       else if (params.add_point)
       {
@@ -213,11 +247,13 @@ std::string PointSelectionUsage()
   std::stringstream usage;
   usage << "PointSelection Usage:" << std::endl
         << "-----------------------------------------------------------" << std::endl
-        << "* LMB release selects the current mouse position" << std::endl
+        << "* LMB click selects the cursor position" << std::endl
         << "* Confirm the point selection by:" << std::endl
         << "  o Clicking with the RMB" << std::endl
         << "  o Keyboard: 'c', 'q' or return" << std::endl
-        << "* Abort selection by hitting ESC" << std::endl
+        << "* Abort selection by:" << std::endl
+        << "  o Clicking with the MMB" << std::endl
+        << "  o Keyboard: ESC" << std::endl
         << "* 'h' prints this usage help" << std::endl
         << std::endl;
   return usage.str();
@@ -228,10 +264,11 @@ std::string MultiplePointsSelectionUsage()
   std::stringstream usage;
   usage << "MultiplePointsSelection Usage:" << std::endl
         << "-----------------------------------------------------------" << std::endl
-        << "* LMB release adds the current mouse position" << std::endl
-        << "* RMB removes the last stored position" << std::endl
+        << "* LMB click adds the current cursor position" << std::endl
+        << "* MMB click removes the position closest to cursor" << std::endl
+        << "* Keyboard 'r' removes the last added point" << std::endl
         << "* Confirm the point selection by:" << std::endl
-        << "  o Clicking with the middle MB" << std::endl
+        << "  o Clicking RMB" << std::endl
         << "  o Keyboard: 'c', 'q' or return" << std::endl
         << "* Abort selection by hitting ESC" << std::endl
         << "* 'h' prints this usage help" << std::endl

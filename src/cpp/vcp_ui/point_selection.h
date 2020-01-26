@@ -15,6 +15,7 @@ namespace ui
  *
  * User interaction:
  *   - Left mouse button: selects the current mouse position
+ *   - Middle mouse button: aborts (and discards) the selection
  *   - Right mouse button: confirms the selection
  *   - Keyboard:
  *     -# ESC Abort (and discard) the selection and close window
@@ -33,11 +34,12 @@ bool SelectPoint(cv::Point &point, const cv::Mat &image, const cv::Scalar &point
  *
  * User interaction:
  *   - Left mouse button: adds the current mouse position to the output list
- *   - Right mouse button: discards the last stored point
- *   - Middle mouse button: confirm selection and exit
+ *   - Middle mouse button: discards the point closest to the cursor
+ *   - Right mouse button: confirm selection and exit
  *   - Keyboard:
  *     -# ESC: discard all points and exit
  *     -# Return, <code>'q'</code>/<code>'Q'</code>/<code>'c'</code>/<code>'C'</code>: confirm selection and exit
+ *     -# <code>'r'</code>: discards the last stored point
  *     -# <code>'h'</code>/<code>'H'</code>: displays a help dialog at the console
  *
  * @param image Input image

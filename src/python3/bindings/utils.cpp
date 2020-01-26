@@ -6,6 +6,10 @@
 #include <pybind11/pybind11.h>
 namespace py = pybind11;
 
+
+//-----------------------------------------------------------------------------
+// Wrapper/Helper code
+
 void LogDebug(const std::string &message)
 {
   VCP_LOG_DEBUG_DEFAULT(message);
@@ -25,6 +29,10 @@ void LogFailure(const std::string &message)
 {
   VCP_LOG_FAILURE_DEFAULT(message);
 }
+
+
+//-----------------------------------------------------------------------------
+// Python module declarations
 
 PYBIND11_MODULE(utils, m)
 {

@@ -11,6 +11,9 @@
 // TODO nice-to-have: reconstruct triangle from two sides, angles, etc.
 
 
+//-----------------------------------------------------------------------------
+// Wrapper/Helper code
+
 namespace vpc = vcp::python::conversion;
 namespace geo2d = vcp::math::geo2d;
 
@@ -176,6 +179,10 @@ py::object UnitDirectionVector(const cv::Vec2d &from, const cv::Vec2d &to)
 } // namespace math
 } // namespace python
 } // namespace vcp
+
+
+//-----------------------------------------------------------------------------
+// Python module declarations
 
 PYBIND11_MODULE(math2d, m)
 {
