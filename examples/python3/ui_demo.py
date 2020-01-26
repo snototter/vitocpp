@@ -19,13 +19,16 @@ if __name__ == "__main__":
     img = imutils.imread('../data/flamingo.jpg', flip_channels=True)
 
     # Select a rectangle
-    valid, rect = ui_basics.select_rectangle(img, rect_color=(0, 255, 255), window_name='Rectangle selection demo')
+    valid, rect = ui_basics.select_rectangle(img, rect_color=(0, 255, 255),
+            window_name='Rectangle selection demo')
     print('User confirmed: ', valid, ', rect: ', rect)
 
     # Select a single point
-    valid, pt = ui_basics.select_point(img, point_color=(255, 0, 0), window_name='[Single] Point selection demo')
+    valid, pt = ui_basics.select_point(img, point_color=(255, 0, 0),
+            window_name='[Single] Point selection demo', marker='cross', thickness=3)
     print('User confirmed: ', valid, ', pt: ', pt)
 
     # Select multiple points
-    pts = ui_basics.select_points(img, point_color=(255, 0, 0), window_name='[Multiple] Point selection demo')
+    pts = ui_basics.select_points(img, point_color=(255, 0, 0),
+            window_name='[Multiple] Point selection demo', marker='dot', thickness=8)
     print('User selected pts: ', pts)

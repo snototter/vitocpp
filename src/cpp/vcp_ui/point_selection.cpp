@@ -75,7 +75,8 @@ void MultiPointsMouseCallback(int event, int x, int y, int /*flags*/, void* user
 }
 } // namespace
 
-bool SelectPoint(cv::Point &point, const cv::Mat &image, const cv::Scalar &point_color, int point_radius, const std::string &window_name)
+bool SelectPoint(cv::Point &point, const cv::Mat &image, const cv::Scalar &point_color,
+                 const std::string &window_name, const PointMarker &marker, int marker_thickness)
 {
   CallbackParameter params;
   params.point = cv::Point(-1,-1);
@@ -123,7 +124,19 @@ bool SelectPoint(cv::Point &point, const cv::Mat &image, const cv::Scalar &point
       vis = image.clone();
       params.changed = false;
       if (params.selection_valid)
-        cv::circle(vis, params.point, point_radius, point_color, cv::FILLED);
+      {
+        if (marker == PointMarker::DOT)
+          cv::circle(vis, params.point, marker_thickness, point_color, cv::FILLED);
+        else
+        {
+          const int left = params.point.x - 10;
+          const int right = params.point.x + 10;
+          const int top = params.point.y - 10;
+          const int bottom = params.point.y + 10;
+          cv::line(vis, cv::Point(params.point.x, top), cv::Point(params.point.x, bottom), point_color, marker_thickness);
+          cv::line(vis, cv::Point(left, params.point.y), cv::Point(right, params.point.y), point_color, marker_thickness);
+        }
+      }
     }
     cv::imshow(window_name, vis);
   }
@@ -134,7 +147,9 @@ bool SelectPoint(cv::Point &point, const cv::Mat &image, const cv::Scalar &point
 }
 
 
-std::vector<cv::Point> SelectPoints(const cv::Mat &image, const cv::Scalar &point_color, int point_radius, const std::string &window_name)
+std::vector<cv::Point> SelectPoints(
+    const cv::Mat &image, const cv::Scalar &point_color,
+    const std::string &window_name, const PointMarker &marker, const int marker_thickness)
 {
   std::vector<cv::Point> points;
   CallbackParameter params;
@@ -226,8 +241,23 @@ std::vector<cv::Point> SelectPoints(const cv::Mat &image, const cv::Scalar &poin
       }
 
       vis = image.clone();
-      for (const auto &pt : points)
-        cv::circle(vis, pt, point_radius, point_color, cv::FILLED);
+      if (marker == PointMarker::DOT)
+      {
+        for (const auto &pt : points)
+          cv::circle(vis, pt, marker_thickness, point_color, cv::FILLED);
+      }
+      else
+      {
+        for (const auto &pt : points)
+        {
+          const int left = pt.x - 10;
+          const int right = pt.x + 10;
+          const int top = pt.y - 10;
+          const int bottom = pt.y + 10;
+          cv::line(vis, cv::Point(pt.x, top), cv::Point(pt.x, bottom), point_color, marker_thickness);
+          cv::line(vis, cv::Point(left, pt.y), cv::Point(right, pt.y), point_color, marker_thickness);
+        }
+      }
     }
 
     // q.a.d. - as long as there's no reliable way to detect a closing window (once the user clicked the title bar 'X'), we

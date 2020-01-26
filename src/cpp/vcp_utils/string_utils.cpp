@@ -30,8 +30,20 @@ void ToLower(std::string &s) {
   std::transform(s.begin(), s.end(), s.begin(), ::tolower);
 }
 
+std::string Lower(const std::string &s) {
+  std::string tmp(s);
+  ToLower(tmp);
+  return tmp;
+}
+
 void ToUpper(std::string &s) {
   std::transform(s.begin(), s.end(), s.begin(), ::toupper);
+}
+
+std::string Upper(const std::string &s) {
+  std::string tmp(s);
+  ToUpper(tmp);
+  return tmp;
 }
 
 // trim from start

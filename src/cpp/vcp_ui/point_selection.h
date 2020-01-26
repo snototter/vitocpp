@@ -10,6 +10,14 @@ namespace vcp
 {
 namespace ui
 {
+/** @brief Marker used for the point selection utility. */
+enum class PointMarker
+{
+  DOT,  /**< Draw selected points as dot. */
+  CROSS /**< Highlight selected points as cross. */
+};
+
+
 /**
  * @brief Provides a highgui window to let the user select a single point.
  *
@@ -25,9 +33,12 @@ namespace ui
  * @param point Point to store the user selection
  * @param image Input image
  * @param window_name Window title
+ * @param marker How to draw the selected point
+ * @param marker_thickness Radius if marker==DOT, else line thickness
  * @return bool indicating whether the user selected (and confirmed) a valid point (<tt>true</tt>) or not.
  */
-bool SelectPoint(cv::Point &point, const cv::Mat &image, const cv::Scalar &point_color=cv::Scalar(255, 0, 255), int point_radius=5, const std::string &window_name = std::string("Select point"));
+bool SelectPoint(cv::Point &point, const cv::Mat &image, const cv::Scalar &point_color=cv::Scalar(255, 0, 255),
+                 const std::string &window_name = std::string("Select point"), const PointMarker &marker=PointMarker::DOT, int marker_thickness=5);
 
 /**
  * @brief Provides a highgui window to let the user select multiple points.
@@ -44,11 +55,16 @@ bool SelectPoint(cv::Point &point, const cv::Mat &image, const cv::Scalar &point
  *
  * @param image Input image
  * @param point_color Color to draw selected points
- * @param point_radius Radius of drawn points
  * @param window_name Window title
+ * @param marker How to draw the selected point
+ * @param marker_thickness Radius if marker==DOT, else line thickness
  * @return Vector of selected points
  */
-std::vector<cv::Point> SelectPoints(const cv::Mat &image, const cv::Scalar &point_color=cv::Scalar(255, 0, 255), int point_radius=5, const std::string &window_name = std::string("Select points"));
+std::vector<cv::Point> SelectPoints(const cv::Mat &image,
+                                    const cv::Scalar &point_color=cv::Scalar(255, 0, 255),
+                                    const std::string &window_name = std::string("Select points"),
+                                    const PointMarker &marker=PointMarker::DOT,
+                                    const int marker_thickness=5);
 
 
 /** @brief Returns a short help message on how to use the single point selection tool. */

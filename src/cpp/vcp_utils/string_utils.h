@@ -33,11 +33,13 @@ namespace string
    * @brief Convert string to lower case
    */
   void ToLower(std::string &s);
+  std::string Lower(const std::string &s);
 
   /**
    * @brief Convert string to upper case
    */
   void ToUpper(std::string &s);
+  std::string Upper(const std::string &s);
 
   /**
    * @brief Remove leading and trailing white space
