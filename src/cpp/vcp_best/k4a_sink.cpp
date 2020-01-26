@@ -1149,8 +1149,8 @@ std::unique_ptr<StreamSink> CreateBufferedK4ASink(const K4ASinkParams &params,
 
 bool IsK4A(const std::string &type_param)
 {
-  std::string type(type_param);
-  vcp::utils::string::ToLower(type);
+  const std::string type = vcp::utils::string::Lower(type_param);
+
   if (type.compare("k4a") == 0
     || type.compare("kinect-azure") == 0
     || type.compare("azure-kinect") == 0

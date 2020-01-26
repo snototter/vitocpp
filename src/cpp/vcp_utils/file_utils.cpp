@@ -44,8 +44,7 @@ bool HasImageExtension(const std::string &filename)
   namespace vus = vcp::utils::string;
 
   // Convert to lower case
-  std::string l = filename;
-  vus::ToLower(l);
+  const std::string l = vus::Lower(filename);
 
   if (vus::EndsWith(l, ".jpg") || vus::EndsWith(l, ".jpeg") || vus::EndsWith(l, ".jpe") ||
       vus::EndsWith(l, ".bmp") || vus::EndsWith(l, ".pbm") || vus::EndsWith(l, ".pgm") ||

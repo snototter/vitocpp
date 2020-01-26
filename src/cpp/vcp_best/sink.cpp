@@ -49,8 +49,8 @@ std::string FrameTypeToString(const FrameType &s)
 #define MAKE_STRING_TO_STREAMTYPE_IF(st, rep) if (rep.compare(FrameTypeToString(FrameType::st)) == 0) return FrameType::st
 FrameType FrameTypeFromString(const std::string &s)
 {
-  std::string lower(s);
-  vcp::utils::string::ToLower(lower);
+  const std::string lower = vcp::utils::string::Lower(s);
+
   if (lower.empty()
       || lower.compare("unknown") == 0)
     return FrameType::UNKNOWN;

@@ -150,8 +150,8 @@ std::string IpApplicationProtocolToString(const IpApplicationProtocol &p)
 
 IpApplicationProtocol IpApplicationProtocolFromString(const std::string &protocol)
 {
-  std::string lower(protocol);
-  vcp::utils::string::ToLower(lower);
+  const std::string lower = vcp::utils::string::Lower(protocol);
+
   if (lower.compare("http") == 0)
     return IpApplicationProtocol::HTTP;
   if (lower.compare("rtsp") == 0)
@@ -185,8 +185,7 @@ std::string IpTransportProtocolToString(const IpTransportProtocol &p)
 
 IpTransportProtocol IpTransportProtocolFromString(const std::string &protocol)
 {
-  std::string lower(protocol);
-  vcp::utils::string::ToLower(lower);
+  const std::string lower = vcp::utils::string::Lower(protocol);
   if (lower.compare("tcp") == 0)
     return IpTransportProtocol::TCP;
   if (lower.compare("udp") == 0)
@@ -206,8 +205,7 @@ std::ostream &operator<<(std::ostream &stream, const IpStreamEncoding &s)
 
 IpStreamEncoding IpStreamEncodingFromString(const std::string &stream_type)
 {
-  std::string lower(stream_type);
-  vcp::utils::string::ToLower(lower);
+  std::string lower = vcp::utils::string::Lower(stream_type);
   if (lower.compare("h264") == 0)
     return IpStreamEncoding::H264;
   if (lower.compare("mjpeg") == 0
@@ -241,8 +239,7 @@ std::ostream &operator<<(std::ostream &stream, const IpCameraType &cam)
 
 IpCameraType IpCameraTypeFromString(const std::string &camera_type)
 {
-  std::string lower(camera_type);
-  vcp::utils::string::ToLower(lower);
+  std::string lower = vcp::utils::string::Lower(camera_type);
   if (vcp::utils::string::StartsWith(lower, "ipcam"))
     return IpCameraType::Generic;
   if (vcp::utils::string::StartsWith(lower, "axis"))
@@ -650,8 +647,7 @@ std::unique_ptr<StreamSink> CreateIpCameraSink(const std::vector<IpCameraSinkPar
 
 bool IsGenericIpCameraMonocular(const std::string &camera_type)
 {
-  std::string lower(camera_type);
-  vcp::utils::string::ToLower(lower);
+  std::string lower = vcp::utils::string::Lower(camera_type);
   return lower.compare("ipcam") == 0 || lower.compare("ipcamera") == 0
       || lower.compare("ipcam-monocular") == 0 || lower.compare("ipcamera-monocular") == 0
       || lower.compare("ipcam-mono") == 0 || lower.compare("ipcamera-mono") == 0;
@@ -659,22 +655,19 @@ bool IsGenericIpCameraMonocular(const std::string &camera_type)
 
 bool IsGenericIpCameraStereo(const std::string &camera_type)
 {
-  std::string lower(camera_type);
-  vcp::utils::string::ToLower(lower);
+  std::string lower = vcp::utils::string::Lower(camera_type);
   return lower.compare("ipcam-stereo") == 0 || lower.compare("ipcamera-stereo") == 0;
 }
 
 bool IsAxisMonocular(const std::string &camera_type)
 {
-  std::string lower(camera_type);
-  vcp::utils::string::ToLower(lower);
+  std::string lower = vcp::utils::string::Lower(camera_type);
   return lower.compare("axis") == 0 || lower.compare("axis-mono") == 0 || lower.compare("axis-monocular") == 0;
 }
 
 bool IsAxisStereo(const std::string &camera_type)
 {
-  std::string lower(camera_type);
-  vcp::utils::string::ToLower(lower);
+  std::string lower = vcp::utils::string::Lower(camera_type);
   return lower.compare("axis-stereo") == 0;
 }
 

@@ -640,8 +640,7 @@ private:
 
 bool IsWebcamSink(const std::string &type_param)
 {
-  std::string type(type_param);
-  vcp::utils::string::ToLower(type);
+  const std::string type = vcp::utils::string::Lower(type_param);
   if (type.compare("webcam") == 0
       || type.compare("web_cam") == 0
       || type.compare("web-cam") == 0)

@@ -695,8 +695,7 @@ private:
 /** @brief Given the cameraXX.type (configuration) parameter, checks if the configuration belongs to a VideoFileSink. */
 bool IsVideoFileSink(const std::string &type_param)
 {
-  std::string type(type_param);
-  vcp::utils::string::ToLower(type);
+  std::string type = vcp::utils::string::Lower(type_param);
   if (type.compare("video") == 0
       || type.compare("video-file") == 0
       || type.compare("file") == 0
@@ -710,8 +709,7 @@ bool IsVideoFileSink(const std::string &type_param)
 /** @brief Given the cameraXX.type (configuration) parameter, checks if the configuration belongs to a VideoFileSink. */
 bool IsImageDirectorySink(const std::string &type_param)
 {
-  std::string type = vcp::utils::string::Replace(type_param, "-", "_");
-  vcp::utils::string::ToLower(type);
+  std::string type = vcp::utils::string::Lower(vcp::utils::string::Replace(type_param, "-", "_"));
   if (type.compare("img_dir") == 0
       || type.compare("image_dir") == 0
       || type.compare("image_directory") == 0
