@@ -5,6 +5,8 @@
 #include <vcp_imutils/matutils.h>
 #include <vcp_imutils/imutils.h>
 #include <vcp_imutils/opencv_compatibility.h>
+#include <vcp_math/conversions.h>
+#include <vcp_math/geometry3d.h>
 #include <opencv2/imgproc/imgproc.hpp>
 
 
@@ -281,6 +283,25 @@ void Resize(const cv::Mat &image, cv::Mat &resized, const cv::Size &new_size)
 
   cv::Mat roi = resized(rect);
   cv::resize(image, roi, image_new_size);
+}
+
+
+
+cv::Mat RenderPerspective(const cv::Mat &image, float rx, float ry, float rz, float tx, float ty, float tz, const cv::Scalar &border_color)
+{
+  const auto corners_src = vcp::imutils::ImageCorners<float>(image);
+  const std::vector<cv::Vec3d> corners3d_src = {
+    cv::Vec3d(-1, -1, 1),
+    cv::Vec3d(1, -1, 1),
+    cv::Vec3d(1, 1, 1),
+    cv::Vec3d(-1, 1, 1)
+  };
+  std::vector<cv::Point2f> corners2d_dst;
+
+  // TODO std::vector<cv::Vec2d> vcp::math::geo3d::ProjectVecs(const cv::Mat &P, const std::vector<cv::Vec3d> &pts)
+  //vcp::convert::std::vector<cv::Point2f> ToPoint2f(const std::vector<cv::Vec<T, 2>> &vec)
+
+  VCP_ERROR("Not yet implemented!");
 }
 
 } // namespace collage

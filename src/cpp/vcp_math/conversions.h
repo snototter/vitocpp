@@ -132,6 +132,17 @@ inline cv::Point2f ToPoint2f(const cv::Vec<T, 2> &v)
 }
 
 
+template<typename T>
+inline std::vector<cv::Point2f> ToPoint2f(const std::vector<cv::Vec<T, 2>> &vec)
+{
+  std::vector<cv::Point2f> res;
+  res.reserve(vec.size());
+  for (const auto &v : vec)
+    res.push_back(cv::Point2f(static_cast<float>(v.val[0]), static_cast<float>(v.val[1])));
+  return res;
+}
+
+
 //-----------------------------------------------------------------------------------------------------cv::Size
 // Convert to cv::Size
 //-------------------------------------------------------------------------------------------------------------

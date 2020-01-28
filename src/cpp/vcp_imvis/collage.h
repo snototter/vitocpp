@@ -37,6 +37,13 @@ void Collage(const std::vector<cv::Mat> &images, cv::Mat &collage, size_t images
   * @param[in] new_size Size of the resized image
   */
 void Resize(const cv::Mat &image, cv::Mat &resized, const cv::Size &new_size);
+
+
+/** @brief Applies a perspective warp such that it looks like the image plane would be viewed at the given extrinsics.
+ * Rotation angles should be given in radians.
+ * border_color == (-1,-1,-1) will yield a RGB/BGR+A output image with invalid regions masked out.
+ */
+cv::Mat RenderPerspective(const cv::Mat &image, float rx, float ry, float rz, float tx, float ty, float tz, const cv::Scalar &border_color=cv::Scalar::all(-1));
 } // namespace collage
 } // namespace imvis
 } // namespace vcp

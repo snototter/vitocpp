@@ -22,6 +22,27 @@ inline cv::Vec2d ImageCenter(const cv::Mat &image)
   return cv::Vec2d(static_cast<double>(image.cols)/2.0, static_cast<double>(image.rows)/2.0);
 }
 
+/** @brief Return the image corners. */
+template<typename T>
+inline std::vector<cv::Point_<T>> ImageCorners(const cv::Size &size)
+{
+  const int r = size.width - 1;
+  const int b = size.height - 1;
+  std::vector<cv::Point_<T>> corners = {
+    cv::Point_<T>(static_cast<T>(0), static_cast<T>(0)),
+    cv::Point_<T>(static_cast<T>(r), static_cast<T>(0)),
+    cv::Point_<T>(static_cast<T>(r), static_cast<T>(b)),
+    cv::Point_<T>(static_cast<T>(0), static_cast<T>(b))
+  };
+  return corners;
+}
+
+template<typename T>
+inline std::vector<cv::Point_<T>> ImageCorners(const cv::Mat &image)
+{
+  return ImageCorners<T>(image.size());
+}
+
 
 /** @brief Clip a rectangle to stay within the image boundaries. */
 inline void ClipRectangleToImageBoundaries(cv::Rect &rect, const cv::Size &img_size)

@@ -255,10 +255,20 @@ inline cv::Vec3d Apply3x3(const cv::Mat &H, const cv::Vec3d &pt)
   return cv::Vec3d(x, y, z);
 }
 
-//TODO doc
+
+/** @brief Returns the projection matrix P = K * [R | t]. */
 cv::Mat ProjectionMatrixFromKRt(const cv::Mat &K, const cv::Mat &R, const cv::Mat &t);
+
+
+/** @brief Returns the projection matrix P = K * [R | t] = K * Rt. */
 cv::Mat ProjectionMatrixFromKRt(const cv::Mat &K, const cv::Mat &Rt);
+
+
+/** @brief Returns the optical center C = -R' * t. */
 cv::Vec3d CameraCenterFromRt(const cv::Mat &R, const cv::Mat &t);
+
+
+/** @brief Returns the optical center C = -R' * t. */
 cv::Vec3d CameraCenterFromRt(const cv::Mat &Rt);
 
 
@@ -270,6 +280,23 @@ inline cv::Vec2d ProjectVec(const cv::Mat &P, const cv::Vec3d &pt)
 {
   const cv::Vec3d prj = (P.cols == 4) ? Apply3x4(P, pt) : Apply3x3(P, pt);
   return cv::Vec2d(prj[0]/prj[2], prj[1]/prj[2]);
+}
+
+/** @brief Project all 3-element Vectors by a 3x4 projection matrix (by adding a homogeneous coordinate dimension)
+ * or 3x3 transformation matrix (homography). In the latter case, you have to already provide the pt in
+ * homogeneous form.
+ */
+inline std::vector<cv::Vec2d> ProjectVecs(const cv::Mat &P, const std::vector<cv::Vec3d> &pts)
+{
+  cv::Vec3d (*afx)(const cv::Mat &, const cv::Vec3d &) = (P.cols == 4) ? Apply3x4 : Apply3x3;
+  std::vector<cv::Vec2d> projected;
+  projected.reserve(pts.size());
+  for (const auto &pt : pts)
+  {
+    const auto prj = afx(P, pt);
+    projected.push_back(cv::Vec2d(prj[0]/prj[2], prj[1]/prj[2]));
+  }
+  return projected;
 }
 
 

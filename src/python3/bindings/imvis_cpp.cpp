@@ -434,6 +434,13 @@ cv::Mat DrawErrorEllipse99(const cv::Mat &image, const cv::Vec2d &mean, const cv
   return vis;
 }
 
+
+cv::Mat RenderPerspective(const cv::Mat &image, float rx, float ry, float rz, float tx, float ty, float tz, const py::tuple &border_color)
+{
+  const cv::Scalar bg_color = border_color.is_none() ? cv::Scalar::all(-1) : vcp::python::conversion::PyObjectToScalar(border_color, nullptr);
+  return vcp::imvis::collage::RenderPerspective(image, rx, ry, rz, tx, ty, tz, bg_color);
+}
+
 } // namespace imvis
 } // namespace python
 } // namespace vcp
@@ -473,6 +480,24 @@ PYBIND11_MODULE(imvis_cpp, m)
         py::arg("fixed_size_per_image") = cv::Size(0,0),
         py::arg("bg_color") = cv::Scalar::all(0.0),
         py::arg("convert_to_uint8") = false);
+
+
+  m.def("render_perspective", &vpi::RenderPerspective,
+        "Applies a perspective warp to the given image\n"
+        "such that it looks like the image plane would\n"
+        "be viewed from a camera with the given extrinsics.\n\n"
+        ":param image: numpy ndarray.\n"
+        ":params rx, ry, rz: Rotation angles (float) in radians.\n"
+        ":params tx, ty, tz: Translation vector components (float).\n"
+        ":param border_color: If None, output will be a RGBA/BGRA image\n"
+        "         where invalid regions are masked out via the alpha\n"
+        "         channel. Otherwise it must be a 3-element tuple,\n"
+        "         specifying the background/replacement RGB/BGR color.\n"
+        ":return: numpy ndarray, 3 or 4 channel image",
+        py::arg("image"),
+        py::arg("rx")=0, py::arg("ry")=0, py::arg("rz")=0,
+        py::arg("tx")=0, py::arg("ty")=0, py::arg("tz")=0,
+        py::arg("border_color")=py::none());
 
 
   m.def("make_anaglyph", &vpi::MakeAnaglyph,
