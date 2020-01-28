@@ -306,6 +306,11 @@ cv::Mat RenderPerspective(const cv::Mat &image, float rx, float ry, float rz, fl
   VCP_ERROR("Not yet implemented!");
 }
 
+
+cv::Mat RenderImageSequence(const std::vector<cv::Mat> &image, float rx, float ry, float rz, float tx, float ty, float tz, float delta_z, const cv::Scalar &border_color)
+{
+  VCP_ERROR("Not yet implemented!");
+}
 } // namespace collage
 } // namespace imvis
 } // namespace vcp

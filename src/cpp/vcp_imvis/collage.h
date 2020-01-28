@@ -44,6 +44,13 @@ void Resize(const cv::Mat &image, cv::Mat &resized, const cv::Size &new_size);
  * border_color == (-1,-1,-1) will yield a RGB/BGR+A output image with invalid regions masked out.
  */
 cv::Mat RenderPerspective(const cv::Mat &image, float rx, float ry, float rz, float tx, float ty, float tz, const cv::Scalar &border_color=cv::Scalar::all(-1));
+
+/** @brief Stacks the given images along the optical axis and renders them to look like they were viewed with the given extrinsics.
+ * Rotation angles should be given in radians.
+ * border_color == (-1,-1,-1) will yield a RGB/BGR+A output image with invalid regions masked out.
+ */
+cv::Mat RenderImageSequence(const std::vector<cv::Mat> &image, float rx, float ry, float rz, float tx, float ty, float tz, float delta_z = 0.1, const cv::Scalar &border_color=cv::Scalar::all(-1));
+
 } // namespace collage
 } // namespace imvis
 } // namespace vcp
