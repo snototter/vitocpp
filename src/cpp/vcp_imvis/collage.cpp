@@ -34,7 +34,7 @@ bool HaveSameDepth(const std::vector<cv::Mat> &images)
   return true;
 }
 
-/** @brief Check if images have the supported 1 or 3 layers. Optionally (if not NULL) gets
+/** @brief Check if images have the supported 1, 3 or 4 layers. Optionally (if not NULL) gets
  * the minimum/maximum number of layers. Must have at least 1 image. */
 bool CheckLayers(const std::vector<cv::Mat> &images, int *max_layers, int *min_layers)
 {
@@ -47,10 +47,12 @@ bool CheckLayers(const std::vector<cv::Mat> &images, int *max_layers, int *min_l
 
   for (size_t i = 0; i < images.size(); ++i)
   {
-    if (images[i].channels() != 1 && images[i].channels() != 3)
+    if (images[i].channels() != 1
+        && images[i].channels() != 3
+        && images[i].channels() != 4)
     {
       supported_layers = false;
-      VCP_LOG_WARNING("CheckLayers(): Image " << i << " has invalid shape: " << images[i].rows << "x" << images[i].cols << "x" << images[i].channels());
+      VCP_LOG_WARNING("CheckLayers(): Image #" << i << " has invalid shape: " << images[i].rows << "x" << images[i].cols << "x" << images[i].channels());
     }
 
     if (min_layers && images[i].channels() < *min_layers)
@@ -205,7 +207,7 @@ void Collage(const std::vector<cv::Mat> &images, cv::Mat &collage, size_t num_im
 
   int max_layers = -1;
   if (!utils::CheckLayers(images, &max_layers, nullptr))
-    VCP_ERROR("Images for collage must have either 1 or 3 layers!");
+    VCP_ERROR("Images for collage must have either 1, 3 or 4 layers!");
 
 
   // Compute collage size
