@@ -288,7 +288,7 @@ inline cv::Vec2d ProjectVec(const cv::Mat &P, const cv::Vec3d &pt)
  */
 inline std::vector<cv::Vec2d> ProjectVecs(const cv::Mat &P, const std::vector<cv::Vec3d> &pts)
 {
-  cv::Vec3d (*afx)(const cv::Mat &, const cv::Vec3d &) = (P.cols == 4) ? Apply3x4 : Apply3x3;
+  cv::Vec3d (*afx)(const cv::Mat &, const cv::Vec3d &) = (P.cols == 4) ? &Apply3x4 : &Apply3x3;
   std::vector<cv::Vec2d> projected;
   projected.reserve(pts.size());
   for (const auto &pt : pts)
