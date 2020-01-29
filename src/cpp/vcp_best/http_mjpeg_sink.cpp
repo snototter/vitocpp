@@ -195,7 +195,7 @@ public:
 
 private:
   IpCameraSinkParams params_;
-  URL_FILE *mjpg_stream_;
+  curl::URL_FILE *mjpg_stream_;
   CURLM *mjpg_multi_handle_;
   bool continue_stream_;
 
@@ -212,13 +212,13 @@ private:
     {
       char garbage[80];
       // Skip "--<boundary>"
-      url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_);
+      curl::url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_);
       // Skip "Content-type:...\n"
-      url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_);
+      curl::url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_);
       // Skip "Content-Length: "
-      url_fread(mjpg_multi_handle_, (void *)garbage, sizeof(char), 16, mjpg_stream_);
+      curl::url_fread(mjpg_multi_handle_, (void *)garbage, sizeof(char), 16, mjpg_stream_);
       // Read the frame size
-      url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_);
+      curl::url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_);
       int jpeg_bytes = atoi(garbage);
 
       if (jpeg_bytes == 0)

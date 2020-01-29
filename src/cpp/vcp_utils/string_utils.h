@@ -33,12 +33,16 @@ namespace string
    * @brief Convert string to lower case
    */
   void ToLower(std::string &s);
+
+  /** @brief Returns the string converted to lower case letters. */
   std::string Lower(const std::string &s);
 
   /**
    * @brief Convert string to upper case
    */
   void ToUpper(std::string &s);
+
+  /** @brief Returns the string converted to upper case letters. */
   std::string Upper(const std::string &s);
 
   /**

@@ -13,6 +13,7 @@
 #endif
 
 #if CV_MAJOR_VERSION < 3
+/** @brief "Future definitions" to support OpenCV 2.x. */
 namespace cv
 {
 typedef Rect_<double> Rect2d;

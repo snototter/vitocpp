@@ -5,6 +5,11 @@
 
 #include <curl/curl.h>
 
+namespace vcp {
+namespace best {
+/** @brief TODO doc. */
+namespace curl {
+
 // Type of handle;
 enum fcurl_type_e
 {
@@ -46,5 +51,9 @@ int url_http_get(const char *url, long timeout = 0L, int head_only = 0);
 // returns 0 if ok, -1 if cannot init, otherwise CURL error code
 // specify timeout in seconds (or wait "forever" (i.e. curl default), if timeout = 0)
 int url_available(const char *url, long timeout = 0L);
+
+} // namespace curl
+} // namespace best
+} // namespace vcp
 
 #endif // __VCP_BEST_CURL_FILE_HANDLING_H__

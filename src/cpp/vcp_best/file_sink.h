@@ -11,6 +11,7 @@ namespace vcp
 {
 namespace best
 {
+/** @brief TODO doc. */
 namespace file
 {
 /** @brief Configuration parameters to "stream" from a video file. */

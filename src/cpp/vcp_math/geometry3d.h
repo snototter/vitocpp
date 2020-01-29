@@ -12,6 +12,7 @@ namespace vcp
 {
 namespace math
 {
+/** @brief 3D geometry-related math. */
 namespace geo3d
 {
 /** @brief Capsulates lines and line segments. */

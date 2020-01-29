@@ -7,6 +7,7 @@
 
 namespace vcp
 {
+/** @brief Type conversions. */
 namespace convert
 {
 

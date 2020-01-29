@@ -11,6 +11,7 @@ namespace best
 {
 namespace ipcam
 {
+/** @brief TODO doc. */
 namespace http
 {
 /**

@@ -13,7 +13,7 @@
 
 namespace vcp
 {
-/** @brief Contains all sorts of math utilities, e.g. geometry (2D and 3D), trigonometry, ... */
+/** @brief Math utilities, e.g. geometry (2D and 3D), trigonometry, ... */
 namespace math
 {
 /** @brief Uses the machine epsilon to properly check for equality based on the desired precision in ULPs (units

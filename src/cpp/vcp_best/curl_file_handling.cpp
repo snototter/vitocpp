@@ -8,6 +8,13 @@
 #include <stdlib.h>
 #include <errno.h>
 
+
+namespace curl
+{
+namespace best
+{
+namespace vcp
+{
 /* curl calls this routine to get more data */
 static size_t write_callback(char *buffer,
                              size_t size,
@@ -357,3 +364,7 @@ int url_available(const char *url, long timeout)
 {
   return url_http_get(url, timeout, 1);
 }
+
+} // namespace curl
+} // namespace best
+} // namespace vcp

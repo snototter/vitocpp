@@ -175,10 +175,11 @@ namespace logging
 {
 struct None { };
 
+/** @brief Internal struct to pass log messages. */
 template<typename List>
 struct LogData
 {
-  List list;
+  List list; /**< Holds the log data (to be passed on to the ostream). */
 };
 
 /** @brief Templated operator overload to print vectors. */
@@ -286,6 +287,7 @@ void output(std::ostream& os, std::pair<Begin, Last>&& data) {
   os << data.second;
 }
 
+/** @brief Don't log/output anything. */
 inline void output(std::ostream& /*os*/, None) { }
 } // namespace logging
 } // namespace utils

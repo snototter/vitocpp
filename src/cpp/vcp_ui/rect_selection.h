@@ -6,7 +6,7 @@
 namespace vcp
 {
 /**
-* @brief Utilities for user interaction.
+* @brief Utilities for (very basic) user interaction.
 */
 namespace ui
 {

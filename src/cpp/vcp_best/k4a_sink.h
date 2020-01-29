@@ -13,6 +13,7 @@ namespace vcp
 {
 namespace best
 {
+/** @brief TODO doc. */
 namespace k4a
 {
 /** @brief String representation of an empty/invalid/unset serial number. Use this if you don't want to specify a particular device. */
