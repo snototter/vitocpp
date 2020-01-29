@@ -78,16 +78,18 @@ $ cd $VCP_ROOT_DIR/examples/python3
 $ ./prepare_environment_py3.sh
 $ source .venv3/bin/activate
 ```
-* Interactively adjust camera extrinsics to get a better intuition about perspective transformations.
+* Plot an image by interactively adjusting the camera extrinsics. All about perspective transformations.
   ```bash
   $ cd $VCP_ROOT_DIR/examples/python3/tools
-  $ python virtual-camera.py
+  $ python plot-image.py
   ```
 * Perspective plot of a list of images - the standard video/image sequence representation/simplification.
   ```bash
   $ cd $VCP_ROOT_DIR/examples/python3/tools
   $ python plot-image-sequence.py
   ```
+
+
 ## Examples
 ### C++
 * The C++ applications at `<VCP_ROOT_DIR>/examples/cpp` demonstrate how you can use `vcp` from your own CMake projects. After building the vcp library, building these examples is as easy as:

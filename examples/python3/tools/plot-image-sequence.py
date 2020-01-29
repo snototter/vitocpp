@@ -1,18 +1,15 @@
 import os
 import sys
-import cv2
 import numpy as np
 from vito import imutils
-from vito import cam_projections as prj
 
 from iminspect import inputs, imgview, inspection_widgets
 
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QFileDialog
 from PyQt5.QtCore import QSize
 
-
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'gen'))
-import vcp.imvis as imvis
+from vcp import imvis
 
 
 class DemoApplication(QMainWindow):
@@ -26,52 +23,72 @@ class DemoApplication(QMainWindow):
         self._main_widget = QWidget()
         input_layout = QVBoxLayout()
 
-        #FIXME filenameSSS_open!!!
-        self._fileselection = inputs.SelectDirEntryWidget('Select files to open:',
-            inputs.SelectDirEntryType.FILENAME_OPEN, min_label_width=150,
-            filters='Images (*.bmp *.jpg *.jpeg *.png *.ppm);;All Files (*.*)',
-            relative_base_path=os.getcwd())
-        self._fileselection.value_changed.connect(self.__load_images)
-        input_layout.addWidget(self._fileselection)
-        input_layout.addWidget(inputs.HLine())
-
-        self._angle_x = inputs.SliderSelectionWidget('Angle x:', -180, 180, 361, 0,
+        self._angle_x = inputs.SliderSelectionWidget('Camera rotation x:', -180, 180, 180, 0,
             value_format_fx=lambda v: inputs.format_int(v, 4) + '°', min_label_width=150)
         self._angle_x.value_changed.connect(self.__changed)
         input_layout.addWidget(self._angle_x)
-        self._angle_y = inputs.SliderSelectionWidget('Angle y:', -180, 180, 361, 10,
+        self._angle_y = inputs.SliderSelectionWidget('Camera rotation y:', -180, 180, 180, 10,
             value_format_fx=lambda v: inputs.format_int(v, 4) + '°', min_label_width=150)
         self._angle_y.value_changed.connect(self.__changed)
         input_layout.addWidget(self._angle_y)
-        self._angle_z = inputs.SliderSelectionWidget('Angle z:', -180, 180, 361, 0,
+        self._angle_z = inputs.SliderSelectionWidget('Camera rotation z:', -180, 180, 180, 0,
             value_format_fx=lambda v: inputs.format_int(v, 4) + '°', min_label_width=150)
         self._angle_z.value_changed.connect(self.__changed)
         input_layout.addWidget(self._angle_z)
 
 
-        self._tx = inputs.SliderSelectionWidget('tx:', -10, 10, 100, 0,
+        self._tx = inputs.SliderSelectionWidget('Camera translation x:', -20, 20, 100, 0,
             value_format_fx=lambda v: inputs.format_float(v, after_comma=1), min_label_width=150)
         self._tx.value_changed.connect(self.__changed)
         input_layout.addWidget(self._tx)
-        self._ty = inputs.SliderSelectionWidget('ty:', -10, 10, 100, 0,
+        self._ty = inputs.SliderSelectionWidget('Camera translation y:', -20, 20, 100, 0,
             value_format_fx=lambda v: inputs.format_float(v, after_comma=1), min_label_width=150)
         self._ty.value_changed.connect(self.__changed)
         input_layout.addWidget(self._ty)
-        self._tz = inputs.SliderSelectionWidget('tz:', 0, 10, 100, 0,
+        self._tz = inputs.SliderSelectionWidget('Camera translation z:', -5, 15, 100, 0,
             value_format_fx=lambda v: inputs.format_float(v, after_comma=1), min_label_width=150)
         self._tz.value_changed.connect(self.__changed)
         input_layout.addWidget(self._tz)
 
-        #https://stackoverflow.com/questions/18257281/qt-color-picker-widget
-
-        self._dz = inputs.SliderSelectionWidget('Delta z:', 0.1, 10, 99, 0,
+        self._dz = inputs.SliderSelectionWidget('Image distance:', 0.1, 10, 100, 0,
             value_format_fx=lambda v: inputs.format_float(v, after_comma=1), min_label_width=150)
         self._dz.value_changed.connect(self.__changed)
         input_layout.addWidget(self._dz)
 
-        self._bgcb = inputs.CheckBoxWidget('Transparent background:', is_checked=False)
-        self._bgcb.value_changed.connect(self.__changed)
-        input_layout.addWidget(self._bgcb)
+        
+        #TODO border slider + color vs transparent
+        #https://stackoverflow.com/questions/18257281/qt-color-picker-widget
+
+        self._border_slider = inputs.SliderSelectionWidget('Border width:', 0, 10, 10, 0,
+            value_format_fx=lambda v: inputs.format_int(v, 3) + ' px', min_label_width=150)
+        self._border_slider.value_changed.connect(self.__update_controls)
+        input_layout.addWidget(self._border_slider)
+
+        layout_border_color = QHBoxLayout()
+        self._checkbox_border = inputs.CheckBoxWidget('Transparent border:', is_checked=False,
+            min_label_width=150)
+        self._checkbox_border.value_changed.connect(self.__update_controls)
+        layout_border_color.addWidget(self._checkbox_border)
+        self._color_border = inputs.ColorPickerWidget('Border color:', 
+            min_label_width=120, initial_color=(0, 0, 0))
+        self._color_border.value_changed.connect(self.__changed)
+        layout_border_color.addWidget(self._color_border)
+        layout_border_color.addStretch()
+        input_layout.addLayout(layout_border_color)
+        self._checkbox_border.setEnabled(False)
+        self._color_border.setEnabled(False)
+
+        layout_bg_color = QHBoxLayout()
+        self._checkbox_bg = inputs.CheckBoxWidget('Transparent background:', is_checked=False,
+            min_label_width=150)
+        self._checkbox_bg.value_changed.connect(self.__update_controls)
+        layout_bg_color.addWidget(self._checkbox_bg)
+        self._color_bg = inputs.ColorPickerWidget('Background color:', 
+            min_label_width=120, initial_color=(255, 255, 255))
+        self._color_bg.value_changed.connect(self.__changed)
+        layout_bg_color.addWidget(self._color_bg)
+        layout_bg_color.addStretch()
+        input_layout.addLayout(layout_bg_color)
 
         self._viewer = imgview.ImageViewer()
 
@@ -107,20 +124,30 @@ class DemoApplication(QMainWindow):
         ty = self._ty.value()
         tz = self._tz.value()
         dz = self._dz.value()
+        images = [imutils.pad(img, 3, color=None) for img in self._images] #TODO border slider
         warped = imvis.render_image_sequence(
-            self._images, rx=ax, ry=ay, rz=az, angles_in_deg=True,
-            tx=tx, ty=ty, tz=tz, delta_z=dz, bg_color=(-1, -1, -1) if self._bgcb.get_input() else (255, 255, 255))
-        # warped = perspectiveView(self._img_np, ax, ay, az, tx, ty, tz, None if self._bgcb.get_input() else (255, 255, 255))
+            images, rx=ax, ry=ay, rz=az, angles_in_deg=True,#FIXME use colorbg
+            tx=tx, ty=ty, tz=tz, delta_z=dz, bg_color=(-1, -1, -1) if self._checkbox_bg.get_input() else (255, 255, 255))
         self._vis_np = warped
         self._viewer.showImage(warped)
 
+    def __update_controls(self):
+        self._color_bg.setEnabled(not self._checkbox_bg.value())
+        if self._border_slider.value() > 0:
+            self._checkbox_border.setEnabled(True)
+            self._color_border.setEnabled(not self._checkbox_border.value())
+        else:
+            self._checkbox_border.setEnabled(False)
+            self._color_border.setEnabled(False)
+        self.__changed(None)
+
+
     def __load_request(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "Select file", "",
+        filenames, _ = QFileDialog.getOpenFileNames(self, "Select file", "",
             'Images (*.bmp *.jpg *.jpeg *.png *.ppm);;All Files (*.*)',
             '', QFileDialog.DontUseNativeDialog)
-        #FIXME implement!if filename is not None:
-            # img = imutils.imread(filename)
-            # self.displayImage(img)
+        if filenames is not None and len(filenames) > 0:
+            self.__load_images(filenames)
 
     def __save_request(self):
         if self._vis_np is None:
@@ -130,7 +157,6 @@ class DemoApplication(QMainWindow):
             '', QFileDialog.DontUseNativeDialog)
         if filename is not None:
             imutils.imsave(filename, self._vis_np)
-
 
     def displayImageSequence(self, imgs_np):
         self._images = imgs_np
@@ -147,7 +173,7 @@ def gui():
     # Add (transparent) border
     #TODO make transparent again
     #FIXME rgb => widget; upon change (if transparent, add border) otherwise....... TODO extend GUI (save + colorize border, slider, range values, etc.)
-    images = [imutils.pad(img, 5, color=None) for img in images]
+    # images = [imutils.pad(img, 5, color=None) for img in images]
     # images = [imutils.pad(img, 5, color=(0, 0, 200)) for img in images]
 
     app = QApplication(['Visualize Image Sequence'])
