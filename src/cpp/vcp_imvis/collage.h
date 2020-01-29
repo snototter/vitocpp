@@ -56,18 +56,26 @@ void Resize(const cv::Mat &image, cv::Mat &resized, const cv::Size &new_size);
  *              output size will be clipped to at most 3*image.size().
  */
 cv::Mat RenderPerspective(const cv::Mat &image,
-                          float rx, float ry, float rz, float tx, float ty, float tz,
+                          float rx, float ry, float rz, bool angles_in_deg=false,
+                          float tx=0.0f, float ty=0.0f, float tz=0.0f,
                           const cv::Scalar &border_color=cv::Scalar::all(-1),
                           bool inter_linear_alpha=false,
                           float img_plane_z=1.0f,
-                          bool angles_in_deg=false,
                           cv::Rect2d *projection_roi=nullptr);
 
 /** @brief Stacks the given images along the optical axis and renders them to look like they were viewed with the given extrinsics.
  TODO doc
+
+ *
+ * rx, ry, rz: Virtual camera rotation angles
+ * angles_in_deg: Set to true if rotation angles are given in degrees.
+ * tx, ty, tz: Virtual camera translation
+ * delta_z: Distance between the images along the optical axis. Hint on scaling: an image plane spans from [-1, +1] (in both x and y).
  */
-cv::Mat RenderImageSequence(const std::vector<cv::Mat> &image,
-                            float rx, float ry, float rz, float tx, float ty, float tz, float delta_z = 0.1, const cv::Scalar &border_color=cv::Scalar::all(-1));
+cv::Mat RenderImageSequence(const std::vector<cv::Mat> &images,
+                            float rx, float ry, float rz, bool angles_in_deg=false,
+                            float tx=0.0f, float ty=0.0f, float tz=0.0f, float delta_z = 0.1f,
+                            const cv::Scalar &border_color=cv::Scalar::all(-1), bool inter_linear_alpha=false);
 
 } // namespace collage
 } // namespace imvis

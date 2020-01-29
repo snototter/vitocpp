@@ -10,6 +10,9 @@
 #include <vcp_math/geometry3d.h>
 #include <opencv2/imgproc/imgproc.hpp>
 
+//FIXME remove
+#include <opencv2/highgui.hpp>
+#include <vcp_utils/string_utils.h>
 
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::imvis::collage"
@@ -292,10 +295,10 @@ void Resize(const cv::Mat &image, cv::Mat &resized, const cv::Size &new_size)
 
 cv::Mat RenderPerspective(const cv::Mat &image,
                           float rx, float ry, float rz,
+                          bool angles_in_deg,
                           float tx, float ty, float tz,
                           const cv::Scalar &border_color,
                           bool inter_linear_alpha, float img_plane_z,
-                          bool angles_in_deg,
                           cv::Rect2d *projection_roi)
 {
   const cv::Mat R = math::geo3d::RotationMatrix(rx, ry, rz, angles_in_deg);
@@ -335,8 +338,8 @@ cv::Mat RenderPerspective(const cv::Mat &image,
   P = math::geo3d::ProjectionMatrixFromKRt(K, R, t);
   projected = math::geo3d::ProjectVecs(P, corners3d_src);
 
-  VCP_LOG_FAILURE("Image plane initially projected to " << prj_min << " <--> " << prj_max << ", " << span
-                  << std::endl << "With adjusted camera matrix: " << projected);
+  VCP_LOG_DEBUG("Image plane initially projected to " << prj_min << " <--> " << prj_max << ", " << span
+                  << std::endl << "          With adjusted camera matrix: " << projected);
   const cv::Mat M = cv::getPerspectiveTransform(corners2d_src, vcp::convert::ToPoint2f(projected));
   cv::Mat warped;
   // Clip output size
@@ -392,9 +395,106 @@ cv::Mat RenderPerspective(const cv::Mat &image,
 }
 
 
-cv::Mat RenderImageSequence(const std::vector<cv::Mat> &image, float rx, float ry, float rz, float tx, float ty, float tz, float delta_z, const cv::Scalar &border_color)
+cv::Mat RenderImageSequence(const std::vector<cv::Mat> &images, float rx, float ry, float rz, bool angles_in_deg, float tx, float ty, float tz, float delta_z, const cv::Scalar &border_color, bool inter_linear_alpha)
 {
-  VCP_ERROR("Not yet implemented!");
+  std::vector<cv::Mat> warped;
+  warped.reserve(images.size());
+
+  std::vector<cv::Rect2d> prj_rois;
+  std::vector<cv::Vec2d> corners;
+  prj_rois.resize(images.size()); // Resize on purpose
+
+  // FIXME we must know the projection (mask), cannot rely on alpha channel: padded border may be transparent)
+  float img_plane_z = 1.0f;
+  for (size_t i = 0; i < images.size(); ++i)
+  {
+    warped.push_back(RenderPerspective(images[i], rx, ry, rz, angles_in_deg,
+                                       tx, ty, tz, border_color, inter_linear_alpha,
+                                       img_plane_z, &prj_rois[i]));
+    corners.push_back(convert::ToVec2d(prj_rois[i].tl()));
+    corners.push_back(convert::ToVec2d(prj_rois[i].br()));
+    img_plane_z += delta_z;
+
+    VCP_LOG_FAILURE("Image #" << i << ", z=" << img_plane_z << " warped to " << prj_rois[i]);
+  }
+  cv::Vec2d prj_min, prj_max;
+  math::MinMaxVec(corners, prj_min, prj_max);
+  const cv::Vec2d prj_span = prj_max - prj_min;
+  const cv::Size span = cv::Size(
+        static_cast<int>(std::ceil(prj_span[0])),
+        static_cast<int>(std::ceil(prj_span[1])));
+
+
+  // Clip output size
+  const cv::Size output_size = cv::Size(
+        std::max(1, std::min(3*images[0].cols, 2*span.width)),
+        std::max(1, std::min(3*images[0].rows, 2*span.height))); //FIXME FUCKER 3* size?, 4x size...
+  VCP_LOG_FAILURE("FIXME!");
+
+  const bool force_alpha_channel = border_color[0] < 0 || border_color[1] < 0 || border_color[2] < 0;
+  cv::Mat out = cv::Mat::zeros(output_size, CV_MAKETYPE(images[0].type(), force_alpha_channel ? 4 : images[0].channels()));
+
+  if (!force_alpha_channel)
+    out.setTo(border_color);
+
+  const auto offset = convert::ToPoint(prj_min);
+  for (int i = static_cast<int>(warped.size())-1; i >= 0; --i)
+//  fuckit
+  //for (int i = 0; i < warped.size(); ++i)
+  {
+    const auto prj_roi = convert::ToRect(prj_rois[i]);
+    cv::Rect roi = cv::Rect(prj_roi.tl() - offset, warped[i].size());
+    cv::Point tl = roi.tl();
+    cv::Point br = roi.br();
+
+    if (!imutils::IsPointInsideImage(tl, out.size()))
+    {
+      tl.x = std::max(0, std::min(out.cols, tl.x));
+      tl.y = std::max(0, std::min(out.rows, tl.y));
+    }
+
+    if (!imutils::IsPointInsideImage(br, out.size()))
+    {
+      br.x = std::max(0, std::min(out.cols, br.x));
+      br.y = std::max(0, std::min(out.rows, br.y));
+    }
+
+    roi = cv::Rect(tl, br - tl);
+    if (roi.width > 0 && roi.height > 0)
+    {
+      VCP_LOG_FAILURE("ROI TO DRAW TOOOO: #" << i << " " << roi
+                      << std::endl << prj_roi << ":::" << warped[i].size());
+      cv::Mat in = warped[i];
+      if (in.size() == roi.size())
+      {
+        cv::Mat out_roi = out(roi);
+        in.copyTo(out_roi); //TODO MASK!
+        cv::imshow("normalin" + vcp::utils::string::ToStr(i), in);
+        cv::imshow("normalout" + vcp::utils::string::ToStr(i), out_roi);
+        cv::waitKey(100);
+      }
+      else
+      {
+        VCP_LOG_FAILURE("clipping stuff:" << std::endl
+                        << prj_roi << " changed to " << roi << std::endl
+                        << "Warped: " << warped[i].size() << " vs roi " << roi.size() << std::endl
+                        << "VS out: " << out.size());
+        roi.width = std::min(roi.width, in.cols);
+        roi.height = std::min(roi.height, in.rows);
+        cv::Mat out_roi = out(roi);
+        const cv::Rect in_roi = cv::Rect(0, 0, roi.width, roi.height);
+        in(in_roi).copyTo(out_roi); //TODO MASK!
+        cv::imshow("fuckin" + vcp::utils::string::ToStr(i), in);
+        cv::imshow("fuckout" + vcp::utils::string::ToStr(i), out_roi);
+        cv::waitKey(100);
+      }
+    }
+    else
+    {
+      VCP_LOG_WARNING("Image #" << i << " is outside projection region.");
+    }
+  }
+  return out;
 }
 } // namespace collage
 } // namespace imvis

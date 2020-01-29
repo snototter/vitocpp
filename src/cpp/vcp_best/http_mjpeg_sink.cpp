@@ -129,7 +129,7 @@ public:
     if (params_.transport_protocol != IpTransportProtocol::TCP)
       VCP_LOG_WARNING("HTTP/MJPEG streams can only use TCP (curl default): " << params_);
 
-    mjpg_stream_ = url_fopen(&mjpg_multi_handle_, params_.stream_url.c_str(), "r");
+    mjpg_stream_ = curl::url_fopen(&mjpg_multi_handle_, params_.stream_url.c_str(), "r");
     return mjpg_stream_ != nullptr;
   }
 
@@ -142,7 +142,7 @@ public:
       VCP_LOG_DEBUG("HttpMjpegSink::CloseDevice()");
       if (params_.verbose)
         VCP_LOG_INFO_DEFAULT("Closing IP camera connection: '" << params_ << "'");
-      url_fclose(&mjpg_multi_handle_, mjpg_stream_);
+      curl::url_fclose(&mjpg_multi_handle_, mjpg_stream_);
       mjpg_stream_ = nullptr;
     }
     return true;
@@ -235,7 +235,7 @@ private:
       frame_drop_cnt = 0;
 
       // Skip empty row before frame data
-      url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_);
+      curl::url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_);
       // Create space to store the frame
       uchar *frame_data = new uchar[jpeg_bytes];
 
@@ -246,7 +246,7 @@ private:
       }
 
       // Read the frame
-      url_fread(mjpg_multi_handle_, (void *)frame_data, sizeof(uchar), jpeg_bytes, mjpg_stream_);
+      curl::url_fread(mjpg_multi_handle_, (void *)frame_data, sizeof(uchar), jpeg_bytes, mjpg_stream_);
 
       if(!frame_data)
       {
@@ -255,7 +255,7 @@ private:
       }
 
       // Skip empty row before the next delimiter
-      url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_);
+      curl::url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_);
       // Finished reading a frame, now convert!
 
       cv::Mat buf(1, jpeg_bytes, CV_8UC1, (void *)frame_data);

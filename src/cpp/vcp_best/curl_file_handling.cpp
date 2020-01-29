@@ -9,11 +9,11 @@
 #include <errno.h>
 
 
-namespace curl
+namespace vcp
 {
 namespace best
 {
-namespace vcp
+namespace curl
 {
 /* curl calls this routine to get more data */
 static size_t write_callback(char *buffer,

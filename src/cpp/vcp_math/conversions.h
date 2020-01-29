@@ -154,6 +154,18 @@ inline cv::Size2f ToSize2f(const cv::Size &s)
   return cv::Size2f(static_cast<float>(s.width), static_cast<float>(s.height));
 }
 
+
+//-----------------------------------------------------------------------------------------------------cv::Rect
+// Convert to cv::Rect
+//-------------------------------------------------------------------------------------------------------------
+
+template<typename T>
+inline cv::Rect ToRect(const cv::Rect_<T> &r)
+{
+  return cv::Rect(static_cast<int>(r.tl().x), static_cast<int>(r.tl().y),
+                  static_cast<int>(r.width), static_cast<int>(r.height));
+}
+
 } // namespace convert
 } // namespace vcp
 

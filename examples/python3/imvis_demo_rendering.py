@@ -26,19 +26,19 @@ if __name__ == "__main__":
     # rgb[:,:,2] = 0
     images = [rgb, gray, bgr, gray]
 
-    imvis.imshow(rgb, 'input')
     vis = imvis.render_perspective(rgb, ry=4, rz=3, ty=1, angles_in_deg=True)#, bg_color=(180,0,0))
-    imvis.imshow(vis, 'perspective', wait_ms=-1)
+    imvis.imshow(vis, 'perspective', wait_ms=10)
 
     # Add (transparent) border
     #TODO make transparent again
     # images = [imutils.pad(img, 5, color=None) for img in images]
     images = [imutils.pad(img, 5, color=(0, 0, 200)) for img in images]
 
-    imvis.imshow(images[0], 'inputs', wait_ms=-1)
-    vis = imvis.make_collage(images, bg_color=(180, 0, 0))
-    imvis.imshow(vis, 'inputs', wait_ms=-1)
+#    imvis.imshow(images[0], 'inputs', wait_ms=-1)
+#    vis = imvis.make_collage(images, bg_color=(180, 0, 0))
+#    imvis.imshow(vis, 'inputs', wait_ms=10)
 
 
-    vis = imvis.render_image_sequence(images)
+    vis = imvis.render_image_sequence(images, ry=10, rx=10, ty=0, delta_z=0.1, angles_in_deg=True)
     imvis.imshow(vis, 'image sequence', wait_ms=-1)
+

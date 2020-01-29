@@ -440,9 +440,8 @@ cv::Mat RenderPerspective(const cv::Mat &image,
                           float tx, float ty, float tz,
                           const cv::Scalar &border_color, bool inter_linear_alpha)
 {
-  return vcp::imvis::collage::RenderPerspective(image, rx, ry, rz, tx, ty, tz,
-                                                border_color, inter_linear_alpha, 1.0f,
-                                                angles_in_deg, nullptr);
+  return vcp::imvis::collage::RenderPerspective(image, rx, ry, rz, angles_in_deg, tx, ty, tz,
+                                                border_color, inter_linear_alpha, 1.0f, nullptr);
 }
 
 } // namespace imvis
@@ -507,6 +506,34 @@ PYBIND11_MODULE(imvis_cpp, m)
         py::arg("rx")=0, py::arg("ry")=0, py::arg("rz")=0,
         py::arg("angles_in_deg")=false,
         py::arg("tx")=0, py::arg("ty")=0, py::arg("tz")=0,
+        py::arg("bg_color")=cv::Scalar::all(-1),
+        py::arg("inter_alpha_linear")=false);
+
+
+  m.def("render_image_sequence", &vcp::imvis::collage::RenderImageSequence,
+        "Applies a perspective warp to the given image\n"
+        "such that it looks like the image plane would\n"
+        "be viewed from a camera with the given extrinsics.\n\n"
+        ":param images: list of numpy ndarrays.\n"
+        ":params rx, ry, rz: Rotation angles (float).\n"
+        ":param angles_in_deg: Set True if angles are given in degrees.\n"
+        ":params tx, ty, tz: Translation vector components (float).\n"
+        ":param delta_z: Distance between two subsequent images along the\n"
+        "         optical axis.\n"
+        ":param border_color: If None, output will be a RGBA/BGRA image\n"
+        "         where invalid regions are masked out via the alpha\n"
+        "         channel. Otherwise it must be a 3-element tuple,\n"
+        "         specifying the background/replacement RGB/BGR color.\n"
+        ":param inter_alpha_linear: If True, the alpha channel (if needed)\n"
+        "         will be warped using linear interpolation. Otherwise, good\n"
+        "         old nearest neighbor interpolation is used (sharp\n"
+        "         visibility transitions, but no fading - whatever you prefer).\n"
+        ":return: numpy ndarray, 3 or 4 channel image",
+        py::arg("images"),
+        py::arg("rx")=0, py::arg("ry")=0, py::arg("rz")=0,
+        py::arg("angles_in_deg")=false,
+        py::arg("tx")=0, py::arg("ty")=0, py::arg("tz")=0,
+        py::arg("delta_z")=0.1f,
         py::arg("bg_color")=cv::Scalar::all(-1),
         py::arg("inter_alpha_linear")=false);
 
