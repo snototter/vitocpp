@@ -51,14 +51,14 @@ TODO example images (drawingXY)
 * If you prefer to do it on your own:
   * Build the C++ library:
     ```bash
-    $ cd $VCP_ROOT_DIR
+    $ cd <VCP_ROOT_DIR>
     $ mkdir build && cd build
     $ cmake ..
     $ make -j install
     ```
   * Then, the Python bindings:
     ```bash
-    $ cd $VCP_ROOT_DIR/src/python3
+    $ cd <VCP_ROOT_DIR>/src/python3
     $ mkdir build && cd build
     $ cmake ..
     $ make -j install
@@ -74,18 +74,18 @@ TODO example images (drawingXY)
 This repository comes with a few "tools", i.e. standalone applications that go beyond simple demos/examples.
 Currently, there are only python applications, so make sure to set up the virtual environment (if you didn't use the `./scripts/build-X.sh` script):
 ```bash
-$ cd $VCP_ROOT_DIR/examples/python3
+$ cd <VCP_ROOT_DIR>/examples/python3
 $ ./prepare_environment_py3.sh
 $ source .venv3/bin/activate
 ```
 * Plot an image by interactively adjusting the camera extrinsics. All about perspective transformations.
   ```bash
-  $ cd $VCP_ROOT_DIR/examples/python3/tools
+  $ cd <VCP_ROOT_DIR>/examples/python3/tools
   $ python plot-image.py
   ```
 * Perspective plot of a list of images - the standard video/image sequence representation/simplification.
   ```bash
-  $ cd $VCP_ROOT_DIR/examples/python3/tools
+  $ cd <VCP_ROOT_DIR>/examples/python3/tools
   $ python plot-image-sequence.py
   ```
 
@@ -94,7 +94,7 @@ $ source .venv3/bin/activate
 ### C++
 * The C++ applications at `<VCP_ROOT_DIR>/examples/cpp` demonstrate how you can use `vcp` from your own CMake projects. After building the vcp library, building these examples is as easy as:
   ```bash
-  $ cd $VCP_ROOT_DIR/examples
+  $ cd <VCP_ROOT_DIR>/examples
   $ mkdir build && cd build
   $ cmake ..
   $ make -j
@@ -106,9 +106,9 @@ $ source .venv3/bin/activate
 
 
 ### Python
-* You can find Python3 examples for all modules at `$VCP_ROOT_DIR/examples/python3`.
+* You can find Python3 examples for all modules at `<VCP_ROOT_DIR>/examples/python3`.
   ```bash
-  $ cd $VCP_ROOT_DIR/examples/python3
+  $ cd <VCP_ROOT_DIR>/examples/python3
   # Set up the virtual environment
   $ ./prepare_environment_py3.sh
   $ source .venv3/bin/activate
@@ -138,7 +138,7 @@ Testing requires `gtest`, which you'll probably need to build yourself - this is
   ```
 * Now `vcp` can be tested:
   ```bash
-  $ cd $VCP_ROOT_DIR/build
+  $ cd <VCP_ROOT_DIR>/build
 
   # Enable tests and link the gtest libraries
   $ cmake -DVCP_BUILD_TESTS ..
@@ -178,11 +178,11 @@ Testing requires `gtest`, which you'll probably need to build yourself - this is
   * [x] Live viewer
 * [ ] Python bindings
   * [ ] best
-  * [ ] config - needed for 'best' configuration
+  * [x] config - needed for 'best' configuration
   * [x] imutils
   * [x] imvis
   * [x] math
-  * [ ] ui
+  * [x] ui
   * [x] utils
 * [ ] Move python demos (e.g. math2d/3d) to unit tests
 * [ ] Increase unit test coverage
