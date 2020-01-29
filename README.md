@@ -36,9 +36,9 @@ TODO example images (drawingXY)
 ## Repository Contents
 * `./cmake` - CMake utilities (incl. custom `Find<package>.cmake` scripts).
 * `./examples` - example usage of these utilities.
-* `./external` - third party libraries (which cannot be installed out-of-the-box).
-* `./scripts` - shell scripts to prepare the build system, build the libraries, and use/include the library in your project.
-* `./src` - source for all modules and python bindings.
+* `./external` - third party libraries (which are not part of default system packages).
+* `./scripts` - shell scripts to prepare the build system, build the libraries, etc.
+* `./src` - source code for all C++ modules and python bindings.
 
 
 ## Installation
