@@ -113,8 +113,9 @@ def gui():
     images = [rgb, gray, bgr, gray]
     # Add (transparent) border
     #TODO make transparent again
-    # images = [imutils.pad(img, 5, color=None) for img in images]
-    images = [imutils.pad(img, 5, color=(0, 0, 200)) for img in images]
+    #FIXME rgb => widget; upon change (if transparent, add border) otherwise....... TODO extend GUI (save + colorize border, slider, range values, etc.)
+    images = [imutils.pad(img, 5, color=None) for img in images]
+    # images = [imutils.pad(img, 5, color=(0, 0, 200)) for img in images]
 
     app = QApplication(['Visualize Image Sequence'])
     main_widget = DemoApplication()
@@ -125,5 +126,4 @@ def gui():
 
 
 if __name__ == '__main__':
-    #demo()
     gui()

@@ -491,7 +491,10 @@ cv::Mat RenderImageSequence(const std::vector<cv::Mat> &images, float rx, float 
         in_layers[c](rroi_in).copyTo(out_layers[c](rroi_out), mask_in_roi);
 
       // Update the combined/output mask
-      out_mask(rroi_out).setTo(cv::Scalar::all(255), mask_in_roi);
+      if (in_layers.size() == 4)
+        in_layers[3](rroi_in).copyTo(out_mask(rroi_out), mask_in_roi);
+      else
+        out_mask(rroi_out).setTo(cv::Scalar::all(255), mask_in_roi);
     }
     else
     {
