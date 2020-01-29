@@ -119,9 +119,9 @@ $ source .venv3/bin/activate
 
 ## Tests
 While all of vcp has been tested "in-the-wild", unit tests are rather sparse, unfortunately.
-Especially for the "best effort streaming" module, tests become rather impossible to automate (threading + the need for the specific hardware connected to the test server).
+Especially for the "best effort streaming" module, tests become quite difficult to automate (threading + the need for the specific hardware connected to the test server).
 
-Testing requires `gtest`, which you'll probably need to build yourself - this is a no-brainer, see:
+Anyhow, testing requires `gtest`, which you'll probably need to build yourself - this is a no-brainer, see:
 * Set up `libgtest`:
   ```bash
   $ sudo apt-get install libgtest-dev
@@ -141,7 +141,7 @@ Testing requires `gtest`, which you'll probably need to build yourself - this is
   $ cd <VCP_ROOT_DIR>/build
 
   # Enable tests and link the gtest libraries
-  $ cmake -DVCP_BUILD_TESTS ..
+  $ cmake -DVCP_BUILD_TESTS=ON ..
   $ make test 
 
   # Or, if you prefer:
