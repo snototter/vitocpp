@@ -26,7 +26,7 @@ Some of `vcp`'s highlights:
 * Nice(r) <b>visualizations</b> with little effort, for example:
 TODO example images (drawingXY)
 * <b>Pseudocoloring</b> for data visualization/analysis.
-  Back when I started working on this library, OpenCV didn't provide pseudocoloring capabilities. The `vcp::imvis` module allows visualization via common color maps (the ones you may know from MATLAB, matplotlib, etc.).
+  Back when I started working on this library, OpenCV didn't provide pseudocoloring capabilities. The `vcp::imvis` module allows visualization via common color maps (you kids might remember these from such frameworks as MATLAB, matplotlib, and whatnot).
 
   ![Pseudocoloring Example](./doc/example-pseudocolor.png)
 * <b>Math</b> utilities - besides enabling most of the fancy visualizations within `vcp::imvis`, you can also do basic geometry tasks with the `vcp::math` module (e.g. computing tangents of circles, line (segment) intersection, and quite a lot more).
