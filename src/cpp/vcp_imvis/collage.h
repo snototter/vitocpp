@@ -61,7 +61,8 @@ cv::Mat RenderPerspective(const cv::Mat &image,
                           const cv::Scalar &border_color=cv::Scalar::all(-1),
                           bool inter_linear_alpha=false,
                           float img_plane_z=1.0f,
-                          cv::Rect2d *projection_roi=nullptr);
+                          cv::Rect2d *projection_roi=nullptr,
+                          cv::Mat *projection_mask=nullptr);
 
 /** @brief Stacks the given images along the optical axis and renders them to look like they were viewed with the given extrinsics.
  TODO doc

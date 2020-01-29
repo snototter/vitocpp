@@ -10,10 +10,6 @@
 #include <vcp_math/geometry3d.h>
 #include <opencv2/imgproc/imgproc.hpp>
 
-//FIXME remove
-#include <opencv2/highgui.hpp>
-#include <vcp_utils/string_utils.h>
-
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::imvis::collage"
 
@@ -299,8 +295,11 @@ cv::Mat RenderPerspective(const cv::Mat &image,
                           float tx, float ty, float tz,
                           const cv::Scalar &border_color,
                           bool inter_linear_alpha, float img_plane_z,
-                          cv::Rect2d *projection_roi)
+                          cv::Rect2d *projection_roi, cv::Mat *projection_mask)
 {
+  if (image.depth() != CV_8U)
+    VCP_ERROR("Only uint8 input images are supported.");
+
   const cv::Mat R = math::geo3d::RotationMatrix(rx, ry, rz, angles_in_deg);
   const cv::Mat t = (cv::Mat_<double>(3, 1) << tx, ty, tz);
 
@@ -349,23 +348,21 @@ cv::Mat RenderPerspective(const cv::Mat &image,
         std::max(1, std::min(3 * image.cols, span.width)),
         std::max(1, std::min(3 * image.rows, span.height)));
 
+  // Warp the alpha channel
+  const cv::Mat mask = cv::Mat(image.size(), CV_8U, cv::Scalar::all(255));
+  cv::Mat warped_mask;
+  cv::warpPerspective(mask, warped_mask, M, output_size,
+                      inter_linear_alpha ? cv::INTER_LINEAR : cv::INTER_NEAREST,
+                      cv::BORDER_CONSTANT, cv::Scalar::all(0));
+  if (projection_mask)
+    warped_mask.copyTo(*projection_mask);
+
   if (border_color[0] < 0 || border_color[1] < 0 || border_color[2] < 0 )
   {
     // Warp the image
     cv::warpPerspective(image, warped, M, output_size);
     if (image.channels() != 4)
     {
-      // If the input image is already RGB/BGR+A, we don't need to
-      // consider/add the alpha channel.
-
-      // Warp the alpha channel
-      const cv::Mat mask = cv::Mat(image.size(), CV_8U, cv::Scalar::all(vcp::math::MaxPixelValue<unsigned char>(image.depth())));
-      cv::Mat wm8u, warped_mask;
-      cv::warpPerspective(mask, wm8u, M, output_size,
-                          inter_linear_alpha ? cv::INTER_LINEAR : cv::INTER_NEAREST,
-                          cv::BORDER_CONSTANT, cv::Scalar::all(0));
-      wm8u.convertTo(warped_mask, image.type());
-
       // Stack the layers
       if (warped.channels() == 1)
       {
@@ -410,20 +407,22 @@ cv::Mat RenderImageSequence(const std::vector<cv::Mat> &images, float rx, float 
   std::vector<cv::Rect2d> prj_rois;
   std::vector<cv::Vec2d> corners;
   prj_rois.resize(images.size()); // Resize on purpose
+  std::vector<cv::Mat> prj_masks;
+  prj_masks.resize(images.size());
 
-  // FIXME we must know the projection (mask), cannot rely on alpha channel: padded border may be transparent)
+  // Project each image separately
   float img_plane_z = 1.0f;
   for (size_t i = 0; i < images.size(); ++i)
   {
     warped.push_back(RenderPerspective(images[i], rx, ry, rz, angles_in_deg,
                                        tx, ty, tz, border_color, inter_linear_alpha,
-                                       img_plane_z, &prj_rois[i]));
+                                       img_plane_z, &prj_rois[i], &prj_masks[i]));
     corners.push_back(convert::ToVec2d(prj_rois[i].tl()));
     corners.push_back(convert::ToVec2d(prj_rois[i].br()));
     img_plane_z += delta_z;
-
-    VCP_LOG_FAILURE("Image #" << i << ", z=" << img_plane_z << " warped to " << prj_rois[i]);
   }
+
+  // Compute output image dimensions
   cv::Vec2d prj_min, prj_max;
   math::MinMaxVec(corners, prj_min, prj_max);
   const cv::Vec2d prj_span = prj_max - prj_min;
@@ -431,90 +430,86 @@ cv::Mat RenderImageSequence(const std::vector<cv::Mat> &images, float rx, float 
         static_cast<int>(std::ceil(prj_span[0])),
         static_cast<int>(std::ceil(prj_span[1])));
 
-
   // Clip output size
   const cv::Size output_size = cv::Size(
-        std::max(1, std::min(3*images[0].cols, 2*span.width)),
-        std::max(1, std::min(3*images[0].rows, 2*span.height))); //FIXME FUCKER 3* size?, 4x size...
-  VCP_LOG_FAILURE("FIXME!");
+        std::max(1, std::min(3*images[0].cols, span.width)),
+        std::max(1, std::min(3*images[0].rows, span.height)));
 
+  // Prepare output image
   const bool force_alpha_channel = border_color[0] < 0 || border_color[1] < 0 || border_color[2] < 0;
-  cv::Mat out = cv::Mat::zeros(output_size, CV_MAKETYPE(images[0].type(), force_alpha_channel ? 4 : images[0].channels()));
+  cv::Mat out_img = cv::Mat::zeros(output_size, CV_MAKETYPE(images[0].depth(), force_alpha_channel ? 4 : images[0].channels()));
+  cv::Mat out_mask = cv::Mat::zeros(output_size, CV_MAKETYPE(images[0].depth(), 1));
 
   if (!force_alpha_channel)
-    out.setTo(border_color);
+    out_img.setTo(border_color);
+
+  // Work on output layers (OpenCV silently creates temporary objects if
+  // channels don't match exactly). This ensures that we actually copy the
+  // warped images onto the output layers.
+  std::vector<cv::Mat> out_layers;
+  cv::split(out_img, out_layers);
 
   const auto offset = convert::ToPoint(prj_min);
   for (int i = static_cast<int>(warped.size())-1; i >= 0; --i)
-//  fuckit
-  //for (int i = 0; i < warped.size(); ++i)
   {
+    // Ensure that region of interest is within the image
     const auto prj_roi = convert::ToRect(prj_rois[i]);
-    cv::Rect roi = cv::Rect(prj_roi.tl() - offset, warped[i].size());
-    cv::Point tl = roi.tl();
-    cv::Point br = roi.br();
+    cv::Rect rroi_out = cv::Rect(prj_roi.tl() - offset, warped[i].size());
+    cv::Point tl = rroi_out.tl();
+    cv::Point br = rroi_out.br();
 
-    if (!imutils::IsPointInsideImage(tl, out.size()))
-    {
-      VCP_LOG_FAILURE("!!!!!!!!!!!!! tl " << tl << " outside");
-      tl.x = std::max(0, std::min(out.cols, tl.x));
-      tl.y = std::max(0, std::min(out.rows, tl.y));
-    }
+    tl.x = std::max(0, std::min(out_img.cols, tl.x));
+    tl.y = std::max(0, std::min(out_img.rows, tl.y));
 
-    if (!imutils::IsPointInsideImage(br, out.size()))
-    {
-      VCP_LOG_FAILURE("!!!!!!!!!!!!! br " << br << " outside");
-      br.x = std::max(0, std::min(out.cols, br.x));
-      br.y = std::max(0, std::min(out.rows, br.y));
-    }
+    br.x = std::max(0, std::min(out_img.cols, br.x));
+    br.y = std::max(0, std::min(out_img.rows, br.y));
 
-    VCP_LOG_WARNING("CHECK ROI BEFORE: " << roi);
-    roi = cv::Rect(tl, br);
-    VCP_LOG_WARNING("CHECK ROI AFTER: " << roi);
-    if (roi.width > 0 && roi.height > 0)
+    rroi_out = cv::Rect(tl, br);
+    if (rroi_out.width > 0 && rroi_out.height > 0)
     {
-      VCP_LOG_FAILURE("ROI TO DRAW TOOOO: #" << i << " " << roi
-                      << std::endl << prj_roi << ":::" << warped[i].size());
-      /*
-       *fuckin2 FAILURE] (vcp::imvis::collage) ROI TO DRAW TOOOO: #2 [326 x 328 from (36, 34)]
-out_roi: [361 x 361 from (22, 28)]:::
-warped size: [362 x 362]
-[FAILURE] (vcp::imvis::collage) clipping stuff:
-[361 x 361 from (22, 28)] changed to [326 x 328 from (36, 34)]
-Warped: [362 x 362] vs roi [326 x 328]
-VS out: [870 x 870]
-*/
-      cv::Mat in = warped[i];
-      if (in.size() == roi.size())
+      // Adjust ROI for input/warped image, too.
+      const cv::Mat in_img = warped[i];
+      cv::Rect rroi_in;
+      if (in_img.size() == rroi_out.size())
       {
-        cv::Mat out_roi = out(roi);
-        in.copyTo(out_roi); //TODO MASK!
-//        cv::imshow("normalin" + vcp::utils::string::ToStr(i), in);
-//        cv::imshow("normalout" + vcp::utils::string::ToStr(i), out_roi);
-//        cv::waitKey(100);
+        rroi_in = cv::Rect(0, 0, rroi_out.width, rroi_out.height);
       }
       else
       {
-        VCP_LOG_FAILURE("clipping stuff:" << std::endl
-                        << prj_roi << " changed to " << roi << std::endl
-                        << "Warped: " << warped[i].size() << " vs roi " << roi.size() << std::endl
-                        << "VS out: " << out.size());
-        roi.width = std::min(roi.width, in.cols);
-        roi.height = std::min(roi.height, in.rows);
-        cv::Mat out_roi = out(roi);
-        const cv::Rect in_roi = cv::Rect(0, 0, roi.width, roi.height);
-        in(in_roi).copyTo(out_roi); //TODO MASK!
-//        cv::imshow("fuckin" + vcp::utils::string::ToStr(i), in);
-//        cv::imshow("fuckout" + vcp::utils::string::ToStr(i), out_roi);
-//        cv::waitKey(100);
+        rroi_out.width = std::min(rroi_out.width, in_img.cols);
+        rroi_out.height = std::min(rroi_out.height, in_img.rows);
+        rroi_in = cv::Rect(0, 0, rroi_out.width, rroi_out.height);
       }
+
+      // See above, we have to copy each layer separately.
+      std::vector<cv::Mat> in_layers;
+      cv::split(in_img, in_layers);
+
+      // Masked copy from warped layer to output (ROI) layer
+      cv::Mat mask_in_roi = prj_masks[i](rroi_in);
+      for (size_t c = 0; c < std::min(in_layers.size(), out_layers.size()); ++c)
+        in_layers[c](rroi_in).copyTo(out_layers[c](rroi_out), mask_in_roi);
+
+      // Update the combined/output mask
+      out_mask(rroi_out).setTo(cv::Scalar::all(255), mask_in_roi);
     }
     else
     {
       VCP_LOG_WARNING("Image #" << i << " is outside projection region.");
     }
   }
-  return out;
+  // If the user requests a transparent background, set (maybe/intentionally replace)
+  // the alpha channel to the "valid projections" mask.
+  if (force_alpha_channel)
+  {
+    std::vector<cv::Mat> layers = {out_layers[0], out_layers[1], out_layers[2], out_mask};
+    cv::merge(layers, out_img);
+  }
+  else
+  {
+    cv::merge(out_layers, out_img);
+  }
+  return out_img;
 }
 } // namespace collage
 } // namespace imvis

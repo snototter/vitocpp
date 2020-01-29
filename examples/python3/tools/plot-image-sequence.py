@@ -37,7 +37,7 @@ class DemoApplication(QMainWindow):
             value_format_fx=lambda v: inputs.format_int(v, 4) + '°', min_label_width=150)
         self._angle_x.value_changed.connect(self.__changed)
         main_layout.addWidget(self._angle_x)
-        self._angle_y = inputs.SliderSelectionWidget('Angle y:', -180, 180, 361, 0,
+        self._angle_y = inputs.SliderSelectionWidget('Angle y:', -180, 180, 361, 10,
             value_format_fx=lambda v: inputs.format_int(v, 4) + '°', min_label_width=150)
         self._angle_y.value_changed.connect(self.__changed)
         main_layout.addWidget(self._angle_y)
@@ -108,8 +108,8 @@ def gui():
     rgb = imutils.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..' , '..', 'data' , 'flamingo.jpg'))
 
     bgr = imutils.flip_layers(rgb)
-    gray = imutils.rgb2gray(rgb, is_bgr=False)
-    gray = np.dstack((gray, gray, gray))
+    gray1 = imutils.rgb2gray(rgb, is_bgr=False)
+    gray = np.dstack((gray1, gray1, gray1))
     images = [rgb, gray, bgr, gray]
     # Add (transparent) border
     #TODO make transparent again
@@ -119,6 +119,7 @@ def gui():
     app = QApplication(['Visualize Image Sequence'])
     main_widget = DemoApplication()
     main_widget.displayImageSequence(images)
+    #main_widget.displayImageSequence([imutils.pad(img, 5, color=None) for img in [gray1, gray1]])
     main_widget.show()
     sys.exit(app.exec_())
 

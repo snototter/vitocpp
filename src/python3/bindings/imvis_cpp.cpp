@@ -441,7 +441,7 @@ cv::Mat RenderPerspective(const cv::Mat &image,
                           const cv::Scalar &border_color, bool inter_linear_alpha)
 {
   return vcp::imvis::collage::RenderPerspective(image, rx, ry, rz, angles_in_deg, tx, ty, tz,
-                                                border_color, inter_linear_alpha, 1.0f, nullptr);
+                                                border_color, inter_linear_alpha, 1.0f, nullptr, nullptr);
 }
 
 } // namespace imvis
