@@ -325,8 +325,10 @@ cv::Mat RenderPerspective(const cv::Mat &image,
   math::MinMaxVec(projected, prj_min, prj_max);
   const cv::Vec2d prj_span = prj_max - prj_min;
   const cv::Size span = cv::Size(
-        static_cast<int>(std::ceil(prj_span[0])),
-        static_cast<int>(std::ceil(prj_span[1])));
+        //FIXME check if rounding causes issue: static_cast<int>(std::ceil(prj_span[0])),
+        //static_cast<int>(std::ceil(prj_span[1])));
+        static_cast<int>(prj_span[0]),
+      static_cast<int>(prj_span[1]));
   // Store the projected region (might contain negative coordinates which we'll shift next)
   if (projection_roi)
     *projection_roi = cv::Rect2d(prj_min[0], prj_min[1], prj_span[0], prj_span[1]);
@@ -397,6 +399,11 @@ cv::Mat RenderPerspective(const cv::Mat &image,
 
 cv::Mat RenderImageSequence(const std::vector<cv::Mat> &images, float rx, float ry, float rz, bool angles_in_deg, float tx, float ty, float tz, float delta_z, const cv::Scalar &border_color, bool inter_linear_alpha)
 {
+  for (size_t i = 1; i < images.size(); ++i)
+  {
+    if (images[i].channels() != images[0].channels())
+      VCP_ERROR("All input images must have the same number of channels.");
+  }
   std::vector<cv::Mat> warped;
   warped.reserve(images.size());
 
@@ -449,29 +456,42 @@ cv::Mat RenderImageSequence(const std::vector<cv::Mat> &images, float rx, float 
 
     if (!imutils::IsPointInsideImage(tl, out.size()))
     {
+      VCP_LOG_FAILURE("!!!!!!!!!!!!! tl " << tl << " outside");
       tl.x = std::max(0, std::min(out.cols, tl.x));
       tl.y = std::max(0, std::min(out.rows, tl.y));
     }
 
     if (!imutils::IsPointInsideImage(br, out.size()))
     {
+      VCP_LOG_FAILURE("!!!!!!!!!!!!! br " << br << " outside");
       br.x = std::max(0, std::min(out.cols, br.x));
       br.y = std::max(0, std::min(out.rows, br.y));
     }
 
-    roi = cv::Rect(tl, br - tl);
+    VCP_LOG_WARNING("CHECK ROI BEFORE: " << roi);
+    roi = cv::Rect(tl, br);
+    VCP_LOG_WARNING("CHECK ROI AFTER: " << roi);
     if (roi.width > 0 && roi.height > 0)
     {
       VCP_LOG_FAILURE("ROI TO DRAW TOOOO: #" << i << " " << roi
                       << std::endl << prj_roi << ":::" << warped[i].size());
+      /*
+       *fuckin2 FAILURE] (vcp::imvis::collage) ROI TO DRAW TOOOO: #2 [326 x 328 from (36, 34)]
+out_roi: [361 x 361 from (22, 28)]:::
+warped size: [362 x 362]
+[FAILURE] (vcp::imvis::collage) clipping stuff:
+[361 x 361 from (22, 28)] changed to [326 x 328 from (36, 34)]
+Warped: [362 x 362] vs roi [326 x 328]
+VS out: [870 x 870]
+*/
       cv::Mat in = warped[i];
       if (in.size() == roi.size())
       {
         cv::Mat out_roi = out(roi);
         in.copyTo(out_roi); //TODO MASK!
-        cv::imshow("normalin" + vcp::utils::string::ToStr(i), in);
-        cv::imshow("normalout" + vcp::utils::string::ToStr(i), out_roi);
-        cv::waitKey(100);
+//        cv::imshow("normalin" + vcp::utils::string::ToStr(i), in);
+//        cv::imshow("normalout" + vcp::utils::string::ToStr(i), out_roi);
+//        cv::waitKey(100);
       }
       else
       {
@@ -484,9 +504,9 @@ cv::Mat RenderImageSequence(const std::vector<cv::Mat> &images, float rx, float 
         cv::Mat out_roi = out(roi);
         const cv::Rect in_roi = cv::Rect(0, 0, roi.width, roi.height);
         in(in_roi).copyTo(out_roi); //TODO MASK!
-        cv::imshow("fuckin" + vcp::utils::string::ToStr(i), in);
-        cv::imshow("fuckout" + vcp::utils::string::ToStr(i), out_roi);
-        cv::waitKey(100);
+//        cv::imshow("fuckin" + vcp::utils::string::ToStr(i), in);
+//        cv::imshow("fuckout" + vcp::utils::string::ToStr(i), out_roi);
+//        cv::waitKey(100);
       }
     }
     else

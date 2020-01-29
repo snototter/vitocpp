@@ -109,6 +109,7 @@ def gui():
 
     bgr = imutils.flip_layers(rgb)
     gray = imutils.rgb2gray(rgb, is_bgr=False)
+    gray = np.dstack((gray, gray, gray))
     images = [rgb, gray, bgr, gray]
     # Add (transparent) border
     #TODO make transparent again
