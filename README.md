@@ -68,6 +68,10 @@ TODO example images (drawingXY)
   * The Python3 package is located at `<VCP_ROOT_DIR>/gen/vcp`.
 
 
+## Tools
+This repository comes with a few "tools", i.e. standalone applications that go beyond simple demos/examples.
+* `<VCP_ROOT_DIR>/examples/python3/tools/perspective-plot-ui.py`<br/>
+  Interactively adjust camera extrinsics to get a better intuition about perspective transformations.
 ## Examples
 ### C++
 * The C++ applications at `<VCP_ROOT_DIR>/examples/cpp` demonstrate how you can use `vcp` from your own CMake projects. After building the vcp library, building these examples is as easy as:

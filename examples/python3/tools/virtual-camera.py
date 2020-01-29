@@ -1,3 +1,6 @@
+"""
+Interactively adjust camera extrinsics to get a better intuition about perspective transformations.
+"""
 import os
 import sys
 import cv2
