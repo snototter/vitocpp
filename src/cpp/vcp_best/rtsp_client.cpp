@@ -386,8 +386,7 @@ void subsessionAfterPlaying(void *client_data)
 {
   MediaSubsession* subsession = (MediaSubsession*)client_data;
   RTSPClient* rtsp_client = (RTSPClient*)(subsession->miscPtr);
-  VcpRtspClient *vcp_client = dynamic_cast<VcpRtspClient*>(rtsp_client);
-  VCP_LOG_DEBUG("subsessionAfterPlaying() '" << vcp::utils::string::ObscureUrlAuthentication(vcp_client->params_.stream_url) << "'");
+  VCP_LOG_DEBUG("subsessionAfterPlaying() '" << vcp::utils::string::ObscureUrlAuthentication(dynamic_cast<VcpRtspClient*>(rtsp_client)->params_.stream_url) << "'");
 
   // Begin by closing this subsession's stream:
   Medium::close(subsession->sink);

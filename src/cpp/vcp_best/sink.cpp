@@ -131,8 +131,10 @@ SinkType SinkTypeFromString(const std::string &s)
     return SinkType::VIDEO_FILE;
   else if (webcam::IsWebcamSink(s))
     return SinkType::WEBCAM;
+#ifdef VCP_BEST_WITH_K4A
   else if (k4a::IsK4A(s))
     return SinkType::K4A;
+#endif // VCP_BEST_WITH_K4A
 #ifdef VCP_BEST_WITH_IPCAM
   else if (ipcam::IsMonocularIpCamera(s))
     return SinkType::IPCAM_MONOCULAR;

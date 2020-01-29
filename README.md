@@ -22,17 +22,13 @@ SUM:                           130           4947           4065          21304
 
 ## What is it good for?
 Some of `vcp`'s highlights:
-* Best effort multiple device streaming. Useful for quick camera tests and whenever (guaranteed) synchronisation isn't crucial. The goal of this module is to stream from multiple devices simultaneously, without having the ROS overhead. A simple configuration file like this:
-  ```C++
-  TODO add
-  ```
-  allows you to process all streams both in C++ and python. For more details, see the [separate BESt.md documentation](BESt.md).
-* Nice(r) visualizations with less effort than plain OpenCV - have you ever tried rendering a 3D bounding box?
+* <b>Best effort multiple device streaming</b>. Useful for quick camera tests and whenever (guaranteed) synchronisation isn't crucial. The goal of this module is to stream from multiple devices simultaneously, without having the ROS overhead. A simple libconfig++-style configuration file allows you to process all streams both in C++ and python. For more details, see the [separate BESt.md documentation](BESt.md).
+* Nice(r) <b>visualizations</b> with little effort, for example:
 TODO example images (drawingXY)
-* Pseudocoloring for data visualization/analysis.
+* <b>Pseudocoloring</b> for data visualization/analysis.
   Back when I started working on this library, OpenCV didn't provide pseudocoloring capabilities. The `vcp::imvis` module allows visualization via common color maps (the ones you may know from MATLAB, matplotlib, etc.).
-* Geometry utilities - besides enabling most of the fancy visualizations within `vcp::imvis`, you can also do basic geometry tasks with the `vcp::math` module (e.g. computing tangents of circles, line (segment) intersection, and quite a lot more).
-* C++ utilities - for basic file/path and string manipulation (if you want to avoid heavier dependencies, such as Boost).
+* <b>Math</b> utilities - besides enabling most of the fancy visualizations within `vcp::imvis`, you can also do basic geometry tasks with the `vcp::math` module (e.g. computing tangents of circles, line (segment) intersection, and quite a lot more).
+* <b>C++</b> utilities - for basic file/path and string manipulation, sorting, and more (if you want to avoid heavier dependencies, such as Boost).
 
 
 ## Repository Contents

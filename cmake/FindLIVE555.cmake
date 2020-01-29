@@ -13,7 +13,7 @@ else(WIN32)
   set(LIVE555_ROOT_DIR $ENV{LIVE555_ROOT_DIR})
   if(NOT EXISTS ${LIVE555_ROOT_DIR})
     get_filename_component(LIVE555_ROOT_DIR "../external/live" REALPATH BASE_DIR "${CMAKE_CURRENT_LIST_DIR}")
-    message(WARNING "LIVE555_ROOT_DIR not set, looking for library in: ${LIVE555_ROOT_DIR}")
+    #message(Status "LIVE555_ROOT_DIR not set, looking for library in: ${LIVE555_ROOT_DIR}")
   endif()
 endif(WIN32)
 
