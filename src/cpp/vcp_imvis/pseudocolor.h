@@ -8,6 +8,7 @@ namespace vcp
 {
 namespace imvis
 {
+/** @brief TODO doc. */
 namespace pseudocolor
 {
 /**

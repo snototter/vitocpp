@@ -7,6 +7,7 @@ namespace vcp
 {
 namespace imvis
 {
+/** @brief TODO doc. */
 namespace anaglyph
 {
 /** @brief Generates a red-cyan anaglyph.

@@ -6,6 +6,7 @@
 
 namespace vcp
 {
+/** @brief TODO doc. */
 namespace imutils
 {
 

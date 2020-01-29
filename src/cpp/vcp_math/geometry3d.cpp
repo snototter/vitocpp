@@ -363,6 +363,48 @@ cv::Vec3d RotationMatrixToEulerAngles(const cv::Mat &R)
 }
 
 
+cv::Mat RotationX(double theta, bool angles_in_deg)
+{
+  const double rad = angles_in_deg ? vcp::math::Deg2Rad(theta) : theta;
+  const double ct = std::cos(rad);
+  const double st = std::sin(rad);
+  return (cv::Mat_<double>(3, 3)
+          << 1.0, 0.0, 0.0,
+          0.0, ct, -st,
+          0.0, st, ct);
+}
+
+cv::Mat RotationY(double theta, bool angles_in_deg)
+{
+  const double rad = angles_in_deg ? vcp::math::Deg2Rad(theta) : theta;
+  const double ct = std::cos(rad);
+  const double st = std::sin(rad);
+  return (cv::Mat_<double>(3, 3)
+          << ct, 0.0, st,
+          0.0, 1.0, 0.0,
+          -st, 0.0, ct);
+}
+
+cv::Mat RotationZ(double theta, bool angles_in_deg)
+{
+  const double rad = angles_in_deg ? vcp::math::Deg2Rad(theta) : theta;
+  const double ct = std::cos(rad);
+  const double st = std::sin(rad);
+  return (cv::Mat_<double>(3, 3)
+          << ct, -st, 0.0,
+          st, ct, 0.0,
+          0.0, 0.0, 1.0);
+}
+
+cv::Mat RotationMatrix(double theta_x, double theta_y, double theta_z, bool angles_in_deg)
+{
+  const cv::Mat Rx = RotationX(theta_x, angles_in_deg);
+  const cv::Mat Ry = RotationY(theta_y, angles_in_deg);
+  const cv::Mat Rz = RotationZ(theta_z, angles_in_deg);
+  return Rx * (Ry * Rz);
+}
+
+
 cv::Mat ProjectionMatrixFromKRt(const cv::Mat &K, const cv::Mat &R, const cv::Mat &t)
 {
   // Don't use imutils (this would cause a cyclic library/module dependency)

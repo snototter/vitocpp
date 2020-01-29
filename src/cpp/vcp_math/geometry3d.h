@@ -235,6 +235,18 @@ bool IntersectionLineSegmentPlane(const Line3d &line_segment, const cv::Vec4d &p
 /** @brief Returns the 3 Euler angles from the given rotation matrix. */
 cv::Vec3d RotationMatrixToEulerAngles(const cv::Mat &R);
 
+/** @brief 3x3 rotation matrix, x-axis. */
+cv::Mat RotationX(double theta, bool angles_in_deg=false);
+
+/** @brief 3x3 rotation matrix, y-axis. */
+cv::Mat RotationY(double theta, bool angles_in_deg=false);
+
+/** @brief 3x3 rotation matrix, z-axis. */
+cv::Mat RotationZ(double theta, bool angles_in_deg=false);
+
+/** @brief 3x3 rotation matrix, default ZYX order. */
+cv::Mat RotationMatrix(double theta_x, double theta_y, double theta_z, bool angles_in_deg=false);
+
 
 /** @brief Computes x_3x1 = P_3x4 * pt_3x1. */
 inline cv::Vec3d Apply3x4(const cv::Mat &P, const cv::Vec3d &pt)

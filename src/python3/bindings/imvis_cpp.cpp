@@ -434,11 +434,15 @@ cv::Mat DrawErrorEllipse99(const cv::Mat &image, const cv::Vec2d &mean, const cv
   return vis;
 }
 
-
-cv::Mat RenderPerspective(const cv::Mat &image, float rx, float ry, float rz, float tx, float ty, float tz, const py::tuple &border_color)
+cv::Mat RenderPerspective(const cv::Mat &image,
+                          float rx, float ry, float rz,
+                          bool angles_in_deg,
+                          float tx, float ty, float tz,
+                          const cv::Scalar &border_color, bool inter_linear_alpha)
 {
-  const cv::Scalar bg_color = border_color.is_none() ? cv::Scalar::all(-1) : vcp::python::conversion::PyObjectToScalar(border_color, nullptr);
-  return vcp::imvis::collage::RenderPerspective(image, rx, ry, rz, tx, ty, tz, bg_color);
+  return vcp::imvis::collage::RenderPerspective(image, rx, ry, rz, tx, ty, tz,
+                                                border_color, inter_linear_alpha, 1.0f,
+                                                angles_in_deg, nullptr);
 }
 
 } // namespace imvis
@@ -487,17 +491,24 @@ PYBIND11_MODULE(imvis_cpp, m)
         "such that it looks like the image plane would\n"
         "be viewed from a camera with the given extrinsics.\n\n"
         ":param image: numpy ndarray.\n"
-        ":params rx, ry, rz: Rotation angles (float) in radians.\n"
+        ":params rx, ry, rz: Rotation angles (float).\n"
+        ":param angles_in_deg: Set True if angles are given in degrees.\n"
         ":params tx, ty, tz: Translation vector components (float).\n"
         ":param border_color: If None, output will be a RGBA/BGRA image\n"
         "         where invalid regions are masked out via the alpha\n"
         "         channel. Otherwise it must be a 3-element tuple,\n"
         "         specifying the background/replacement RGB/BGR color.\n"
+        ":param inter_alpha_linear: If True, the alpha channel (if needed)\n"
+        "         will be warped using linear interpolation. Otherwise, good\n"
+        "         old nearest neighbor interpolation is used (sharp\n"
+        "         visibility transitions, but no fading - whatever you prefer).\n"
         ":return: numpy ndarray, 3 or 4 channel image",
         py::arg("image"),
         py::arg("rx")=0, py::arg("ry")=0, py::arg("rz")=0,
+        py::arg("angles_in_deg")=false,
         py::arg("tx")=0, py::arg("ty")=0, py::arg("tz")=0,
-        py::arg("border_color")=py::none());
+        py::arg("bg_color")=cv::Scalar::all(-1),
+        py::arg("inter_alpha_linear")=false);
 
 
   m.def("make_anaglyph", &vpi::MakeAnaglyph,

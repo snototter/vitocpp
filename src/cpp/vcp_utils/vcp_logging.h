@@ -2,12 +2,15 @@
 #define __VCP_UTILS_LOGGING_H__
 
 #include <iostream>
+#include <iterator>
+#include <algorithm>
+#include <vector>
 #include <chrono>
 #include <ctime>
 
 // TODO needs a doxygen tag to include this info:
 /**
- * VCP_LOG_<X> logs <X> = {DEBUG, INFO, WARNING, FAILURE} messages
+ * <tt>VCP_LOG_<X></tt> logs <tt><X> = {DEBUG, INFO, WARNING, FAILURE}</tt> messages
  * if VCP_LOG_LEVEL_<X> or lower is defined.
  * These VCP_LOG_X macros use ANSI color codes to colorize the
  * log severity.
@@ -160,13 +163,14 @@
     #endif // __ICC
 #endif // NOINLINE_ATTRIBUTE
 
+
 /** @brief A collection of utilities - gathered and re-implemented over and over again throughout my studies. */
 namespace vcp
 {
 /** @brief Plain C++ utilities (extensions you commonly use, but don't want to add heavier dependencies, like boost). */
 namespace utils
 {
-/** @brief Stream manipulation utilities to enable flexible logging to stdout/stderr via the VCP_LOG_{DEBUG|INFO|WARNING|FAILURE} macros. */
+/** @brief Stream manipulation utilities to enable flexible logging to stdout/stderr via the <tt>VCP_LOG_{DEBUG|INFO|WARNING|FAILURE}</tt> macros. */
 namespace logging
 {
 struct None { };
@@ -176,6 +180,26 @@ struct LogData
 {
   List list;
 };
+
+/** @brief Templated operator overload to print vectors. */
+template<class T>
+std::ostream& operator<<(std::ostream& stream, const std::vector<T>& values)
+{
+  stream << "{ ";
+  std::copy(std::begin(values), std::end(values), std::ostream_iterator<T>(stream, " "));
+  stream << '}';
+  return stream;
+}
+
+///** @brief Templated operator overload to print vectors. */
+//template<class T, typename List>
+//LogData<List>& operator<<(LogData<List>& stream, const std::vector<T>& values)
+//{
+//  stream << "[ ";
+//  std::copy(std::begin(values), std::end(values), std::ostream_iterator<T>(stream, " "));
+//  stream << ']';
+//  return stream;
+//}
 
 
 template<typename List>

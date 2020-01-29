@@ -5,6 +5,7 @@
 #include <limits>
 #include <type_traits>
 #include <opencv2/core/core.hpp>
+#include <vcp_utils/vcp_error.h>
 
 #define MATH_PI   3.1415926535897932384626433832795
 #define MATH_2PI  6.283185307179586476925286766559
@@ -68,6 +69,51 @@ bool IsVecEqual(const cv::Vec<T,D> &a, const cv::Vec<T,D> &b)
 
 /** @brief Checks if two points are equal. */
 bool IsPointEqual(const cv::Point &a, const cv::Point &b);
+
+
+/** @brief Compute the min/max values from the given vector. */
+template <typename T, int Dim>
+void MinMaxVec(const std::vector<cv::Vec<T,Dim>> &vecs, cv::Vec<T,Dim> &min_v, cv::Vec<T,Dim> &max_v) {
+  if (vecs.empty())
+    return;
+  min_v = vecs[0];
+  max_v = vecs[0];
+
+  for (const auto &v : vecs)
+  {
+    for (int i = 0; i < Dim; ++i)
+    {
+      if (v.val[i] < min_v.val[i])
+        min_v.val[i] = v.val[i];
+      if (v.val[i] > max_v.val[i])
+        max_v.val[i] = v.val[i];
+    }
+  }
+}
+
+
+template<typename T>
+T MaxPixelValue(int cv_depth) {
+  switch (cv_depth) {
+    case CV_8U:
+      return static_cast<T>(255);
+    case CV_8S:
+      return static_cast<T>(127);
+    case CV_16U:
+      return static_cast<T>(65535);
+    case CV_16S:
+      return static_cast<T>(32767);
+    case CV_32S:
+      return static_cast<T>(2147483647);
+    case CV_32F:
+      return static_cast<T>(std::numeric_limits<float>::max());
+    case CV_64F:
+      return static_cast<T>(std::numeric_limits<double>::max());
+    default:
+      VCP_ERROR("Invalid OpenCV depth '" << cv_depth << "'");
+  }
+}
+
 
 
 /** @brief Angle conversion. */

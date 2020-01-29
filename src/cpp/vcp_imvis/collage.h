@@ -8,6 +8,7 @@ namespace vcp
 {
 namespace imvis
 {
+/** @brief TODO doc. */
 namespace collage
 {
 /**
@@ -40,16 +41,33 @@ void Resize(const cv::Mat &image, cv::Mat &resized, const cv::Size &new_size);
 
 
 /** @brief Applies a perspective warp such that it looks like the image plane would be viewed at the given extrinsics.
- * Rotation angles should be given in radians.
- * border_color == (-1,-1,-1) will yield a RGB/BGR+A output image with invalid regions masked out.
+ *
+ * rx, ry, rz: Rotation angles should be given in radians, unless you set "angles_in_deg".
+ * tx, ty, tz: Translation of the camera.
+ * border_color: (-1,-1,-1) will yield a RGB/BGR+A output image with invalid regions masked out.
+ *              Otherwise, invalid regions (warping border) will be set to border_color.
+ * inter_linear_alpha: If border_color is (-1,-1,-1), then the alpha channel will be either linearly
+ *              interpolated (true) or via nearest neighbor lookup (false).
+ * img_plane_z: Position of the image plane along the optical axis. Changing this has the same effect
+ *              as changing tz - nevertheless, it is required to simplify @see RenderImageSequence.
+ * angles_in_deg: Set to true if rx, ry, rz are given in degrees instead of radians.
+ * projection_roi: If it is a valid pointer, the actual projection region will be returned - this
+ *              is necessary, because a) the warped image will be shifted to be visible and b) the
+ *              output size will be clipped to at most 3*image.size().
  */
-cv::Mat RenderPerspective(const cv::Mat &image, float rx, float ry, float rz, float tx, float ty, float tz, const cv::Scalar &border_color=cv::Scalar::all(-1));
+cv::Mat RenderPerspective(const cv::Mat &image,
+                          float rx, float ry, float rz, float tx, float ty, float tz,
+                          const cv::Scalar &border_color=cv::Scalar::all(-1),
+                          bool inter_linear_alpha=false,
+                          float img_plane_z=1.0f,
+                          bool angles_in_deg=false,
+                          cv::Rect2d *projection_roi=nullptr);
 
 /** @brief Stacks the given images along the optical axis and renders them to look like they were viewed with the given extrinsics.
- * Rotation angles should be given in radians.
- * border_color == (-1,-1,-1) will yield a RGB/BGR+A output image with invalid regions masked out.
+ TODO doc
  */
-cv::Mat RenderImageSequence(const std::vector<cv::Mat> &image, float rx, float ry, float rz, float tx, float ty, float tz, float delta_z = 0.1, const cv::Scalar &border_color=cv::Scalar::all(-1));
+cv::Mat RenderImageSequence(const std::vector<cv::Mat> &image,
+                            float rx, float ry, float rz, float tx, float ty, float tz, float delta_z = 0.1, const cv::Scalar &border_color=cv::Scalar::all(-1));
 
 } // namespace collage
 } // namespace imvis

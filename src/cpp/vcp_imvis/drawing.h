@@ -9,8 +9,10 @@
 
 namespace vcp
 {
+/** @brief TODO doc. */
 namespace imvis
 {
+/** @brief TODO doc. */
 namespace drawing
 {
 /** @brief Exemplary colors. */

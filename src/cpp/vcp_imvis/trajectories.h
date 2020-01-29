@@ -7,6 +7,7 @@ namespace vcp
 {
 namespace imvis
 {
+/** @brief TODO doc. */
 namespace trajectories
 {
 /** @brief Smoothes the given data points such that each point is the average over a

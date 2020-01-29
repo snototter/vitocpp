@@ -6,6 +6,7 @@
 #include <vcp_imutils/imutils.h>
 #include <vcp_imutils/opencv_compatibility.h>
 #include <vcp_math/conversions.h>
+#include <vcp_math/common.h>
 #include <vcp_math/geometry3d.h>
 #include <opencv2/imgproc/imgproc.hpp>
 
@@ -289,21 +290,105 @@ void Resize(const cv::Mat &image, cv::Mat &resized, const cv::Size &new_size)
 
 
 
-cv::Mat RenderPerspective(const cv::Mat &image, float rx, float ry, float rz, float tx, float ty, float tz, const cv::Scalar &border_color)
+cv::Mat RenderPerspective(const cv::Mat &image,
+                          float rx, float ry, float rz,
+                          float tx, float ty, float tz,
+                          const cv::Scalar &border_color,
+                          bool inter_linear_alpha, float img_plane_z,
+                          bool angles_in_deg,
+                          cv::Rect2d *projection_roi)
 {
-  const auto corners_src = vcp::imutils::ImageCorners<float>(image);
+  const cv::Mat R = math::geo3d::RotationMatrix(rx, ry, rz, angles_in_deg);
+  const cv::Mat t = (cv::Mat_<double>(3, 1) << tx, ty, tz);
+
+  cv::Mat K = (cv::Mat_<double>(3, 3)
+               << image.cols/2.0, 0.0, image.cols/2.0,
+               0.0, image.rows/2.0, image.rows/2.0,
+               0.0, 0.0, 1.0);
+
+  const auto corners2d_src = imutils::ImageCorners<float>(image);
   const std::vector<cv::Vec3d> corners3d_src = {
-    cv::Vec3d(-1, -1, 1),
-    cv::Vec3d(1, -1, 1),
-    cv::Vec3d(1, 1, 1),
-    cv::Vec3d(-1, 1, 1)
+    cv::Vec3d(-1, -1, img_plane_z),
+    cv::Vec3d(1, -1, img_plane_z),
+    cv::Vec3d(1, 1, img_plane_z),
+    cv::Vec3d(-1, 1, img_plane_z)
   };
-  std::vector<cv::Point2f> corners2d_dst;
 
-  // TODO std::vector<cv::Vec2d> vcp::math::geo3d::ProjectVecs(const cv::Mat &P, const std::vector<cv::Vec3d> &pts)
-  //vcp::convert::std::vector<cv::Point2f> ToPoint2f(const std::vector<cv::Vec<T, 2>> &vec)
+  // Project the "3D image plane" with the new camera extrinsics.
+  cv::Mat P = math::geo3d::ProjectionMatrixFromKRt(K, R, t);
+  auto projected = math::geo3d::ProjectVecs(P, corners3d_src);
+  // Check position of projected corner points
+  cv::Vec2d prj_min, prj_max;
+  math::MinMaxVec(projected, prj_min, prj_max);
+  const cv::Vec2d prj_span = prj_max - prj_min;
+  const cv::Size span = cv::Size(
+        static_cast<int>(std::ceil(prj_span[0])),
+        static_cast<int>(std::ceil(prj_span[1])));
+  // Store the projected region (might contain negative coordinates which we'll shift next)
+  if (projection_roi)
+    *projection_roi = cv::Rect2d(prj_min[0], prj_min[1], prj_span[0], prj_span[1]);
 
-  VCP_ERROR("Not yet implemented!");
+  // Adjust principal point offset so that the (top-left of the) warped image is visible
+  K.at<double>(0, 2) -= prj_min[0];
+  K.at<double>(1, 2) -= prj_min[1];
+  // Reproject corners once again with the adjusted intriniscs
+  P = math::geo3d::ProjectionMatrixFromKRt(K, R, t);
+  projected = math::geo3d::ProjectVecs(P, corners3d_src);
+
+  VCP_LOG_FAILURE("Image plane initially projected to " << prj_min << " <--> " << prj_max << ", " << span
+                  << std::endl << "With adjusted camera matrix: " << projected);
+  const cv::Mat M = cv::getPerspectiveTransform(corners2d_src, vcp::convert::ToPoint2f(projected));
+  cv::Mat warped;
+  // Clip output size
+  const cv::Size output_size = cv::Size(
+        std::max(1, std::min(3 * image.cols, span.width)),
+        std::max(1, std::min(3 * image.rows, span.height)));
+
+  if (border_color[0] < 0 || border_color[1] < 0 || border_color[2] < 0 )
+  {
+    // Warp the image
+    cv::warpPerspective(image, warped, M, output_size);
+    if (image.channels() != 4)
+    {
+      // If the input image is already RGB/BGR+A, we don't need to
+      // consider/add the alpha channel.
+
+      // Warp the alpha channel
+      const cv::Mat mask = cv::Mat(image.size(), CV_8U, cv::Scalar::all(vcp::math::MaxPixelValue<unsigned char>(image.depth())));
+      cv::Mat wm8u, warped_mask;
+      cv::warpPerspective(mask, wm8u, M, output_size,
+                          inter_linear_alpha ? cv::INTER_LINEAR : cv::INTER_NEAREST,
+                          cv::BORDER_CONSTANT, cv::Scalar::all(0));
+      wm8u.convertTo(warped_mask, image.type());
+
+      // Stack the layers
+      if (warped.channels() == 1)
+      {
+        const cv::Mat layers[4] = {warped, warped, warped, warped_mask};
+        cv::Mat tmp;
+        cv::merge(layers, 4, tmp);
+        warped = tmp;
+      }
+      else if (warped.channels() == 3)
+      {
+        std::vector<cv::Mat> layers_img;
+        cv::split(warped, layers_img);
+        const cv::Mat layers_out[4] = {layers_img[0], layers_img[1], layers_img[2], warped_mask};
+        cv::Mat tmp;
+        cv::merge(layers_out, 4, tmp);
+        warped = tmp;
+      }
+      else
+      {
+        VCP_ERROR("Invalid number of input channels, only 1, 3 or 4 are supported.");
+      }
+    }
+  }
+  else
+  {
+    cv::warpPerspective(image, warped, M, output_size, cv::INTER_LINEAR, cv::BORDER_CONSTANT, border_color);
+  }
+  return warped;
 }
 
 

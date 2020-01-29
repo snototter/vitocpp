@@ -14,8 +14,10 @@ import cv2
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'gen'))
 from vcp import ui_basics
 from vcp import imutils
+from vcp import imvis
 
 if __name__ == "__main__":
+    # Load as BGR
     img = imutils.imread('../data/flamingo.jpg', flip_channels=True)
 
     # Select a rectangle
