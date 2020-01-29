@@ -40,29 +40,32 @@ TODO example images (drawingXY)
 
 
 ## Installation
-* If you want to build the C++ library and Python 3 bindings, simply run `./scripts/build-ubuntu-18.04.sh`, this will:
+* If you want to build the C++ library and Python3 bindings, simply run `./scripts/build-ubuntu-18.04.sh`, this will:
   * Check and ask you to install missing system packages.
   * Configure the build (depending on which optional packages you installed, e.g. `libk4a` to stream from Azure Kinect).
-  * Build the vcp libraries.
-  * Build the python bindings.
-  * Build the example applications.
-* If you've already installed the required packages, and simply want to build the Clibrary, it's as easy as
-  ```bash
-  # Build the C++ library
-  $ cd $VCP_ROOT_DIR
-  $ mkdir build && cd build
-  $ cmake ..
-  $ make -j install
-  # Afterwards, all library files can be found at <VCP_ROOT_DIR/gen>
-
-  # Build the Python bindings
-  $ cd $VCP_ROOT_DIR/src/python3
-  $ mkdir build && cd build
-  $ cmake ..
-  $ make -j install
-  # Afterwards, the Python package can be loaded from <VCP_ROOT_DIR/src/python3/vcp>
-  ```
-  #TODO install python package in /gen/python3?
+  * Build the C++ `vcp` libraries.
+  * Build the Python3 `vcp` bindings.
+  * Build the example/tools applications.
+* If you prefer to do it on your own:
+  * Build the C++ library:
+    ```bash
+    $ cd $VCP_ROOT_DIR
+    $ mkdir build && cd build
+    $ cmake ..
+    $ make -j install
+    ```
+  * Then, the Python bindings:
+    ```bash
+    $ cd $VCP_ROOT_DIR/src/python3
+    $ mkdir build && cd build
+    $ cmake ..
+    $ make -j install
+    # Afterwards, the Python package can be loaded from <VCP_ROOT_DIR/src/python3/vcp>
+    ```
+* The default install location (for `make install`) of `vcp` is `<VCP_ROOT_DIR>/gen`.
+  * Public C++ headers are inside `<VCP_ROOT_DIR>/gen/include`.
+  * `vcp` library files are inside `<VCP_ROOT_DIR>/gen/lib`.
+  * The Python3 package is located at `<VCP_ROOT_DIR>/gen/vcp`.
 
 
 ## Examples

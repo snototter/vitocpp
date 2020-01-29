@@ -138,7 +138,7 @@ cd ../../..
 
 
 ##############################################################################
-# Configure, build and (locally) install Python wrappers
+# Prepare the examples/tools
 ##############################################################################
 echo "[vcp] Building C++ examples"
 echo
@@ -148,6 +148,12 @@ mkdir -p build
 cd build
 cmake ..
 make -j
-cd $CURR_WORK_DIR
+cd ..
 
+echo "[vcp] Setting up Python3 virtual environment"
+echo
+cd python3
+/bin/bash prepare_environment_py3.sh
+
+cd $CURR_WORK_DIR
 
