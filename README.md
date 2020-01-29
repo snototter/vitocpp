@@ -72,8 +72,17 @@ TODO example images (drawingXY)
 
 ## Tools
 This repository comes with a few "tools", i.e. standalone applications that go beyond simple demos/examples.
-* `<VCP_ROOT_DIR>/examples/python3/tools/perspective-plot-ui.py`<br/>
-  Interactively adjust camera extrinsics to get a better intuition about perspective transformations.
+Currently, there are only python applications, so make sure to set up the virtual environment (if you didn't use the `./scripts/build-X.sh` script):
+```bash
+$ cd $VCP_ROOT_DIR/examples/python3
+$ ./prepare_environment_py3.sh
+$ source .venv3/bin/activate
+```
+* Interactively adjust camera extrinsics to get a better intuition about perspective transformations.
+  ```bash
+  $ cd $VCP_ROOT_DIR/examples/python3/tools
+  $ python virtual-camera.py
+  ```
 ## Examples
 ### C++
 * The C++ applications at `<VCP_ROOT_DIR>/examples/cpp` demonstrate how you can use `vcp` from your own CMake projects. After building the vcp library, building these examples is as easy as:

@@ -4,15 +4,12 @@ Interactively adjust camera extrinsics to get a better intuition about perspecti
 import os
 import sys
 from vito import imutils
-from vcp import imvis
-
 from iminspect import inputs, imgview, inspection_widgets
-
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QFileDialog
 from PyQt5.QtCore import QSize
 
-
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'gen'))
+from vcp import imvis
 
 
 class DemoApplication(QMainWindow):
