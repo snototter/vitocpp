@@ -3,19 +3,16 @@ Interactively adjust camera extrinsics to get a better intuition about perspecti
 """
 import os
 import sys
-import cv2
-import numpy as np
 from vito import imutils
-from vito import cam_projections as prj
+from vcp import imvis
 
 from iminspect import inputs, imgview, inspection_widgets
 
 from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QFileDialog
-from PyQt5.QtCore import Qt, QSize
+from PyQt5.QtCore import QSize
 
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'gen'))
-import vcp.imvis as imvis
 
 
 class DemoApplication(QMainWindow):
@@ -42,7 +39,6 @@ class DemoApplication(QMainWindow):
         self._angle_z.value_changed.connect(self.__changed)
         input_layout.addWidget(self._angle_z)
 
-
         self._tx = inputs.SliderSelectionWidget('Camera translation x:', -15, 15, 100, 0,
             value_format_fx=lambda v: inputs.format_float(v, after_comma=1), min_label_width=150)
         self._tx.value_changed.connect(self.__changed)
@@ -65,17 +61,17 @@ class DemoApplication(QMainWindow):
         self._fileio = inspection_widgets.ToolbarFileIOWidget(vertical=True, icon_size=QSize(30, 30))
         self._fileio.fileOpenRequest.connect(self.__load_request)
         self._fileio.fileSaveRequest.connect(self.__save_request)
-        
+
         ctrl_layout = QHBoxLayout()
         ctrl_layout.addWidget(self._fileio)
         ctrl_layout.addWidget(inputs.VLine())
         ctrl_layout.addLayout(input_layout)
-        
+
         main_layout = QVBoxLayout()
         main_layout.addLayout(ctrl_layout)
         main_layout.addWidget(inputs.HLine())
         main_layout.addWidget(self._viewer)
-        
+
         self._main_widget.setLayout(main_layout)
         self.setCentralWidget(self._main_widget)
         self.resize(QSize(1280, 720))
@@ -87,7 +83,7 @@ class DemoApplication(QMainWindow):
         if filename is not None:
             img = imutils.imread(filename)
             self.displayImage(img)
-    
+
     def __save_request(self):
         filename, _ = QFileDialog.getSaveFileName(self, "Select file", "",
             'Images (*.bmp *.jpg *.jpeg *.png *.ppm);;All Files (*.*)',
@@ -115,7 +111,7 @@ class DemoApplication(QMainWindow):
 
 
 def gui():
-    img = imutils.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..' , '..', 'data' , 'flamingo.jpg'))
+    img = imutils.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'flamingo.jpg'))
     app = QApplication(['Virtual Camera'])
     main_widget = DemoApplication()
     main_widget.displayImage(img)
@@ -124,5 +120,4 @@ def gui():
 
 
 if __name__ == '__main__':
-    #demo()
     gui()
