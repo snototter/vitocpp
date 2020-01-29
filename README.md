@@ -83,6 +83,11 @@ $ source .venv3/bin/activate
   $ cd $VCP_ROOT_DIR/examples/python3/tools
   $ python virtual-camera.py
   ```
+* Perspective plot of a list of images - the standard video/image sequence representation/simplification.
+  ```bash
+  $ cd $VCP_ROOT_DIR/examples/python3/tools
+  $ python plot-image-sequence.py
+  ```
 ## Examples
 ### C++
 * The C++ applications at `<VCP_ROOT_DIR>/examples/cpp` demonstrate how you can use `vcp` from your own CMake projects. After building the vcp library, building these examples is as easy as:

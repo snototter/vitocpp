@@ -82,6 +82,8 @@ class DemoApplication(QMainWindow):
             self.displayImage(img)
 
     def __save_request(self):
+        if self._vis_np is None:
+            return
         filename, _ = QFileDialog.getSaveFileName(self, "Select file", "",
             'Images (*.bmp *.jpg *.jpeg *.png *.ppm);;All Files (*.*)',
             '', QFileDialog.DontUseNativeDialog)
