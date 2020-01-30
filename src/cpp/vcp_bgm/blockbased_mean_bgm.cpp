@@ -13,11 +13,9 @@ namespace vcp
 {
 namespace bgm
 {
-/** @brief Implements the block-based mean background model on the CPU. <b>Note:</b> the report() method may cause race conditions when using OpenMP (i.e. for large input images, say 1600x1200 pixels, the report call may last for up to 900 ms). */
 class BlockBasedMeanBackgroundModel : public BackgroundModel
 {
 public:
-  // mode 0 => gray, 1 => hsv (S)
   BlockBasedMeanBackgroundModel(const BlockBasedMeanBgmParams &params)
     : BackgroundModel(), params_(params), mean_(cv::Mat())
   {}
@@ -51,7 +49,17 @@ public:
   {
     cv::Mat mask;
     ReportChanges(current_image, mask, params_.report_threshold, update_model, update_mask);
-    return mask;
+    //FIXME we should return the mask as CV_8U (but float looks better)
+        //FIXME TIC/TOC is muted
+    double mi, ma;
+    cv::minMaxLoc(mask, &mi, &ma);
+    VCP_LOG_FAILURE("Min/max of blockbased mean foreground mask: " << mi << "..." << ma);
+    VCP_LOG_FAILURE("FIXME: normalizing 32f mask!");
+    //mask = mask / ma;
+//    return mask;
+    cv::Mat foo;
+    mask.convertTo(foo, CV_8U);
+    return foo;
   }
 
 
@@ -140,6 +148,8 @@ private:
   int ReportChanges(const cv::Mat &frame, cv::Mat &threshold_img,
                     float threshold, bool do_update, const cv::Mat &update_mask)
   {
+    VCP_INIT_TIC_TOC;
+    VCP_TIC;
     // get the mean values of the current frame and write them to mean_frame
     cv::Mat mean_frame;
     CreateModel(frame, mean_frame);
@@ -181,6 +191,7 @@ private:
     if(do_update)
       UpdateModel(mean_frame, update_mask);
 
+    VCP_TOC("BlockBased BGM done!");//FIXME remove
     return count;
   }
 
