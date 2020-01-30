@@ -13,7 +13,7 @@ set(VCP_VERSION "1.0.0")
 #option(VCP_VERBOSE_TIMING "Verbose timing output, may spam your console" ON)
 option(VCP_BUILD_STATIC "Additionally build static libraries." OFF)
 option(VCP_BUILD_BEST "Build Best Effort Streaming module." ON)
-#option(VCP_BUILD_BGM "Build background model module." ON)
+option(VCP_BUILD_BGM "Build background model module." ON)
 option(VCP_BUILD_CONFIG "Build config module." ON)
 option(VCP_BUILD_IMUTILS "Build image utilities module." ON)
 option(VCP_BUILD_IMVIS "Build visualization module." ON)
@@ -168,9 +168,9 @@ if(VCP_BUILD_BEST)
 endif()
 
 # Background models
-#if(VCP_BUILD_BGM)
-#    add_subdirectory(src/pvt_bgm)
-#endif()
+if(VCP_BUILD_BGM)
+    add_subdirectory(src/cpp/vcp_bgm)
+endif()
 
 # Config module
 if(VCP_BUILD_CONFIG)

@@ -42,7 +42,7 @@ if(vcp_FIND_COMPONENTS)
 else()
     # Add all modules by default
     set(VCP_MOD_FIND_MSG "Configured all")
-    set(VCP_MODULES ${VCP_MODULES} vcp_best vcp_config vcp_imutils vcp_imvis vcp_math vcp_ui)
+    set(VCP_MODULES ${VCP_MODULES} vcp_best vcp_bgm vcp_config vcp_imutils vcp_imvis vcp_math vcp_ui)
 endif()
 
 ##############################################################################
@@ -54,7 +54,7 @@ set(QUERY_STRING_DEBUG_LIB "d")
 ##############################################################################
 # First, find out which modules the user requested
 list(FIND VCP_MODULES vcp_best      REQUESTED_BEST)
-list(FIND VCP_MODULES vcp_bgm       REQUESTED_BGM)
+    # list(FIND VCP_MODULES vcp_bgm       REQUESTED_BGM) # No dependencies on other vcp modules
     # list(FIND VCP_MODULES vcp_config    REQUESTED_CONFIG)  # Only requires vcp_utils
 list(FIND VCP_MODULES vcp_imutils   REQUESTED_IMUTILS)
 list(FIND VCP_MODULES vcp_imvis     REQUESTED_IMVIS)
@@ -66,9 +66,6 @@ list(FIND VCP_MODULES vcp_tracking  REQUESTED_TRACKING)
 if(REQUESTED_BEST GREATER 0)
     set(VCP_MODULES ${VCP_MODULES} vcp_config)
     message(WARNING "Need to update package list!")
-endif()
-if(REQUESTED_BGM GREATER 0)
-    message(FATAL_ERROR "Not yet supported")
 endif()
 if(REQUESTED_IMUTILS GREATER 0)
     set(VCP_MODULES ${VCP_MODULES} vcp_math)

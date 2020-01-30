@@ -16,6 +16,7 @@
 #include <vcp_utils/string_utils.h>
 #include <opencv2/highgui.hpp>
 
+#include <vcp_bgm/normalized_rgb_bgm.h>
 
 // Terminate the streaming demo after X ms (if there would be more incoming data).
 #define MAX_STREAMING_TIME_PER_CONFIG 20000
@@ -55,6 +56,11 @@ void Stream(const std::string &config_file)
 //        vcp::best::liveview::LiveViewParams(
 //          "Live View", cv::Size(1920, 1200), 10));
 //  viewer->Start();
+
+  //TODO remove/move to separate c++/python example
+  auto bgm = vcp::bgm::CreateNormalizedRgbBgm(vcp::bgm::NormalizedRgbBgmParams(true,
+      0.15f, 0.1f, 0.1f, 1.0f));
+  bool bgm_needs_init = true;
 
   VCP_TIC;
   std::chrono::high_resolution_clock::time_point tp_query;
@@ -108,6 +114,14 @@ void Stream(const std::string &config_file)
       continue;
     }
 
+    if (bgm_needs_init)
+    {
+      bgm->Init(valid_raw[0]);
+      bgm_needs_init = false;
+    }
+    const cv::Mat foreground = bgm->ReportChanges(valid_raw[0], true);
+    cv::imshow("Foreground Regions #0", foreground);
+
     // Make a collage (of resized frames) if there are multiple streams to show.
     cv::Mat collage;
     const cv::Size fixed_size = cv::Size(800, 600);
@@ -156,15 +170,16 @@ int main(int argc, char **argv)
   VCP_UNUSED_VAR(argc);
   VCP_UNUSED_VAR(argv);
 
-  const std::vector<std::string> configs = {
-    "data-best/k4a.cfg",
-    "data-best/ipcam.cfg",
-    /*"data-best/image_sequence.cfg",
-    "data-best/video.cfg",
-    "data-best/webcam.cfg"*/
-  };
-  for (const auto &c : configs)
-    Stream(c);
+//  const std::vector<std::string> configs = {
+//    "data-best/k4a.cfg",
+//    "data-best/ipcam.cfg",
+//    /*"data-best/image_sequence.cfg",
+//    "data-best/video.cfg",
+//    "data-best/webcam.cfg"*/
+//  };
+//  for (const auto &c : configs)
+//    Stream(c);
+  Stream("data-best/webcam.cfg");
 
   return 0;
 }
