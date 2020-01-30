@@ -16,8 +16,8 @@ namespace bgm
  */
 struct ApproxMedianBgmParams : BgmParams
 {
-  float adaption_step;
-  float threshold;
+  float adaption_step; /**< The "learning rate" when updating the approximate median. */
+  float threshold;     /**< Changes of magnitude > threshold will be considered foreground. */
 
   ApproxMedianBgmParams(
       float adaption_step = 5.0f,
@@ -29,10 +29,25 @@ struct ApproxMedianBgmParams : BgmParams
 };
 
 
-//TODO parse from config
 
-//TODO doc, #1 converts to gray, #2 works on rgb and then reduces the mask
+//TODO parse from config --> nice-to-have, maybe later.
+
+
+/**
+ * @brief Create an approximate median background model with channel reduction.
+ *
+ * Multi-channel input images are first reduced to grayscale before approximating
+ * the median.
+ */
 std::unique_ptr<BackgroundModel> CreateApproxMedianBgmGrayscale(const ApproxMedianBgmParams &params);
+
+
+/**
+ * @brief Create an approximate median background model with separate channel handling.
+ *
+ * The median is approximated for each image channel separately and then reduced
+ * upon ReportChanges().
+ */
 std::unique_ptr<BackgroundModel> CreateApproxMedianBgmColor(const ApproxMedianBgmParams &params);
 } // namespace bgm
 } // namespace vcp
