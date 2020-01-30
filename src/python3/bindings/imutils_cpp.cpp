@@ -170,6 +170,17 @@ PYBIND11_MODULE(imutils_cpp, m)
         py::arg("edge_block_size") = 9,
         py::arg("is_rgb") = false);
 
+  m.def("pixelate", &vcp::imutils::Pixelate,
+        "Pixelate the image into blocks of size w x h.\n"
+        ":param image: numpy ndarray.\n"
+        ":param w: block width in pixels.\n"
+        ":param h: block height in pixels. If h==-1, then\n"
+        "          the blocks will be squares of size w x w.\n"
+        ":return: the pixelated image as numpy ndarray.",
+        py::arg("image"),
+        py::arg("w"),
+        py::arg("h")=-1);
+
 
   //################################################################################
   // Conversion

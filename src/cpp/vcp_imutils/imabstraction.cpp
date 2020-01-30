@@ -122,5 +122,16 @@ void Cartoonify(cv::Mat &image, int num_pyramid_levels, int num_bilateral_filter
   }
 }
 
+
+cv::Mat Pixelate(const cv::Mat &image, int block_width, int block_height)
+{
+  const int w = std::max(1, image.cols / block_width);
+  const int h = std::max(1, image.rows / (block_height > 0 ? block_height : block_width));
+  cv::Mat small_image, output;
+  cv::resize(image, small_image, cv::Size(w, h), 0, 0, cv::INTER_NEAREST);
+  cv::resize(small_image, output, image.size(), 0, 0, cv::INTER_NEAREST);
+  return output;
+}
+
 } // namespace imutils
 } // namespace vcp

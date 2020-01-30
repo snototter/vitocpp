@@ -1,7 +1,6 @@
 import os
 import sys
 import numpy as np
-from vito import imutils
 
 from iminspect import inputs, imgview, inspection_widgets
 
@@ -11,7 +10,7 @@ from PyQt5.QtCore import QSize
 from PyQt5.QtGui import QKeySequence
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'gen'))
-from vcp import imvis
+from vcp import imvis, imutils
 
 
 class DemoApplication(QMainWindow):
@@ -123,7 +122,7 @@ class DemoApplication(QMainWindow):
 
         self._main_widget.setLayout(main_layout)
         self.setCentralWidget(self._main_widget)
-        self.resize(QSize(640, 480))
+        self.resize(QSize(1280, 1024))
 
     def __load_images(self, filenames):
         if filenames is None or len(filenames) == 0:
@@ -195,6 +194,15 @@ def gui():
     # Prepare example data
     rgb = imutils.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..' , '..', 'data' , 'flamingo.jpg'))
     # 3-channel grayscale
+    rgb = imutils.cartoonify(rgb, num_pyramid_levels=4,
+        num_bilateral_filters=5,
+        diameter_pixel_neighborhood=7,
+        sigma_color=9,
+        sigma_space=7,
+        kernel_size_median=7,
+        edge_block_size=13,
+        is_rgb=True)
+    # rgb = imutils.pixelate(rgb, 10)
     gray_ = imutils.rgb2gray(rgb, is_bgr=False)
     gray = np.dstack((gray_, gray_, gray_))
     # 3 images with highlighted red, green, and blue channels
