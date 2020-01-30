@@ -72,24 +72,18 @@ TODO example images (drawingXY)
 
 ## Tools
 This repository comes with a few "tools", i.e. standalone applications that go beyond simple demos/examples.
-Currently, there are only python applications, so make sure to set up the virtual environment. 
+Currently, there are only python applications, which you can find at `<VCP_ROOT_DIR>/examples/python3/tools`.
 * Set up the <b>virtual environment</b>. If you didn't use the `./scripts/build-X.sh` script, use:
   ```bash
   $ cd <VCP_ROOT_DIR>/examples/python3
   $ ./prepare_environment_py3.sh
   $ source .venv3/bin/activate
   ```
-* <b>3D image plots</b>. Plot a single image or an image sequence by interactively adjusting the camera extrinsics.
-  ```bash
-  $ cd <VCP_ROOT_DIR>/examples/python3/tools
-  # Single image
-  $ python plot-image.py
-
-  # Image sequence
-  $ python plot-image-sequence.py
-  ```
+* <b>3D image plots</b>. Plot a single image (`plot-image.py`) or an image sequence (`plot-image-sequence.py`) by interactively adjusting the camera extrinsics.
 
   ![Image Sequence Example](./doc/example-render-img-sequence.png)
+* <b>Image abstraction:</b> cartoonification, pixelation, etc. can be experimented with via `cartoonify.py`.
+
 
 ## Examples
 ### C++
