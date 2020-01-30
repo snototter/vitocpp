@@ -64,6 +64,11 @@ class DemoApplication(QMainWindow):
         self._bgcb.value_changed.connect(self.__changed)
         input_layout.addWidget(self._bgcb)
 
+        self._alpha_cb = inputs.CheckBoxWidget('Linear alpha interpolation:', is_checked=False)
+        self._alpha_cb.value_changed.connect(self.__changed)
+        self._alpha_cb.setEnabled(self._bgcb.value())
+        input_layout.addWidget(self._alpha_cb)
+
         self._viewer = imgview.ImageViewer()
 
         self._fileio = inspection_widgets.ToolbarFileIOWidget(vertical=True, icon_size=QSize(30, 30))
@@ -102,6 +107,8 @@ class DemoApplication(QMainWindow):
             imutils.imsave(filename, self._vis_np)
 
     def __changed(self, value):
+        self._alpha_cb.setEnabled(self._bgcb.value())
+        alpha_interp = self._alpha_cb.value() if self._bgcb.value() else False
         ax = self._angle_x.value()
         ay = self._angle_y.value()
         az = self._angle_z.value()
@@ -110,7 +117,9 @@ class DemoApplication(QMainWindow):
         tz = self._tz.value()
         warped = imvis.render_perspective(
             self._img_np, rx=ax, ry=ay, rz=az, angles_in_deg=True,
-            tx=tx, ty=ty, tz=tz, bg_color=(-1, -1, -1) if self._bgcb.get_input() else (255, 255, 255))
+            tx=tx, ty=ty, tz=tz,
+            bg_color=(-1, -1, -1) if self._bgcb.get_input() else (255, 255, 255),
+            inter_alpha_linear=alpha_interp)
         self._vis_np = warped
         self._viewer.showImage(warped)
 
