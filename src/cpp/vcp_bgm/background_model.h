@@ -16,11 +16,7 @@ namespace bgm
 
 struct BgmParams
 {
-  std::string name;
-  BgmParams(const std::string &name)
-    : name(name)
-  {}
-
+  BgmParams() {}
   virtual ~BgmParams() = default;
 };
 

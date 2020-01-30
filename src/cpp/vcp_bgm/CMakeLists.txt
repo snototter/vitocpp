@@ -13,16 +13,16 @@ message("Configuring module ${LIB_NAME}")
 # Header files
 set(HEADERS 
     background_model.h
-#  approx_median_bgm.h
-#  blockbased_mean_bgm.h
+    approx_median_bgm.h
+    blockbased_mean_bgm.h
     normalized_rgb_bgm.h
 )
 
 
 # Source files
 set(SOURCES
-#  approx_median_bgm.cpp
-#  blockbased_mean_bgm.cpp
+    approx_median_bgm.cpp
+    blockbased_mean_bgm.cpp
     normalized_rgb_bgm.cpp
 )
 

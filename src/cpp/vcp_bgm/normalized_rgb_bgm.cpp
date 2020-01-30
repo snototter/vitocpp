@@ -10,7 +10,7 @@ class NormalizedRGBBackgroundModel : public BackgroundModel
 {
 public:
   NormalizedRGBBackgroundModel(const NormalizedRgbBgmParams &params)
-    : params_(params), background_image_(cv::Mat())
+    : BackgroundModel(), params_(params), background_image_(cv::Mat())
   {}
 
 
