@@ -89,6 +89,8 @@ Currently, there are only python applications, so make sure to set up the virtua
   $ python plot-image-sequence.py
   ```
 
+  ![Image Sequence Example](./doc/example-render-img-sequence.png)
+
 ## Examples
 ### C++
 * The C++ applications at `<VCP_ROOT_DIR>/examples/cpp` demonstrate how you can use `vcp` from your own CMake projects. After building the vcp library, building these examples is as easy as:

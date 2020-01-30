@@ -301,6 +301,7 @@ cv::Mat RenderPerspective(const cv::Mat &image,
                           float tx, float ty, float tz,
                           const cv::Scalar &border_color,
                           bool inter_linear_alpha, float img_plane_z,
+                          bool adjust_principal_point,
                           cv::Rect2d *projection_roi, cv::Mat *projection_mask)
 {
   if (image.depth() != CV_8U)
@@ -339,14 +340,18 @@ cv::Mat RenderPerspective(const cv::Mat &image,
     *projection_roi = cv::Rect2d(prj_min[0], prj_min[1], prj_span[0], prj_span[1]);
 
   // Adjust principal point offset so that the (top-left of the) warped image is visible
-  K.at<double>(0, 2) -= prj_min[0];
-  K.at<double>(1, 2) -= prj_min[1];
-  // Reproject corners once again with the adjusted intriniscs
-  P = math::geo3d::ProjectionMatrixFromKRt(K, R, t);
-  projected = math::geo3d::ProjectVecs(P, corners3d_src);
+  if (adjust_principal_point)
+  {
+    K.at<double>(0, 2) -= prj_min[0];
+    K.at<double>(1, 2) -= prj_min[1];
+    // Reproject corners once again with the adjusted intriniscs
+    P = math::geo3d::ProjectionMatrixFromKRt(K, R, t);
+    projected = math::geo3d::ProjectVecs(P, corners3d_src);
 
-  VCP_LOG_DEBUG("Image plane initially projected to " << prj_min << " <--> " << prj_max << ", " << span
-                  << std::endl << "          With adjusted camera matrix: " << projected);
+    VCP_LOG_DEBUG("Image plane initially projected to " << prj_min << " <--> " << prj_max << ", " << span
+                    << std::endl << "          With adjusted camera matrix: " << projected);
+  }
+
   const cv::Mat M = cv::getPerspectiveTransform(corners2d_src, vcp::convert::ToPoint2f(projected));
   cv::Mat warped;
   // Clip output size
@@ -400,7 +405,8 @@ cv::Mat RenderPerspective(const cv::Mat &image,
 }
 
 
-cv::Mat RenderImageSequence(const std::vector<cv::Mat> &images, float rx, float ry, float rz, bool angles_in_deg, float tx, float ty, float tz, float delta_z, const cv::Scalar &border_color, bool inter_linear_alpha)
+cv::Mat RenderImageSequence(const std::vector<cv::Mat> &images, float rx, float ry, float rz, bool angles_in_deg,
+                            float tx, float ty, float tz, float delta_z, const cv::Scalar &border_color, bool inter_linear_alpha)
 {
   for (size_t i = 1; i < images.size(); ++i)
   {
@@ -422,7 +428,7 @@ cv::Mat RenderImageSequence(const std::vector<cv::Mat> &images, float rx, float 
   {
     warped.push_back(RenderPerspective(images[i], rx, ry, rz, angles_in_deg,
                                        tx, ty, tz, border_color, inter_linear_alpha,
-                                       img_plane_z, &prj_rois[i], &prj_masks[i]));
+                                       img_plane_z, true, &prj_rois[i], &prj_masks[i]));
     corners.push_back(convert::ToVec2d(prj_rois[i].tl()));
     corners.push_back(convert::ToVec2d(prj_rois[i].br()));
     img_plane_z += delta_z;

@@ -67,6 +67,7 @@ cv::Mat RenderPerspective(const cv::Mat &image,
                           const cv::Scalar &border_color=cv::Scalar::all(-1),
                           bool inter_linear_alpha=false,
                           float img_plane_z=1.0f,
+                          bool adjust_principal_point=false,
                           cv::Rect2d *projection_roi=nullptr,
                           cv::Mat *projection_mask=nullptr);
 

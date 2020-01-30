@@ -39,7 +39,7 @@ class DemoApplication(QMainWindow):
             value_format_fx=lambda v: inputs.format_int(v, 4) + '°', min_label_width=min_lbl_width)
         self._angle_x.value_changed.connect(self.__changed)
         input_layout.addWidget(self._angle_x)
-        self._angle_y = inputs.SliderSelectionWidget('Camera rotation y:', -180, 180, 180, 10,
+        self._angle_y = inputs.SliderSelectionWidget('Camera rotation y:', -180, 180, 180, 4,
             value_format_fx=lambda v: inputs.format_int(v, 4) + '°', min_label_width=min_lbl_width)
         self._angle_y.value_changed.connect(self.__changed)
         input_layout.addWidget(self._angle_y)
@@ -49,11 +49,11 @@ class DemoApplication(QMainWindow):
         input_layout.addWidget(self._angle_z)
 
 
-        self._tx = inputs.SliderSelectionWidget('Camera translation x:', -20, 20, 100, 0,
+        self._tx = inputs.SliderSelectionWidget('Camera translation x:', -20, 20, 100, -3,
             value_format_fx=lambda v: inputs.format_float(v, after_comma=1), min_label_width=min_lbl_width)
         self._tx.value_changed.connect(self.__changed)
         input_layout.addWidget(self._tx)
-        self._ty = inputs.SliderSelectionWidget('Camera translation y:', -20, 20, 100, 0,
+        self._ty = inputs.SliderSelectionWidget('Camera translation y:', -20, 20, 100, 2.8,
             value_format_fx=lambda v: inputs.format_float(v, after_comma=1), min_label_width=min_lbl_width)
         self._ty.value_changed.connect(self.__changed)
         input_layout.addWidget(self._ty)
@@ -67,13 +67,13 @@ class DemoApplication(QMainWindow):
         self._dz.value_changed.connect(self.__changed)
         input_layout.addWidget(self._dz)
 
-        self._border_slider = inputs.SliderSelectionWidget('Border width:', 0, 10, 10, 0,
+        self._border_slider = inputs.SliderSelectionWidget('Border width:', 0, 10, 10, 3,
             value_format_fx=lambda v: inputs.format_int(v, 3) + ' px', min_label_width=min_lbl_width)
         self._border_slider.value_changed.connect(self.__update_controls)
         input_layout.addWidget(self._border_slider)
 
         layout_border_color = QHBoxLayout()
-        self._checkbox_border = inputs.CheckBoxWidget('Transparent border:', is_checked=False,
+        self._checkbox_border = inputs.CheckBoxWidget('Transparent border:', is_checked=True,
             min_label_width=min_lbl_width)
         self._checkbox_border.value_changed.connect(self.__update_controls)
         layout_border_color.addWidget(self._checkbox_border)
@@ -83,11 +83,11 @@ class DemoApplication(QMainWindow):
         layout_border_color.addWidget(self._color_border)
         layout_border_color.addStretch()
         input_layout.addLayout(layout_border_color)
-        self._checkbox_border.setEnabled(False)
-        self._color_border.setEnabled(False)
+        self._checkbox_border.setEnabled(self._border_slider.value() > 0)
+        self._color_border.setEnabled(self._border_slider.value() > 0)
 
         layout_bg_color = QHBoxLayout()
-        self._checkbox_bg = inputs.CheckBoxWidget('Transparent background:', is_checked=False,
+        self._checkbox_bg = inputs.CheckBoxWidget('Transparent background:', is_checked=True,
             min_label_width=min_lbl_width)
         self._checkbox_bg.value_changed.connect(self.__update_controls)
         layout_bg_color.addWidget(self._checkbox_bg)
@@ -99,8 +99,7 @@ class DemoApplication(QMainWindow):
         input_layout.addLayout(layout_bg_color)
 
         self._alpha_cb = inputs.CheckBoxWidget('Linear alpha interpolation:',
-            is_checked=False,
-            min_label_width=min_lbl_width)
+            is_checked=True, min_label_width=min_lbl_width)
         self._alpha_cb.value_changed.connect(self.__changed)
         self._alpha_cb.setEnabled(self._checkbox_bg.value() or self._checkbox_border.value())
         input_layout.addWidget(self._alpha_cb)
@@ -193,22 +192,25 @@ class DemoApplication(QMainWindow):
 
 
 def gui():
+    # Prepare example data
     rgb = imutils.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..' , '..', 'data' , 'flamingo.jpg'))
+    # 3-channel grayscale
+    gray_ = imutils.rgb2gray(rgb, is_bgr=False)
+    gray = np.dstack((gray_, gray_, gray_))
+    # 3 images with highlighted red, green, and blue channels
+    def __highlight(img, c):
+        res = img.copy()
+        for i in range(res.shape[2]):
+            if i != c:
+                res[:, :, i] = 0
+        return res
+    channels = [__highlight(rgb, c) for c in range(3)]
+    # Exemplary "image sequence"
+    images = [rgb, *channels, gray]
 
-    bgr = imutils.flip_layers(rgb)
-    gray1 = imutils.rgb2gray(rgb, is_bgr=False)
-    gray = np.dstack((gray1, gray1, gray1))
-    images = [rgb, gray, bgr, gray]
-    # Add (transparent) border
-    #TODO make transparent again
-    #FIXME rgb => widget; upon change (if transparent, add border) otherwise....... TODO extend GUI (save + colorize border, slider, range values, etc.)
-    # images = [imutils.pad(img, 5, color=None) for img in images]
-    # images = [imutils.pad(img, 5, color=(0, 0, 200)) for img in images]
-
-    app = QApplication(['Visualize Image Sequence'])
+    app = QApplication(['Image Sequence Plot'])
     main_widget = DemoApplication()
     main_widget.displayImageSequence(images)
-    #main_widget.displayImageSequence([imutils.pad(img, 5, color=None) for img in [gray1, gray1]])
     main_widget.show()
     sys.exit(app.exec_())
 

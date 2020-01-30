@@ -438,10 +438,12 @@ cv::Mat RenderPerspective(const cv::Mat &image,
                           float rx, float ry, float rz,
                           bool angles_in_deg,
                           float tx, float ty, float tz,
+                          bool adjust_projection,
                           const cv::Scalar &border_color, bool inter_linear_alpha)
 {
   return vcp::imvis::collage::RenderPerspective(image, rx, ry, rz, angles_in_deg, tx, ty, tz,
-                                                border_color, inter_linear_alpha, 1.0f, nullptr, nullptr);
+                                                border_color, inter_linear_alpha, 1.0f,
+                                                adjust_projection, nullptr, nullptr);
 }
 
 } // namespace imvis
@@ -493,6 +495,9 @@ PYBIND11_MODULE(imvis_cpp, m)
         ":params rx, ry, rz: Rotation angles (float).\n"
         ":param angles_in_deg: Set True if angles are given in degrees.\n"
         ":params tx, ty, tz: Translation vector components (float).\n"
+        ":param adjust_projection: Boolean flag. If True, the\n"
+        "         camera matrix will be adjusted to keep the warped\n"
+        "         image within the field-of-view.\n"
         ":param border_color: If None, output will be a RGBA/BGRA image\n"
         "         where invalid regions are masked out via the alpha\n"
         "         channel. Otherwise it must be a 3-element tuple,\n"
@@ -506,6 +511,7 @@ PYBIND11_MODULE(imvis_cpp, m)
         py::arg("rx")=0, py::arg("ry")=0, py::arg("rz")=0,
         py::arg("angles_in_deg")=false,
         py::arg("tx")=0, py::arg("ty")=0, py::arg("tz")=0,
+        py::arg("adjust_projection")=false,
         py::arg("bg_color")=cv::Scalar::all(-1),
         py::arg("inter_alpha_linear")=false);
 

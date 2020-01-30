@@ -33,41 +33,54 @@ class DemoApplication(QMainWindow):
     def __prepare_layout(self):
         self._main_widget = QWidget()
         input_layout = QVBoxLayout()
+        min_lbl_width = 165
 
         self._angle_x = inputs.SliderSelectionWidget('Camera rotation x:', -180, 180, 180, 0,
-            value_format_fx=lambda v: inputs.format_int(v, 4) + '°', min_label_width=150)
+            value_format_fx=lambda v: inputs.format_int(v, 4) + '°',
+            min_label_width=min_lbl_width)
         self._angle_x.value_changed.connect(self.__changed)
         input_layout.addWidget(self._angle_x)
-        self._angle_y = inputs.SliderSelectionWidget('Camera rotation y:', -180, 180, 180, 0,
-            value_format_fx=lambda v: inputs.format_int(v, 4) + '°', min_label_width=150)
+        self._angle_y = inputs.SliderSelectionWidget('Camera rotation y:', -180, 180, 180, 6,
+            value_format_fx=lambda v: inputs.format_int(v, 4) + '°',
+            min_label_width=min_lbl_width)
         self._angle_y.value_changed.connect(self.__changed)
         input_layout.addWidget(self._angle_y)
         self._angle_z = inputs.SliderSelectionWidget('Camera rotation z:', -180, 180, 180, 0,
-            value_format_fx=lambda v: inputs.format_int(v, 4) + '°', min_label_width=150)
+            value_format_fx=lambda v: inputs.format_int(v, 4) + '°',
+            min_label_width=min_lbl_width)
         self._angle_z.value_changed.connect(self.__changed)
         input_layout.addWidget(self._angle_z)
 
         self._tx = inputs.SliderSelectionWidget('Camera translation x:', -15, 15, 100, 0,
-            value_format_fx=lambda v: inputs.format_float(v, after_comma=1), min_label_width=150)
+            value_format_fx=lambda v: inputs.format_float(v, after_comma=1),
+            min_label_width=min_lbl_width)
         self._tx.value_changed.connect(self.__changed)
         input_layout.addWidget(self._tx)
-        self._ty = inputs.SliderSelectionWidget('Camera translation y:', -15, 15, 100, 0,
-            value_format_fx=lambda v: inputs.format_float(v, after_comma=1), min_label_width=150)
+        self._ty = inputs.SliderSelectionWidget('Camera translation y:', -15, 15, 100, 2,
+            value_format_fx=lambda v: inputs.format_float(v, after_comma=1),
+            min_label_width=min_lbl_width)
         self._ty.value_changed.connect(self.__changed)
         input_layout.addWidget(self._ty)
         self._tz = inputs.SliderSelectionWidget('Camera translation z:', 0, 15, 100, 0,
-            value_format_fx=lambda v: inputs.format_float(v, after_comma=1), min_label_width=150)
+            value_format_fx=lambda v: inputs.format_float(v, after_comma=1),
+            min_label_width=min_lbl_width)
         self._tz.value_changed.connect(self.__changed)
         input_layout.addWidget(self._tz)
 
-        self._bgcb = inputs.CheckBoxWidget('Transparent background:', is_checked=False)
+        self._bgcb = inputs.CheckBoxWidget('Transparent background:', is_checked=True,
+            min_label_width=min_lbl_width)
         self._bgcb.value_changed.connect(self.__changed)
         input_layout.addWidget(self._bgcb)
 
-        self._alpha_cb = inputs.CheckBoxWidget('Linear alpha interpolation:', is_checked=False)
+        self._alpha_cb = inputs.CheckBoxWidget('Linear alpha interpolation:', is_checked=True,
+            min_label_width=min_lbl_width)
         self._alpha_cb.value_changed.connect(self.__changed)
         self._alpha_cb.setEnabled(self._bgcb.value())
         input_layout.addWidget(self._alpha_cb)
+
+        self._adjust_prj_cb = inputs.CheckBoxWidget('Adjust camera matrix:', is_checked=True)
+        self._adjust_prj_cb.value_changed.connect(self.__changed)
+        input_layout.addWidget(self._adjust_prj_cb)
 
         self._viewer = imgview.ImageViewer()
 
@@ -118,7 +131,8 @@ class DemoApplication(QMainWindow):
         warped = imvis.render_perspective(
             self._img_np, rx=ax, ry=ay, rz=az, angles_in_deg=True,
             tx=tx, ty=ty, tz=tz,
-            bg_color=(-1, -1, -1) if self._bgcb.get_input() else (255, 255, 255),
+            bg_color=(-1, -1, -1) if self._bgcb.value() else (255, 255, 255),
+            adjust_projection=self._adjust_prj_cb.value(),
             inter_alpha_linear=alpha_interp)
         self._vis_np = warped
         self._viewer.showImage(warped)
@@ -126,12 +140,12 @@ class DemoApplication(QMainWindow):
     def displayImage(self, img_np):
         self._img_np = img_np
         self._vis_np = img_np
-        self._viewer.showImage(img_np)
+        self.__changed(None)
 
 
 def gui():
     img = imutils.imread(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'flamingo.jpg'))
-    app = QApplication(['Virtual Camera'])
+    app = QApplication(['Image Plot'])
     main_widget = DemoApplication()
     main_widget.displayImage(img)
     main_widget.show()
