@@ -65,8 +65,6 @@ cv::Mat RenderPerspective(const cv::Mat &image,
                           cv::Mat *projection_mask=nullptr);
 
 /** @brief Stacks the given images along the optical axis and renders them to look like they were viewed with the given extrinsics.
- TODO doc
-
  *
  * rx, ry, rz: Virtual camera rotation angles
  * angles_in_deg: Set to true if rotation angles are given in degrees.

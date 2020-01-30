@@ -5,8 +5,10 @@ import os
 import sys
 from vito import imutils
 from iminspect import inputs, imgview, inspection_widgets
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QFileDialog
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, \
+    QFileDialog, QShortcut
 from PyQt5.QtCore import QSize
+from PyQt5.QtGui import QKeySequence
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'gen'))
 from vcp import imvis
@@ -18,6 +20,15 @@ class DemoApplication(QMainWindow):
         self._img_np = None
         self._vis_np = None
         self.__prepare_layout()
+        self.__prepare_shortcuts()
+
+    def __prepare_shortcuts(self):
+        # Open file
+        sc = QShortcut(QKeySequence('Ctrl+O'), self)
+        sc.activated.connect(self.__load_request)
+        # Save file
+        sc = QShortcut(QKeySequence('Ctrl+S'), self)
+        sc.activated.connect(self.__save_request)
 
     def __prepare_layout(self):
         self._main_widget = QWidget()
@@ -74,7 +85,7 @@ class DemoApplication(QMainWindow):
         self.resize(QSize(1280, 720))
 
     def __load_request(self):
-        filename, _ = QFileDialog.getOpenFileName(self, "Select file", "",
+        filename, _ = QFileDialog.getOpenFileName(self, "Open image", "",
             'Images (*.bmp *.jpg *.jpeg *.png *.ppm);;All Files (*.*)',
             '', QFileDialog.DontUseNativeDialog)
         if filename is not None:
@@ -84,7 +95,7 @@ class DemoApplication(QMainWindow):
     def __save_request(self):
         if self._vis_np is None:
             return
-        filename, _ = QFileDialog.getSaveFileName(self, "Select file", "",
+        filename, _ = QFileDialog.getSaveFileName(self, "Save as...", "",
             'Images (*.bmp *.jpg *.jpeg *.png *.ppm);;All Files (*.*)',
             '', QFileDialog.DontUseNativeDialog)
         if filename is not None:

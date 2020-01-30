@@ -5,18 +5,18 @@ C++/Python 3 utilities for common vision tasks, e.g. streaming, visualization or
 
 ```
 Current status:
-cloc --exclude-dir=.venv3,build,external,gen --exclude-lang=make .
+cloc --exclude-dir=.venv3,build,external,gen,doc --exclude-lang=make .
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C++                             51           2985           1810          15479
-C/C++ Header                    43           1250           1326           3256
-CMake                           20            350            444           1542
-Python                          11            282            420            587
-Markdown                         2             42              0            247
-Bourne Shell                     3             38             65            193
+C++                             53           3176           1881          16682
+C/C++ Header                    43           1288           1405           3385
+CMake                           20            355            449           1569
+Python                          15            352            453            885
+Markdown                         2             45              0            267
+Bourne Shell                     3             39             65            203
 -------------------------------------------------------------------------------
-SUM:                           130           4947           4065          21304
+SUM:                           136           5255           4253          22991
 -------------------------------------------------------------------------------
 ```
 
@@ -72,23 +72,22 @@ TODO example images (drawingXY)
 
 ## Tools
 This repository comes with a few "tools", i.e. standalone applications that go beyond simple demos/examples.
-Currently, there are only python applications, so make sure to set up the virtual environment (if you didn't use the `./scripts/build-X.sh` script):
-```bash
-$ cd <VCP_ROOT_DIR>/examples/python3
-$ ./prepare_environment_py3.sh
-$ source .venv3/bin/activate
-```
-* Plot an image by interactively adjusting the camera extrinsics. All about perspective transformations.
+Currently, there are only python applications, so make sure to set up the virtual environment. 
+* Set up the <b>virtual environment</b>. If you didn't use the `./scripts/build-X.sh` script, use:
   ```bash
-  $ cd <VCP_ROOT_DIR>/examples/python3/tools
-  $ python plot-image.py
+  $ cd <VCP_ROOT_DIR>/examples/python3
+  $ ./prepare_environment_py3.sh
+  $ source .venv3/bin/activate
   ```
-* Perspective plot of a list of images - the standard video/image sequence representation/simplification.
+* <b>3D image plots</b>. Plot a single image or an image sequence by interactively adjusting the camera extrinsics.
   ```bash
   $ cd <VCP_ROOT_DIR>/examples/python3/tools
+  # Single image
+  $ python plot-image.py
+
+  # Image sequence
   $ python plot-image-sequence.py
   ```
-
 
 ## Examples
 ### C++

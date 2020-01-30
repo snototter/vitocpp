@@ -5,8 +5,10 @@ from vito import imutils
 
 from iminspect import inputs, imgview, inspection_widgets
 
-from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, QFileDialog
+from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, \
+    QHBoxLayout, QFileDialog, QShortcut
 from PyQt5.QtCore import QSize
+from PyQt5.QtGui import QKeySequence
 
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'gen'))
 from vcp import imvis
@@ -18,6 +20,15 @@ class DemoApplication(QMainWindow):
         self._images = None
         self._vis_np = None
         self.__prepare_layout()
+        self.__prepare_shortcuts()
+
+    def __prepare_shortcuts(self):
+        # Open file
+        sc = QShortcut(QKeySequence('Ctrl+O'), self)
+        sc.activated.connect(self.__load_request)
+        # Save file
+        sc = QShortcut(QKeySequence('Ctrl+S'), self)
+        sc.activated.connect(self.__save_request)
 
     def __prepare_layout(self):
         self._main_widget = QWidget()
@@ -55,10 +66,6 @@ class DemoApplication(QMainWindow):
         self._dz.value_changed.connect(self.__changed)
         input_layout.addWidget(self._dz)
 
-        
-        #TODO border slider + color vs transparent
-        #https://stackoverflow.com/questions/18257281/qt-color-picker-widget
-
         self._border_slider = inputs.SliderSelectionWidget('Border width:', 0, 10, 10, 0,
             value_format_fx=lambda v: inputs.format_int(v, 3) + ' px', min_label_width=150)
         self._border_slider.value_changed.connect(self.__update_controls)
@@ -91,6 +98,7 @@ class DemoApplication(QMainWindow):
         input_layout.addLayout(layout_bg_color)
 
         self._viewer = imgview.ImageViewer()
+        self._reset_scale = True
 
         self._fileio = inspection_widgets.ToolbarFileIOWidget(vertical=True, icon_size=QSize(30, 30))
         self._fileio.fileOpenRequest.connect(self.__load_request)
@@ -124,12 +132,21 @@ class DemoApplication(QMainWindow):
         ty = self._ty.value()
         tz = self._tz.value()
         dz = self._dz.value()
-        images = [imutils.pad(img, 3, color=None) for img in self._images] #TODO border slider
+        
+        border_width = int(self._border_slider.value())
+        if border_width > 0:
+            border_color = None if self._checkbox_border.value() else self._color_border.value()
+            images = [imutils.pad(img, border_width, color=border_color) for img in self._images]
+        else:
+            images = self._images
+
+        bg_color = (-1, -1, -1) if self._checkbox_bg.value() else (*self._color_bg.value(), 255)
         warped = imvis.render_image_sequence(
-            images, rx=ax, ry=ay, rz=az, angles_in_deg=True,#FIXME use colorbg
-            tx=tx, ty=ty, tz=tz, delta_z=dz, bg_color=(-1, -1, -1) if self._checkbox_bg.get_input() else (255, 255, 255))
+            images, rx=ax, ry=ay, rz=az, angles_in_deg=True,
+            tx=tx, ty=ty, tz=tz, delta_z=dz, bg_color=bg_color)
         self._vis_np = warped
-        self._viewer.showImage(warped)
+        self._viewer.showImage(warped, reset_scale=self._reset_scale)
+        self._reset_scale = False
 
     def __update_controls(self):
         self._color_bg.setEnabled(not self._checkbox_bg.value())
@@ -143,7 +160,7 @@ class DemoApplication(QMainWindow):
 
 
     def __load_request(self):
-        filenames, _ = QFileDialog.getOpenFileNames(self, "Select file", "",
+        filenames, _ = QFileDialog.getOpenFileNames(self, "Open image", "",
             'Images (*.bmp *.jpg *.jpeg *.png *.ppm);;All Files (*.*)',
             '', QFileDialog.DontUseNativeDialog)
         if filenames is not None and len(filenames) > 0:
@@ -152,10 +169,10 @@ class DemoApplication(QMainWindow):
     def __save_request(self):
         if self._vis_np is None:
             return
-        filename, _ = QFileDialog.getSaveFileName(self, "Select file", "",
+        filename, _ = QFileDialog.getSaveFileName(self, "Save as...", "",
             'Images (*.bmp *.jpg *.jpeg *.png *.ppm);;All Files (*.*)',
             '', QFileDialog.DontUseNativeDialog)
-        if filename is not None:
+        if filename is not None and len(filename) > 0:
             imutils.imsave(filename, self._vis_np)
 
     def displayImageSequence(self, imgs_np):
