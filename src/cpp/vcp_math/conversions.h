@@ -1,9 +1,15 @@
 #ifndef __VCP_MATH_OPENCV_CONVERSIONS_H__
 #define __VCP_MATH_OPENCV_CONVERSIONS_H__
 
-#include <opencv2/core/core.hpp>
 #include <exception>
 #include <vcp_utils/vcp_error.h>
+
+#include <opencv2/core/version.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/core/core.hpp>
+#else
+    #include <opencv2/core.hpp>
+#endif
 
 namespace vcp
 {

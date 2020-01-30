@@ -6,15 +6,12 @@
 
 // TODO add DEBUG FRAMERATE code
 
-// TODO we should use this opencv version selection for every file :-/
-#if CV_VERSION_MAJOR > 2
-  #include <opencv2/core.hpp>
-  #include <opencv2/highgui.hpp>
-  #include <opencv2/imgproc.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/highgui/highgui.hpp>
+    #include <opencv2/imgproc/imgproc.hpp>
 #else
-  #include <opencv2/core/core.hpp>
-  #include <opencv2/highgui/highgui.hpp>
-  #include <opencv2/imgproc/imgproc.hpp>
+    #include <opencv2/highgui.hpp>
+    #include <opencv2/imgproc.hpp>
 #endif
 
 #include "curl_file_handling.h"

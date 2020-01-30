@@ -3,9 +3,12 @@
 
 #include <vector>
 #include <string>
-#include <opencv2/core/core.hpp>
-
 #include <vcp_imutils/opencv_compatibility.h>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/imgproc/imgproc.hpp>
+#else
+    #include <opencv2/imgproc.hpp>
+#endif
 
 namespace vcp
 {

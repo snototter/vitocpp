@@ -4,9 +4,14 @@
 #include <mutex>
 #include <atomic>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/core/version.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/highgui/highgui.hpp>
+    #include <opencv2/imgproc/imgproc.hpp>
+#else
+    #include <opencv2/highgui.hpp>
+    #include <opencv2/imgproc.hpp>
+#endif
 
 #include <vcp_utils/timing_utils.h>
 #include <vcp_utils/vcp_error.h>

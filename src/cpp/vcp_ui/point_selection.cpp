@@ -1,9 +1,16 @@
 #include "point_selection.h"
 
 #include <sstream>
-#include <opencv2/highgui/highgui.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <vcp_utils/vcp_logging.h>
+
+#include <opencv2/core/version.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/highgui/highgui.hpp>
+    #include <opencv2/imgproc/imgproc.hpp>
+#else
+    #include <opencv2/highgui.hpp>
+    #include <opencv2/imgproc.hpp>
+#endif
 
 namespace vcp
 {

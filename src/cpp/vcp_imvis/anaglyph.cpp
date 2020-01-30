@@ -1,8 +1,14 @@
 #include "anaglyph.h"
 
 #include <vector>
-#include <opencv2/imgproc/imgproc.hpp>
 #include <vcp_utils/vcp_logging.h>
+
+#include <opencv2/core/version.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/imgproc/imgproc.hpp>
+#else
+    #include <opencv2/imgproc.hpp>
+#endif
 
 
 #undef VCP_LOGGING_COMPONENT

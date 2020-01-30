@@ -1,7 +1,12 @@
 #include "imabstraction.h"
 #include <vcp_math/common.h>
 
-#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/core/version.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/imgproc/imgproc.hpp>
+#else
+    #include <opencv2/imgproc.hpp>
+#endif
 
 namespace vcp
 {

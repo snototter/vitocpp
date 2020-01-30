@@ -3,7 +3,6 @@
 #include <algorithm>
 
 #include <sstream>
-#include <opencv2/core/core.hpp>
 
 #include <vcp_utils/vcp_error.h>
 #include <vcp_utils/vcp_logging.h>

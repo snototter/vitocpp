@@ -4,7 +4,6 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <opencv2/core/core.hpp>
 #include <vcp_imutils/opencv_compatibility.h>
 
 // TODO line-line distance, math.stackexchange.com/questions/2213165/find-shortest-distance-between-lines-in-3d

@@ -166,6 +166,30 @@ install(TARGETS
 
 
 ##################################################################
+## BGM utilities module
+python_add_module(bgm
+    bindings/bgm.cpp
+    bindings/conversion/np_cv_conversion.h
+    bindings/conversion/np_cv_conversion.cpp
+    bindings/conversion/cv_core_conversion.h
+    bindings/conversion/cv_core_conversion.cpp
+)
+target_link_libraries(bgm
+    ${PYTHON_LIBRARIES}
+    ${VCP_LIBRARIES}
+)
+set_target_properties(bgm PROPERTIES
+    ARCHIVE_OUTPUT_NAME bgm${ARCHIVE_OUTPUT_POSTFIX}
+    PREFIX ""
+    OUTPUT_NAME bgm
+    SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
+)
+install(TARGETS
+    bgm
+    ${PYTHON_INSTALL_CONFIGURATIONS}
+    LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
+
+##################################################################
 ## Image manipulation (imutils)
 message(STATUS "[vcp-bindings] Configuring vcp.imutils_cpp")
 python_add_module(imutils_cpp

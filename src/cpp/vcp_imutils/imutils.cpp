@@ -3,6 +3,13 @@
 #include <vcp_math/common.h>
 #include <vcp_math/geometry2d.h>
 #include <vcp_math/conversions.h>
+
+#include <opencv2/core/version.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/imgproc/imgproc.hpp>
+#else
+    #include <opencv2/imgproc.hpp>
+#endif
 #include <opencv2/imgproc/imgproc.hpp>
 
 namespace vcp

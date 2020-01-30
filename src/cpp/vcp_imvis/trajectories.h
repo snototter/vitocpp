@@ -1,7 +1,12 @@
 #ifndef __VCP_IMVIS_TRAJECTORIES_H__
 #define __VCP_IMVIS_TRAJECTORIES_H__
 
-#include <opencv2/core/core.hpp>
+#include <opencv2/core/version.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/core/core.hpp>
+#else
+    #include <opencv2/core.hpp>
+#endif
 
 namespace vcp
 {

@@ -1,7 +1,7 @@
 #include "trajectories.h"
 #include "drawing.h"
 
-#include <opencv2/imgproc/imgproc.hpp>
+
 
 #include <vcp_utils/vcp_logging.h>
 #include <vcp_math/conversions.h>

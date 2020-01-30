@@ -1,7 +1,13 @@
 #include "rtsp_media_sink.h"
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/highgui/highgui.hpp>
+#include <opencv2/core/version.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/core/core.hpp>
+    #include <opencv2/highgui/highgui.hpp>
+#else
+    #include <opencv2/core.hpp>
+    #include <opencv2/highgui.hpp>
+#endif
 
 // Use this to dump incoming rtsp frames (which 'should be' split into NAL units by live555).
 //#define DEBUG_RTSP_H264_DECODING

@@ -9,12 +9,21 @@
 #include <limits>
 #include <malloc.h>
 
-#include <opencv2/core/core.hpp>
-#include <opencv2/imgproc/imgproc.hpp>
+
+#include <opencv2/core/version.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/imgproc/imgproc.hpp>
+#else
+    #include <opencv2/imgproc.hpp>
+#endif
 
 //FIXME k4a VCP_BEST_DEBUG_FRAMERATE
 #ifdef VCP_BEST_WITH_K4A_MJPG
-    #include <opencv2/highgui/highgui.hpp>
+    #if CV_VERSION_MAJOR < 3
+        #include <opencv2/highgui/highgui.hpp>
+    #else
+        #include <opencv2/highgui.hpp>
+    #endif
 #endif
 
 #include <k4a/k4a.h>

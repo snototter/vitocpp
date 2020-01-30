@@ -1,7 +1,13 @@
 #ifndef __VCP_IMVIS_PSEUDOCOLOR_H__
 #define __VCP_IMVIS_PSEUDOCOLOR_H__
 
-#include <opencv2/core/core.hpp>
+#include <opencv2/core/version.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/core/core.hpp>
+#else
+    #include <opencv2/core.hpp>
+#endif
+
 #include <iostream>
 
 namespace vcp

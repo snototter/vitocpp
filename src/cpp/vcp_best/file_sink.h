@@ -4,7 +4,6 @@
 #include <string>
 #include <memory>
 #include <exception>
-#include <opencv2/core/core.hpp>
 #include "sink.h"
 
 namespace vcp

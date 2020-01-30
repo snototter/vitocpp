@@ -7,7 +7,6 @@
 #include <pybind11/stl.h>
 namespace py = pybind11;
 
-#include <opencv2/core/core.hpp>
 #include <vcp_imutils/opencv_compatibility.h>
 #include <vcp_utils/vcp_logging.h>
 #include <vcp_utils/vcp_error.h>

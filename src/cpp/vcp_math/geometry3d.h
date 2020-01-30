@@ -4,7 +4,13 @@
 #include <iostream>
 #include <vector>
 #include <cmath>
-#include <opencv2/core/core.hpp>
+
+#include <opencv2/core/version.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/core/core.hpp>
+#else
+    #include <opencv2/core.hpp>
+#endif
 
 // TODO document: a plane is given by [a,b,c,p] where unit_normal=[a,b,c] and all points on the plane satisfy: dot(unit_normal, point_position_vector) = -p
 

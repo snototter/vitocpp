@@ -8,7 +8,13 @@
 #include <vcp_math/conversions.h>
 #include <vcp_math/common.h>
 #include <vcp_math/geometry3d.h>
-#include <opencv2/imgproc/imgproc.hpp>
+
+#include <opencv2/core/version.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/imgproc/imgproc.hpp>
+#else
+    #include <opencv2/imgproc.hpp>
+#endif
 
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::imvis::collage"

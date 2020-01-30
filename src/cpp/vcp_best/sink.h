@@ -4,7 +4,6 @@
 #include <string>
 #include <memory>
 #include <exception>
-#include <opencv2/core/core.hpp>
 #include <vcp_config/config_params.h>
 #include <vcp_utils/vcp_error.h>
 #include "sink_buffer.h"

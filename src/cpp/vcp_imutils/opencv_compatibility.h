@@ -6,7 +6,12 @@
 
 /** We're currently developing with Versions 2.4.x-3.4.x, so some APIs are not available on all installations. */
 
-#include <opencv2/core/core.hpp>
+#include <opencv2/core/version.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/core/core.hpp>
+#else
+    #include <opencv2/core.hpp>
+#endif
 
 #if CV_MAJOR_VERSION > 3 || (CV_MAJOR_VERSION == 3 && CV_MINOR_VERSION >= 3)
     #define CV_SIZE_HAS_EMPTY

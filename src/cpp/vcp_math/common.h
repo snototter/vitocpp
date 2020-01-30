@@ -4,8 +4,14 @@
 #include <cmath>
 #include <limits>
 #include <type_traits>
-#include <opencv2/core/core.hpp>
 #include <vcp_utils/vcp_error.h>
+
+#include <opencv2/core/version.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/core/core.hpp>
+#else
+    #include <opencv2/core.hpp>
+#endif
 
 #define MATH_PI   3.1415926535897932384626433832795
 #define MATH_2PI  6.283185307179586476925286766559
