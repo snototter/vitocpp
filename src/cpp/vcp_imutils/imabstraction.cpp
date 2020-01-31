@@ -59,16 +59,18 @@ void Cartoonify(cv::Mat &image, int num_pyramid_levels, int num_bilateral_filter
 {
   // TODO doc block size defines the edge thickness, set to ~9 for a more cartoonish look
 
-  // Based on https://github.com/mbeyeler/opencv-python-blueprints/blob/master/chapter1/filters.py,
+  // Based on mbeyeler's opencv-python-blueprints
   // added some fixes (e.g. incorrect resize), ported to c++.
 
-  const bool is_color = image.channels() == 3;
+  const bool is_color = image.channels() == 3 || image.channels() == 4;
   cv::Mat img_gray, img_color;
   if (is_color)
   {
-    img_color = image;
-    //TODO make imutil which checks number of channels and uses correct conversion RGBA2... or RGB2...
-    cv::cvtColor(image, img_gray, is_rgb ? cv::COLOR_RGB2GRAY : cv::COLOR_BGR2GRAY);
+    if (image.channels() == 4)
+      cv::cvtColor(image, img_color, is_rgb ? cv::COLOR_RGBA2RGB : cv::COLOR_BGRA2BGR);
+    else
+      img_color = image;
+    cv::cvtColor(img_color, img_gray, is_rgb ? cv::COLOR_RGB2GRAY : cv::COLOR_BGR2GRAY);
   }
   else
   {
@@ -89,13 +91,13 @@ void Cartoonify(cv::Mat &image, int num_pyramid_levels, int num_bilateral_filter
     filter_helper.copyTo(img_color);
   }
 
-  // Upsample and ensure that the size fits
+  // Upsample
   for (int i = 0; i < num_pyramid_levels-1; ++i)
   {
     cv::pyrUp(img_color, filter_helper);
     filter_helper.copyTo(img_color);
   }
-
+  // ... and ensure that the size fits
   if (img_color.rows != image.rows || img_color.cols != image.cols)
   {
     cv::resize(img_color, filter_helper, image.size());
@@ -103,23 +105,25 @@ void Cartoonify(cv::Mat &image, int num_pyramid_levels, int num_bilateral_filter
   }
 
   // Enhance edges
-  cv::medianBlur(img_gray, filter_helper, kernel_size_median);
-  cv::Mat img_edge;
-  cv::adaptiveThreshold(filter_helper, img_edge, 255.0, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, edge_block_size, 2.0);
-
-  cv::cvtColor(img_edge, filter_helper, is_rgb ? cv::COLOR_GRAY2RGB : cv::COLOR_GRAY2BGR);
-  filter_helper.copyTo(img_edge);
-
   cv::Mat output;
-  cv::bitwise_and(img_color, img_edge, output);
-  if (is_color)
+  if (edge_block_size > 1)
   {
-    image = output;
+    cv::medianBlur(img_gray, filter_helper, kernel_size_median);
+    cv::Mat img_edge;
+    cv::adaptiveThreshold(filter_helper, img_edge, 255.0, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, edge_block_size, 2.0);
+
+    cv::cvtColor(img_edge, filter_helper, is_rgb ? cv::COLOR_GRAY2RGB : cv::COLOR_GRAY2BGR);
+    filter_helper.copyTo(img_edge);
+
+    cv::bitwise_and(img_color, img_edge, output);
   }
   else
-  {
+    output = img_color;
+
+  if (is_color)
+    image = output;
+  else
     cv::cvtColor(output, image, cv::COLOR_BGR2GRAY);
-  }
 }
 
 

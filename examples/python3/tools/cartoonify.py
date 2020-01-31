@@ -35,48 +35,48 @@ class DemoApplication(QMainWindow):
         min_lbl_width = 165
 
         self._slider_num_pyramid_levels = inputs.SliderSelectionWidget(
-            'Pyramid levels:', 1, 10, 10, 3,
+            'Pyramid levels:', 1, 10, 9, 3,
             value_format_fx=lambda v: inputs.format_int(v, 4),
             min_label_width=min_lbl_width)
         self._slider_num_pyramid_levels.value_changed.connect(self.__changed)
         input_layout.addWidget(self._slider_num_pyramid_levels)
 
         self._slider_num_bilateral_filters = inputs.SliderSelectionWidget(
-            'Bilateral filters:', 1, 10, 10, 4,
+            'Bilateral filters:', 1, 10, 9, 4,
             value_format_fx=lambda v: inputs.format_int(v, 4),
             min_label_width=min_lbl_width)
         self._slider_num_bilateral_filters.value_changed.connect(self.__changed)
         input_layout.addWidget(self._slider_num_bilateral_filters)
 
         self._slider_diameter_pixel_neighborhood = inputs.SliderSelectionWidget(
-            'Pixel neighborhood:', 1, 10, 10, 7,
+            'Pixel neighborhood:', 1, 41, 20, 7,
             value_format_fx=lambda v: inputs.format_int(v, 4) + ' px',
             min_label_width=min_lbl_width)
         self._slider_diameter_pixel_neighborhood.value_changed.connect(self.__changed)
         input_layout.addWidget(self._slider_diameter_pixel_neighborhood)
 
         self._slider_sigma_color = inputs.SliderSelectionWidget(
-            'Sigma color:', 1, 20, 19, 9,
+            'Sigma color:', 1, 41, 20, 9,
             value_format_fx=lambda v: inputs.format_float(v, digits=3, after_comma=1),
             min_label_width=min_lbl_width)
         self._slider_sigma_color.value_changed.connect(self.__changed)
         input_layout.addWidget(self._slider_sigma_color)
 
         self._slider_sigma_space = inputs.SliderSelectionWidget(
-            'Sigma space:', 1, 20, 19, 7,
+            'Sigma space:', 1, 41, 20, 7,
             value_format_fx=lambda v: inputs.format_float(v, digits=3, after_comma=1),
             min_label_width=min_lbl_width)
         self._slider_sigma_space.value_changed.connect(self.__changed)
         input_layout.addWidget(self._slider_sigma_space)
         
-        self._slider_kernel_size_median = inputs.SliderSelectionWidget('Median kernel size:', 3, 23, 10, 7,
+        self._slider_kernel_size_median = inputs.SliderSelectionWidget('Median kernel size:', 3, 43, 20, 7,
             value_format_fx=lambda v: inputs.format_int(v, 4) + ' px',
             min_label_width=min_lbl_width)
         self._slider_kernel_size_median.value_changed.connect(self.__changed)
         input_layout.addWidget(self._slider_kernel_size_median)
         
-        self._slider_edge_block_size = inputs.SliderSelectionWidget('Edge block size:', 3, 43, 20, 11,
-            value_format_fx=lambda v: inputs.format_int(v, 4) + ' px',
+        self._slider_edge_block_size = inputs.SliderSelectionWidget('Edge block size:', 1, 63, 31, 11,
+            value_format_fx=lambda v: inputs.format_int(v if v > 1 else 0, 4) + ' px',
             min_label_width=min_lbl_width)
         self._slider_edge_block_size.value_changed.connect(self.__changed)
         input_layout.addWidget(self._slider_edge_block_size)
@@ -91,6 +91,7 @@ class DemoApplication(QMainWindow):
         # input_layout.addWidget(self._adjust_prj_cb)
 
         self._viewer = imgview.ImageViewer()
+        self._reset_scale = True
 
         self._fileio = inspection_widgets.ToolbarFileIOWidget(vertical=True, icon_size=QSize(30, 30))
         self._fileio.fileOpenRequest.connect(self.__load_request)
@@ -149,7 +150,8 @@ class DemoApplication(QMainWindow):
         if self._slider_px.value() > 0:
             vis = imutils.pixelate(vis, int(self._slider_px.value()))
         self._vis_np = vis
-        self._viewer.showImage(vis)
+        self._viewer.showImage(vis, reset_scale=self._reset_scale)
+        self._reset_scale = False
 
     def displayImage(self, img_np):
         self._img_np = img_np
