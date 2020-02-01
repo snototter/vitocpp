@@ -4,11 +4,7 @@
 
 import os
 import sys
-import cv2
-
-import numpy as np
 from vito import pyutils
-
 # Add path to the vcp package
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'gen'))
 from vcp import bgm
@@ -54,9 +50,10 @@ def demo(pseudocolor=True, inspect=False):
         beta=1.0)
     bgmodels.append(bgmodel)
 
-    print('Note that initialization time for the first BGM includes')
-    print('OpenCV initialization. On my i7 this took ~120ms.')
-    times = list()
+    print("""
+! Note that the reported initialization time for the first BGM includes
+  library initialization - maybe OpenCV (haven't tracked that down yet).
+    """)
     fg_masks = list()
     for bgmodel in bgmodels:
         pyutils.tic('init')
@@ -93,7 +90,7 @@ def demo(pseudocolor=True, inspect=False):
             pos, text_anchor='south', bg_color=(255, 255, 255),
             font_color=(-1, -1, -1), font_scale=1.0,
             font_thickness=1, padding=5, fill_opacity=0.8)
-    
+
     imvis.imshow(collage, title="Background Subtraction", wait_ms=-1)
 
 
