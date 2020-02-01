@@ -148,8 +148,6 @@ Anyhow, testing requires `gtest`, which you'll probably need to build yourself -
 
 
 ##TODOs
-* [ ] BGM module
-  * Factory pattern!
 * [ ] BESt module
   * [ ] Load intrinsics
   * [ ] Load extrinsics
@@ -157,31 +155,19 @@ Anyhow, testing requires `gtest`, which you'll probably need to build yourself -
     * [ ] Mono
     * [ ] Stereo
     * [ ] RGB+D
-  * [x] File sinks
-  * [x] Webcam sink
-  * [x] HTTP sink
-  * [x] RTSP sink
   * [x] Monocular/stereo
     * [x] Stereo IP cam streams as separate monocular sinks
     * [x] "Real" stereo cams (e.g. ZED) could be split in VCP or by the library user (currently, the latter is preferred)
-    * [ ] Add frame-type stereo-left, stereo-right for rectification
+    * [ ] Add frame-type stereo-left, stereo-right for rectification (if needed)
   * [ ] RealSense
   * [ ] Azure Kinect
     * [x] Stream raw data
     * [x] Align RGB+D
     * [ ] Query intrinsics
   * [ ] mvBlueFox
-  * [x] Axis
   * [ ] Mobotix, etc.
-  * [x] Live viewer
 * [ ] Python bindings
   * [ ] best
-  * [x] config - needed for 'best' configuration
-  * [x] imutils
-  * [x] imvis
-  * [x] math
-  * [x] ui
-  * [x] utils
 * [ ] Move python demos (e.g. math2d/3d) to unit tests
 * [ ] Increase unit test coverage
 * [ ] C++ Tools/examples
