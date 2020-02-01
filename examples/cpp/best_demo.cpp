@@ -18,6 +18,7 @@
 
 #include <vcp_bgm/normalized_rgb_bgm.h>
 #include <vcp_bgm/blockbased_mean_bgm.h>
+#include <vcp_bgm/mog_bgm.h>
 
 // Terminate the streaming demo after X ms (if there would be more incoming data).
 #define MAX_STREAMING_TIME_PER_CONFIG 20000
@@ -61,10 +62,13 @@ void Stream(const std::string &config_file)
   //TODO remove/move to separate c++/python example
 //  auto bgm = vcp::bgm::CreateNormalizedRgbBgm(vcp::bgm::NormalizedRgbBgmParams(true,
 //      0.15f, 0.1f, 0.1f, 1.0f));
-  auto bgm = vcp::bgm::CreateBlockBasedMeanBgm(vcp::bgm::BlockBasedMeanBgmParams(
-                                                 cv::Size(16,16),
-                                                 0.25f, 0.01f, 20.0f,
-                                                 vcp::bgm::BlockBasedMeanBgmChannel::GRAYSCALE));
+//  auto bgm = vcp::bgm::CreateBlockBasedMeanBgm(vcp::bgm::BlockBasedMeanBgmParams(
+//                                                 cv::Size(16,16),
+//                                                 0.25f, 0.01f, 20.0f,
+//                                                 vcp::bgm::BlockBasedMeanBgmChannel::GRAYSCALE));
+  auto bgm = vcp::bgm::CreateMixtureOfGaussiansBgm(vcp::bgm::MixtureOfGaussiansBgmParams(
+                                                     500,
+                                                     true, 16, 0.15));
   bool bgm_needs_init = true;
 
   VCP_TIC;

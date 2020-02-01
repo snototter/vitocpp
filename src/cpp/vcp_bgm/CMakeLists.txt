@@ -16,6 +16,7 @@ set(HEADERS
     approx_median_bgm.h
     blockbased_mean_bgm.h
     normalized_rgb_bgm.h
+    mog_bgm.h
 )
 
 
@@ -24,6 +25,7 @@ set(SOURCES
     approx_median_bgm.cpp
     blockbased_mean_bgm.cpp
     normalized_rgb_bgm.cpp
+    mog_bgm.cpp
 )
 
 
