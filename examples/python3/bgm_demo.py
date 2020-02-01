@@ -80,7 +80,7 @@ def demo(pseudocolor=True, inspect=False):
     collage = imvis.make_collage([imutils.imread('../data/ninja-seq.png'), *fg_masks],
         padding=padding,
         fixed_size_per_image=(240, 320),
-        bg_color=(0, 0, 0),
+        bg_color=(0, 0, 0, 0),
         num_images_per_row=5)
 
     # Overlay names
