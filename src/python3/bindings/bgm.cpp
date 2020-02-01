@@ -65,8 +65,6 @@ public:
         bgm_->Init(image);
   }
 
-//TODO TODO TODO
-
 //  void InitBlockBasedMeanBgm(const cv::Mat &initial_background, const cv::Size &block_size, double block_overlap=0.75, double update_rate=0.05, double fg_report_threshold=5.0)
 //  {
 //    bgm_ = std::move(pvt::bgm::CreateBlockBasedMeanBgm(initial_background, block_size, 1.0-block_overlap, update_rate, fg_report_threshold, 0)); // Use grayscale images
