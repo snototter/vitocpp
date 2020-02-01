@@ -125,164 +125,181 @@ install(TARGETS
 
 
 ##################################################################
-## Math 2D
-message(STATUS "[vcp-bindings] Configuring vcp.math2d")
-python_add_module(math2d
-    bindings/math2d.cpp
-    bindings/conversion/vcp_conversion.h
-    bindings/conversion/vcp_conversion.cpp
-    bindings/conversion/np_cv_conversion.h
-    bindings/conversion/np_cv_conversion.cpp
-    bindings/conversion/cv_core_conversion.h
-    bindings/conversion/cv_core_conversion.cpp
-)
-target_link_libraries(math2d
-    ${PYTHON_LIBRARIES}
-    ${VCP_LIBRARIES}
-)
-set_target_properties(math2d PROPERTIES
-    ARCHIVE_OUTPUT_NAME math2d${ARCHIVE_OUTPUT_POSTFIX}
-    PREFIX ""
-    OUTPUT_NAME math2d
-    SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
-)
-install(TARGETS
-    math2d
-    ${PYTHON_INSTALL_CONFIGURATIONS}
-    LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
-
-
-##################################################################
-## Math 3D
-message(STATUS "[vcp-bindings] Configuring vcp.math3d")
-python_add_module(math3d
-    bindings/math3d.cpp
-    bindings/conversion/vcp_conversion.h
-    bindings/conversion/vcp_conversion.cpp
-    bindings/conversion/np_cv_conversion.h
-    bindings/conversion/np_cv_conversion.cpp
-    bindings/conversion/cv_core_conversion.h
-    bindings/conversion/cv_core_conversion.cpp
-)
-target_link_libraries(math3d
-    ${PYTHON_LIBRARIES}
-    ${VCP_LIBRARIES}
-)
-set_target_properties(math3d PROPERTIES
-    ARCHIVE_OUTPUT_NAME math3d${ARCHIVE_OUTPUT_POSTFIX}  # prevent name conflict for python2/3 outputs
-    PREFIX ""
-    OUTPUT_NAME math3d
-    SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
-)
-install(TARGETS
-    math3d
-    ${PYTHON_INSTALL_CONFIGURATIONS}
-    LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
+## BESt
+if(VCP_BUILD_BEST)
+    message(STATUS "TODO add BESt bindings & use same c++ preprocessor defines as in the c++ library (IPCAM, K4A, etc.)")
+endif()
 
 
 ##################################################################
 ## BGM utilities module
-python_add_module(bgm
-    bindings/bgm.cpp
-    bindings/conversion/np_cv_conversion.h
-    bindings/conversion/np_cv_conversion.cpp
-    bindings/conversion/cv_core_conversion.h
-    bindings/conversion/cv_core_conversion.cpp
-)
-target_link_libraries(bgm
-    ${PYTHON_LIBRARIES}
-    ${VCP_LIBRARIES}
-)
-set_target_properties(bgm PROPERTIES
-    ARCHIVE_OUTPUT_NAME bgm${ARCHIVE_OUTPUT_POSTFIX}
-    PREFIX ""
-    OUTPUT_NAME bgm
-    SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
-)
-install(TARGETS
-    bgm
-    ${PYTHON_INSTALL_CONFIGURATIONS}
-    LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
+if(VCP_BUILD_BGM)
+    python_add_module(bgm
+        bindings/bgm.cpp
+        bindings/conversion/np_cv_conversion.h
+        bindings/conversion/np_cv_conversion.cpp
+        bindings/conversion/cv_core_conversion.h
+        bindings/conversion/cv_core_conversion.cpp
+    )
+    target_link_libraries(bgm
+        ${PYTHON_LIBRARIES}
+        ${VCP_LIBRARIES}
+    )
+    set_target_properties(bgm PROPERTIES
+        ARCHIVE_OUTPUT_NAME bgm${ARCHIVE_OUTPUT_POSTFIX}
+        PREFIX ""
+        OUTPUT_NAME bgm
+        SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
+    )
+    install(TARGETS
+        bgm
+        ${PYTHON_INSTALL_CONFIGURATIONS}
+        LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
+endif()
+
+
+##################################################################
+## Math 2D
+if(VCP_BUILD_MATH)
+    message(STATUS "[vcp-bindings] Configuring vcp.math2d")
+    python_add_module(math2d
+        bindings/math2d.cpp
+        bindings/conversion/vcp_conversion.h
+        bindings/conversion/vcp_conversion.cpp
+        bindings/conversion/np_cv_conversion.h
+        bindings/conversion/np_cv_conversion.cpp
+        bindings/conversion/cv_core_conversion.h
+        bindings/conversion/cv_core_conversion.cpp
+    )
+    target_link_libraries(math2d
+        ${PYTHON_LIBRARIES}
+        ${VCP_LIBRARIES}
+    )
+    set_target_properties(math2d PROPERTIES
+        ARCHIVE_OUTPUT_NAME math2d${ARCHIVE_OUTPUT_POSTFIX}
+        PREFIX ""
+        OUTPUT_NAME math2d
+        SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
+    )
+    install(TARGETS
+        math2d
+        ${PYTHON_INSTALL_CONFIGURATIONS}
+        LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
+endif()
+##################################################################
+## Math 3D
+if(VCP_BUILD_MATH)
+    message(STATUS "[vcp-bindings] Configuring vcp.math3d")
+    python_add_module(math3d
+        bindings/math3d.cpp
+        bindings/conversion/vcp_conversion.h
+        bindings/conversion/vcp_conversion.cpp
+        bindings/conversion/np_cv_conversion.h
+        bindings/conversion/np_cv_conversion.cpp
+        bindings/conversion/cv_core_conversion.h
+        bindings/conversion/cv_core_conversion.cpp
+    )
+    target_link_libraries(math3d
+        ${PYTHON_LIBRARIES}
+        ${VCP_LIBRARIES}
+    )
+    set_target_properties(math3d PROPERTIES
+        ARCHIVE_OUTPUT_NAME math3d${ARCHIVE_OUTPUT_POSTFIX}  # prevent name conflict for python2/3 outputs
+        PREFIX ""
+        OUTPUT_NAME math3d
+        SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
+    )
+    install(TARGETS
+        math3d
+        ${PYTHON_INSTALL_CONFIGURATIONS}
+        LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
+endif()
+
 
 ##################################################################
 ## Image manipulation (imutils)
-message(STATUS "[vcp-bindings] Configuring vcp.imutils_cpp")
-python_add_module(imutils_cpp
-    bindings/imutils_cpp.cpp
-    bindings/conversion/np_cv_conversion.h
-    bindings/conversion/np_cv_conversion.cpp
-    bindings/conversion/cv_core_conversion.h
-    bindings/conversion/cv_core_conversion.cpp
-)
-target_link_libraries(imutils_cpp
-    ${PYTHON_LIBRARIES}
-    ${VCP_LIBRARIES}
-)
-set_target_properties(imutils_cpp PROPERTIES
-    ARCHIVE_OUTPUT_NAME imutils_cpp${ARCHIVE_OUTPUT_POSTFIX}
-    PREFIX ""
-    OUTPUT_NAME imutils_cpp
-    SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
-)
-install(TARGETS
-    imutils_cpp
-    ${PYTHON_INSTALL_CONFIGURATIONS}
-    LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
-
+if (VCP_BUILD_IMUTILS)
+    message(STATUS "[vcp-bindings] Configuring vcp.imutils_cpp")
+    python_add_module(imutils_cpp
+        bindings/imutils_cpp.cpp
+        bindings/conversion/np_cv_conversion.h
+        bindings/conversion/np_cv_conversion.cpp
+        bindings/conversion/cv_core_conversion.h
+        bindings/conversion/cv_core_conversion.cpp
+    )
+    target_link_libraries(imutils_cpp
+        ${PYTHON_LIBRARIES}
+        ${VCP_LIBRARIES}
+    )
+    set_target_properties(imutils_cpp PROPERTIES
+        ARCHIVE_OUTPUT_NAME imutils_cpp${ARCHIVE_OUTPUT_POSTFIX}
+        PREFIX ""
+        OUTPUT_NAME imutils_cpp
+        SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
+    )
+    install(TARGETS
+        imutils_cpp
+        ${PYTHON_INSTALL_CONFIGURATIONS}
+        LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
+endif()
 
 
 ##################################################################
 ## Visualization utils
-message(STATUS "[vcp-bindings] Configuring vcp.imvis_cpp")
-python_add_module(imvis_cpp
-    bindings/imvis_cpp.cpp
-    bindings/conversion/vcp_conversion.h
-    bindings/conversion/vcp_conversion.cpp
-    bindings/conversion/np_cv_conversion.h
-    bindings/conversion/np_cv_conversion.cpp
-    bindings/conversion/cv_core_conversion.h
-    bindings/conversion/cv_core_conversion.cpp
-)
-target_link_libraries(imvis_cpp
-    ${PYTHON_LIBRARIES}
-    ${VCP_LIBRARIES}
-)
-set_target_properties(imvis_cpp PROPERTIES
-    ARCHIVE_OUTPUT_NAME imvis_cpp${ARCHIVE_OUTPUT_POSTFIX}
-    PREFIX ""
-    OUTPUT_NAME imvis_cpp
-    SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
-)
-install(TARGETS
-    imvis_cpp
-    ${PYTHON_INSTALL_CONFIGURATIONS}
-    LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
+if(VCP_BUILD_IMVIS)
+    message(STATUS "[vcp-bindings] Configuring vcp.imvis_cpp")
+    python_add_module(imvis_cpp
+        bindings/imvis_cpp.cpp
+        bindings/conversion/vcp_conversion.h
+        bindings/conversion/vcp_conversion.cpp
+        bindings/conversion/np_cv_conversion.h
+        bindings/conversion/np_cv_conversion.cpp
+        bindings/conversion/cv_core_conversion.h
+        bindings/conversion/cv_core_conversion.cpp
+    )
+    target_link_libraries(imvis_cpp
+        ${PYTHON_LIBRARIES}
+        ${VCP_LIBRARIES}
+    )
+    set_target_properties(imvis_cpp PROPERTIES
+        ARCHIVE_OUTPUT_NAME imvis_cpp${ARCHIVE_OUTPUT_POSTFIX}
+        PREFIX ""
+        OUTPUT_NAME imvis_cpp
+        SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
+    )
+    install(TARGETS
+        imvis_cpp
+        ${PYTHON_INSTALL_CONFIGURATIONS}
+        LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
+endif()
 
 
 ##################################################################
 ## Simple UI inputs
-message(STATUS "[vcp-bindings] Configuring vcp.ui")
-python_add_module(ui_basics
-    bindings/ui_basics.cpp
-    bindings/conversion/np_cv_conversion.h
-    bindings/conversion/np_cv_conversion.cpp
-    bindings/conversion/cv_core_conversion.h
-    bindings/conversion/cv_core_conversion.cpp
-)
-target_link_libraries(ui_basics
-    ${PYTHON_LIBRARIES}
-    ${VCP_LIBRARIES}
-)
-set_target_properties(ui_basics PROPERTIES
-    ARCHIVE_OUTPUT_NAME ui_basics${ARCHIVE_OUTPUT_POSTFIX}
-    PREFIX ""
-    OUTPUT_NAME ui_basics
-    SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
-)
-install(TARGETS
-    ui_basics
-    ${PYTHON_INSTALL_CONFIGURATIONS}
-    LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
+if(VCP_BUILD_UI)
+    message(STATUS "[vcp-bindings] Configuring vcp.ui")
+    python_add_module(ui_basics
+        bindings/ui_basics.cpp
+        bindings/conversion/np_cv_conversion.h
+        bindings/conversion/np_cv_conversion.cpp
+        bindings/conversion/cv_core_conversion.h
+        bindings/conversion/cv_core_conversion.cpp
+    )
+    target_link_libraries(ui_basics
+        ${PYTHON_LIBRARIES}
+        ${VCP_LIBRARIES}
+    )
+    set_target_properties(ui_basics PROPERTIES
+        ARCHIVE_OUTPUT_NAME ui_basics${ARCHIVE_OUTPUT_POSTFIX}
+        PREFIX ""
+        OUTPUT_NAME ui_basics
+        SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
+    )
+    install(TARGETS
+        ui_basics
+        ${PYTHON_INSTALL_CONFIGURATIONS}
+        LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}")
+endif()
 
 
 ##################################################################

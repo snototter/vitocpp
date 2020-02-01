@@ -48,9 +48,8 @@ TODO example images (drawingXY)
 * If you want to build the C++ library and Python3 bindings, simply run `./scripts/build-ubuntu-18.04.sh`, this will:
   * Check and ask you to install missing system packages.
   * Configure the build (depending on which optional packages you installed, e.g. `libk4a` to stream from Azure Kinect).
-  * Build the C++ `vcp` libraries.
-  * Build the Python3 `vcp` bindings.
-  * Build the example/tools applications.
+  * Build the C++ `vcp` libraries and corresponding Python3 bindings.
+  * Build the example applications and prepare the virtual environment for Python demos.
 * If you prefer to do it on your own, crank up CMake:
     ```bash
     $ cd <VCP_ROOT_DIR>
