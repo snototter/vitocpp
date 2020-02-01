@@ -23,6 +23,7 @@ option(VCP_BUILD_UI "Build simple UI utility module." ON)
 #option(VCP_BUILD_DOC "Build doxygen documentation" OFF)
 # Everybody was unit-testing:
 option(VCP_BUILD_TESTS "Build tests, requires GTest." OFF)
+option(VCP_BUILD_PYTHON "Build Python bindings." ON)
 #
 # Logging related
 set(VCP_LOG_LEVEL "info" CACHE STRING "Select logging level")
@@ -201,6 +202,12 @@ endif()
 if(VCP_BUILD_IMVIS)
     add_subdirectory(src/cpp/vcp_imvis)
 endif()
+
+# Python bindings
+if(VCP_BUILD_PYTHON)
+    add_subdirectory(src/python3)
+endif()
+
 
 # Add an uninstall target
 # See: https://gitlab.kitware.com/cmake/community/wikis/FAQ#can-i-do-make-uninstall-with-cmake

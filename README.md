@@ -51,21 +51,12 @@ TODO example images (drawingXY)
   * Build the C++ `vcp` libraries.
   * Build the Python3 `vcp` bindings.
   * Build the example/tools applications.
-* If you prefer to do it on your own:
-  * Build the C++ library:
+* If you prefer to do it on your own, crank up CMake:
     ```bash
     $ cd <VCP_ROOT_DIR>
     $ mkdir build && cd build
-    $ cmake ..
+    $ cmake -DVCP_BUILD_PYTHON=ON ..
     $ make -j install
-    ```
-  * Then, the Python bindings:
-    ```bash
-    $ cd <VCP_ROOT_DIR>/src/python3
-    $ mkdir build && cd build
-    $ cmake ..
-    $ make -j install
-    # Afterwards, the Python package can be loaded from <VCP_ROOT_DIR/src/python3/vcp>
     ```
 * The default install location (for `make install`) of `vcp` is `<VCP_ROOT_DIR>/gen`.
   * Public C++ headers are inside `<VCP_ROOT_DIR>/gen/include`.
@@ -113,7 +104,7 @@ Currently, there are only python applications, which you can find at `<VCP_ROOT_
   $ python imvis_demo.py
   ```
 * Highly recommended examples (best/well documented, useful functionality):
-  * To be done
+  * `bgm_demo.py`
 
 ## Tests
 While all of vcp has been tested "in-the-wild", unit tests are rather sparse, unfortunately.

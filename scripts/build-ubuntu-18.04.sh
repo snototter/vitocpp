@@ -33,7 +33,7 @@ echo
 OPT_PKG_FLAGS=$?
 
 # Check which of the optional components can be built
-CMAKEOPTIONS=("-DCMAKE_BUILD_TYPE=Release" "-DVCP_BUILD_BEST=ON")
+CMAKEOPTIONS=("-DCMAKE_BUILD_TYPE=Release" "-DVCP_BUILD_BEST=ON" "-DVCP_BUILD_PYTHON=ON")
 if [ $((OPT_PKG_FLAGS & 0x04)) -gt 0 ]; then
     echo "TODO enable RealSense!"
 else
@@ -111,9 +111,9 @@ cd ..
 
 
 ##############################################################################
-# Configure, build and (locally) install C++ libraries
+# Configure, build and (locally) install C++ libraries and Python bindings
 ##############################################################################
-echo "[vcp] Building VCP C++ libraries"
+echo "[vcp] Building VCP C++ libraries & Python bindings"
 echo
 mkdir -p build
 cd build
@@ -121,20 +121,6 @@ cmake "${CMAKEOPTIONS[@]}" ..
 make -j install
 # CD back to VCP_ROOT_DIR
 cd ..
-
-
-##############################################################################
-# Configure, build and (locally) install Python wrappers
-##############################################################################
-echo "[vcp] Building vcp python3 bindings"
-echo
-cd src/python3
-mkdir -p build
-cd build
-cmake -DCMAKE_BUILD_TYPE=Release ..
-make -j install
-# CD back to VCP_ROOT_DIR
-cd ../../..
 
 
 ##############################################################################

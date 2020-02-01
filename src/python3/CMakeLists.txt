@@ -1,39 +1,41 @@
 cmake_minimum_required(VERSION 3.1)
 project(vcp-bindings)
 
+
+message("Configuring Python3 bindings")
 #TODO move to utils
 #TODO check https://stackoverflow.com/questions/10984442/how-to-detect-c11-support-of-a-compiler-with-cmake
-foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
-    message("${i}")
-endforeach()
+#foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
+#    message("${i}")
+#endforeach()
 
 #TODO include in main project, so the logging parameters are all the same both for c++ and python
 # Logging related
-set(VCP_LOG_LEVEL "info" CACHE STRING "Select logging level")
-set_property(CACHE VCP_LOG_LEVEL PROPERTY STRINGS debug info warning failure)
-#
-option(VCP_LOG_LOCATION "Logged messages include source file location." OFF)
-#
-option(VCP_LOG_STACK_TRACE_ON_ERROR "Log stack trace on exception/exit/abort." ON)
+#set(VCP_LOG_LEVEL "info" CACHE STRING "Select logging level")
+#set_property(CACHE VCP_LOG_LEVEL PROPERTY STRINGS debug info warning failure)
+##
+#option(VCP_LOG_LOCATION "Logged messages include source file location." OFF)
+##
+#option(VCP_LOG_STACK_TRACE_ON_ERROR "Log stack trace on exception/exit/abort." ON)
 
-set(PYVCP_LIBRARY_DESTINATION "${CMAKE_SOURCE_DIR}/../../gen/vcp")
+set(PYVCP_LIBRARY_DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../../gen/vcp")
 
 #TODO https://stackoverflow.com/questions/16212538/cmake-depending-on-another-project
 #TODO do we really need 14 for the python bindings, or 11?
 #TODO install to VCP_ROOT_DIR/gen/python/vcp
-# Add C++-14 support
 IF(NOT WIN32)
     add_definitions(-std=c++11 -fPIC -Wall -Wpedantic -Wextra)
 ENDIF(NOT WIN32)
 
-# We need python3 - use our custom cmake script
-set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/../../cmake")
+# Locate python3
+set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_CURRENT_SOURCE_DIR}/../../cmake")
 include("LocatePython")
 set(PYTHON_INCLUDE_DIRS ${PYTHON3_INCLUDE_DIR} ${PYTHON3_INCLUDE_DIR2} ${PYTHON3_NUMPY_INCLUDE_DIRS})
 set(PYTHON_LIBRARIES ${PYTHON3_LIBRARY})
 set(PYTHON_EXECUTABLE ${PYTHON3_EXECUTABLE})
 set(PYTHON_PACKAGES_PATH ${PYTHON3_PACKAGES_PATH})
 include_directories(${PYTHON_INCLUDE_DIRS})
+
 # Custom postfix to explicitly state we are using py3
 set(ARCHIVE_OUTPUT_POSTFIX _py3)
 
@@ -56,48 +58,20 @@ else ()
 endif ()
 
 
-# Logging-related flags
-#
-# ... pick configured logging level
-if(${VCP_LOG_LEVEL} STREQUAL "debug")
-    add_definitions(-DVCP_LOG_LEVEL_DEBUG)
-    message(STATUS "[${PROJECT_NAME}] Will log DEBUG, INFO, WARNING and FAILURE messages.")
-elseif(${VCP_LOG_LEVEL} STREQUAL "info")
-    add_definitions(-DVCP_LOG_LEVEL_INFO)
-    message(STATUS "[${PROJECT_NAME}] Will log INFO, WARNING and FAILURE messages.")
-elseif(${VCP_LOG_LEVEL} STREQUAL "warning")
-    add_definitions(-DVCP_LOG_LEVEL_WARNING)
-    message(STATUS "[${PROJECT_NAME}] Will only log WARNING and FAILURE messages.")
-elseif(${VCP_LOG_LEVEL} STREQUAL "failure")
-    add_definitions(-DVCP_LOG_LEVEL_FAILURE)
-    message(STATUS "[${PROJECT_NAME}] Will only log FAILURE messages.")
-else()
-    message(FATAL_ERROR "[${PROJECT_NAME}] Invalid VCP_LOG_LEVEL value")
-endif()
-#
-# ... should we include the source file location in our logs?
-if(VCP_LOG_LOCATION)
-  add_definitions(-DVCP_LOG_LOCATION)
-endif()
-#
-# ... should we log the stack trace on unrecoverable errors?
-if(VCP_LOG_STACK_TRACE_ON_ERROR)
-    add_definitions(-DVCP_LOG_STACK_TRACE_ON_ERROR)
-endif()
-
-
-
 # PyBind11
 find_package(pybind11 REQUIRED)
 include_directories(${PYBIND11_INCLUDE_DIRS})
 
 # VCP - prepare include directory and RPATH
-find_package(vcp REQUIRED)
-include_directories(${VCP_INCLUDE_DIR})
-set(VCP_RPATH_ "${VCP_LIBRARY_DIR}")
+#find_package(vcp REQUIRED)
+#include_directories(${VCP_INCLUDE_DIR})
+set(VCP_LIBRARIES vcp_best vcp_bgm vcp_config vcp_imutils vcp_imvis vcp_math vcp_ui)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/../cpp)
+set(VCP_RPATH_ "${CMAKE_INSTALL_PREFIX}/lib")
 
 # Set runtime path so that python knows how to load VCP shared libs
-set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
+#set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
+#set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}:${VCP_RPATH_}")
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}:${VCP_RPATH_}")
 message(STATUS "[vcp-bindings] RPATH for python vcp libraries: ${VCP_RPATH_}")
 
@@ -317,18 +291,4 @@ message(STATUS "[vcp-bindings] Configuring install target for python files")
 install(DIRECTORY vcp/
     DESTINATION ${PYVCP_LIBRARY_DESTINATION}
     FILES_MATCHING PATTERN "*.py")
-
-
-##################################################################
-# Add an uninstall target
-# See: https://gitlab.kitware.com/cmake/community/wikis/FAQ#can-i-do-make-uninstall-with-cmake
-if(NOT TARGET uninstall)
-    configure_file(
-        "${CMAKE_CURRENT_SOURCE_DIR}/../../cmake/cmake_uninstall.cmake.in"
-        "${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake"
-        IMMEDIATE @ONLY)
-
-    add_custom_target(uninstall
-        COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake_uninstall.cmake)
-endif()
 

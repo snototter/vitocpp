@@ -8,7 +8,7 @@ doc/doxygen/*
 *~
 *.user*
 *.autosave
-
+*.bak
 **/.vscode/*
 
 
