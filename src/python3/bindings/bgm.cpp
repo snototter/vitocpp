@@ -6,6 +6,7 @@
 #include <vcp_bgm/blockbased_mean_bgm.h>
 #include <vcp_bgm/normalized_rgb_bgm.h>
 #include <vcp_bgm/mog_bgm.h>
+#include <vcp_utils/string_utils.h>
 
 #include <memory>
 #include <exception>
@@ -17,6 +18,7 @@ namespace python
 {
 namespace bgm
 {
+
 class BackgroundModelWrapper
 {
 public:
@@ -36,6 +38,13 @@ public:
     if (!bgm_)
       VCP_ERROR("You must initialize the background model first!");
     return bgm_->Init(image);
+  }
+
+  std::string Name() const
+  {
+    if (!bgm_)
+      VCP_ERROR("You must initialize the background model first!");
+    return bgm_->Parameters().model_name;
   }
 
   void InitNormalizedRgbBgm(bool report_as_binary=false, float binary_reporting_threshold=0.15f,
@@ -65,12 +74,41 @@ public:
         bgm_->Init(image);
   }
 
-//  void InitBlockBasedMeanBgm(const cv::Mat &initial_background, const cv::Size &block_size, double block_overlap=0.75, double update_rate=0.05, double fg_report_threshold=5.0)
-//  {
-//    bgm_ = std::move(pvt::bgm::CreateBlockBasedMeanBgm(initial_background, block_size, 1.0-block_overlap, update_rate, fg_report_threshold, 0)); // Use grayscale images
-//  }
-//TODO FIXME
-  // InitGaussianMixtureBgm
+  void InitBlockBasedMeanBgm(const cv::Size &block_size, float block_overlap=0.75,
+                             float update_rate=0.05, float fg_report_threshold=5.0,
+                             const std::string &channel="grayscale",
+                             const cv::Mat &image=cv::Mat())
+  {
+    const std::string lc = vcp::utils::string::Lower(channel);
+    vcp::bgm::BlockBasedMeanBgmChannel channel_type;
+    if (lc.compare("grayscale") == 0)
+      channel_type = vcp::bgm::BlockBasedMeanBgmChannel::GRAYSCALE;
+    else if (lc.compare("saturation") == 0)
+      channel_type = vcp::bgm::BlockBasedMeanBgmChannel::SATURATION;
+    else
+      VCP_ERROR("Invalid channel type '" << channel << "' for BlockBasedMeanBgm.");
+
+    bgm_ = std::move(vcp::bgm::CreateBlockBasedMeanBgm(vcp::bgm::BlockBasedMeanBgmParams(
+                                               block_size,
+                                               1.0f-block_overlap,
+                                               update_rate,
+                                               fg_report_threshold, channel_type)));
+    if (!image.empty())
+        bgm_->Init(image);
+  }
+
+  void InitGaussianMixtureBgm(int history,
+                              bool detect_shadows,
+                              double variance_threshold,
+                              double complexity_reduction_threshold,
+                              const cv::Mat &image=cv::Mat())
+  {
+    bgm_ = std::move(vcp::bgm::CreateMixtureOfGaussiansBgm(vcp::bgm::MixtureOfGaussiansBgmParams(
+                                                             history, detect_shadows,
+                                                             variance_threshold, complexity_reduction_threshold)));
+    if (!image.empty())
+        bgm_->Init(image);
+  }
 
   cv::Mat ReportChanges(const cv::Mat &frame, bool update_bgm, const cv::Mat &update_mask)
   {
@@ -106,7 +144,7 @@ PYBIND11_MODULE(bgm, m)
 
   py::class_<pybgm::BackgroundModelWrapper>(m, "BackgroundModel")
       .def(py::init<>())
-      .def("init_approximate_median_bgm", &pybgm::BackgroundModelWrapper::InitApproxMedianBgm,
+      .def("approximate_median_bgm", &pybgm::BackgroundModelWrapper::InitApproxMedianBgm,
            "Approximate median, see McFarlane and Schofield, \"Segmentation\n"
            "and Tracking of Piglets in Images\", MVA 8(3), '95.\n\n"
            ":param adaptation_step: float increment for the median approximation.\n"
@@ -121,10 +159,42 @@ PYBIND11_MODULE(bgm, m)
            py::arg("fg_report_threshold")=20.0f,
            py::arg("median_on_grayscale")=true,
            py::arg("image")=cv::Mat())
-//      .def("init_block_mean_bgm", &pybgm::BackgroundModelWrapper::InitBlockBasedMeanBgm,
-//           "TODO needs to be documented - check C++ doc of pvt_bgm for now!",
-//           py::arg("initial_background"), py::arg("block_size")=cv::Size(32,32),
-//           py::arg("block_overlap")=0.75, py::arg("update_rate")=0.05, py::arg("fg_report_threshold")=5.0)
+      .def("block_mean_bgm", &pybgm::BackgroundModelWrapper::InitBlockBasedMeanBgm,
+           "A more robust mean background model which computes patchwise\n"
+           "average.\n\n"
+           ":param block_size: (w, h) of each block/patch.\n"
+           ":param block_overlap: float in [0, 1] how much the blocks\n"
+           "                    should overlap.\n"
+           ":param update_rate: float, how fast should the model update?\n"
+           ":param fg_report_threshold: float\n"
+           ":param channel: string, select which channel to compute the\n"
+           "                    average on, e.g. 'grayscale' (converts\n"
+           "                    input images to grayscale automatically)\n"
+           "                    or 'saturation' (converts to HSV and averages\n"
+           "                    on the S channel.\n"
+           ":param image: numpy ndarray to be used as initial background image,\n"
+           "                    leave empty if you want to initialize later on.",
+           py::arg("block_size")=cv::Size(32,32),
+           py::arg("block_overlap")=0.75,
+           py::arg("update_rate")=0.05,
+           py::arg("fg_report_threshold")=5.0,
+           py::arg("channel")="grayscale",
+           py::arg("image")=cv::Mat())
+      .def("gaussian_mixture_bgm", &pybgm::BackgroundModelWrapper::InitGaussianMixtureBgm,
+           "Gaussian Mixture-based background model, see Zivkovic & van der Heijden,\n"
+           "\"Efficient adaptive density estimation per image pixel for the task of\n"
+           "background subtraction\", PRL 27(7), '06.\n\n"
+           ":param history: Number of previous frames that affect the model.\n"
+           ":param detect_shadows: Bool, should shadows be detected?\n"
+           ":param var_thresh: float, Variance threshold for the pixel-model match.\n"
+           ":param comp_thresh: float, Complexity reduction threshold.\n",
+           ":param image: numpy ndarray to be used as initial background image,\n"
+           "                    leave empty if you want to initialize later on.",
+           py::arg("history")=500,
+           py::arg("detect_shadows")=true,
+           py::arg("var_thresh")=16.0,
+           py::arg("comp_thresh")=0.05,
+           py::arg("image")=cv::Mat())
       .def("normalized_rgb_bgm", &pybgm::BackgroundModelWrapper::InitNormalizedRgbBgm,
            "Normalized RGB, see Reinbacher et al. \"Fast variational\n"
            "multi-view segmentation through backprojection of spatial\n"
@@ -140,6 +210,8 @@ PYBIND11_MODULE(bgm, m)
            py::arg("report_as_binary")=false, py::arg("binary_reporting_threshold")=0.15f,
            py::arg("update_rate")=0.05f, py::arg("alpha")=0.1f, py::arg("beta")=1.0f,
            py::arg("image")=cv::Mat())
+      .def("name", &pybgm::BackgroundModelWrapper::Name,
+           "Returns the name of the underlying background model.")
       .def("init", &pybgm::BackgroundModelWrapper::Init,
            "Initializes the model (if you haven't done so, or need to\n"
            "re-initialize it).\n"
@@ -147,14 +219,16 @@ PYBIND11_MODULE(bgm, m)
            ":return: True upon success.",
            py::arg("frame"))
       .def("report_changes", &pybgm::BackgroundModelWrapper::ReportChanges,
-           "TODO needs to be documented - check C++ doc of pvt_bgm for now!\n"
-           "\nTODOTODO"
+           "Applies the background model on the current 'frame' and returns\n"
+           "a numpy ndarray masking the foreground/changed regions.\n\n"
            ":param frame: Current image as numpy ndarray.\n"
            ":param update_bgm: Boolean flag whether the model should be\n"
            "              updated or not.\n"
            ":param update_mask: If a numpy ndarray (single channel mask)\n"
-           "              is provided, only the HIGHLIGHTED regions will\n"
-           "              be updated.\n"
+           "              is provided, only the **HIGHLIGHTED** regions will\n"
+           "              be updated. This parameter may be ignored if the\n"
+           "              underlying model doesn't support masked updates.\n"
+           "              In such cases, an error message will be logged.\n"
            ":return: The foreground mask (might contain floats, depending on\n"
            "              your chosen background model) as numpy.ndarray.",
            py::arg("frame"),

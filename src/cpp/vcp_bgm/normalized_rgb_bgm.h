@@ -33,7 +33,7 @@ struct NormalizedRgbBgmParams : BgmParams
       float learning_rate = 0.05f,
       float alpha = 0.1f,
       float beta = 1.0f)
-    : BgmParams(),
+    : BgmParams("NormalizedRGB"),
       apply_threshold(apply_threshold),
       threshold(threshold),
       learning_rate(learning_rate),

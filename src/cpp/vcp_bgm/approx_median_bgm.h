@@ -22,7 +22,7 @@ struct ApproxMedianBgmParams : BgmParams
   ApproxMedianBgmParams(
       float adaption_step = 5.0f,
       float threshold = 20.0f)
-    : BgmParams(),
+    : BgmParams("ApproxMedian"),
       adaption_step(adaption_step),
       threshold(threshold)
   {}

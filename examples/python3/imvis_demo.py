@@ -83,14 +83,14 @@ if __name__ == "__main__":
     ############################################################################
     ## Coloring
     # Pseudocoloring
-    peaks = imutils.imread('..//data/peaks.png', mode='L')
+    peaks = imutils.imread('../data/peaks.png', mode='L')
     pc_parula = imvis.pseudocolor(peaks, [0, 255])
     pc_jet = imvis.pseudocolor(peaks.astype(np.float64)/255.0, color_map=colormaps.colormap_jet_rgb)
     # imvis.imshow(pc_parula, title="uint8/Parula")
     # imvis.imshow(pc_jet, title="double/Jet")
 
     # Overlay
-    rgb = imutils.imread('../data/flamingo.jpg', 'L')
+    rgb = imutils.imread('../data/flamingo.jpg', mode='L')
     # Generate some data to overlay
     im_height, im_width = rgb.shape[0], rgb.shape[1]
     peak_pos = (im_width*0.75, im_height*0.15)
@@ -100,7 +100,7 @@ if __name__ == "__main__":
     # imvis.imshow(overlay_vis, title='Overlay')
 
     # Highlight regions
-    rgb = imutils.imread('../data/flamingo.jpg', 'RGB')
+    rgb = imutils.imread('../data/flamingo.jpg', mode='RGB')
     rgb_mask = np.zeros((rgb.shape[0], rgb.shape[1]), dtype=np.uint8)
     rgb_mask[160:334, 120:290] = 1
     highlight = imvis.highlight(rgb, rgb_mask)

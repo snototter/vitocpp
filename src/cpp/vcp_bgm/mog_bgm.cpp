@@ -75,6 +75,11 @@ public:
     return false;
   }
 
+  BgmParams Parameters() const override
+  {
+    return params_;
+  }
+
 private:
   MixtureOfGaussiansBgmParams params_;
   cv::Ptr<cv::BackgroundSubtractorMOG2> cvmog_;

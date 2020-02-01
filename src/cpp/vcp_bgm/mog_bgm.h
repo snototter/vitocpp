@@ -28,7 +28,7 @@ struct MixtureOfGaussiansBgmParams : BgmParams
       bool detect_shadows=true,
       double var_threshold=16.0,
       double comp_red_threshold=0.05)
-    : BgmParams(),
+    : BgmParams("GaussianMixture"),
       history(history),
       detect_shadows(detect_shadows),
       variance_threshold(var_threshold),

@@ -17,7 +17,8 @@ namespace bgm
 
 struct BgmParams
 {
-  BgmParams() {}
+  std::string model_name; /**< Human readable name of the corresponding background model. */
+  BgmParams(const std::string &name) : model_name(name) {}
   virtual ~BgmParams() = default;
 };
 
@@ -28,6 +29,8 @@ public:
   /** @brief Destructor. */
   virtual ~BackgroundModel() {}
 
+  /** @brief Returns the model parametrization. */
+  virtual BgmParams Parameters() const = 0;
 
   /** @brief Init Initialize the background model with this image (assumed to be (mostly) static). */
   virtual bool Init(const cv::Mat &initial_bg_img) = 0;

@@ -101,6 +101,10 @@ public:
     return false;
   }
 
+  BgmParams Parameters() const override
+  {
+    return params_;
+  }
 
 private:
   NormalizedRgbBgmParams params_;

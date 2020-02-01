@@ -89,7 +89,7 @@ cv::Scalar PyObjectToScalar(const py::object &object, bool *is_valid)
     *is_valid = true;
 
   const std::string type = py::cast<std::string>(object.attr("__class__").attr("__name__"));
-  cv::Scalar value;
+  cv::Scalar value = cv::Scalar::all(255);
   if (type.compare("list") == 0)
   {
     py::list list = py::cast<py::list>(object);

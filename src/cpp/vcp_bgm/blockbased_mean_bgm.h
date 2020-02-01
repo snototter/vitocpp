@@ -30,7 +30,7 @@ struct BlockBasedMeanBgmParams : BgmParams
       float learning_rate=0.05f,
       float report_threshold=5.0f,
       BlockBasedMeanBgmChannel channel=BlockBasedMeanBgmChannel::GRAYSCALE)
-    : BgmParams(),
+    : BgmParams("BlockBasedMean"),
       block_size(block_size),
       shift(shift),
       learning_rate(learning_rate),

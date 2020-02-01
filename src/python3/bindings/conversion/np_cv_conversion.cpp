@@ -103,6 +103,9 @@ inline int NDArrayTypeToMatDepth(const py::dtype &dtype)
 
 cv::Mat NDArrayToMat(const py::array &ndarray)
 {
+  if (ndarray.is_none() or ndarray.ndim() == 0)
+    return cv::Mat();
+
   if (ndarray.ndim() < 1 || ndarray.ndim() > 3)//(ndarray.ndim() != 2 && ndarray.ndim() != 3)
   {
     VCP_ERROR("VCP can only convert 1D np.arrays or 2D images "
@@ -221,7 +224,9 @@ py::array MatToNDArray(const cv::Mat &mat)
   //FIXME try to initialize empty ndarray: array() : array({{0}}, static_cast<const double *>(nullptr)) {}
   // Might correctly be returned as None.
   if (mat.empty())
-    VCP_ERROR("cv::Mat is empty, cannot convert to numpy.array!");
+  {
+    return py::none();
+  }
 
   // OpenCV Mat documentation: https://docs.opencv.org/2.4/modules/core/doc/basic_structures.html#mat
   // 2D matrices are stored row-major (row-by-row), 3D are stored plane-by-plane, ...

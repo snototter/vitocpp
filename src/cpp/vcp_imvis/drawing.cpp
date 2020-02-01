@@ -231,7 +231,7 @@ cv::Scalar HSV2RGB(const cv::Scalar &hsv)
     b = std::round(value*2.55);
   }
 
-  return cv::Scalar(r, g, b);
+  return cv::Scalar(r, g, b, 255);
 }
 
 
@@ -1168,14 +1168,14 @@ cv::Scalar ComplementaryColor(const cv::Scalar &color, bool is_rgb)
 {
   // Opposites of white and black are ambiguous within the color wheel!
   if (utils::IsWhite(color))
-    return cv::Scalar(0.0, 0.0, 0.0);
+    return cv::Scalar(0.0, 0.0, 0.0, 255.0);
   if (utils::IsBlack(color))
-    return cv::Scalar(255.0, 255.0, 255.0);
+    return cv::Scalar(255.0, 255.0, 255.0, 255.0);
   if (utils::IsShadeOfGray(color))
   {
     if (color[0] <= 127)
-      return cv::Scalar(255.0, 255.0, 255.0);
-    return cv::Scalar(0.0, 0.0, 0.0);
+      return cv::Scalar(255.0, 255.0, 255.0, 255.0);
+    return cv::Scalar(0.0, 0.0, 0.0, 255.0);
   }
 
   cv::Scalar hsv = utils::RGB2HSV(is_rgb ? color : cv::Scalar(color[2], color[1], color[0]));
@@ -1185,7 +1185,7 @@ cv::Scalar ComplementaryColor(const cv::Scalar &color, bool is_rgb)
   if (is_rgb)
     return rgb;
   else
-    return cv::Scalar(rgb[2], rgb[1], rgb[0]);
+    return cv::Scalar(rgb[2], rgb[1], rgb[0], rgb[3]);
 }
 
 

@@ -70,6 +70,11 @@ public:
     return bg;
   }
 
+  BgmParams Parameters() const override
+  {
+    return params_;
+  }
+
 private:
   BlockBasedMeanBgmParams params_;
   cv::Mat mean_;  /**< @brief The mean background model. */

@@ -7,6 +7,15 @@ foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
     message("${i}")
 endforeach()
 
+#TODO include in main project, so the logging parameters are all the same both for c++ and python
+# Logging related
+set(VCP_LOG_LEVEL "info" CACHE STRING "Select logging level")
+set_property(CACHE VCP_LOG_LEVEL PROPERTY STRINGS debug info warning failure)
+#
+option(VCP_LOG_LOCATION "Logged messages include source file location." OFF)
+#
+option(VCP_LOG_STACK_TRACE_ON_ERROR "Log stack trace on exception/exit/abort." ON)
+
 set(PYVCP_LIBRARY_DESTINATION "${CMAKE_SOURCE_DIR}/../../gen/vcp")
 
 #TODO https://stackoverflow.com/questions/16212538/cmake-depending-on-another-project
@@ -45,6 +54,38 @@ if (WIN32)
 else ()
     set(PYTHON_INSTALL_ARCHIVE ARCHIVE DESTINATION ${PYTHON_PACKAGES_PATH} COMPONENT python)
 endif ()
+
+
+# Logging-related flags
+#
+# ... pick configured logging level
+if(${VCP_LOG_LEVEL} STREQUAL "debug")
+    add_definitions(-DVCP_LOG_LEVEL_DEBUG)
+    message(STATUS "[${PROJECT_NAME}] Will log DEBUG, INFO, WARNING and FAILURE messages.")
+elseif(${VCP_LOG_LEVEL} STREQUAL "info")
+    add_definitions(-DVCP_LOG_LEVEL_INFO)
+    message(STATUS "[${PROJECT_NAME}] Will log INFO, WARNING and FAILURE messages.")
+elseif(${VCP_LOG_LEVEL} STREQUAL "warning")
+    add_definitions(-DVCP_LOG_LEVEL_WARNING)
+    message(STATUS "[${PROJECT_NAME}] Will only log WARNING and FAILURE messages.")
+elseif(${VCP_LOG_LEVEL} STREQUAL "failure")
+    add_definitions(-DVCP_LOG_LEVEL_FAILURE)
+    message(STATUS "[${PROJECT_NAME}] Will only log FAILURE messages.")
+else()
+    message(FATAL_ERROR "[${PROJECT_NAME}] Invalid VCP_LOG_LEVEL value")
+endif()
+#
+# ... should we include the source file location in our logs?
+if(VCP_LOG_LOCATION)
+  add_definitions(-DVCP_LOG_LOCATION)
+endif()
+#
+# ... should we log the stack trace on unrecoverable errors?
+if(VCP_LOG_STACK_TRACE_ON_ERROR)
+    add_definitions(-DVCP_LOG_STACK_TRACE_ON_ERROR)
+endif()
+
+
 
 # PyBind11
 find_package(pybind11 REQUIRED)

@@ -412,6 +412,11 @@ public:
     return false;
   }
 
+  BgmParams Parameters() const override
+  {
+    return params_;
+  }
+
 private:
   ApproxMedianBgmParams params_;
   cv::Mat approx_median_;
@@ -423,7 +428,7 @@ std::unique_ptr<BackgroundModel> CreateApproxMedianBgmGrayscale(const ApproxMedi
   return std::unique_ptr<ApproxMedianBackgroundModel<1>>(new ApproxMedianBackgroundModel<1>(params));
 }
 
-std::unique_ptr<BackgroundModel> CreateApproxMedianBgmRgb(const ApproxMedianBgmParams &params)
+std::unique_ptr<BackgroundModel> CreateApproxMedianBgmColor(const ApproxMedianBgmParams &params)
 {
   return std::unique_ptr<ApproxMedianBackgroundModel<3>>(new ApproxMedianBackgroundModel<3>(params));
 }

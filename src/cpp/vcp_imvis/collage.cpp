@@ -187,7 +187,18 @@ cv::Mat PrepareImageForCollage(const cv::Mat &image, const cv::Size &target_size
 
   // Stack more layers ;-)
   if (converted.channels() != num_layers)
-    return vcp::imutils::StackLayers(converted, num_layers);
+  {
+    if (converted.channels() == 1)
+      return vcp::imutils::StackLayers(converted, num_layers);
+    cv::Mat res;
+    if (converted.channels() == 3 && num_layers == 4)
+      cv::cvtColor(converted, res, cv::COLOR_BGR2BGRA);
+    else if (converted.channels() == 4 && num_layers == 3)
+      cv::cvtColor(converted, res, cv::COLOR_BGRA2BGR);
+    else
+      VCP_ERROR("Cannot convert a " << converted.channels() << "-channel image to " << num_layers << " channels.");
+    return res;
+  }
   return converted;
 }
 } // namespace utils

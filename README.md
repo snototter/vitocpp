@@ -1,4 +1,4 @@
-# vitocpp (VCP)
+# vitocpp/vcp
 C++/Python 3 utilities for common vision tasks, e.g. streaming, visualization or image manipulation.
 
 <b>Note:</b> As of 01/2020 this repository is <b>WIP</b>, I'm rewriting my utilities (especially simplifying the streaming module) over the next couple of months.
@@ -22,8 +22,11 @@ SUM:                           136           5255           4253          22991
 
 ## What is it good for?
 Some of `vcp`'s highlights:
-* <b>Best effort multiple device streaming</b>. Useful for quick camera tests and whenever (guaranteed) synchronisation isn't crucial. The goal of this module is to stream from multiple devices simultaneously, without having the ROS overhead. A simple libconfig++-style configuration file allows you to process all streams both in C++ and python. For more details, see the [separate BESt.md documentation](BESt.md).
-* Nice(r) <b>visualizations</b> with little effort, for example:
+* <b>Best effort multiple device streaming</b> with the `vcp::best` module. Useful for quick camera tests and whenever (guaranteed) synchronisation isn't crucial. The goal of this module is to stream from multiple devices simultaneously, without having the ROS overhead. A simple libconfig++-style configuration file allows you to process all streams both in C++ and python. For more details, see the [separate BESt.md documentation](BESt.md).
+* <b>Background subtraction</b> with the `vcp::bgm` module, for example:
+
+  ![Background Subtraction](./doc/example-bgm.png)
+* Neat <b>visualizations</b> with little effort using the `vcp::imvis` module, for example:
 TODO example images (drawingXY)
 * <b>Pseudocoloring</b> for data visualization/analysis.
   Back when I started working on this library, OpenCV didn't provide pseudocoloring capabilities. The `vcp::imvis` module allows visualization via common color maps (you might remember these from such frameworks as MATLAB, matplotlib, and whatnot).
