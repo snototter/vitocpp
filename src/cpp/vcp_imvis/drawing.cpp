@@ -1264,6 +1264,19 @@ void DrawEllipse(cv::Mat &image, const cv::RotatedRect &rect, const cv::Scalar &
 }
 
 
+void DrawCircles(cv::Mat &image, const std::vector<cv::Point> &centers,
+                 const std::vector<int> &radii, const std::vector<cv::Scalar> &colors, const cv::Scalar &default_color,
+                 int thickness, int line_type)
+{
+  if (centers.size() != radii.size())
+    VCP_ERROR("Number of centers and radii to draw differ.");
+  const bool use_defcol = colors.empty() || colors.size() != centers.size();
+  for (size_t i = 0; i < centers.size(); ++i)
+    cv::circle(image, centers[i], radii[i],
+               use_defcol ? default_color : colors[i], thickness, line_type);
+}
+
+
 void DrawXYZAxes(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::Mat &t, const cv::Vec3d &origin,
               double scale_axes, double scale_image_points, int line_width, int dash_length, bool image_is_rgb)
 {

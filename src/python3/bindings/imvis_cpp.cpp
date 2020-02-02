@@ -296,6 +296,15 @@ cv::Mat DrawPoints(const cv::Mat &image, const std::vector<cv::Point> &points, c
   return img;
 }
 
+cv::Mat DrawCircles(const cv::Mat &image, const std::vector<cv::Point> &centers,
+                    const std::vector<int> &radii, const std::vector<cv::Scalar> &colors,
+                    const cv::Scalar &default_color, int thickness, int line_type)
+{
+  cv::Mat img = image.clone();
+  vcp::imvis::drawing::DrawCircles(img, centers, radii, colors, default_color, thickness, line_type);
+  return img;
+}
+
 cv::Mat DrawXYZAxes(const cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::Mat &t,
                     const cv::Vec3d &origin, double scale_axes, double scale_image_points, int line_width,
                     int dash_length, bool image_is_rgb)
@@ -800,6 +809,23 @@ PYBIND11_MODULE(imvis_cpp, m)
         "C++ part of draw_points().",
         py::arg("image"), py::arg("points"), py::arg("color"),
         py::arg("radius"), py::arg("line_width"), py::arg("opacity"));
+
+  m.def("draw_circles", &vpi::DrawCircles,
+        "Draw circles.\n"
+        ":param image: numpy ndarray to be drawn on.\n"
+        ":param centers: list of center points, i.e. [(cx, cy), (cx, cy)...]\n"
+        ":param radii: list of radii (integer).\n"
+        ":param colors: list of colors (RGB tuples) or empty to use default_color.\n"
+        ":param default_color: RGB tuple to be used if colors is empty.\n"
+        ":param thickness: If negative, circle will be filled, otherwise line thickness.\n"
+        ":param line_type: OpenCV line type, LINE_8, LINE_AA, etc.",
+        py::arg("image"),
+        py::arg("centers"),
+        py::arg("radii"),
+        py::arg("colors")=std::vector<cv::Scalar>(),
+        py::arg("default_color")=cv::Scalar(255, 0, 255),
+        py::arg("thickness")=2,
+        py::arg("line_type")=static_cast<int>(cv::LINE_AA));
 
 
   m.def("draw_xyz_axes", &vpi::DrawXYZAxes,

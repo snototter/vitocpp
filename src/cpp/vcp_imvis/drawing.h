@@ -203,6 +203,17 @@ void DrawPoints(cv::Mat &image, const std::vector<cv::Point> &points, const std:
 void DrawPoints(cv::Mat &image, const std::vector<cv::Point> &points, const cv::Scalar &color=cv::Scalar::all(-1.0), int radius=5, int line_width=-1, double alpha=1.0, bool flip_color_channels=false);
 
 
+/** @brief Draws the given circles.
+ * If thickness < 0, the circle will be filled. Otherwise the contour will be
+ * drawn with this line width.
+ * If colors is empty the circle(s) will be drawn in "default_color".
+ */
+void DrawCircles(cv::Mat &image, const std::vector<cv::Point> &centers, const std::vector<int> &radii,
+                 const std::vector<cv::Scalar> &colors=std::vector<cv::Scalar>(),
+                 const cv::Scalar &default_color=cv::Scalar(255, 0, 255),
+                 int thickness=2, int line_type=cv::LINE_8);
+
+
 /** @brief Draws an ellipse.
  *
  * * If line_width > 0: draws a fully opaque edge.

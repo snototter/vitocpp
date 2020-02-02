@@ -17,7 +17,9 @@ from vito import cam_projections as prjutils
 
 
 ##############################################
-# Helpers for this demo
+# Utility functions for this demo
+
+
 def rotx3d(theta):
     ct = np.cos(theta)
     st = np.sin(theta)
@@ -25,6 +27,7 @@ def rotx3d(theta):
         [1.0, 0.0, 0.0],
         [0.0, ct, -st],
         [0.0, st, ct]], dtype=np.float64)
+
 
 def roty3d(theta):
     ct = np.cos(theta)
@@ -34,6 +37,7 @@ def roty3d(theta):
         [0.0, 1.0, 0.0],
         [-st, 0.0, ct]], dtype=np.float64)
 
+
 def rotz3d(theta):
     ct = np.cos(theta)
     st = np.sin(theta)
@@ -42,8 +46,10 @@ def rotz3d(theta):
         [st, ct, 0.0],
         [0.0, 0.0, 1.0]], dtype=np.float64)
 
+
 def pt2tuple(pt):
     return (pt[0,0], pt[1,0], pt[2,0])
+
 
 def rotate_bbox3d(box, deg_x, deg_y, deg_z):
     Rx = rotx3d(np.deg2rad(deg_x))
@@ -58,11 +64,13 @@ def rotate_bbox3d(box, deg_x, deg_y, deg_z):
         return (coords, color)
     return (coords, color, box[2])
 
+
 def rotate_bbox3d_center(box, deg_x, deg_y, deg_z):
     cb = center_bbox3d(box)
     box = shift_bbox3d(box, -cb[0], -cb[1], -cb[2])
     box = rotate_bbox3d(box, deg_x, deg_y, deg_z)
     return shift_bbox3d(box, cb[0], cb[1], cb[2])
+
 
 def shift_bbox3d(box, dx, dy, dz):
     coords = box[0]
@@ -72,6 +80,7 @@ def shift_bbox3d(box, dx, dy, dz):
         return (coords, color)
     return (coords, color, box[2])
 
+
 def center_bbox3d(box):
     coords = box[0]
     sx = sum([pt[0] for pt in coords])
@@ -79,16 +88,30 @@ def center_bbox3d(box):
     sz = sum([pt[2] for pt in coords])
     return (sx/8.0, sy/8.0, sz/8.0)
 
-if __name__ == "__main__":
-    ############################################################################
-    ## Coloring
+
+##############################################
+# Actual demo functions
+
+
+def demo_pseudocolor():
     # Pseudocoloring
     peaks = imutils.imread('../data/peaks.png', mode='L')
-    pc_parula = imvis.pseudocolor(peaks, [0, 255])
-    pc_jet = imvis.pseudocolor(peaks.astype(np.float64)/255.0, color_map=colormaps.colormap_jet_rgb)
-    # imvis.imshow(pc_parula, title="uint8/Parula")
-    # imvis.imshow(pc_jet, title="double/Jet")
+    pc1 = imvis.pseudocolor(
+        peaks, limits=[0, 255],  # uint8 data
+        color_map=colormaps.colormap_temperature_rgb)
+    pc2 = imvis.pseudocolor(
+        peaks.astype(np.float64)/255.0,  # default limits are [0, 1]
+        color_map=colormaps.colormap_viridis_rgb)
+    pc3 = imvis.pseudocolor(
+        ((peaks / 25) - 5).astype(np.int16),  # reduce input to few categories
+        limits=None,   # Will be computed from data
+        color_map=colormaps.colormap_viridis_rgb)
+    # Display as a single collage
+    collage = imvis.make_collage([pc1, pc2, pc3], padding=10, bg_color=(0, 0, 0))
+    imvis.imshow(collage, title='Pseudocoloring', wait_ms=-1)
 
+
+def demo_overlay():
     # Overlay
     rgb = imutils.imread('../data/flamingo.jpg', mode='L')
     # Generate some data to overlay
@@ -97,7 +120,6 @@ if __name__ == "__main__":
     xv, yv = np.meshgrid(np.arange(0, im_width), np.arange(0, im_height))
     overlay = np.exp(-(np.power(xv-peak_pos[0], 2) + np.power(yv-peak_pos[1], 2)) / (3e4))
     overlay_vis = imvis.overlay(imvis.pseudocolor(overlay), rgb, 0.7)
-    # imvis.imshow(overlay_vis, title='Overlay')
 
     # Highlight regions
     rgb = imutils.imread('../data/flamingo.jpg', mode='RGB')
@@ -107,11 +129,20 @@ if __name__ == "__main__":
     # highlight another region, this time in blue
     rgb_mask[:] = 0
     rgb_mask[200:374, 250:420] = 1
-    highlight = imvis.highlight(highlight, rgb_mask, color=(0,0,255)) #, color_opacity=0.5, flip_color_channels=False)
+    highlight = imvis.highlight(highlight, rgb_mask, color=(0,0,255))
 
     # Combine all "colored" images:
-    collage = imvis.make_collage([pc_parula, pc_jet, overlay_vis, highlight], padding=5, bg_color=(255,255,255), num_images_per_row=2)
-    imvis.imshow(collage, title="Pseudocoloring (Parula/Jet, different data types) + Overlays")
+    collage = imvis.make_collage([overlay_vis, highlight], padding=5, bg_color=(255, 255, 255))
+    imvis.imshow(collage, title="Overlay & Highlights", wait_ms=-1)
+
+
+if __name__ == "__main__":
+    demo_pseudocolor()
+
+    demo_overlay()
+
+    # TODO maybe add a draw-primitives demo?
+    #collage = imvis.draw_circles(collage, [(30, 20), (100, 200)], [10, 27], thickness=-1, line_type=16)
 
 
     # ############################################################################
