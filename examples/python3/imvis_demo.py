@@ -96,18 +96,26 @@ def center_bbox3d(box):
 def demo_pseudocolor():
     # Pseudocoloring
     peaks = imutils.imread('../data/peaks.png', mode='L')
-    pc1 = imvis.pseudocolor(
+    images = list()
+    pc = imvis.pseudocolor(
         peaks, limits=[0, 255],  # uint8 data
         color_map=colormaps.colormap_temperature_rgb)
-    pc2 = imvis.pseudocolor(
+    images.append(pc)
+    pc = imvis.pseudocolor(
+        peaks.astype(np.int32), limits=[0, 255],  # int32 data
+        color_map=colormaps.colormap_turbo_rgb)
+    images.append(pc)
+    pc = imvis.pseudocolor(
         peaks.astype(np.float64)/255.0,  # default limits are [0, 1]
         color_map=colormaps.colormap_viridis_rgb)
-    pc3 = imvis.pseudocolor(
+    images.append(pc)
+    pc = imvis.pseudocolor(
         ((peaks / 25) - 5).astype(np.int16),  # reduce input to few categories
         limits=None,   # Will be computed from data
         color_map=colormaps.colormap_viridis_rgb)
+    images.append(pc)
     # Display as a single collage
-    collage = imvis.make_collage([pc1, pc2, pc3], padding=10, bg_color=(0, 0, 0))
+    collage = imvis.make_collage(images, padding=10, bg_color=(0, 0, 0), num_images_per_row=len(images))
     imvis.imshow(collage, title='Pseudocoloring', wait_ms=-1)
 
 
