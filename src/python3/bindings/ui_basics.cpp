@@ -105,6 +105,6 @@ PYBIND11_MODULE(ui_basics, m)
         py::arg("point_color") = cv::Scalar(255, 0, 255),
         py::arg("marker") = "dot",
         py::arg("thickness") = 5,
-        py::arg("window_name") = "Select point");
+        py::arg("window_name") = "Select points");
 }
 

@@ -26,8 +26,9 @@ Some of `vcp`'s highlights:
 * <b>Background subtraction</b> with the `vcp::bgm` module, for example:
 
   ![Background Subtraction](./doc/example-bgm.png)
-* Neat <b>visualizations</b> with little effort using the `vcp::imvis` module, for example:
-TODO example images (drawingXY)
+* <b>Visualization utilities</b> within the `vcp::imvis` module, for example:
+
+  ![Visualization Example](./doc/example-imvis.png)
 * <b>Pseudocoloring</b> for data visualization/analysis.
   Back when I started working on this library, OpenCV didn't provide pseudocoloring capabilities. The `vcp::imvis` module allows visualization via common color maps (you might remember these from such frameworks as MATLAB, matplotlib, and whatnot).
 

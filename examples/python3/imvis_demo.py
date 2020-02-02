@@ -170,73 +170,64 @@ if __name__ == "__main__":
     
     ############################################################################
     ## Drawing
-    # Multiple bounding boxes
-    rgb = imutils.imread('../data/flamingo.jpg', mode='RGB')
-    im_height, im_width = rgb.shape[0], rgb.shape[1]
+    images = list()
+    # Bounding boxes
+    img = imutils.imread('../data/ninja.jpg', mode='RGB')  # Load grayscale as 3-channel image
+    im_height, im_width = img.shape[0], img.shape[1]
     bboxes2d = [
-        (np.array([10,5,30,40])),
-        (np.array([10,50,30,40]),),
-        ([90.23, 50.2, 75, 100], None, None),
-        ([300, 50, 75, 100], (255,0,255), 'Hat'),
-        ((10, 200, 150, 75), None, "Hat, too"),
-        ([220, 230, 160, 70], (0,200,250), 'Eyes', True)
+        ((178, 164, 43, 29), (255, 0, 255), '', True),  # Dashed violett rect (at the target's dot)
+        (np.array([177, 76, 147, 53]), (0, 255, 255), 'Sword'),  # Also accepts a 4-element np.array
         ]
+    vis_img = imvis.draw_bboxes2d(
+        img, bboxes2d, text_anchor='south',
+        font_scale=1.0, font_thickness=1, text_box_opacity=0.6,
+        line_width=2)
 
-    vis_img = imvis.draw_bboxes2d(rgb, bboxes2d, text_anchor='northeast', font_scale=1.0, font_thickness=1, text_box_opacity=0.6, line_width=2)
+    # Trajectories
+    traj_sword = [(323, 96), (320, 72), (316, 55), (303, 42),
+        (297, 35), (280, 28), (267, 27), (253, 27), (242, 31), (227, 38), (216, 48), (209, 57)]
+    traj_ninja = [(278, 148), (290, 147), (302, 150), (307, 162),
+        (307, 177), (287, 184), (270, 187), (256, 195), (239, 199), (222, 211), (211, 222), (204, 230), (197, 239)]
 
-
-    # Draw a trajectory
-    trajectory = [(53.3967,  51.8996), ( 86.3324,  58.8860), (133.2407,  58.8860), (184.1413,  62.8782), (226.0595,  62.8782),
-        (274.9639,  66.8704), (303.9074,  69.8645), (326.8626,  78.8470), (336.8431,  91.8216), (332.8509, 100.8041), (317.8801, 112.7807),
-        (288.9366, 127.7515), (256.0010, 136.7339), (201.1082, 150.7066), (158.1920, 176.6559), (141.2251, 188.6326), (120.2661, 210.5897),
-        (128.2505, 229.5526), (174.1608, 237.5370), (208.0945, 239.5331), (267.9776, 242.5273), (306.9016, 244.5234), (354.8080, 244.5234),
-         (386.7456, 252.5078), (424.6715, 282.4493), (444.6326, 325.3655), (445.6306, 345.3265), (406.7066, 384.2505), (363.7904, 409.2018),
-         (306.9016, 434.1530), (237.0380, 456.1101), (158.1920, 471.0809), ( 62.3791, 479.0653)]
-    vis_img = imvis.draw_fading_trajectory(vis_img, trajectory, newest_position_first=False,
-        smoothing_window=7, trajectory_length=-1, obj_color=(0,0,255), fade_color=(180,180,180),
+    vis_img = imvis.draw_fading_trajectory(vis_img, traj_sword, newest_position_first=True,
+        smoothing_window=7, trajectory_length=-1,
+        obj_color=(0, 255, 255), fade_color=(180, 180, 180),  # Fade towards gray
         max_line_width=4, dash_length=-1)
-
-    # Flip the trajectory ;-)
-    trajectory = imutils.flip_points(trajectory, image_size=(im_width, im_height), flip_horizontally=True, flip_vertically=False)
-    # Draw without fading
-    vis_img = imvis.draw_trajectory(vis_img, trajectory, smoothing_window=-1, color=(255,0,0), dash_length=10, line_width=3)
-
-    # Rotate the trajectory ;-)
-    trajectory = imutils.rotate_points(trajectory, (im_width/2.0, im_height/2.0), np.deg2rad(-20))
-    vis_img = imvis.draw_fading_trajectory(vis_img, trajectory, smoothing_window=-1, obj_color=(200,0,200), dash_length=10, max_line_width=4)
     
-
-    # # Rotate the trajectory back again and simplify using RDP
-    # #FIXME FIXME FIXME move to mat?
-    # trajectory = imutils.rotate_points(trajectory, (im_width/2.0, im_height/2.0), np.deg2rad(+20))
-    # print('Trajectory length before RDP {}'.format(len(trajectory)))
-    # trajectory = geoutils.simplify_trajectory_rdp2d(trajectory, 50)
-    # print('Trajectory length after RDP {}'.format(len(trajectory)))
+    # # Flip the trajectory
+    # trajectory = imutils.flip_points(trajectory, image_size=(im_width, im_height), flip_horizontally=True, flip_vertically=False)
+    # # Rotate the trajectory
+    # trajectory = imutils.rotate_points(trajectory, (im_width/2.0, im_height/2.0), np.deg2rad(-20))
+    # # Draw without fading
+    # vis_img = imvis.draw_trajectory(vis_img, trajectory, smoothing_window=-1, color=(255,0,0), dash_length=10, line_width=3)
+    # Simplify with RDP    
+    # trajectory = math2d.simplify_trajectory_rdp(trajectory, 50)
     # vis_img = trajvis.draw_trajectory(vis_img, trajectory, smoothing_window=-1, obj_color=(0,0,0), dash_length=10, line_width=3)
-    vis_boxes2 = vis_img.copy()
-
+    images.append(vis_img)
 
     # Draw rounded boxes
-    vis_img = imvis.draw_rounded_rects(rgb, [[100, 70, 242, 180], (10, 200, 150, 75),
-        (-20, -30, 100, 70), (im_width-30, im_height*3/4, 100, 70)], # special ones touching the border
+    vis_img = imvis.draw_rounded_rects(img, [(9, 23, 149, 106)],
         corner_percentage=0.2, fill_opacity=0.4, line_width=0, color=(0, 200, 200), non_overlapping=True)
-
-
-    # Draw filled,dashed rect
-    vis_img = imvis.draw_rects(vis_img, [[220, 230, 160, 70]], fill_opacity=0.4, line_width=3, dash_length=10, color=(220, 0, 255))
-
+    # Draw filled & dashed rect
+    vis_img = imvis.draw_rects(vis_img, [(178, 164, 43, 29)], fill_opacity=0.4, line_width=2, dash_length=10, color=(220, 0, 255))
 
     # Draw lines - a line is a list or tuple: ((start-point), (end-point), is_dashed, color)
-    lines = [(np.array([10,20]).astype(np.int64), (im_width,im_height)),
-            [(20,im_height/2), (im_width-40,im_height*3/4), False],
-            ((im_width-5,10), (50,im_height-70), True, (255, 0, 255))]
-    vis_img = imvis.draw_lines(vis_img, lines, line_width=5, default_color=(200,255,0), dash_length=25)
-
+    lines = [
+        [(7, 184), (329, 211), True, (255, 0, 255)],  # Dashed
+        [(42, 147), (337, 168), False, (255, 0, 255)]]  # Solid
+    vis_img = imvis.draw_lines(vis_img, lines, line_width=3, default_color=(200, 255, 0), dash_length=10)
 
     # Draw arrows - same format as lines (see above)
-    arrows = [((10,100), (im_width-100,im_height/2)),
-             ((im_width/2,10), (im_width/2,im_height*3/4), True)]
-    vis_img = imvis.draw_arrows(vis_img, arrows, line_width=2, default_color=(0,200,255), dash_length=25, arrow_head_factor=0.1)
+    arrows = [[(314, 20), (175, 38), False, (0, 255, 255)]]
+        #[(320, 33), (316, 87), True, (0, 255, 255)]]
+    vis_img = imvis.draw_arrows(vis_img, arrows, line_width=2, default_color=(0,200,255), dash_length=10, arrow_head_factor=0.1)
+    images.append(vis_img)
+
+    # TODO added alpha channel to render image for README
+    images[0] = np.dstack((images[0], 255*np.ones(images[0].shape[:2], dtype=np.uint8)))
+    collage = imvis.make_collage(images, padding=10, bg_color=(0, 0, 0, 0), num_images_per_row=len(images))
+    imvis.imshow(collage, title='Basic Drawing', wait_ms=-1)
+    imutils.imsave('example-imvis.png', collage)
     
 
     # Draw a fancy text box
@@ -283,27 +274,6 @@ if __name__ == "__main__":
 
     collage = imvis.make_collage([vis_boxes2, vis_fancy, vis_img], padding=5, bg_color=(255,255,255))
     imvis.imshow(collage, title="Drawing primitives (highly cluttered)")
-
-    
-    ## TODO For data augmentation, see augmentation_demo.py (rotated bounding boxes, rotating and clipping, etc.)
-    # # Rotate image and rect (data augmentation sort of):
-    # # rotcenter = (0,0)
-    # rotcenter = (im_width/2.0,im_height/2.0)
-    # for angle in range(0, 400, 10):
-    #     M = cv2.getRotationMatrix2D(rotcenter, angle, 1)
-    #     vis_img = cv2.warpAffine(rgb, M, (im_width, im_height))
-    #     # rect around the eyes
-    #     rect = [220, 230, 160, 70]
-    #     rotrect = imutils.rotate_rect(rect, rotcenter, np.deg2rad(angle))
-    #     vis_img = imvis.draw_rotated_rects(vis_img, [rotrect], fill_opacity=0.4, line_width=2, dash_length=-1, color=(0, 200, 200), flip_color_channels=False)
-    #     # another rect
-    #     rect = [225, 435, 20, 15]
-    #     rotrect = imutils.rotate_rect(rect, rotcenter, np.deg2rad(angle))
-    #     vis_img = imvis.draw_rotated_rects(vis_img, [rotrect], fill_opacity=0.4, line_width=2, dash_length=10, color=(0, 200, 200), flip_color_channels=False)
-    #
-    #     k = imvis.imshow(vis_img, title="rotated stuff", wait_ms=100) & 0xFF
-    #     if k == ord('q') or k == 27:
-    #         break
 
 
     ############################################################################
@@ -398,38 +368,3 @@ if __name__ == "__main__":
         k = imvis.imshow(vis_img, title="3d bbox", wait_ms=50) & 0xFF
         if k == 27:
             break
-
-
-    ####################################################################
-    ## Putting visualizations together for a more "real-world" example:
-    bbox = rotate_bbox3d_center(([[-0.5, -0.5, 2], [-0.5, 0.5, 2.5], [0.5, 0.5, 2.5], [0.5, -0.5, 2],
-                                 [-0.5, -0.5, 0], [-0.5, 0.5, 0], [0.5, 0.5, 0], [0.5, -0.5, 0]],
-                                 (255, 0, 255), "Cotton Eye Joe"), 5, 0, 20)
-    bbox = shift_bbox3d(bbox, -0.5, 0.7, 0)
-    trajectory = [(444,606), (508,644), (555,666),(605,672),(650,666),(685,656),(713,629),(750,600),
-                  (790,590),(835,602),(874,611),(911,612),(944,595),(962,577)]
-
-
-    # # Cotton Eye Joe:
-    # img = imutils.imread('./data/pvtvis.jpg')
-    # # Where did he come from
-    # vis_img = imvis.draw_fading_trajectory(img, trajectory, newest_position_first=True,
-    #     smoothing_window=5, trajectory_length=-1, obj_color=(255,0,0), fade_color=(180,180,180),
-    #     max_line_width=5, dash_length=-1)
-
-    # vis_img = imvis.draw_text_box(vis_img, "Where did he come from?", (720, 590), font_scale=1.5, font_thickness=2,
-    #     text_anchor='center', font_color=(0,0,0), bg_color=(255,0,0), fill_opacity=0.5, padding=10)
-
-    # # Where will he go
-    # vis_img = imvis.draw_arrows(vis_img, [((330,520),(110,400))], line_width=3,
-    #     default_color=(255,0,0), dash_length=25, arrow_head_factor=0.1)
-
-    # vis_img = imvis.draw_text_box(vis_img, "Where will he go?", (140,395), font_scale=1.5, font_thickness=2,
-    #     text_anchor='south', font_color=(0,0,0), bg_color=(255,0,0), fill_opacity=0.5, padding=10)
-
-    # vis_img = imvis.draw_bboxes3d(vis_img, [bbox], K, R, t, line_width=3, fill_opacity_top=0.2,
-    #     fill_opacity_bottom=0.3, font_scale=1.5, font_thickness=2, font_color=(0,0,0), text_anchor='north', text_box_padding=10)
-
-    # imutils.imsave("pvtvis.jpg", vis_img, flip_channels=True)
-    # imvis.imshow(vis_img, title="what is it good for?", wait_ms=-1)
-
