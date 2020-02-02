@@ -191,7 +191,7 @@ if __name__ == "__main__":
 
     vis_img = imvis.draw_fading_trajectory(vis_img, traj_sword, newest_position_first=True,
         smoothing_window=7, trajectory_length=-1,
-        obj_color=(0, 255, 255), fade_color=(180, 180, 180),  # Fade towards gray
+        obj_color=(0, 0, 255), fade_color=(180, 180, 180),  # Fade towards gray
         max_line_width=4, dash_length=-1)
     
     # # Flip the trajectory
@@ -207,7 +207,7 @@ if __name__ == "__main__":
 
     # Draw rounded boxes
     vis_img = imvis.draw_rounded_rects(img, [(9, 23, 149, 106)],
-        corner_percentage=0.2, fill_opacity=0.4, line_width=0, color=(0, 200, 200), non_overlapping=True)
+        corner_percentage=0.25, fill_opacity=0.4, line_width=0, color=(0, 200, 200), non_overlapping=True)
     # Draw filled & dashed rect
     vis_img = imvis.draw_rects(vis_img, [(178, 164, 43, 29)], fill_opacity=0.4, line_width=2, dash_length=10, color=(220, 0, 255))
 
