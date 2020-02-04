@@ -117,7 +117,7 @@ private:
     cv::Mat input;
     VCP_INIT_TIC_TOC;
     VCP_TIC;
-    //FIXME check if input in range 0...1?
+
     assert(current_image.channels() == 3);
     if (current_image.depth() == CV_8U)
       current_image.convertTo(input, CV_64F, 1.0/255.0);

@@ -38,15 +38,15 @@ Some of `vcp`'s highlights:
 
 
 ## Repository Contents
+* `./build-scripts` - shell scripts to prepare the build system, build the libraries, etc.
 * `./cmake` - CMake utilities (incl. custom `Find<package>.cmake` scripts).
 * `./examples` - example usage of these utilities.
-* `./external` - third party libraries (which are not part of default system packages).
-* `./scripts` - shell scripts to prepare the build system, build the libraries, etc.
 * `./src` - source code for all C++ modules and python bindings.
+* `./third-party` - third party dependencies (which are not part of default system packages).
 
 
 ## Installation
-* If you want to build the C++ library and Python3 bindings, simply run `./scripts/build-ubuntu-18.04.sh`, this will:
+* If you want to build the C++ library and Python3 bindings, simply run `./build-scripts/build-ubuntu-18.04.sh`, this will:
   * Check and ask you to install missing system packages.
   * Configure the build (depending on which optional packages you installed, e.g. `libk4a` to stream from Azure Kinect).
   * Build the C++ `vcp` libraries and corresponding Python3 bindings.
@@ -67,7 +67,7 @@ Some of `vcp`'s highlights:
 ## Tools
 This repository comes with a few "tools", i.e. standalone applications that go beyond simple demos/examples.
 Currently, there are only python applications, which you can find at `<VCP_ROOT_DIR>/examples/python3/tools`.
-* Set up the <b>virtual environment</b>. If you didn't use the `./scripts/build-X.sh` script, use:
+* Set up the <b>virtual environment</b>. If you didn't use the `./build-scripts/build-X.sh` script, use:
   ```bash
   $ cd <VCP_ROOT_DIR>/examples/python3
   $ ./prepare_environment_py3.sh

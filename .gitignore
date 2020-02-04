@@ -1,9 +1,9 @@
 build/
 gen/
-external/live/
-external/pybind11*/
-external/v*.tar.gz
-external/live555-latest.tar.gz
+third-party/live/
+third-party/pybind11*/
+third-party/v*.tar.gz*
+third-party/live555-latest.tar.gz*
 doc/doxygen/*
 *~
 *.user*

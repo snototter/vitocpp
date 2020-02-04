@@ -16,7 +16,7 @@ ENDMACRO()
 
 SET_IF_EMPTY( PYBIND11_DIR "$ENV{PYBIND11_DIR}" )
 get_filename_component(VCP_CMAKE_MODULE_PATH ${CMAKE_CURRENT_LIST_FILE} DIRECTORY)
-SET_IF_EMPTY( PYBIND11_DIR "${VCP_CMAKE_MODULE_PATH}/../external/pybind11-2.4.3/install/include" )
+SET_IF_EMPTY( PYBIND11_DIR "${VCP_CMAKE_MODULE_PATH}/../third-party/pybind11-2.4.3/install/include" )
 
 
 FIND_PATH(

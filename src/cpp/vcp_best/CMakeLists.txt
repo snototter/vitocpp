@@ -7,7 +7,7 @@ message("Configuring module ${LIB_NAME}")
 
 option(VCP_BEST_WITH_IPCAM "Build HTTP/RTSP streaming module (requires CURL, live555 and ffmpeg)." ON)
 #option(VCP_BEST_WITH_MATRIXVISION "Build MatrixVision streaming module (requires mvIMPACT_acquire SDK)." OFF)
-#option(VCP_BEST_WITH_REALSENSE2 "Build Intel RealSense streaming module (requires librealsense2)." OFF)
+option(VCP_BEST_WITH_REALSENSE2 "Build Intel RealSense streaming module (requires librealsense2)." OFF)
 option(VCP_BEST_WITH_K4A "Build Kinect 4 Azure streaming module (requires libk4a)." OFF)
 option(VCP_BEST_WITH_K4A_MJPG "K4A sends color as MJPG if ON (slow), otherwise BGRA32 (high bandwidth)." OFF)
 option(VCP_BEST_DEBUG_FRAMERATE "If enabled, sinks debug their frame rate (Enable DEBUG level!)" ON)
@@ -176,19 +176,18 @@ endif()
 
 
 if (PVT_ICC_WITH_REALSENSE2_STREAMING)
-  find_package(realsense2 REQUIRED)
-  include_directories(${realsense_INCLUDE_DIR})
+    add_definitions(-DVCP_BEST_WITH_REALSENSE2)
+    find_package(realsense2 REQUIRED)
+    include_directories(${realsense_INCLUDE_DIR})
 
-  add_definitions(-DWITH_REALSENSE2)
+    set(ICC_EXTERNAL_LIBS ${ICC_EXTERNAL_LIBS} ${realsense2_LIBRARY})
+    set(PUBLIC_HEADERS ${PUBLIC_HEADERS} ${PUBLIC_REALSENSE2_STREAM_HEADERS})
+    set(PRIVATE_HEADERS ${PRIVATE_HEADERS} ${PRIVATE_REALSENSE2_STREAM_HEADERS})
+    set(SOURCES ${SOURCES} ${REALSENSE2_STREAM_SOURCES})
 
-  set(ICC_EXTERNAL_LIBS ${ICC_EXTERNAL_LIBS} ${realsense2_LIBRARY})
-  set(PUBLIC_HEADERS ${PUBLIC_HEADERS} ${PUBLIC_REALSENSE2_STREAM_HEADERS})
-  set(PRIVATE_HEADERS ${PRIVATE_HEADERS} ${PRIVATE_REALSENSE2_STREAM_HEADERS})
-  set(SOURCES ${SOURCES} ${REALSENSE2_STREAM_SOURCES})
-
-  message("  [+] Enable Intel RealSense sensors")
+    message("  [+] Enable Intel RealSense sensors")
 else()
-  message("  [ ] Disable Intel RealSense sensors")
+    message("  [ ] Disable Intel RealSense sensors")
 endif()
 
 if (VCP_BEST_WITH_K4A)
@@ -221,7 +220,7 @@ add_library(${LIB_NAME} SHARED ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
 target_link_libraries(${LIB_NAME} 
   #vcp_utils
   #vcp_imutils
-  #vcp_math # TODO do we need math?
+  #vcp_math # TODO FIXME which vcp libs do we need
   vcp_config
   ${ICC_EXTERNAL_LIBS}
 )
@@ -238,7 +237,7 @@ if(VCP_BUILD_STATIC)
   target_link_libraries(${LIB_NAME}_static 
     #vcp_utils
     #vcp_imutils
-    #vcp_math #TODO do we need the math lib?
+    #vcp_math #TODO FIXME
     vcp_config
     ${ICC_EXTERNAL_LIBS}
   )

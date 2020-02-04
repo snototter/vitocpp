@@ -47,19 +47,14 @@ public:
 
   cv::Mat ReportChanges(const cv::Mat &current_image, bool update_model, const cv::Mat &update_mask=cv::Mat()) override
   {
-    cv::Mat mask;
-    ReportChanges(current_image, mask, params_.report_threshold, update_model, update_mask);
-    //FIXME we should return the mask as CV_8U (but float looks better)
-        //FIXME TIC/TOC is muted
-    double mi, ma;
-    cv::minMaxLoc(mask, &mi, &ma);
-    VCP_LOG_FAILURE("Min/max of blockbased mean foreground mask: " << mi << "..." << ma);
-    VCP_LOG_FAILURE("FIXME: normalizing 32f mask!");
-    //mask = mask / ma;
-//    return mask;
-    cv::Mat foo;
-    mask.convertTo(foo, CV_8U);
-    return foo;
+    cv::Mat mask32f, mask8u;
+    float max_change;
+    const int num_fg_blocks = ReportChanges(current_image, mask32f, params_.report_threshold, update_model, update_mask, max_change);
+    if (num_fg_blocks > 0)
+      mask32f.convertTo(mask8u, CV_8U, 1.0/max_change);
+    else
+      mask8u = cv::Mat::zeros(mask32f.size(), CV_8UC1);
+    return mask8u;
   }
 
 
@@ -151,10 +146,9 @@ private:
 
   // Returns the number of changed/foreground blocks
   int ReportChanges(const cv::Mat &frame, cv::Mat &threshold_img,
-                    float threshold, bool do_update, const cv::Mat &update_mask)
+                    float threshold, bool do_update, const cv::Mat &update_mask,
+                    float &max_change)
   {
-    VCP_INIT_TIC_TOC;
-    VCP_TIC;
     // get the mean values of the current frame and write them to mean_frame
     cv::Mat mean_frame;
     CreateModel(frame, mean_frame);
@@ -163,6 +157,7 @@ private:
     threshold_img.setTo(cv::Scalar::all(0));
 
     // now traverse the current mean_frame image
+    max_change = 0.0f;
     int count = 0;
     for (int process = 0; process < mean_frame.rows * mean_frame.cols; ++process)
     {
@@ -188,6 +183,8 @@ private:
         // add the change to the background value
         thresh_roi = thresh_roi + cv::Scalar::all(change);
         ++count;
+        if (change > max_change)
+          max_change = change;
       }
     }
 
@@ -195,8 +192,6 @@ private:
     // by a weighted sum of origin and new source
     if(do_update)
       UpdateModel(mean_frame, update_mask);
-
-    VCP_TOC("BlockBased BGM done!");//FIXME remove
     return count;
   }
 

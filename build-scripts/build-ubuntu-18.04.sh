@@ -16,7 +16,7 @@ if [ -z "$VCP_ROOT_DIR" ]; then
     VCP_SCRIPT_DIR="$( cd -P "$( dirname "$SOURCE" )" >/dev/null 2>&1 && pwd )"
     VCP_ROOT_DIR="${VCP_SCRIPT_DIR}/.."
 else
-    VCP_SCRIPT_DIR="${VCP_ROOT_DIR}/scripts"
+    VCP_SCRIPT_DIR="${VCP_ROOT_DIR}/build-scripts"
 fi
 
 echo
@@ -34,13 +34,15 @@ OPT_PKG_FLAGS=$?
 
 # Check which of the optional components can be built
 CMAKEOPTIONS=("-DCMAKE_BUILD_TYPE=Release" "-DVCP_BUILD_BEST=ON" "-DVCP_BUILD_PYTHON=ON")
+
+# RealSense2
 if [ $((OPT_PKG_FLAGS & 0x04)) -gt 0 ]; then
-    echo "TODO enable RealSense!"
+    CMAKEOPTIONS+=("-DVCP_BEST_WITH_REALSENSE2=ON")
 else
-    echo "TODO disable RealSense!"
+    CMAKEOPTIONS+=("-DVCP_BEST_WITH_REALSENSE2=OFF")
 fi
 
-
+# Kinect for Azure
 if [ $((OPT_PKG_FLAGS & 0x08)) -gt 0 ]; then
     CMAKEOPTIONS+=("-DVCP_BEST_WITH_K4A=ON")
     CMAKEOPTIONS+=("-DVCP_BEST_WITH_K4A_MJPG=OFF")
@@ -48,7 +50,7 @@ else
     CMAKEOPTIONS+=("-DVCP_BEST_WITH_K4A=OFF")
 fi
 
-
+# IP cameras (HTTP & RTSP)
 if [ $((OPT_PKG_FLAGS & 0x10)) -gt 0 ]; then
     CMAKEOPTIONS+=("-DVCP_BEST_WITH_IPCAM=ON")
     BUILD555=true
@@ -59,13 +61,13 @@ fi
 
 
 ##############################################################################
-# Set up external (non-packaged) libraries
+# Set up third-party dependencies
 ##############################################################################
 echo "[vcp] Preparing 3rd party libraries"
 echo
 # Remember current working directory to return here
 CURR_WORK_DIR=$(pwd)
-cd ${VCP_ROOT_DIR}/external
+cd ${VCP_ROOT_DIR}/third-party
 ##############################################################################
 ##### live555 for RTSP stream handling
 if [ "${BUILD555}" ]; then
@@ -73,13 +75,13 @@ if [ "${BUILD555}" ]; then
       echo "  [vcp] Building live555"
       echo "  [vcp] Grabbing latest live555"
       echo "        If there are errors, use the frozen but known-to-be-working"
-      echo "        ./external/live555<version>.tar.gz instead"
+      echo "        ./third-party/live555<version>.tar.gz instead"
       echo
       wget http://www.live555.com/liveMedia/public/live555-latest.tar.gz
       tar zxf live555-latest.tar.gz
       cd live
       ./genMakefiles linux-64bit
-      make -j > /dev/null
+      make -j > /dev/null && rm live555-latest.tar.gz
       ## I prefer not to '(make) install' live555. VCP takes care of adjusting
       ## the library linkage paths.
       cd ..
@@ -93,10 +95,11 @@ if [ ! -d "${PYBIND_NAME}" ]; then
     echo "  [vcp] Building pybind11"
     echo "  [vcp] Grabbing pybind11 v${PYBIND_VERSION}"
     echo "        If there are errors, use the frozen but known-to-be-working"
-    echo "        ./external/pybind11-<version>.tar.gz instead"
+    echo "        ./third-party/pybind11-<version>.tar.gz instead"
     echo
     wget https://github.com/pybind/pybind11/archive/v${PYBIND_VERSION}.tar.gz
-    tar zxf v${PYBIND_VERSION}.tar.gz
+    archive=v${PYBIND_VERSION}.tar.gz
+    tar zxf ${archive}
     cd ${PYBIND_NAME}
     mkdir -p build
     cd build
@@ -104,6 +107,7 @@ if [ ! -d "${PYBIND_NAME}" ]; then
     cmake -DPYBIND11_INSTALL=ON -DCMAKE_INSTALL_PREFIX=../install -DPYBIND11_TEST=OFF ..
     make install
     cd ../..
+    rm ${archive}
 fi
 ##############################################################################
 # CD back to VCP_ROOT_DIR
