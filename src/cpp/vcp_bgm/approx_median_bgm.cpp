@@ -364,9 +364,6 @@ public:
     cv::absdiff(curr32, approx_median_, diff);
 
     mask = diff > threshold_;
-
-    //FIXME update
-
     if (update_model)
     {
       for (int row = 0; row < approx_median_.rows; ++row)
