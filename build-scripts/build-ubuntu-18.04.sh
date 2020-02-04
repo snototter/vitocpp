@@ -72,16 +72,23 @@ cd ${VCP_ROOT_DIR}/third-party
 ##### live555 for RTSP stream handling
 if [ "${BUILD555}" ]; then
   if [ ! -d "live" ]; then
-      echo "  [vcp] Building live555"
       echo "  [vcp] Grabbing latest live555"
       echo "        If there are errors, use the frozen but known-to-be-working"
       echo "        ./third-party/live555<version>.tar.gz instead"
       echo
       wget http://www.live555.com/liveMedia/public/live555-latest.tar.gz
       tar zxf live555-latest.tar.gz
-      cd live
+      cd live      
+      echo "  [vcp] Building live555"
       ./genMakefiles linux-64bit
-      make -j > /dev/null && rm live555-latest.tar.gz
+      make -j >> live555-build.log 2>&1
+      if [ $? -ne 0 ]; then
+          echo "  [vcp] Cannot build live555!"
+          echo "        Check ${VCP_ROOT_DIR}/third-party/live/live555-build.log"
+          cd $CURR_WORK_DIR
+          exit 23
+      fi
+      rm live555-latest.tar.gz
       ## I prefer not to '(make) install' live555. VCP takes care of adjusting
       ## the library linkage paths.
       cd ..
@@ -121,29 +128,35 @@ echo "[vcp] Building VCP C++ libraries & Python bindings"
 echo
 mkdir -p build
 cd build
-cmake "${CMAKEOPTIONS[@]}" ..
-make -j install
+cmake "${CMAKEOPTIONS[@]}" .. && make -j install
+rc_vcp_lib=$?
 # CD back to VCP_ROOT_DIR
 cd ..
 
 
-##############################################################################
-# Prepare the examples/tools
-##############################################################################
-echo "[vcp] Building C++ examples"
-echo
+if [ $rc_vcp_lib -ne 0 ]; then
+    echo "[vcp] Library build failed!"
+    echo "      Check the build output."
+else
+    ##############################################################################
+    # Prepare the examples/tools
+    ##############################################################################
+    echo "[vcp] Building C++ examples"
+    echo
 
-cd examples
-mkdir -p build
-cd build
-cmake ..
-make -j
-cd ..
+    cd examples
+    mkdir -p build
+    cd build
+    cmake ..
+    make -j
+    cd ..
 
-echo "[vcp] Setting up Python3 virtual environment"
-echo
-cd python3
-/bin/bash prepare_environment_py3.sh
+    echo "[vcp] Setting up Python3 virtual environment"
+    echo
+    cd python3
+    /bin/bash prepare_environment_py3.sh
+fi
 
+# Go back to where we started
 cd $CURR_WORK_DIR
 
