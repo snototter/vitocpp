@@ -272,13 +272,13 @@ FrameType GetFrameTypeFromConfig(const vcp::config::ConfigParams &config,
 }
 
 
-imutils::ImageTransformation GetImageTransformationFromConfig(const vcp::config::ConfigParams &config,
+imutils::ImgTransform GetImageTransformFromConfig(const vcp::config::ConfigParams &config,
                                  const std::string &cam_group,
                                  std::vector<std::string> &configured_keys)
 {
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "transform"), configured_keys.end());
-  return imutils::ImageTransformationFromString(GetOptionalStringFromConfig(config, cam_group,
-              "transform", imutils::ImageTransformationToString(imutils::ImageTransformation::NONE)));
+  return imutils::ImgTransformFromString(GetOptionalStringFromConfig(config, cam_group,
+              "transform", imutils::ImgTransformToString(imutils::ImgTransform::NONE)));
 }
 
 
@@ -340,9 +340,9 @@ SinkParams ParseBaseSinkParamsFromConfig(const vcp::config::ConfigParams &config
   const std::string calibration_file = GetCalibrationFileFromConfig(config, cam_group, configured_keys);
   const bool color_as_bgr = GetColorAsBgrFromConfig(config, cam_group, configured_keys);
   const bool verbose = GetVerbosityFlagFromConfig(config, cam_group, configured_keys);
-  const imutils::ImageTransformation rotation = GetImageTransformationFromConfig(config, cam_group, configured_keys);
+  const imutils::ImgTransform transform = GetImageTransformFromConfig(config, cam_group, configured_keys);
 
-  return SinkParams(sink_type, frame_type, sink_label, calibration_file, cam_group, color_as_bgr, verbose, rotation);
+  return SinkParams(sink_type, frame_type, sink_label, calibration_file, cam_group, color_as_bgr, verbose, transform);
 }
 
 

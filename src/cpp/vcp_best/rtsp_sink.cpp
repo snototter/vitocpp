@@ -256,8 +256,9 @@ protected:
 
   void EnqueueNextFrame(const cv::Mat &frame, size_t sink_idx)
   {
+    const cv::Mat img = imutils::ApplyImageTransformation(frame, params_[sink_idx].transform);
     image_queue_mutex_[sink_idx].lock();
-    image_queues_[sink_idx]->PushBack(frame.clone());
+    image_queues_[sink_idx]->PushBack(img.clone());
     image_queue_mutex_[sink_idx].unlock();
 
 #ifdef VCP_BEST_DEBUG_FRAMERATE

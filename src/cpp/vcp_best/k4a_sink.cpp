@@ -857,13 +857,16 @@ private:
       k4a_capture_release(k4a_capture);
       k4a_capture = nullptr;
 
+      const cv::Mat trgb = imutils::ApplyImageTransformation(cvrgb, params_.transform);
+      const cv::Mat tdepth = imutils::ApplyImageTransformation(cvdepth, params_.transform);
+      const cv::Mat tir = imutils::ApplyImageTransformation(cvir, params_.transform);
       image_queue_mutex_.lock();
       if (rgb_stream_enabled_)
-        rgb_queue_->PushBack(cvrgb.clone());
+        rgb_queue_->PushBack(trgb.clone());
       if (depth_stream_enabled_)
-        depth_queue_->PushBack(cvdepth.clone());
+        depth_queue_->PushBack(tdepth.clone());
       if (ir_stream_enabled_)
-        ir_queue_->PushBack(cvir.clone());
+        ir_queue_->PushBack(tir.clone());
       image_queue_mutex_.unlock();
     }
     // Clean up

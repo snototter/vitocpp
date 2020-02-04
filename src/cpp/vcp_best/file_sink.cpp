@@ -237,9 +237,10 @@ private:
         eof_ = true;
       }
 
+      const cv::Mat img = imutils::ApplyImageTransformation(frame, params_.transform);
       // Push into queue
       image_queue_mutex_.lock();
-      image_queue_->PushBack(frame.clone());
+      image_queue_->PushBack(img.clone());
       image_queue_mutex_.unlock();
       const std::chrono::steady_clock::time_point tp_stop = std::chrono::steady_clock::now();
       const int64_t elapsed = std::chrono::duration_cast<std::chrono::microseconds>(tp_stop - tp_start).count();
@@ -336,23 +337,23 @@ public:
     {
       if (capture_->grab())
       {
-        cv::Mat loaded;
+        cv::Mat loaded, enqueue;
         capture_->retrieve(loaded);
         if (params_.color_as_bgr)
         {
-          frames.push_back(loaded);
+          enqueue = loaded;
         }
         else
         {
-          cv::Mat converted;
           if (loaded.channels() == 3)
-            cv::cvtColor(loaded, converted, CV_BGR2RGB);
+            cv::cvtColor(loaded, enqueue, CV_BGR2RGB);
           else if (loaded.channels() == 4)
-            cv::cvtColor(loaded, converted, CV_BGRA2RGBA);
+            cv::cvtColor(loaded, enqueue, CV_BGRA2RGBA);
           else
-            converted = loaded;
-          frames.push_back(converted);
+            enqueue = loaded;
         }
+        const cv::Mat transformed = imutils::ApplyImageTransformation(enqueue, params_.transform);
+        frames.push_back(transformed);
       }
       else
       {
@@ -578,26 +579,30 @@ public:
       cv::Mat loaded;
       if (load_images_)
       {
+        cv::Mat enqueue;
         loaded = cv::imread(vcp::utils::file::FullFile(params_.directory, filenames_[frame_idx_]), cv::IMREAD_UNCHANGED);
         if (params_.color_as_bgr)
         {
           // Default OpenCV behavior
-          frames.push_back(loaded);
+          enqueue = loaded;
         }
         else
         {
-          cv::Mat converted;
           if (loaded.channels() == 3)
-            cv::cvtColor(loaded, converted, CV_BGR2RGB);
+            cv::cvtColor(loaded, enqueue, CV_BGR2RGB);
           else if (loaded.channels() == 4)
-            cv::cvtColor(loaded, converted, CV_BGRA2RGBA);
+            cv::cvtColor(loaded, enqueue, CV_BGRA2RGBA);
           else
-            converted = loaded;
-          frames.push_back(converted);
+            enqueue = loaded;
         }
+        const cv::Mat transformed = imutils::ApplyImageTransformation(enqueue, params_.transform);
+        frames.push_back(transformed);
       }
       else
-        frames.push_back(vcp::imutils::LoadMat(vcp::utils::file::FullFile(params_.directory, filenames_[frame_idx_])));
+      {
+        const cv::Mat lm = vcp::imutils::LoadMat(vcp::utils::file::FullFile(params_.directory, filenames_[frame_idx_]));
+        frames.push_back(imutils::ApplyImageTransformation(lm, params_.transform));
+      }
 
       ++frame_idx_;
     }

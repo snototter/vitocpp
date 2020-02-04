@@ -43,7 +43,7 @@ FrameType FrameTypeFromString(const std::string &s);
 /** @brief Print the FrameType. */
 std::ostream &operator<<(std::ostream &stream, const FrameType &s);
 
-//FIXME move to sink
+
 /** @brief Strongly typed enum to look up a sink's type. */
 //TODO change generic IPCAM_MONO to AXIS, etc.
 enum class SinkType
@@ -99,7 +99,7 @@ struct SinkParams
   bool verbose;
 
   /** @brief Should incoming images be flipped/rotated? */
-  imutils::ImageTransformation transform;
+  imutils::ImgTransform transform;
 
   SinkParams(const SinkParams &other)
     : sink_type(other.sink_type), frame_type(other.frame_type),
@@ -114,7 +114,7 @@ struct SinkParams
       const std::string &calib_file=std::string(),
       const std::string &config_key=std::string(),
       const bool return_bgr=false, const bool verbose=false,
-      const imutils::ImageTransformation &transform=imutils::ImageTransformation::NONE)
+      const imutils::ImgTransform &transform=imutils::ImgTransform::NONE)
     : sink_type(stype), frame_type(ftype),
       sink_label(lbl), calibration_file(calib_file),
       configuration_key(config_key),

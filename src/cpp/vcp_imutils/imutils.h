@@ -16,7 +16,7 @@ namespace imutils
 {
 
 /** @brief Strongly typed enum to do basic transformations (e.g. rotate/flip) of images. */
-enum class ImageTransformation
+enum class ImgTransform
 {
   NONE,        /**< Images will be provided as-is. */
   MIRROR_HORZ, /**< Mirror horizontally. */
@@ -27,10 +27,10 @@ enum class ImageTransformation
 };
 
 /** @brief String representation for ImageTransformation. */
-std::string ImageTransformationToString(const ImageTransformation &t);
+std::string ImgTransformToString(const ImgTransform &t);
 
 /** @brief Get the ImageTransformation based on its string representation. */
-ImageTransformation ImageTransformationFromString(const std::string &s);
+ImgTransform ImgTransformFromString(const std::string &s);
 
 
 /** @brief Flip image horizontally. */
@@ -49,7 +49,7 @@ cv::Mat Rotate180(const cv::Mat &img);
 cv::Mat Rotate270(const cv::Mat &img);
 
 /** @brief Apply a basic image transformation (e.g. rotation/flipping). */
-cv::Mat ApplyImageTransformation(const cv::Mat &img, const ImageTransformation &transform);
+cv::Mat ApplyImageTransformation(const cv::Mat &img, const vcp::imutils::ImgTransform &transform);
 
 
 /** @brief Return rectangular ROI which contains the full image. */

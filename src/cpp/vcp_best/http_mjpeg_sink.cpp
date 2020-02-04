@@ -263,8 +263,9 @@ private:
       else
         cv::cvtColor(decoded, frame, CV_BGR2RGB);
 
+      const cv::Mat img = imutils::ApplyImageTransformation(frame, params_.transform);
       image_queue_mutex_.lock();
-      image_queue_->PushBack(frame.clone());
+      image_queue_->PushBack(img.clone());
       image_queue_mutex_.unlock();
       delete[] frame_data;
     }
