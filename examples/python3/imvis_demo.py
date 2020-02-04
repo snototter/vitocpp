@@ -145,31 +145,40 @@ def demo_overlay():
 
 
 def demo_primitives():
+    # TODO 
+    # * 2 arrows (one solid, one dashed)
+    # * rotated rect around dot, maybe
     img = imutils.imread('../data/ninja.jpg', mode='RGB')  # Load grayscale as 3-channel image
     # Draw rounded box(es)
     vis_img = imvis.draw_rounded_rects(img, [(9, 23, 149, 106)],
-        corner_percentage=0.25, fill_opacity=0.75, line_width=0, color=(0, 200, 200), non_overlapping=True)
+        corner_percentage=0.2, fill_opacity=0.75, line_width=0, color=(0, 200, 200), non_overlapping=True)
     # Draw filled & dashed rect
     # vis_img = imvis.draw_rects(vis_img, [(178, 164, 43, 29)], fill_opacity=0.4, line_width=2, dash_length=10, color=(220, 0, 255))
+
+    # Draw rotated rectangle
+    vis_img = imvis.draw_rotated_rects(vis_img, 
+        [(60, 220, 70, 45, -55)], 
+        fill_opacity=0.5, line_width=2, 
+        dash_length=15, color=(0, 200, 0))
 
     # Draw lines - a line is a list or tuple: ((start-point), (end-point), is_dashed, color)
     lines = [
         [(7, 184), (329, 211), True, (255, 0, 255)],  # Dashed
         [(42, 147), (337, 168), False, (255, 0, 255)]]  # Solid
-    vis_img = imvis.draw_lines(vis_img, lines, line_width=3, default_color=(200, 255, 0), dash_length=10)
+    vis_img = imvis.draw_lines(vis_img, lines, line_width=3, default_color=(200, 255, 0), dash_length=15)
 
     # Draw arrows - same format as lines (see above)
-    arrows = [[(314, 20), (175, 38), False, (0, 255, 255)]]
+    arrows = [[(314, 20), (175, 38), False, (0, 255, 255)],
+        ((314+20, 20+30), (175+20, 38+30), True, (255, 0, 255))]
         #[(320, 33), (316, 87), True, (0, 255, 255)]]
-    vis_img = imvis.draw_arrows(vis_img, arrows, line_width=2, default_color=(0,200,255), dash_length=10, arrow_head_factor=0.1)
+    vis_img = imvis.draw_arrows(vis_img, arrows, line_width=2, default_color=(0,200,255), dash_length=15, arrow_head_factor=0.1)
     
-    # Draw text box
-    vis_img = imvis.draw_text_box(vis_img, 'Angry',
-        (283, 68), text_anchor='west',
-        bg_color=(255, 0, 255), font_color=(-1, -1, -1),
-        font_scale=1.0, font_thickness=1,
-        padding=5, fill_opacity=0.8)
-    #TODO arrows, etc
+    # # Draw text box
+    # vis_img = imvis.draw_text_box(vis_img, 'Angry',
+    #     (283, 68), text_anchor='west',
+    #     bg_color=(255, 0, 255), font_color=(-1, -1, -1),
+    #     font_scale=1.0, font_thickness=1,
+    #     padding=5, fill_opacity=0.8)
 
     return vis_img
 
@@ -178,7 +187,7 @@ def demo_bbox2d():
     # Bounding boxes
     img = imutils.imread('../data/ninja.jpg', mode='RGB')  # Load grayscale as 3-channel image
     bboxes2d = [
-        ((178, 164, 43, 29), (255, 0, 255), '', True),  # Dashed violett rect (at the target's dot)
+        # ((178, 164, 43, 29), (255, 0, 255), '', True),  # Dashed violett rect (at the target's dot)
         (np.array([177, 76, 147, 53]), (0, 255, 255), 'Sword'),  # Also accepts a 4-element np.array
         ]
     vis_img = imvis.draw_bboxes2d(
@@ -210,8 +219,8 @@ def demo_bbox2d():
         smoothing_window=7, trajectory_length=-1,
         obj_color=(0, 0, 255), fade_color=(180, 180, 180),  # Fade towards gray
         max_line_width=4, dash_length=-1)
-    from vcp import ui_basics
-    print(ui_basics.select_points(vis_img))
+    # from vcp import ui_basics
+    # print(ui_basics.select_points(vis_img))
     
     # # Flip the trajectory
     # trajectory = imutils.flip_points(trajectory, image_size=(im_width, im_height), flip_horizontally=True, flip_vertically=False)
