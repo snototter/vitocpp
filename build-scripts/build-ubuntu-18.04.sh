@@ -68,6 +68,11 @@ echo
 # Remember current working directory to return here
 CURR_WORK_DIR=$(pwd)
 cd ${VCP_ROOT_DIR}/third-party
+# Limit number of cores (I experienced issues when building the python
+# bindings on an Intel i5 Quad Core processor without limitation).
+np=$(nproc)
+ncores=$((np-2))
+ncores=$(( ncores > 0 ? ncores : 1))
 ##############################################################################
 ##### live555 for RTSP stream handling
 if [ "${BUILD555}" ]; then
@@ -81,7 +86,7 @@ if [ "${BUILD555}" ]; then
       cd live      
       echo "  [vcp] Building live555"
       ./genMakefiles linux-64bit
-      make -j >> live555-build.log 2>&1
+      make -j$ncores >> live555-build.log 2>&1
       if [ $? -ne 0 ]; then
           echo "  [vcp] Cannot build live555!"
           echo "        Check ${VCP_ROOT_DIR}/third-party/live/live555-build.log"
@@ -99,7 +104,6 @@ fi
 PYBIND_VERSION=2.4.3
 PYBIND_NAME=pybind11-${PYBIND_VERSION}
 if [ ! -d "${PYBIND_NAME}" ]; then
-    echo "  [vcp] Building pybind11"
     echo "  [vcp] Grabbing pybind11 v${PYBIND_VERSION}"
     echo "        If there are errors, use the frozen but known-to-be-working"
     echo "        ./third-party/pybind11-<version>.tar.gz instead"
@@ -107,6 +111,7 @@ if [ ! -d "${PYBIND_NAME}" ]; then
     wget https://github.com/pybind/pybind11/archive/v${PYBIND_VERSION}.tar.gz
     archive=v${PYBIND_VERSION}.tar.gz
     tar zxf ${archive}
+    echo "  [vcp] Setting up pybind11"
     cd ${PYBIND_NAME}
     mkdir -p build
     cd build
@@ -128,7 +133,7 @@ echo "[vcp] Building VCP C++ libraries & Python bindings"
 echo
 mkdir -p build
 cd build
-cmake "${CMAKEOPTIONS[@]}" .. && make -j install
+cmake "${CMAKEOPTIONS[@]}" .. && make -j$ncores install
 rc_vcp_lib=$?
 # CD back to VCP_ROOT_DIR
 cd ..
@@ -147,8 +152,7 @@ else
     cd examples
     mkdir -p build
     cd build
-    cmake ..
-    make -j
+    cmake .. && make -j$ncores
     cd ..
 
     echo "[vcp] Setting up Python3 virtual environment"
