@@ -64,7 +64,7 @@ list(FIND VCP_MODULES vcp_tracking  REQUESTED_TRACKING)
 
 # ... then, add dependencies (e.g. vcp_imvis uses vcp_math)
 if(REQUESTED_BEST GREATER 0)
-    set(VCP_MODULES ${VCP_MODULES} vcp_config)
+    set(VCP_MODULES ${VCP_MODULES} vcp_config vcp_imutils)
     message(WARNING "Need to update package list!")
 endif()
 if(REQUESTED_BGM GREATER 0)

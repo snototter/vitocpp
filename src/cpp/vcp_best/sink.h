@@ -6,6 +6,7 @@
 #include <exception>
 #include <vcp_config/config_params.h>
 #include <vcp_utils/vcp_error.h>
+#include <vcp_imutils/imutils.h>
 #include "sink_buffer.h"
 
 namespace vcp
@@ -97,12 +98,14 @@ struct SinkParams
   /** @brief Should sink/device wrapper log verbosely? */
   bool verbose;
 
+  /** @brief Should incoming images be flipped/rotated? */
+  imutils::ImageTransformation transform;
 
   SinkParams(const SinkParams &other)
     : sink_type(other.sink_type), frame_type(other.frame_type),
       sink_label(other.sink_label), calibration_file(other.calibration_file),
       configuration_key(other.configuration_key), color_as_bgr(other.color_as_bgr),
-      verbose(other.verbose)
+      verbose(other.verbose), transform(other.transform)
   {}
 
   SinkParams(const SinkType &stype,
@@ -110,11 +113,13 @@ struct SinkParams
       const std::string &lbl,
       const std::string &calib_file=std::string(),
       const std::string &config_key=std::string(),
-      bool return_bgr=false, bool verbose=false)
+      const bool return_bgr=false, const bool verbose=false,
+      const imutils::ImageTransformation &transform=imutils::ImageTransformation::NONE)
     : sink_type(stype), frame_type(ftype),
       sink_label(lbl), calibration_file(calib_file),
       configuration_key(config_key),
-      color_as_bgr(return_bgr), verbose(verbose)
+      color_as_bgr(return_bgr), verbose(verbose),
+      transform(transform)
   {}
 };
 

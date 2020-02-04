@@ -20,6 +20,10 @@ namespace best
 {
 namespace realsense2
 {
+
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::best::realsense2"
+
 #define MAKE_STRING_TO_RS2OPTIONS_IF(str, O) if (str.compare(#O) == 0) { return O; }
 rs2_option StringToOption(const std::string &option_name)
 {
@@ -809,7 +813,7 @@ private:
     {
       VCP_ERROR("Could not start capturing pipeline for RealSense [" << serial_number_ << "]. If you get 'non-descriptive' error messages below, check your configuration file/sensor parameters carefully." << std::endl << "librealsense error: " << e.what());
     }
-
+VCP_LOG_FAILURE("A");
     // Get sensors corresponding to color and depth
     rs2::sensor rgb_sensor, depth_sensor;
     GetRgbDepthSensors(profile.get_device(), rgb_sensor, depth_sensor);
@@ -820,7 +824,7 @@ private:
 
     for (const std::pair<rs2_option, float> &option : rgbd_params_.depth_options)
       SetOption(depth_sensor, option.first, option.second, rgbd_params_.verbose);
-
+VCP_LOG_FAILURE("B configured");
     // Check if we need to align the depth to the color reference view
     const cv::Size rgb_size(rgbd_params_.rgb_width, rgbd_params_.rgb_height);
     const cv::Size depth_size = rgbd_params_.align_depth_to_color
@@ -838,7 +842,7 @@ private:
     const bool filter_temporally = !rgbd_params_.temporal_filter_options.empty();
     for (const auto &p : rgbd_params_.temporal_filter_options)
       SetFilterOption(temporal_filter, p.first, p.second, "Temporal Filter", rgbd_params_.verbose);
-
+VCP_LOG_FAILURE("C filter set");
 
     // Now that the pipeline started, we can query the depth scale of the sensor.
     const float depth_scale = GetDepthUnits(depth_sensor);
@@ -847,7 +851,7 @@ private:
     if (rgbd_params_.write_calibration)
       DumpCalibration(profile, rgbd_params_.calibration_file, rgbd_params_.align_depth_to_color,
                       depth_scale, rgbd_params_.verbose);
-
+VCP_LOG_FAILURE("D calib written");
 #ifdef VCP_BEST_DEBUG_FRAMERATE
     std::chrono::high_resolution_clock::time_point previous_time_point_frameset = std::chrono::high_resolution_clock::now();
     std::chrono::high_resolution_clock::time_point previous_time_point_rgb = std::chrono::high_resolution_clock::now();
@@ -862,7 +866,9 @@ private:
     {
       try
       {
+        VCP_LOG_FAILURE("xxx wait for frames");
         rs2::frameset frameset = pipe.wait_for_frames();
+        VCP_LOG_FAILURE("xxx frameset received");
         if (frameset)
         {
           // Reset error count

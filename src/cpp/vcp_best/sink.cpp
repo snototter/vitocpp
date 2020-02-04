@@ -14,6 +14,12 @@
 #ifdef VCP_BEST_WITH_IPCAM
     #include "ipcam_sink.h"
 #endif
+#ifdef VCP_BEST_WITH_REALSENSE2
+    #include "realsense2_sink.h"
+#endif
+#ifdef VCP_BEST_WITH_MATRIXVISION
+    #include "matrixvision_sink.h"
+#endif
 
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::best::sink"
@@ -79,7 +85,7 @@ FrameType FrameTypeFromString(const std::string &s)
       || lower.compare("rgb-ir") == 0)
     return FrameType::INFRARED;
 
-  VCP_ERROR("FrameTypeFromString(): Cannot convert '" << s << "' to FrameType");
+  VCP_ERROR("FrameTypeFromString(): Cannot convert '" << s << "' to FrameType.");
 }
 
 
@@ -141,13 +147,15 @@ SinkType SinkTypeFromString(const std::string &s)
   else if (ipcam::IsStereoIpCamera(s))
     return SinkType::IPCAM_STEREO;
 #endif // VCP_BEST_WITH_IPCAM
+#ifdef VCP_BEST_WITH_REALSENSE2
+  else if (realsense2::IsRealSense2(s))
+    return SinkType::REALSENSE;
+#endif
+#ifdef VCP_BEST_WITH_MATRIXVISION
+  else if (matrixvision::IsMvBlueFox3(s))
+    return SinkType::MVBLUEFOX3;
+#endif
 
-//#ifdef VCP_WITH_MATRIXVISION
-//  MAKE_STRING_TO_SINKTYPE_IF(MVBLUEFOX3, upper);
-//#endif
-//#ifdef VCP_WITH_REALSENSE2
-//  MAKE_STRING_TO_SINKTYPE_IF(REALSENSE, upper);
-//#endif
   VCP_ERROR("SinkTypeFromString(): Representation '" << s << "' not yet handled.");
 }
 
@@ -264,6 +272,16 @@ FrameType GetFrameTypeFromConfig(const vcp::config::ConfigParams &config,
 }
 
 
+imutils::ImageTransformation GetImageTransformationFromConfig(const vcp::config::ConfigParams &config,
+                                 const std::string &cam_group,
+                                 std::vector<std::string> &configured_keys)
+{
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "transform"), configured_keys.end());
+  return imutils::ImageTransformationFromString(GetOptionalStringFromConfig(config, cam_group,
+              "transform", imutils::ImageTransformationToString(imutils::ImageTransformation::NONE)));
+}
+
+
 std::string GetSinkTypeStringFromConfig(const vcp::config::ConfigParams &config,
                                         const std::string &cam_group,
                                         std::vector<std::string> *configured_keys)
@@ -322,8 +340,9 @@ SinkParams ParseBaseSinkParamsFromConfig(const vcp::config::ConfigParams &config
   const std::string calibration_file = GetCalibrationFileFromConfig(config, cam_group, configured_keys);
   const bool color_as_bgr = GetColorAsBgrFromConfig(config, cam_group, configured_keys);
   const bool verbose = GetVerbosityFlagFromConfig(config, cam_group, configured_keys);
+  const imutils::ImageTransformation rotation = GetImageTransformationFromConfig(config, cam_group, configured_keys);
 
-  return SinkParams(sink_type, frame_type, sink_label, calibration_file, cam_group, color_as_bgr, verbose);
+  return SinkParams(sink_type, frame_type, sink_label, calibration_file, cam_group, color_as_bgr, verbose, rotation);
 }
 
 

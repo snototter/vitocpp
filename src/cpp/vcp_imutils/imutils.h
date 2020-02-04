@@ -15,6 +15,43 @@ namespace vcp
 namespace imutils
 {
 
+/** @brief Strongly typed enum to do basic transformations (e.g. rotate/flip) of images. */
+enum class ImageTransformation
+{
+  NONE,        /**< Images will be provided as-is. */
+  MIRROR_HORZ, /**< Mirror horizontally. */
+  MIRROR_VERT, /**< Mirror vertically. */
+  ROTATE_90,       /**< Rotate 90 degrees clockwise. */
+  ROTATE_180,      /**< Rotate by 180 degrees. */
+  ROTATE_270       /**< Rotate by 90 degrees counter-clockwise. */
+};
+
+/** @brief String representation for ImageTransformation. */
+std::string ImageTransformationToString(const ImageTransformation &t);
+
+/** @brief Get the ImageTransformation based on its string representation. */
+ImageTransformation ImageTransformationFromString(const std::string &s);
+
+
+/** @brief Flip image horizontally. */
+cv::Mat MirrorHorizontally(const cv::Mat &img);
+
+/** @brief Flip image vertically. */
+cv::Mat MirrorVertically(const cv::Mat &img);
+
+/** @brief Rotate image 90 degrees clockwise. */
+cv::Mat Rotate90(const cv::Mat &img);
+
+/** @brief Rotate image 180 degrees. */
+cv::Mat Rotate180(const cv::Mat &img);
+
+/** @brief Rotate image 90 degrees counter-clockwise. */
+cv::Mat Rotate270(const cv::Mat &img);
+
+/** @brief Apply a basic image transformation (e.g. rotation/flipping). */
+cv::Mat ApplyImageTransformation(const cv::Mat &img, const ImageTransformation &transform);
+
+
 /** @brief Return rectangular ROI which contains the full image. */
 inline cv::Rect ImageRect(const cv::Mat &image)
 {

@@ -3,6 +3,7 @@
 #include <vcp_math/common.h>
 #include <vcp_math/geometry2d.h>
 #include <vcp_math/conversions.h>
+#include <vcp_utils/string_utils.h>
 
 #include <opencv2/core/version.hpp>
 #if CV_VERSION_MAJOR < 3
@@ -16,6 +17,129 @@ namespace vcp
 {
 namespace imutils
 {
+
+#define MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(st) case ImageTransformation::st: rep = std::string(#st); break
+std::string ImageTransformationToString(const ImageTransformation &t)
+{
+  std::string rep;
+  switch (t)
+  {
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(NONE);
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(MIRROR_HORZ);
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(MIRROR_VERT);
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(ROTATE_90);
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(ROTATE_180);
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(ROTATE_270);
+  default:
+    std::stringstream str;
+    str << "(" << static_cast<int>(s) << ")";
+    rep = str.str();
+    break;
+  }
+
+  vcp::utils::string::ToLower(rep);
+  return vcp::utils::string::Replace(rep, "_", "-");
+}
+
+
+ImageTransformation ImageTransformationFromString(const std::string &s)
+{
+  // Convert to lowercase, remove dash and underscore.
+  const std::string lower = vcp::utils::string::Replace(
+        vcp::utils::string::Replace(
+          vcp::utils::string::Lower(s), "-", ""),
+        "_", "");
+  if (lower.empty() || lower.compare("none") == 0)
+    return ImageTransformation::NONE;
+
+  // TODO add lr/ud/flip?
+  if (lower.compare('mirrorhorz') == 0)
+    return ImageTransformation::MIRROR_HORZ;
+
+  if (lower.compare('mirrorvert') == 0)
+    return ImageTransformation::MIRROR_VERT;
+
+  if (lower.compare('rotate90') == 0
+      || lower.compare("rot90") == 0)
+    return ImageTransformation::ROTATE_90;
+
+  if (lower.compare('rotate180') == 0
+      || lower.compare("rot180") == 0)
+    return ImageTransformation::ROTATE_180;
+
+  if (lower.compare('rotate270') == 0
+      || lower.compare("rot270") == 0)
+    return ImageTransformation::ROTATE_270;
+
+  VCP_ERROR("ImageTransformationFromString(): Cannot convert '" << s << "' to ImageTransformation.");
+}
+
+cv::Mat MirrorHorizontally(const cv::Mat &img)
+{
+  cv::Mat res;
+  cv::flip(img, res, 1);
+  return res;
+}
+
+cv::Mat MirrorVertically(const cv::Mat &img)
+{
+  cv::Mat res;
+  cv::flip(img, res, 0);
+  return res;
+}
+
+cv::Mat Rotate90(const cv::Mat &img)
+{
+  // Transpose, then flip horizontally
+  cv::Mat res;
+  cv::flip(img.t(), res, 1);
+  return res;
+}
+
+cv::Mat Rotate180(const cv::Mat &img)
+{
+  // Flip both vertically and horizontally
+  cv::Mat res;
+  cv::flip(img, res, -1);
+  return res;
+}
+
+cv::Mat Rotate270(const cv::Mat &img)
+{
+  // Transpose, then flip vertically
+  cv::Mat res;
+  cv::flip(img.t(), res, 0);
+  return res;
+}
+
+cv::Mat ApplyImageTransformation(const cv::Mat &img, const ImageTransformation &transform)
+{
+  cv::Mat res;
+  switch(transform)
+  {
+    case ImageTransformation::NONE:
+      res = img.clone();
+      break;
+    case ImageTransformation::MIRROR_HORZ:
+      res = MirrorHorizontally(img);
+      break;
+    case ImageTransformation::MIRROR_VERT:
+      res = MirrorVertically(img);
+      break;
+    case ImageTransformation::ROTATE_90:
+      res = Rotate90(img);
+      break;
+    case ImageTransformation::ROTATE_180:
+      res = Rotate180(img);
+      break;
+    case ImageTransformation::ROTATE_270:
+      res = Rotate270(img);
+      break;
+    default:
+      VCP_ERROR("ImageTransformation " << static_cast<int>(transform) << " is not supported.");
+  }
+  return res;
+}
 
 bool IsPointInsideImage(const cv::Point &pt, const cv::Size &image_size)
 {
