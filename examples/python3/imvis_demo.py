@@ -144,6 +144,86 @@ def demo_overlay():
     imvis.imshow(collage, title="Overlay & Highlights", wait_ms=-1)
 
 
+def demo_primitives():
+    img = imutils.imread('../data/ninja.jpg', mode='RGB')  # Load grayscale as 3-channel image
+    # Draw rounded box(es)
+    vis_img = imvis.draw_rounded_rects(img, [(9, 23, 149, 106)],
+        corner_percentage=0.25, fill_opacity=0.75, line_width=0, color=(0, 200, 200), non_overlapping=True)
+    # Draw filled & dashed rect
+    # vis_img = imvis.draw_rects(vis_img, [(178, 164, 43, 29)], fill_opacity=0.4, line_width=2, dash_length=10, color=(220, 0, 255))
+
+    # Draw lines - a line is a list or tuple: ((start-point), (end-point), is_dashed, color)
+    lines = [
+        [(7, 184), (329, 211), True, (255, 0, 255)],  # Dashed
+        [(42, 147), (337, 168), False, (255, 0, 255)]]  # Solid
+    vis_img = imvis.draw_lines(vis_img, lines, line_width=3, default_color=(200, 255, 0), dash_length=10)
+
+    # Draw arrows - same format as lines (see above)
+    arrows = [[(314, 20), (175, 38), False, (0, 255, 255)]]
+        #[(320, 33), (316, 87), True, (0, 255, 255)]]
+    vis_img = imvis.draw_arrows(vis_img, arrows, line_width=2, default_color=(0,200,255), dash_length=10, arrow_head_factor=0.1)
+    
+    # Draw text box
+    vis_img = imvis.draw_text_box(vis_img, 'Angry',
+        (283, 68), text_anchor='west',
+        bg_color=(255, 0, 255), font_color=(-1, -1, -1),
+        font_scale=1.0, font_thickness=1,
+        padding=5, fill_opacity=0.8)
+    #TODO arrows, etc
+
+    return vis_img
+
+
+def demo_bbox2d():
+    # Bounding boxes
+    img = imutils.imread('../data/ninja.jpg', mode='RGB')  # Load grayscale as 3-channel image
+    bboxes2d = [
+        ((178, 164, 43, 29), (255, 0, 255), '', True),  # Dashed violett rect (at the target's dot)
+        (np.array([177, 76, 147, 53]), (0, 255, 255), 'Sword'),  # Also accepts a 4-element np.array
+        ]
+    vis_img = imvis.draw_bboxes2d(
+        img, bboxes2d, text_anchor='south',
+        font_scale=1.0, font_thickness=1, text_box_opacity=0.75,
+        line_width=2)
+
+    # Rotated bounding box
+    vis_img = imvis.draw_rotated_bboxes2d(vis_img,
+        [((252, 148, 60, 30, 15), (0, 200, 0), 'Shoes'),
+        ((80, 68, 150, 90, -10), (0, 255, 255), 'Lens')],
+        line_width=2,
+        fill_opacity=0.4,
+        font_color=(0, 0, 0),
+        text_anchor="north",
+        font_scale=1.0, font_thickness=1,
+        text_padding=5,
+        text_box_opacity=0.8)
+
+    # Trajectory
+    traj_sword = [(323, 96), (321, 83), (317, 68), (310, 54), (305, 44), (294, 35),
+        (283, 29), (273, 27), (261, 26), (246, 28), (231, 33), (217, 40), (207, 49),
+        (201, 62), (196, 74), (192, 87), (183, 100), (175, 112), (159, 120), (144, 123),
+        (128, 123), (115, 119)]
+    # traj_ninja = [(278, 148), (290, 147), (302, 150), (307, 162),
+    #     (307, 177), (287, 184), (270, 187), (256, 195), (239, 199), (222, 211), (211, 222), (204, 230), (197, 239)]
+
+    vis_img = imvis.draw_fading_trajectory(vis_img, traj_sword, newest_position_first=True,
+        smoothing_window=7, trajectory_length=-1,
+        obj_color=(0, 0, 255), fade_color=(180, 180, 180),  # Fade towards gray
+        max_line_width=4, dash_length=-1)
+    from vcp import ui_basics
+    print(ui_basics.select_points(vis_img))
+    
+    # # Flip the trajectory
+    # trajectory = imutils.flip_points(trajectory, image_size=(im_width, im_height), flip_horizontally=True, flip_vertically=False)
+    # # Rotate the trajectory
+    # trajectory = imutils.rotate_points(trajectory, (im_width/2.0, im_height/2.0), np.deg2rad(-20))
+    # # Draw without fading
+    # vis_img = imvis.draw_trajectory(vis_img, trajectory, smoothing_window=-1, color=(255,0,0), dash_length=10, line_width=3)
+    # Simplify with RDP    
+    # trajectory = math2d.simplify_trajectory_rdp(trajectory, 50)
+    # vis_img = trajvis.draw_trajectory(vis_img, trajectory, smoothing_window=-1, obj_color=(0,0,0), dash_length=10, line_width=3)
+    return vis_img
+
 if __name__ == "__main__":
     demo_pseudocolor()
 
@@ -171,111 +251,68 @@ if __name__ == "__main__":
     ############################################################################
     ## Drawing
     images = list()
-    # Bounding boxes
-    img = imutils.imread('../data/ninja.jpg', mode='RGB')  # Load grayscale as 3-channel image
-    im_height, im_width = img.shape[0], img.shape[1]
-    bboxes2d = [
-        ((178, 164, 43, 29), (255, 0, 255), '', True),  # Dashed violett rect (at the target's dot)
-        (np.array([177, 76, 147, 53]), (0, 255, 255), 'Sword'),  # Also accepts a 4-element np.array
-        ]
-    vis_img = imvis.draw_bboxes2d(
-        img, bboxes2d, text_anchor='south',
-        font_scale=1.0, font_thickness=1, text_box_opacity=0.6,
-        line_width=2)
-
-    # Trajectories
-    traj_sword = [(323, 96), (320, 72), (316, 55), (303, 42),
-        (297, 35), (280, 28), (267, 27), (253, 27), (242, 31), (227, 38), (216, 48), (209, 57)]
-    traj_ninja = [(278, 148), (290, 147), (302, 150), (307, 162),
-        (307, 177), (287, 184), (270, 187), (256, 195), (239, 199), (222, 211), (211, 222), (204, 230), (197, 239)]
-
-    vis_img = imvis.draw_fading_trajectory(vis_img, traj_sword, newest_position_first=True,
-        smoothing_window=7, trajectory_length=-1,
-        obj_color=(0, 0, 255), fade_color=(180, 180, 180),  # Fade towards gray
-        max_line_width=4, dash_length=-1)
+    names = list()
     
-    # # Flip the trajectory
-    # trajectory = imutils.flip_points(trajectory, image_size=(im_width, im_height), flip_horizontally=True, flip_vertically=False)
-    # # Rotate the trajectory
-    # trajectory = imutils.rotate_points(trajectory, (im_width/2.0, im_height/2.0), np.deg2rad(-20))
-    # # Draw without fading
-    # vis_img = imvis.draw_trajectory(vis_img, trajectory, smoothing_window=-1, color=(255,0,0), dash_length=10, line_width=3)
-    # Simplify with RDP    
-    # trajectory = math2d.simplify_trajectory_rdp(trajectory, 50)
-    # vis_img = trajvis.draw_trajectory(vis_img, trajectory, smoothing_window=-1, obj_color=(0,0,0), dash_length=10, line_width=3)
-    images.append(vis_img)
+    images.append(demo_bbox2d())
+    names.append('2D BBox & Trajectory')
 
-    # Draw rounded boxes
-    vis_img = imvis.draw_rounded_rects(img, [(9, 23, 149, 106)],
-        corner_percentage=0.25, fill_opacity=0.6, line_width=0, color=(0, 200, 200), non_overlapping=True)
-    # Draw filled & dashed rect
-    # vis_img = imvis.draw_rects(vis_img, [(178, 164, 43, 29)], fill_opacity=0.4, line_width=2, dash_length=10, color=(220, 0, 255))
+    
 
-    # Draw lines - a line is a list or tuple: ((start-point), (end-point), is_dashed, color)
-    lines = [
-        [(7, 184), (329, 211), True, (255, 0, 255)],  # Dashed
-        [(42, 147), (337, 168), False, (255, 0, 255)]]  # Solid
-    vis_img = imvis.draw_lines(vis_img, lines, line_width=3, default_color=(200, 255, 0), dash_length=10)
+    images.append(demo_primitives())
+    names.append('Primitives')
 
-    # Draw arrows - same format as lines (see above)
-    arrows = [[(314, 20), (175, 38), False, (0, 255, 255)]]
-        #[(320, 33), (316, 87), True, (0, 255, 255)]]
-    vis_img = imvis.draw_arrows(vis_img, arrows, line_width=2, default_color=(0,200,255), dash_length=10, arrow_head_factor=0.1)
-    images.append(vis_img)
-
-    # TODO added alpha channel to render image for README
+    # Add alpha channel to render the README visualization
     images[0] = np.dstack((images[0], 255*np.ones(images[0].shape[:2], dtype=np.uint8)))
-    collage = imvis.make_collage(images, padding=10, bg_color=(0, 0, 0, 0), num_images_per_row=len(images))
+    padding=10
+    collage = imvis.make_collage(images, padding=padding, bg_color=(0, 0, 0, 0), num_images_per_row=len(images))
     # TODO add labels
-    names = ['BBox & Trajectory', 'Primitives']
+    height, width = collage.shape[:2]
+    mask_width = (width - (len(names)-1)*padding) / len(names)
+    for i in range(len(names)):
+        pos = (i * (mask_width + padding) + mask_width/2, height - 10)
+        collage = imvis.draw_text_box(collage, names[i],
+            pos, text_anchor='south', bg_color=(0, 0, 0),
+            font_color=(-1, -1, -1), font_scale=1.0,
+            font_thickness=1, padding=5, fill_opacity=0.8)
+
     imvis.imshow(collage, title='Basic Drawing', wait_ms=-1)
     imutils.imsave('example-imvis.png', collage)
-    
-
-    # Draw a fancy text box
-    vis_img = imvis.draw_text_box(vis_img, "Small centered text", (414, 181), 
-                    font_scale=0.75, font_thickness=1, text_anchor='center')
-    vis_img = imvis.draw_text_box(vis_img, "Nasty text outside image", (im_width*3/4, 20), 
-                    font_scale=2, font_thickness=2, text_anchor='south', bg_color=(255,255,255))
-    vis_img = imvis.draw_text_box(vis_img, "Nasty text outside image", (im_width/2, im_height-30), 
-                    font_scale=2, font_thickness=3, text_anchor='northeast', bg_color=(255,0,0))
-
-    vis_fancy = vis_img.copy()
+    raise RuntimeError()
     
     
-    # Rectangles (pt coords of rotated rects are their centers!)
-    # Touching left/top border
-    vis_img = imvis.draw_rotated_rects(rgb, [[20, 30, 120, 40, 45]], fill_opacity=0.0, line_width=4, 
-            dash_length=-1, color=(200, 20, 0))
-    vis_img = imvis.draw_rotated_rects(vis_img, [[20, 30, 120, 40, 45]], fill_opacity=0.2, line_width=2, 
-            dash_length=10, color=(0, 200, 0))
-    # Touching right/top border
-    vis_img = imvis.draw_rotated_rects(vis_img, [[im_width-20, 35, 120, 40, 45]], fill_opacity=0.0, 
-            line_width=4, dash_length=-1, color=(200, 20, 200))
-    vis_img = imvis.draw_rotated_rects(vis_img, [[im_width-60, 35, 120, 40, 45]], fill_opacity=0.2, 
-            line_width=2, dash_length=10, color=(0, 200, 0))
+    # # Rectangles (pt coords of rotated rects are their centers!)
+    # # Touching left/top border
+    # vis_img = imvis.draw_rotated_rects(rgb, [[20, 30, 120, 40, 45]], fill_opacity=0.0, line_width=4, 
+    #         dash_length=-1, color=(200, 20, 0))
+    # vis_img = imvis.draw_rotated_rects(vis_img, [[20, 30, 120, 40, 45]], fill_opacity=0.2, line_width=2, 
+    #         dash_length=10, color=(0, 200, 0))
+    # # Touching right/top border
+    # vis_img = imvis.draw_rotated_rects(vis_img, [[im_width-20, 35, 120, 40, 45]], fill_opacity=0.0, 
+    #         line_width=4, dash_length=-1, color=(200, 20, 200))
+    # vis_img = imvis.draw_rotated_rects(vis_img, [[im_width-60, 35, 120, 40, 45]], fill_opacity=0.2, 
+    #         line_width=2, dash_length=10, color=(0, 200, 0))
 
-    # Bottom/right
-    vis_img = imvis.draw_rotated_rects(vis_img, [[300, 500, 120, 40, 95]], fill_opacity=0.4, 
-            line_width=2, dash_length=-1, color=(0, 20, 200))
-    vis_img = imvis.draw_rotated_rects(vis_img, [[480, 400, 120, 40, -60]], fill_opacity=0.7, 
-            line_width=2, dash_length=10, color=(200, 0, 200))
-    vis_img = imvis.draw_rotated_rects(vis_img, [[480, 500, 120, 40, -120]], fill_opacity=0.79,
-            line_width=2, dash_length=10, color=(0, 200, 200))
+    # # Bottom/right
+    # vis_img = imvis.draw_rotated_rects(vis_img, [[300, 500, 120, 40, 95]], fill_opacity=0.4, 
+    #         line_width=2, dash_length=-1, color=(0, 20, 200))
+    # vis_img = imvis.draw_rotated_rects(vis_img, [[480, 400, 120, 40, -60]], fill_opacity=0.7, 
+    #         line_width=2, dash_length=10, color=(200, 0, 200))
+    # vis_img = imvis.draw_rotated_rects(vis_img, [[480, 500, 120, 40, -120]], fill_opacity=0.79,
+    #         line_width=2, dash_length=10, color=(0, 200, 200))
 
-    # Axis-aligned boxes, touching borders
-    vis_img = imvis.draw_rects(vis_img, [[-10, 150, 20, 30]], fill_opacity=0.0, 
-            line_width=2, dash_length=-1, color=(200, 20, 0))
-    vis_img = imvis.draw_rects(vis_img, [[im_width/2, -10, 20, 30]], fill_opacity=0.0, 
-            line_width=2, dash_length=-1, color=(200, 20, 0))
-    vis_img = imvis.draw_rects(vis_img, [[im_width-10, im_height/2, 20, 30]], fill_opacity=0.0, 
-            line_width=2, dash_length=-1, color=(200, 20, 0))
-    vis_img = imvis.draw_rects(vis_img, [[im_width/2, im_height-10, 20, 30]], fill_opacity=0.0, 
-            line_width=2, dash_length=-1, color=(200, 20, 0))
+    # # Axis-aligned boxes, touching borders
+    # vis_img = imvis.draw_rects(vis_img, [[-10, 150, 20, 30]], fill_opacity=0.0, 
+    #         line_width=2, dash_length=-1, color=(200, 20, 0))
+    # vis_img = imvis.draw_rects(vis_img, [[im_width/2, -10, 20, 30]], fill_opacity=0.0, 
+    #         line_width=2, dash_length=-1, color=(200, 20, 0))
+    # vis_img = imvis.draw_rects(vis_img, [[im_width-10, im_height/2, 20, 30]], fill_opacity=0.0, 
+    #         line_width=2, dash_length=-1, color=(200, 20, 0))
+    # vis_img = imvis.draw_rects(vis_img, [[im_width/2, im_height-10, 20, 30]], fill_opacity=0.0, 
+    #         line_width=2, dash_length=-1, color=(200, 20, 0))
     
 
-    collage = imvis.make_collage([vis_boxes2, vis_fancy, vis_img], padding=5, bg_color=(255,255,255))
-    imvis.imshow(collage, title="Drawing primitives (highly cluttered)")
+    # collage = imvis.make_collage([vis_boxes2, vis_fancy, vis_img], padding=5, bg_color=(255,255,255))
+    # imvis.imshow(collage, title="Drawing primitives (highly cluttered)")
 
 
     ############################################################################
