@@ -233,6 +233,14 @@ def demo_bbox2d():
     # vis_img = trajvis.draw_trajectory(vis_img, trajectory, smoothing_window=-1, obj_color=(0,0,0), dash_length=10, line_width=3)
     return vis_img
 
+
+def demo_bbox3d():
+    # Bounding boxes
+    img = imutils.imread('../data/ninja.jpg', mode='RGB')  # Load grayscale as 3-channel image
+    #TODO
+    return img
+
+
 if __name__ == "__main__":
     demo_pseudocolor()
 
@@ -270,11 +278,15 @@ if __name__ == "__main__":
     images.append(demo_primitives())
     names.append('Primitives')
 
-    # Add alpha channel to render the README visualization
+    images.append(demo_bbox3d())
+    names.append('3D BBox TODO')
+
+    # Add alpha channel to render the README visualization nicely for web display
     images[0] = np.dstack((images[0], 255*np.ones(images[0].shape[:2], dtype=np.uint8)))
     padding=10
     collage = imvis.make_collage(images, padding=padding, bg_color=(0, 0, 0, 0), num_images_per_row=len(images))
-    # TODO add labels
+    
+    # Add labels
     height, width = collage.shape[:2]
     mask_width = (width - (len(names)-1)*padding) / len(names)
     for i in range(len(names)):
@@ -289,41 +301,6 @@ if __name__ == "__main__":
     raise RuntimeError()
     
     
-    # # Rectangles (pt coords of rotated rects are their centers!)
-    # # Touching left/top border
-    # vis_img = imvis.draw_rotated_rects(rgb, [[20, 30, 120, 40, 45]], fill_opacity=0.0, line_width=4, 
-    #         dash_length=-1, color=(200, 20, 0))
-    # vis_img = imvis.draw_rotated_rects(vis_img, [[20, 30, 120, 40, 45]], fill_opacity=0.2, line_width=2, 
-    #         dash_length=10, color=(0, 200, 0))
-    # # Touching right/top border
-    # vis_img = imvis.draw_rotated_rects(vis_img, [[im_width-20, 35, 120, 40, 45]], fill_opacity=0.0, 
-    #         line_width=4, dash_length=-1, color=(200, 20, 200))
-    # vis_img = imvis.draw_rotated_rects(vis_img, [[im_width-60, 35, 120, 40, 45]], fill_opacity=0.2, 
-    #         line_width=2, dash_length=10, color=(0, 200, 0))
-
-    # # Bottom/right
-    # vis_img = imvis.draw_rotated_rects(vis_img, [[300, 500, 120, 40, 95]], fill_opacity=0.4, 
-    #         line_width=2, dash_length=-1, color=(0, 20, 200))
-    # vis_img = imvis.draw_rotated_rects(vis_img, [[480, 400, 120, 40, -60]], fill_opacity=0.7, 
-    #         line_width=2, dash_length=10, color=(200, 0, 200))
-    # vis_img = imvis.draw_rotated_rects(vis_img, [[480, 500, 120, 40, -120]], fill_opacity=0.79,
-    #         line_width=2, dash_length=10, color=(0, 200, 200))
-
-    # # Axis-aligned boxes, touching borders
-    # vis_img = imvis.draw_rects(vis_img, [[-10, 150, 20, 30]], fill_opacity=0.0, 
-    #         line_width=2, dash_length=-1, color=(200, 20, 0))
-    # vis_img = imvis.draw_rects(vis_img, [[im_width/2, -10, 20, 30]], fill_opacity=0.0, 
-    #         line_width=2, dash_length=-1, color=(200, 20, 0))
-    # vis_img = imvis.draw_rects(vis_img, [[im_width-10, im_height/2, 20, 30]], fill_opacity=0.0, 
-    #         line_width=2, dash_length=-1, color=(200, 20, 0))
-    # vis_img = imvis.draw_rects(vis_img, [[im_width/2, im_height-10, 20, 30]], fill_opacity=0.0, 
-    #         line_width=2, dash_length=-1, color=(200, 20, 0))
-    
-
-    # collage = imvis.make_collage([vis_boxes2, vis_fancy, vis_img], padding=5, bg_color=(255,255,255))
-    # imvis.imshow(collage, title="Drawing primitives (highly cluttered)")
-
-
     ############################################################################
     ## 3D Bounding Box magic
     # Dummy boxes:
