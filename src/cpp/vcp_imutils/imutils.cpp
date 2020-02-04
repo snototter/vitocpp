@@ -52,11 +52,12 @@ ImgTransform ImgTransformFromString(const std::string &s)
   if (lower.empty() || lower.compare("none") == 0)
     return ImgTransform::NONE;
 
-  // TODO add lr/ud/flip?
-  if (lower.compare("mirrorhorz") == 0)
+  if (lower.compare("mirrorhorz") == 0
+      || lower.compare("fliplr") == 0)
     return ImgTransform::MIRROR_HORZ;
 
-  if (lower.compare("mirrorvert") == 0)
+  if (lower.compare("mirrorvert") == 0
+      || lower.compare("flipud") == 0)
     return ImgTransform::MIRROR_VERT;
 
   if (lower.compare("rotate90") == 0
