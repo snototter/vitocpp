@@ -237,7 +237,7 @@ def demo_bbox2d():
 def demo_bbox3d():
     # Bounding boxes
     img = imutils.imread('../data/ninja.jpg', mode='RGB')  # Load grayscale as 3-channel image
-    #TODO
+    #TODO check Line-Based Extrinsic Calibration of Range and Image Sensors ICRA 2013
     return img
 
 

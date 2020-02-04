@@ -23,17 +23,18 @@ SUM:                           150           5721           4476          25417
 ## What is it good for?
 Some of `vcp`'s highlights:
 * <b>Best effort multiple device streaming</b> with the `vcp::best` module. Useful for quick camera tests and whenever (guaranteed) synchronisation isn't crucial. The goal of this module is to stream from multiple devices simultaneously, without having the ROS overhead. A simple libconfig++-style configuration file allows you to process all streams both in C++ and python. For more details, see the [separate BESt.md documentation](BESt.md).
-* <b>Background subtraction</b> with the `vcp::bgm` module, for example:
+* <b>Background subtraction</b> is provided by the `vcp::bgm` module, for example:
 
   ![Background Subtraction](./doc/example-bgm.png)
-* <b>Visualization utilities</b> within the `vcp::imvis` module, for example:
+* <b>Visualization utilities</b> are provided by the `vcp::imvis` module, for example:
 
   ![Visualization Example](./doc/example-imvis.png)
-* <b>Pseudocoloring</b> for data visualization/analysis.
+* <b>Pseudocoloring</b> for data visualization/analysis is also provided by the `vcp::imvis` module.
   Back when I started working on this library, OpenCV didn't provide pseudocoloring capabilities. The `vcp::imvis` module allows visualization via common color maps (you might remember these from such frameworks as MATLAB, matplotlib, and whatnot).
 
   ![Pseudocoloring Example](./doc/example-pseudocolor.png)
 * <b>Math</b> utilities - besides enabling most of the fancy visualizations within `vcp::imvis`, you can also do basic geometry tasks with the `vcp::math` module (e.g. computing tangents of circles, line (segment) intersection, and quite a lot more).
+TODO add line intersect example, tangents, poly (chull, rdp)
 * <b>C++</b> utilities - for basic file/path and string manipulation, sorting, and more (if you want to avoid heavier dependencies, such as Boost).
 
 
@@ -67,7 +68,7 @@ Some of `vcp`'s highlights:
 ## Tools
 This repository comes with a few "tools", i.e. standalone applications that go beyond simple demos/examples.
 Currently, there are only python applications, which you can find at `<VCP_ROOT_DIR>/examples/python3/tools`.
-* Set up the <b>virtual environment</b>. If you didn't use the `./build-scripts/build-X.sh` script, use:
+* Set up the <b>virtual environment</b>. If you didn't use the `./build-scripts/build-X.sh` script to prepare the library, you should run:
   ```bash
   $ cd <VCP_ROOT_DIR>/examples/python3
   $ ./prepare_environment_py3.sh
@@ -150,7 +151,7 @@ Anyhow, testing requires `gtest`, which you'll probably need to build yourself -
     * [x] Stereo IP cam streams as separate monocular sinks
     * [x] "Real" stereo cams (e.g. ZED) could be split in VCP or by the library user (currently, the latter is preferred)
     * [ ] Add frame-type stereo-left, stereo-right for rectification (if needed)
-  * [ ] RealSense
+  * [x] RealSense
   * [ ] Azure Kinect
     * [x] Stream raw data
     * [x] Align RGB+D
