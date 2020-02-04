@@ -12,10 +12,10 @@
 
 namespace vcp
 {
-/** @brief TODO doc. */
+/** @brief Visualization utilities. */
 namespace imvis
 {
-/** @brief TODO doc. */
+/** @brief Drawing primitives and commonly used shapes (e.g. 2D/3D bounding boxes). */
 namespace drawing
 {
 /** @brief Exemplary colors. */
