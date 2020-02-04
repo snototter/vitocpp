@@ -13,15 +13,14 @@ namespace vcp
 {
 namespace best
 {
-/** @brief TODO doc. */
+/** @brief Kinect for Azure RGBD streaming. */
 namespace k4a
 {
 /** @brief String representation of an empty/invalid/unset serial number. Use this if you don't want to specify a particular device. */
 extern const std::string kEmptyK4ASerialNumber;
 
 
-// Struct representing K4A's color control settings, which
-// can be changed by the user.
+/** @brief Struct representing K4A's color control settings, which can be changed by the user. */
 struct K4AColorControlSetting
 {
   k4a_color_control_command_t command;
@@ -32,6 +31,7 @@ struct K4AColorControlSetting
 };
 
 
+/** @brief Parametrization of a K4A device. */
 struct K4ASinkParams : SinkParams
 {
   //FIXME k4a: for multiple cameras, see depth stream offset: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/green_screen/main.cpp
@@ -148,6 +148,7 @@ std::unique_ptr<StreamSink> CreateK4ASink(const K4ASinkParams &params)
                                std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()));
 }
 
+/** @brief Returns a list of connected Azure Kinects. */
 std::vector<K4ADeviceInfo> ListK4ADevices(bool warn_if_no_devices=true);
 
 /** @brief Checks if the configuration belongs to a K4A (Kinect Azure) device (using the configuration parameter "cameraX.type"). */

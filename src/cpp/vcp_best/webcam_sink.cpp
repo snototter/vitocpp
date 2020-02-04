@@ -682,23 +682,7 @@ WebcamSinkParams WebcamSinkParamsFromConfig(const vcp::config::ConfigParams &con
     VCP_ERROR("Cannot find device parameter for '" << cam_param << "'. Use either 'device', 'device_number' or 'number' to specify it.");
   }
 
-  cv::Size resolution;
-  const std::string key_width = cam_param + ".width";
-  const std::string key_height = cam_param + ".height";
-  if (config.SettingExists(key_width) || config.SettingExists(key_height))
-  {
-    if (config.SettingExists(key_width) && config.SettingExists(key_height))
-    {
-      resolution.width = config.GetInteger(key_width);
-      resolution.height = config.GetInteger(key_height);
-    }
-    else
-    {
-      VCP_LOG_FAILURE("You have to configure both the width and height, not only one!");
-    }
-    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "width"), configured_keys.end());
-    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "height"), configured_keys.end());
-  }
+  const cv::Size resolution = ParseResolutionFromConfig(config, cam_param, std::string(), configured_keys);
 
   const double frame_rate = GetOptionalDoubleFromConfig(config, cam_param, "fps", -1.0);
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "fps"), configured_keys.end());

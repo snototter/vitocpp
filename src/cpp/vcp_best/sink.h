@@ -58,7 +58,7 @@ enum class SinkType
 #ifdef VCP_WITH_MATRIXVISION
   MVBLUEFOX3,
 #endif
-#ifdef VCP_WITH_REALSENSE2
+#ifdef VCP_BEST_WITH_REALSENSE2
   REALSENSE,
 #endif
   VIDEO_FILE,
@@ -68,9 +68,6 @@ enum class SinkType
 std::string SinkTypeToString(const SinkType &s);
 std::ostream &operator<<(std::ostream &stream, const SinkType &s);
 
-
-///** @brief Returns a default sink label if none is provided. */
-//std::string GetDefaultSinkLabel();
 
 /** @brief Base class to contain the parameters for a sink (see AxisSinkParams, RealsenseSinkParams, WebcamSinkParams, etc.) */
 struct SinkParams
@@ -243,6 +240,18 @@ void WarnOfUnusedParameters(const std::string &cam_group, const std::vector<std:
  * you can check if the user forgot some parameters/made typos/etc.)
  */
 SinkParams ParseBaseSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group, std::vector<std::string> &configured_keys);
+
+
+/** @brief Extracts a sensor resolution from the given configuration.
+ *
+ * Looks up <tt>[cam_group].[prefix]resolution</tt>, as well as
+ * <tt>[cam_group].[prefix]width</tt> and <tt>...height</tt>.
+ * Found keys/parameter names (i.e. <tt>[prefix]resolution</tt>,
+ * <tt>[prefix]width</tt> or <tt>[prefix]height</tt>) will be ERASED
+ * from the "configured_keys" list (so you can check if the user
+ * forgot some parameters/made typos/etc.)
+ */
+cv::Size ParseResolutionFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group, const std::string &prefix, std::vector<std::string> &configured_keys);
 
 
 /** @brief Returns the num_cameras parameter if configured. Otherwise, counts the "cameraX" entries. */

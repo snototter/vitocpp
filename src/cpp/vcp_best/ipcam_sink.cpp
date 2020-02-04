@@ -375,15 +375,9 @@ IpCameraSinkParams ParseIpCameraSinkParams(const vcp::config::ConfigParams &conf
       : IpStreamEncoding::H264;
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "encoding"), configured_keys.end());
 
-  const int frame_width =
-      config.SettingExists(cam_param + ".frame_width") ?
-        config.GetInteger(cam_param + ".frame_width") : -1;
-  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "frame_width"), configured_keys.end());
-
-  const int frame_height =
-      config.SettingExists(cam_param + ".frame_height") ?
-        config.GetInteger(cam_param + ".frame_height") : -1;
-  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "frame_height"), configured_keys.end());
+  cv::Size frame_resolution = ParseResolutionFromConfig(config, cam_param, "frame_", configured_keys);
+  if (frame_resolution.width < 0 || frame_resolution.height < 0)
+    frame_resolution = ParseResolutionFromConfig(config, cam_param, std::string(), configured_keys);
 
   int frame_rate = -1;
   if (config.SettingExists(cam_param + ".frame_rate"))
@@ -397,7 +391,9 @@ IpCameraSinkParams ParseIpCameraSinkParams(const vcp::config::ConfigParams &conf
     configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "fps"), configured_keys.end());
   }
 
-  IpCameraSinkParams params(sink_params, host, user, pwd, ipcam_type, app_protocol, transport_protocol, stream_encoding, frame_width, frame_height, frame_rate, stream_url);
+  IpCameraSinkParams params(sink_params, host, user, pwd,
+                            ipcam_type, app_protocol, transport_protocol, stream_encoding,
+                            frame_resolution.width, frame_resolution.height, frame_rate, stream_url);
   params.stream_url = stream_url.empty() ? GetStreamingUrl(params) : stream_url;
 
   return params;

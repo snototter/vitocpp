@@ -314,8 +314,6 @@ void WarnOfUnusedParameters(const std::string &cam_group, const std::vector<std:
   }
 }
 
-// TODO captures needed for multiple realsenses, multiple rtsp streams, etc.
-
 SinkParams ParseBaseSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group, std::vector<std::string> &configured_keys)
 {
   const SinkType sink_type = GetSinkTypeFromConfig(config, cam_group, &configured_keys);
@@ -327,6 +325,31 @@ SinkParams ParseBaseSinkParamsFromConfig(const vcp::config::ConfigParams &config
 
   return SinkParams(sink_type, frame_type, sink_label, calibration_file, cam_group, color_as_bgr, verbose);
 }
+
+
+cv::Size ParseResolutionFromConfig(const vcp::config::ConfigParams &config,
+                                   const std::string &cam_group, const std::string &prefix,
+                                   std::vector<std::string> &configured_keys)
+{
+  const std::string kres = cam_group + "." + prefix + "resolution";
+  if (config.SettingExists(kres))
+  {
+    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), prefix + "resolution"), configured_keys.end());
+    const auto s = config.GetSize2D(kres);
+    return cv::Size(s[0], s[1]);
+  }
+  cv::Size sz(-1, -1);
+
+  const std::string kw = prefix + "width";
+  sz.width = GetOptionalIntFromConfig(config, cam_group, kw, -1);
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), prefix + "width"), configured_keys.end());
+
+  const std::string kh = prefix + "width";
+  sz.height = GetOptionalIntFromConfig(config, cam_group, kh, -1);
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), prefix + "height"), configured_keys.end());
+  return sz;
+}
+
 
 size_t GetNumCamerasFromConfig(const vcp::config::ConfigParams &config)
 {

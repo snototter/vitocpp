@@ -64,12 +64,10 @@ set(MATRIXVISION_STREAM_SOURCES
 # Realsense2 streaming files
 set(PUBLIC_REALSENSE2_STREAM_HEADERS
     realsense2_sink.h
-    capture_realsense2.h
 )
 set(PRIVATE_REALSENSE2_STREAM_HEADERS)
 set(REALSENSE2_STREAM_SOURCES
     realsense2_sink.cpp
-    capture_realsense2.cpp
 )
 
 
@@ -155,7 +153,7 @@ else()
 endif()
 
 
-if (PVT_ICC_WITH_MATRIXVISION_STREAMING)
+if (VCP_BEST_WITH_MATRIXVISION)
   ## mvIMPACT_acquire to access mvBlueFox3
   find_package(mvIMPACT_acquire REQUIRED QUIET)
   include_directories(${mvIMPACT_acquire_INCLUDE_DIR})
@@ -175,7 +173,7 @@ else()
 endif()
 
 
-if (PVT_ICC_WITH_REALSENSE2_STREAMING)
+if (VCP_BEST_WITH_REALSENSE2)
     add_definitions(-DVCP_BEST_WITH_REALSENSE2)
     find_package(realsense2 REQUIRED)
     include_directories(${realsense_INCLUDE_DIR})

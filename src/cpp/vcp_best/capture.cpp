@@ -66,9 +66,9 @@ public:
 #ifdef VCP_BEST_WITH_K4A
     std::vector<k4a::K4ASinkParams> k4a_params;
 #endif
-//#ifdef VCP_BEST_WITH_REALSENSE2
-//    std::vector<RealSense2SinkParams> realsense_params;
-//#endif
+#ifdef VCP_BEST_WITH_REALSENSE2
+    std::vector<realsense2::RealSense2SinkParams> realsense2_params;
+#endif
     std::vector<file::VideoFileSinkParams> video_params;
     std::vector<webcam::WebcamSinkParams> webcam_params;
 
@@ -92,6 +92,7 @@ public:
         case SinkType::WEBCAM:
           webcam_params.push_back(webcam::WebcamSinkParamsFromConfig(config, cam_config_name));
           break;
+
 #ifdef VCP_BEST_WITH_IPCAM
         case SinkType::IPCAM_MONOCULAR:
           ipcam_params.push_back(ipcam::MonocularIpCameraSinkParamsFromConfig(config, cam_config_name));
@@ -105,14 +106,16 @@ public:
           }
           break;
 #endif
+
 #ifdef VCP_BEST_WITH_K4A
         case SinkType::K4A:
           k4a_params.push_back(k4a::K4ASinkParamsFromConfig(config, cam_config_name));
           break;
 #endif // VCP_BEST_WITH_K4A
+
 #ifdef VCP_BEST_WITH_REALSENSE2
         case SinkType::REALSENSE:
-          realsense2_params.push_back(rs2::RealSense2SinkParamsFromConfig(config, cam_config_name));
+          realsense2_params.push_back(realsense2::RealSense2SinkParamsFromConfig(config, cam_config_name));
           break;
 #endif // VCP_BEST_WITH_REALSENSE2
 
@@ -194,9 +197,9 @@ public:
 #endif // WITH_MATRIXVISION
 
 #ifdef VCP_BEST_WITH_REALSENSE2
-    for (const auto &p : realsense_params)
-      AddSink(rs2::CreateRealSense2Sink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p), p);
-    multiple_realsenses_ = realsense_params.size() > 1;
+    for (const auto &p : realsense2_params)
+      AddSink(realsense2::CreateRealSense2Sink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p));
+    multiple_realsenses_ = realsense2_params.size() > 1;
 #endif
 
     num_devices_ = 0;
@@ -344,11 +347,12 @@ public:
     for (size_t i = 0; i < sinks_.size(); ++i)
     {
       success = success && sinks_[i]->StartStreaming();
-#ifdef VCP_WITH_REALSENSE2
+#ifdef VCP_BEST_WITH_REALSENSE2
       // According to the RealSense white paper on multiple sensors, they
       // "found it useful to start the cameras sequentially in time with some delay".
-      if (multiple_realsenses_ && (i+1) < sinks_.size() &&
-          sink_types_[i] == sink_types_[i+1] && sink_types_[i] == SinkType::REALSENSE)
+      if (multiple_realsenses_ && (i+1) < sinks_.size()
+          && sink_params_[i].sink_type == sink_params_[i+1].sink_type
+          && sink_params_[i].sink_type == SinkType::REALSENSE)
       {
         VCP_LOG_INFO("Pausing capture initialization temporarily before starting the next RealSense stream!");
         std::this_thread::sleep_for(std::chrono::milliseconds(1500)); // 1.5 sec worked okay-ish so far...
@@ -458,13 +462,15 @@ private:
   std::vector<SinkParams> sink_params_; // Note: they will be per stream/frame, not per device
   std::vector<std::string> frame_labels_;
   size_t num_devices_;
+
 #ifdef VCP_BEST_DEBUG_FRAMERATE
   std::chrono::high_resolution_clock::time_point prev_frame_timestamp_;
   double ms_between_frames_;
 #endif // VCP_BEST_DEBUG_FRAMERATE
-#ifdef WITH_REALSENSE2
+
+#ifdef VCP_BEST_WITH_REALSENSE2
   bool multiple_realsenses_;
-#endif // WITH_REALSENSE2
+#endif // VCP_BEST_WITH_REALSENSE2
 };
 
 
