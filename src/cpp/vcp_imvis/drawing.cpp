@@ -1317,7 +1317,7 @@ void DrawXYZAxes(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::M
 }
 
 
-void DrawHorizon(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::Mat &t, const cv::Scalar &color, double scale_image_points, int line_width, int dash_length, bool warn_if_not_visible)
+void DrawHorizon(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::Mat &t, const cv::Scalar &color, double scale_image_points, int line_width, int dash_length, bool warn_if_not_visible, double text_opacity)
 {
   VCP_LOG_DEBUG("DrawHorizon()");
   const double original_width = image.cols / scale_image_points;
@@ -1331,9 +1331,13 @@ void DrawHorizon(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::M
     DrawInfiniteLine(image, vcp::convert::ToPoint(from), vcp::convert::ToPoint(to), color, line_width, dash_length);
 
     // Draw text
-    const cv::Vec2d line_center = 0.5 * (from + to); //from + 0.5 * (to - from);
-    DrawTextBox(image, "Horizon", vcp::convert::ToPoint(line_center), textanchor::HCENTER | textanchor::VCENTER, 5, 0.5, cv::Scalar(0,0,0), cv::Scalar(255,255,255),
-               cv::FONT_HERSHEY_PLAIN, 1.0, 1);
+    if (text_opacity > 0.0)
+    {
+      const cv::Vec2d line_center = 0.5 * (from + to); //from + 0.5 * (to - from);
+      DrawTextBox(image, "Horizon", vcp::convert::ToPoint(line_center),
+                  textanchor::HCENTER | textanchor::VCENTER, 5, text_opacity, cv::Scalar(0, 0, 0), cv::Scalar(255,255,255),
+                 cv::FONT_HERSHEY_PLAIN, 1.0, 1);
+    }
   }
   else
   {
@@ -1345,7 +1349,7 @@ void DrawHorizon(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::M
 
 void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::Mat &t, double grid_spacing, const cv::Rect2d &grid_limits,
                          const cv::Vec2d &grid_origin, double scale_image_points,
-                         int point_radius, int line_width, double opacity, bool flip_color_channels)
+                         int point_radius, int point_thickness, int line_thickness, double opacity, bool flip_color_channels)
 {
   VCP_LOG_DEBUG("DrawGroundplaneGrid()");
   // If our FOV is smaller than the given grid extent, we don't want to project all the points - so first check what's actually visible, then continue to draw.
@@ -1479,7 +1483,7 @@ void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, con
       const cv::Vec3d to3 = clipped.To();
       const cv::Vec2d axis_from = utils::TransformVecWithScale(H_gp2img, cv::Vec2d(from3[0], from3[1]), scale_image_points);
       const cv::Vec2d axis_to = utils::TransformVecWithScale(H_gp2img, cv::Vec2d(to3[0], to3[1]), scale_image_points);
-      cv::line(image, vcp::convert::ToPoint(axis_from), vcp::convert::ToPoint(axis_to), color_y_axis, 1);
+      cv::line(image, vcp::convert::ToPoint(axis_from), vcp::convert::ToPoint(axis_to), color_y_axis, line_thickness);
     }
     x += grid_spacing;
   }
@@ -1495,7 +1499,7 @@ void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, con
       const cv::Vec3d to3 = clipped.To();
       const cv::Vec2d axis_from = utils::TransformVecWithScale(H_gp2img, cv::Vec2d(from3[0], from3[1]), scale_image_points);
       const cv::Vec2d axis_to = utils::TransformVecWithScale(H_gp2img, cv::Vec2d(to3[0], to3[1]), scale_image_points);
-      cv::line(image, vcp::convert::ToPoint(axis_from), vcp::convert::ToPoint(axis_to), color_x_axis, 1);
+      cv::line(image, vcp::convert::ToPoint(axis_from), vcp::convert::ToPoint(axis_to), color_x_axis, line_thickness);
     }
     y += grid_spacing;
   }
@@ -1522,7 +1526,7 @@ void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, con
     }
 
     // Finally: draw!
-    DrawPoints(image, grid_points, colors, point_radius, line_width, opacity);
+    DrawPoints(image, grid_points, colors, point_radius, point_thickness, opacity);
   }
 }
 

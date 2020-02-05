@@ -316,22 +316,23 @@ cv::Mat DrawXYZAxes(const cv::Mat &image, const cv::Mat &K, const cv::Mat &R, co
 
 
 cv::Mat DrawHorizon(const cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::Mat &t,
-                    const cv::Scalar &color, double scale_image_points, int line_width, int dash_length,
+                    const cv::Scalar &color, double scale_image_points, double text_opacity, int line_width, int dash_length,
                     bool warn_if_not_visible)
 {
   cv::Mat img = image.clone();
-  vcp::imvis::drawing::DrawHorizon(img, K, R, t, color, scale_image_points, line_width, dash_length, warn_if_not_visible);
+  vcp::imvis::drawing::DrawHorizon(img, K, R, t, color, scale_image_points, line_width, dash_length, warn_if_not_visible, text_opacity);
   return img;
 }
 
 
 cv::Mat DrawGroundplaneGrid(const cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::Mat &t,
                             double grid_spacing, const cv::Rect2d &grid_limits, const cv::Vec2d &grid_origin,
-                            double scale_image_points, int point_radius, int line_width, double opacity)
+                            double scale_image_points, int point_radius, int point_thickness, int line_thickness, double opacity,
+                            bool output_rgb)
 {
   cv::Mat img = image.clone();
   vcp::imvis::drawing::DrawGroundplaneGrid(img, K, R, t, grid_spacing, grid_limits, grid_origin,
-                                                   scale_image_points, point_radius, line_width, opacity, false);
+                                                   scale_image_points, point_radius, point_thickness, line_thickness, opacity, output_rgb);
   return img;
 }
 
@@ -865,6 +866,8 @@ PYBIND11_MODULE(imvis_cpp, m)
         ":param scale_image_points: If the image is resized (i.e. not the original\n"
         "    size which corresponds to the given intrinsics), you need to\n"
         "    provide the scaling factor as scale_image_points.\n"
+        ":param text_opacity: If > 0, a textbox will be drawn at the center of\n"
+        "    the visible horizon line.\n"
         ":param line_width:   Line width in pixels.\n"
         ":param dash_length:  Horizon will be dashed if > 0.\n"
         ":param warn_if_not_visible: If True and the horizon is outside the\n"
@@ -873,6 +876,7 @@ PYBIND11_MODULE(imvis_cpp, m)
         py::arg("image"), py::arg("K"), py::arg("R"), py::arg("t"),
         py::arg("color") = cv::Scalar(255,0,255),
         py::arg("scale_image_points") = 1.0,
+        py::arg("text_opacity") = 0.8,
         py::arg("line_width") = 1,
         py::arg("dash_length") = -1,
         py::arg("warn_if_not_visible") = true);
@@ -895,8 +899,10 @@ PYBIND11_MODULE(imvis_cpp, m)
         "    size which corresponds to the given projection matrix), you need to\n"
         "    provide the scaling factor as scale_image_points.\n"
         ":param point_radius: Radius of each grid point in pixels.\n"
-        ":param line_width: Line width in pixels, -1 for filled dots/circles.\n"
+        ":param point_thickness: Thickness of contours in pixels, -1 for filled dots/circles.\n"
+        ":param line_thickness: Thickness of grid lines in pixels, integer > 0\n"
         ":param opacity: Opacity in [0,1].\n"
+        ":param output_rgb: Colorize axes as RGB (unless you use OpenCV and prefer BGR)."
         ":return: Visualization as np.array.",
         py::arg("image"), py::arg("K"), py::arg("R"), py::arg("t"),
         py::arg("grid_spacing") = 500.0,
@@ -904,8 +910,10 @@ PYBIND11_MODULE(imvis_cpp, m)
         py::arg("grid_origin") = cv::Vec2d(0.0, 0.0),
         py::arg("scale_image_points") = 1.0,
         py::arg("point_radius") = 5,
-        py::arg("line_width") = 1,
-        py::arg("opacity") = 1.0);
+        py::arg("point_thickness") = 1,
+        py::arg("line_thickness") = 1,
+        py::arg("opacity") = 1.0,
+        py::arg("output_rgb") = true);
 
 
   m.def("draw_error_ellipse_90", &vpi::DrawErrorEllipse90,

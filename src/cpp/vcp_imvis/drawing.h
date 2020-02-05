@@ -238,7 +238,8 @@ void DrawXYZAxes(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::M
  * If the image is scaled (i.e. not the original size which corresponds to the given K), adjust the scale_image_points parameter!
  */
 void DrawHorizon(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::Mat &t, const cv::Scalar &color,
-                 double scale_image_points=1.0, int line_width=2, int dash_length=-1, bool warn_if_not_visible=false);
+                 double scale_image_points=1.0, int line_width=2, int dash_length=-1, bool warn_if_not_visible=false,
+                 double text_opacity=0.7);
 
 
 /** @brief Draws a ground plane grid (allows you to check/visualize your camera2world calibrations).
@@ -252,7 +253,7 @@ void DrawHorizon(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::M
 void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::Mat &t, double grid_spacing=1000.0,
                          const cv::Rect2d &grid_limits=cv::Rect2d(-10000.0, -10000.0, 20000.0, 20000.0),
                          const cv::Vec2d &grid_origin=cv::Vec2d(0.0, 0.0), double scale_image_points=1.0,
-                         int point_radius=5, int line_width=-1, double opacity=1.0, bool flip_color_channels=false);
+                         int point_radius=5, int point_thickness=-1, int line_thickness=1, double opacity=1.0, bool flip_color_channels=false);
 
 
 /** @brief Represents a 3D bounding box (8 vertices, 4 on top, 4 on the bottom plane). */

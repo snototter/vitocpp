@@ -234,57 +234,29 @@ def demo_bbox2d():
     return vis_img
 
 
-def demo_bbox3d():
-    # Bounding boxes
+def calibrated_example():
     img = imutils.imread('../data/ninja.jpg', mode='RGB')  # Load grayscale as 3-channel image
     img_height, img_width = img.shape[:2]
-    #TODO check Line-Based Extrinsic Calibration of Range and Image Sensors ICRA 2013
-    img_points = np.array([
-        (4.4, 183.4),
-        (76.6, 190.6),
-        (155.5, 197.5),
-        (240.2, 204.8),
-        (328.4, 210.6),
-        (44, 147.1),
-        (103.2, 151.1),
-        (167.7, 156.2),
-        (235, 160),
-        (305.9, 164.7),
-        (122, 125),
-        (175.9, 128.1),
-        (289, 134.4),
-        (327.1, 115.5),
-        (33.4, 253.4)], dtype=np.float32)
-
+    # Get camera extrinsics via PnP
+    img_points = np.array([(4.4, 183.4), (76.6, 190.6), (155.5, 197.5), (240.2, 204.8),
+        (328.4, 210.6), (44, 147.1), (103.2, 151.1), (167.7, 156.2), (235, 160), (305.9, 164.7),
+        (122, 125), (175.9, 128.1), (289, 134.4), (327.1, 115.5), (33.4, 253.4)], dtype=np.float32)
+    # Corresponding grid points
     grid_points = [
-        (0, 0),
-        (1, 0),
-        (2, 0),
-        (3, 0),
-        (4, 0),
-        (0, 1),
-        (1, 1),
-        (2, 1),
-        (3, 1),
-        (4, 1),
-        (1, 2),
-        (2, 2),
-        (4, 2),
-        (5, 3),
-        (1, -1)]
-    N = len(grid_points)
+        (0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (0, 1), (1, 1), (2, 1),
+        (3, 1), (4, 1), (1, 2), (2, 2), (4, 2), (5, 3), (1, -1)]
+    # Convert to mm
     grid_width_mm = 24.0
     obj_points = np.array([[s[0]*grid_width_mm, s[1]*grid_width_mm, 0.0] for s in grid_points], dtype=np.float32)
+    # Compute focal length in pixels
     focal_length_mm = 5.6
-    sensor_width_mm = 7.3
-    sensor_height_mm = 5.47
+    sensor_width_mm = 7.3 # sensor_height_mm = 5.47, sensor resolution 7296x5472 (40 MP)
     fl = focal_length_mm / sensor_width_mm * img_width
+    # Good enough guess for principal point and distortion :-p
     cx = img_width / 2.0
     cy = img_height / 2.0
-    # Sensor resolution 7296x5472 (40 MP)
     dist_coeff = np.zeros(4)
-    K = np.float64([[fl, 0, cx], [0, fl, cy], [0, 0, 1]])
-
+    K = np.float64([[fl, 0, cx], [0, fl, cy], [0, 0, 1]]).reshape((3, 3, 1))
     # print(K)
     # print(obj_points, obj_points.shape, np.transpose(obj_points))
     # print(img_points.shape)
@@ -293,23 +265,89 @@ def demo_bbox3d():
     # cameraMatrix = np.eye(3)
     # distCoeffs = np.zeros((5,1))
     # ret, rvec, tvec = cv2.solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs)
-    ret, rvec, tvec = cv2.solvePnP(obj_points.reshape((N, 3, 1)), img_points.reshape((N, 2, 1)), K, dist_coeff) #, flags=cv2.SOLVEPNP_UPNP)
-    print(ret, rvec, tvec)
-    verts = cv2.projectPoints(obj_points, rvec, tvec, K, dist_coeff)[0].reshape(-1, 2)
-    print(verts)
-    vis_img = imvis.draw_points(img, np.transpose(img_points), color=(255, 0, 0))
-    vis_img = imvis.draw_points(vis_img, np.transpose(verts), color=(0, 255, 255))
+    # Solve for the extrinsics
+    ret, rvec, t = cv2.solvePnP(obj_points, img_points, K, dist_coeff)
+    if not ret:
+        raise RuntimeError('Could not recover camera pose!')
+    # print(ret, rvec, t)
+    # verts = cv2.projectPoints(obj_points, rvec, t, K, dist_coeff)[0].reshape(-1, 2)
+    # print(verts)
+    R, _ = cv2.Rodrigues(rvec)
+    # vis_img = imvis.draw_points(img, np.transpose(img_points), color=(255, 0, 0))
+    # vis_img = imvis.draw_points(vis_img, np.transpose(verts), color=(0, 255, 255))
+    return img, K, R, t
+
+
+def demo_bbox3d():
+    img, K, R, t = calibrated_example()
+
+    def _mkbb(footpoint, size, angles, color, label):
+        xh = size[0] / 2.0
+        yh = size[1] / 2.0
+        zh = size[2] / 2.0
+        # Centered 3d box
+        box = [
+            (-xh, -yh, +zh), (+xh, -yh, +zh), (+xh, +yh, +zh), (-xh, +yh, +zh), # First, the 4 top corners
+            (-xh, -yh, -zh), (+xh, -yh, -zh), (+xh, +yh, -zh), (-xh, +yh, -zh), # Then, the 4 bottom corners
+        ]
+        # A 3d bounding box is a box with RGB color and an optional TODO??? label
+        box3d = (box, color, label)  # Must be a tuple!!!
+        return shift_bbox3d(rotate_bbox3d(box3d, angles[0], angles[1], angles[2]),
+            footpoint[0], footpoint[1], footpoint[2] + zh)
+
+    bboxes = [
+        _mkbb((78, 34, 0), (26, 20, 45), (0, 0, -30), (255, 0, 255), 'Ninja'),  # The ninja
+        _mkbb((36, -12, 0), (24, 24, 15), (0, 0, 0), (0, 200, 0), None),  # Small box in front
+        _mkbb((6, 48, 10), (60, 35, 35), (6, -2, 30), None, 'Lens')
+    ]
+    vis_img = imvis.draw_bboxes3d(img, bboxes, K, R, t,
+        scale_image_points=1.0, default_box_color=(255, 0, 0),
+        line_width=2, dash_length=10,
+        fill_opacity_top=0.2, fill_opacity_bottom=0.5,
+        font_color=(0, 0, 0), text_anchor='center',
+        font_scale=1.0, font_thickness=1,
+        text_box_padding=5, text_box_opacity=0.7,
+        non_overlapping=True)
     return vis_img
+
+
+def demo_vis_extrinsics():
+    img, K, R, t = calibrated_example()
+    # Draw the horizon (or print a warning if it lies outside the fov)
+    vis_img = imvis.draw_horizon(img, K, R, t,
+        color=(0, 255, 255),
+        scale_image_points=1.0,
+        text_opacity=0.7,
+        line_width=3,
+        dash_length=-1,
+        warn_if_not_visible=True)
+    # Overlay the groundplane grid
+    vis_img = imvis.draw_groundplane_grid(vis_img, K, R, t,
+        grid_spacing=24,
+        grid_limits=(0, -24, 96, 196),
+        grid_origin=(0, 0),
+        scale_image_points=1.0,
+        point_radius=4,
+        point_thickness=-1,
+        line_thickness=2,
+        opacity=0.9,
+        output_rgb=True)
+    # Overlay the axis (actually not starting at 0,0,0 so we can see it fully inside the image...)
+    vis_img = imvis.draw_xyz_axes(vis_img, K, R, t,
+        origin=(12, 12, 0),
+        scale_axes=48,
+        scale_image_points=1.0,
+        line_width=4,
+        dash_length=-1,
+        image_is_rgb=True)
+    return vis_img
+
 
 
 if __name__ == "__main__":
     demo_pseudocolor()
 
     demo_overlay()
-
-    # TODO maybe add a draw-primitives demo?
-    #collage = imvis.draw_circles(collage, [(30, 20), (100, 200)], [10, 27], thickness=-1, line_type=16)
-
 
     # ############################################################################
     # ## Stereoscopic images
@@ -332,15 +370,15 @@ if __name__ == "__main__":
     names = list()
     
     images.append(demo_bbox2d())
-    names.append('2D BBox & Trajectory')
-
-    
-
-    images.append(demo_primitives())
-    names.append('Primitives')
+    names.append('2D Bounding Boxes & Trajectory')
 
     images.append(demo_bbox3d())
-    names.append('3D BBox TODO')
+    names.append('3D Bounding Boxes')
+
+    images.append(demo_vis_extrinsics())
+    names.append('World Coodinate System')
+    # images.append(demo_primitives()) # TODO make separate demo
+    # names.append('Primitives')
 
     # Add alpha channel to render the README visualization nicely for web display
     images[0] = np.dstack((images[0], 255*np.ones(images[0].shape[:2], dtype=np.uint8)))
@@ -359,7 +397,7 @@ if __name__ == "__main__":
 
     imvis.imshow(collage, title='Basic Drawing', wait_ms=-1)
     imutils.imsave('example-imvis.png', collage)
-    raise RuntimeError()
+    raise RuntimeError() #TODO finish demo
     
     
     ############################################################################
