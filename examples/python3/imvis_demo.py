@@ -94,7 +94,7 @@ def center_bbox3d(box):
 
 
 def demo_pseudocolor():
-    # Pseudocoloring
+    """Pseudocolorin."""
     peaks = imutils.imread('../data/peaks.png', mode='L')
     images = list()
     pc = imvis.pseudocolor(
@@ -120,6 +120,7 @@ def demo_pseudocolor():
 
 
 def demo_overlay():
+    """How to overlay images and highlight regions."""
     # Overlay
     rgb = imutils.imread('../data/flamingo.jpg', mode='L')
     # Generate some data to overlay
@@ -145,8 +146,7 @@ def demo_overlay():
 
 
 def demo_primitives():
-    # TODO 
-    # * 2 arrows (one solid, one dashed)
+    """How to draw basic shapes, text boxes, etc."""
     # * rotated rect around dot, maybe
     img = imutils.imread('../data/ninja.jpg', mode='RGB')  # Load grayscale as 3-channel image
     # Draw rounded box(es)
@@ -173,17 +173,18 @@ def demo_primitives():
         #[(320, 33), (316, 87), True, (0, 255, 255)]]
     vis_img = imvis.draw_arrows(vis_img, arrows, line_width=2, default_color=(0,200,255), dash_length=15, arrow_head_factor=0.1)
     
-    # # Draw text box
-    # vis_img = imvis.draw_text_box(vis_img, 'Angry',
-    #     (283, 68), text_anchor='west',
-    #     bg_color=(255, 0, 255), font_color=(-1, -1, -1),
-    #     font_scale=1.0, font_thickness=1,
-    #     padding=5, fill_opacity=0.8)
+    # Draw text box
+    vis_img = imvis.draw_text_box(vis_img, 'Angry',
+        (283, 68), text_anchor='west',
+        bg_color=(255, 0, 255), font_color=(-1, -1, -1),
+        font_scale=1.0, font_thickness=1,
+        padding=5, fill_opacity=0.8)
 
     return vis_img
 
 
 def demo_bbox2d():
+    """Renders 2D bounding boxes (with annotations) & fading trajectories."""
     # Bounding boxes
     img = imutils.imread('../data/ninja.jpg', mode='RGB')  # Load grayscale as 3-channel image
     bboxes2d = [
@@ -235,6 +236,7 @@ def demo_bbox2d():
 
 
 def calibrated_example():
+    """Returns an exemplary image with corresponding camera calibration and pose."""
     img = imutils.imread('../data/ninja.jpg', mode='RGB')  # Load grayscale as 3-channel image
     img_height, img_width = img.shape[:2]
     # Get camera extrinsics via PnP
@@ -279,6 +281,7 @@ def calibrated_example():
 
 
 def demo_bbox3d():
+    """Renders 3D bounding boxes (with annotations)."""
     img, K, R, t = calibrated_example()
 
     def _mkbb(footpoint, size, angles, color, label):
@@ -312,6 +315,7 @@ def demo_bbox3d():
 
 
 def demo_vis_extrinsics():
+    """Visualizes the ground plane grid, coordinate system axes, etc."""
     img, K, R, t = calibrated_example()
     # Draw the horizon (or print a warning if it lies outside the fov)
     vis_img = imvis.draw_horizon(img, K, R, t,
@@ -343,66 +347,8 @@ def demo_vis_extrinsics():
     return vis_img
 
 
-
-if __name__ == "__main__":
-    demo_pseudocolor()
-
-    demo_overlay()
-
-    # ############################################################################
-    # ## Stereoscopic images
-    # # Load rectified stereo pair as NumPy array, RGB ordering
-    # rect_left = imutils.imread('../../examples/data/stereo-rect-left.jpg')
-    # rect_right = imutils.imread('../../examples/data/stereo-rect-right.jpg')
-
-    # # # Show pair
-    # # collage = imvis.make_collage([rect_left, rect_right], fixed_size_per_image=(640, 480), bg_color=(255,255,255), padding=5)
-    # # imvis.imshow(collage, is_rgb=True, title="A collage")
-
-    # # Stereo anaglyph
-    # anaglyph = imvis.make_anaglyph(rect_left, rect_right, shift=(40,0))
-    # imvis.imshow(anaglyph, title='Anaglyph RGB from Stereo pair', flip_channels=False)
-
-    
-    ############################################################################
-    ## Drawing
-    images = list()
-    names = list()
-    
-    images.append(demo_bbox2d())
-    names.append('2D Bounding Boxes & Trajectory')
-
-    images.append(demo_bbox3d())
-    names.append('3D Bounding Boxes')
-
-    images.append(demo_vis_extrinsics())
-    names.append('World Coodinate System')
-    # images.append(demo_primitives()) # TODO make separate demo
-    # names.append('Primitives')
-
-    # Add alpha channel to render the README visualization nicely for web display
-    images[0] = np.dstack((images[0], 255*np.ones(images[0].shape[:2], dtype=np.uint8)))
-    padding=10
-    collage = imvis.make_collage(images, padding=padding, bg_color=(0, 0, 0, 0), num_images_per_row=len(images))
-    
-    # Add labels
-    height, width = collage.shape[:2]
-    mask_width = (width - (len(names)-1)*padding) / len(names)
-    for i in range(len(names)):
-        pos = (i * (mask_width + padding) + mask_width/2, height - 10)
-        collage = imvis.draw_text_box(collage, names[i],
-            pos, text_anchor='south', bg_color=(0, 0, 0),
-            font_color=(-1, -1, -1), font_scale=1.0,
-            font_thickness=1, padding=5, fill_opacity=0.8)
-
-    imvis.imshow(collage, title='Basic Drawing', wait_ms=-1)
-    imutils.imsave('example-imvis.png', collage)
-    raise RuntimeError() #TODO finish demo
-    
-    
-    ############################################################################
-    ## 3D Bounding Box magic
-    # Dummy boxes:
+def show_off_boxes3d():
+    # 3D bounding box animations (to show clipping, visibility tests, etc.)
     box3da = ([(-3,5,2.5), (-1.5,5,2.5), (-1.5,3,2.5), np.array((-3,3,2.5)),
                (-3,5,0), (-1.5,5,0), (-1.5,3,0), (-3,3,0)], (255,0,0), "A box") # Must be a tuple!!!
 
@@ -430,7 +376,7 @@ if __name__ == "__main__":
         vis_img = imvis.draw_bboxes3d(vis_img, [box3da, rotate_bbox3d(box3db, 0, 0, angle), box3dc], 
                     K, R, t, line_width=3, text_anchor='center', non_overlapping=True)
     
-        k = imvis.imshow(vis_img, title="3d bbox", wait_ms=100) & 0xFF
+        k = imvis.imshow(vis_img, title="3d bbox (non-overlapping)", wait_ms=100) & 0xFF
         if k == 27:
             break
 
@@ -492,3 +438,73 @@ if __name__ == "__main__":
         k = imvis.imshow(vis_img, title="3d bbox", wait_ms=50) & 0xFF
         if k == 27:
             break
+
+
+
+if __name__ == "__main__":
+    # Render a collage of 2D & 3D bounding boxes + coordinate system visuals
+    images = list()
+    names = list()
+    
+    images.append(demo_bbox2d())
+    names.append('2D Bounding Boxes & Trajectory')
+
+    images.append(demo_bbox3d())
+    names.append('3D Bounding Boxes')
+
+    images.append(demo_vis_extrinsics())
+    names.append('World Coodinate System')
+
+    # Add alpha channel to render the README visualization nicely for web display
+    images[0] = np.dstack((images[0], 255*np.ones(images[0].shape[:2], dtype=np.uint8)))
+    padding=10
+    collage = imvis.make_collage(images, padding=padding, bg_color=(0, 0, 0, 0), num_images_per_row=len(images))
+    
+    # Add labels
+    height, width = collage.shape[:2]
+    mask_width = (width - (len(names)-1)*padding) / len(names)
+    for i in range(len(names)):
+        pos = (i * (mask_width + padding) + mask_width/2, height - 10)
+        collage = imvis.draw_text_box(collage, names[i],
+            pos, text_anchor='south', bg_color=(0, 0, 0),
+            font_color=(-1, -1, -1), font_scale=1.0,
+            font_thickness=1, padding=5, fill_opacity=0.8)
+
+    imvis.imshow(collage, title='Basic Drawing', wait_ms=-1)
+    # imutils.imsave('example-imvis.png', collage)
+
+
+    # ############################################################################
+    # Drawing basic shapes/primitives
+    demo_primitives()
+
+
+    # ############################################################################
+    # Pseudocolorization
+    demo_pseudocolor()
+
+
+    # ############################################################################
+    # Overlay images and highlight regions
+    demo_overlay()
+
+
+    # ############################################################################
+    # ## Stereoscopic images
+    # TODO capture example stereo data + calibration
+    # # Load rectified stereo pair as NumPy array, RGB ordering
+    # rect_left = imutils.imread('../../examples/data/stereo-rect-left.jpg')
+    # rect_right = imutils.imread('../../examples/data/stereo-rect-right.jpg')
+
+    # # # Show pair
+    # # collage = imvis.make_collage([rect_left, rect_right], fixed_size_per_image=(640, 480), bg_color=(255,255,255), padding=5)
+    # # imvis.imshow(collage, is_rgb=True, title="A collage")
+
+    # # Stereo anaglyph
+    # anaglyph = imvis.make_anaglyph(rect_left, rect_right, shift=(40,0))
+    # imvis.imshow(anaglyph, title='Anaglyph RGB from Stereo pair', flip_channels=False)
+
+    
+    # ############################################################################
+    # 3D bounding box animations (to show clipping, visibility tests, etc.)
+    show_off_boxes3d()
