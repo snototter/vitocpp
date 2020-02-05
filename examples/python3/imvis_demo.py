@@ -21,6 +21,7 @@ from vito import cam_projections as prjutils
 
 
 def rotx3d(theta):
+    """3D rotation matrix, x-axis."""
     ct = np.cos(theta)
     st = np.sin(theta)
     return np.array([
@@ -30,6 +31,7 @@ def rotx3d(theta):
 
 
 def roty3d(theta):
+    """3D rotation matrix, y-axis."""
     ct = np.cos(theta)
     st = np.sin(theta)
     return np.array([
@@ -39,6 +41,7 @@ def roty3d(theta):
 
 
 def rotz3d(theta):
+    """3D rotation matrix, z-axis."""
     ct = np.cos(theta)
     st = np.sin(theta)
     return np.array([
@@ -47,15 +50,23 @@ def rotz3d(theta):
         [0.0, 0.0, 1.0]], dtype=np.float64)
 
 
-def pt2tuple(pt):
-    return (pt[0,0], pt[1,0], pt[2,0])
-
-
-def rotate_bbox3d(box, deg_x, deg_y, deg_z):
+def rot3d(deg_x, deg_y, deg_z):
+    """Returns the 3D rotation matrix in ZYX (i.e. yaw-pitch-roll) order."""
     Rx = rotx3d(np.deg2rad(deg_x))
     Ry = roty3d(np.deg2rad(deg_y))
     Rz = rotz3d(np.deg2rad(deg_z))
     R = prjutils.matmul(Rx, prjutils.matmul(Ry, Rz))
+    return R
+
+
+def pt2tuple(pt):
+    """Convert a 3D point to a tuple."""
+    return (pt[0,0], pt[1,0], pt[2,0])
+
+
+def rotate_bbox3d(box, deg_x, deg_y, deg_z):
+    """Rotates the bounding box around the origin (of the coordinate system)."""
+    R = rot3d(deg_x, deg_y, deg_z)
     # print('Euler angles are: ', np.rad2deg(cmath.euler_angles_from_rotation_matrix(R)).reshape((1,3)))
     coords = box[0]
     color = box[1]
@@ -66,6 +77,7 @@ def rotate_bbox3d(box, deg_x, deg_y, deg_z):
 
 
 def rotate_bbox3d_center(box, deg_x, deg_y, deg_z):
+    """Rotates the 3D bounding box by [deg_x, deg_y, deg_z] around its center."""
     cb = center_bbox3d(box)
     box = shift_bbox3d(box, -cb[0], -cb[1], -cb[2])
     box = rotate_bbox3d(box, deg_x, deg_y, deg_z)
@@ -73,6 +85,7 @@ def rotate_bbox3d_center(box, deg_x, deg_y, deg_z):
 
 
 def shift_bbox3d(box, dx, dy, dz):
+    """Shifts the 3D bounding box by [dx, dy, dz]."""
     coords = box[0]
     color = box[1]
     coords = [(pt[0]+dx, pt[1]+dy, pt[2]+dz) for pt in coords]
@@ -82,6 +95,7 @@ def shift_bbox3d(box, dx, dy, dz):
 
 
 def center_bbox3d(box):
+    """Computes the center of the 3D bounding box."""
     coords = box[0]
     sx = sum([pt[0] for pt in coords])
     sy = sum([pt[1] for pt in coords])
@@ -473,21 +487,17 @@ if __name__ == "__main__":
     imvis.imshow(collage, title='Basic Drawing', wait_ms=-1)
     # imutils.imsave('example-imvis.png', collage)
 
-
     # ############################################################################
     # Drawing basic shapes/primitives
     demo_primitives()
-
 
     # ############################################################################
     # Pseudocolorization
     demo_pseudocolor()
 
-
     # ############################################################################
     # Overlay images and highlight regions
     demo_overlay()
-
 
     # ############################################################################
     # ## Stereoscopic images
@@ -503,7 +513,6 @@ if __name__ == "__main__":
     # # Stereo anaglyph
     # anaglyph = imvis.make_anaglyph(rect_left, rect_right, shift=(40,0))
     # imvis.imshow(anaglyph, title='Anaglyph RGB from Stereo pair', flip_channels=False)
-
     
     # ############################################################################
     # 3D bounding box animations (to show clipping, visibility tests, etc.)
