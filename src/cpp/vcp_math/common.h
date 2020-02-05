@@ -37,15 +37,16 @@ typename std::enable_if<!std::numeric_limits<T>::is_integer, bool>::type
   // unless the result is subnormal
          || std::fabs(x-y) < std::numeric_limits<T>::min();
 }
-
+//FIXME check against boost eps_equal
+// https://randomascii.wordpress.com/2012/02/25/comparing-floating-point-numbers-2012-edition/
 /** @brief Check if |x| < 1e-10. */
 template<typename T>
 bool eps_zero(T x)
-{
+{//FIXME std::numeric_limits<T>::epsilon()
   return std::fabs(x) < 1e-10;
 }
 
-
+//FIXME check where it is used and whether check is correct!
 /** @brief Checks if two cv::Vec are equal w.r.t. to the machine epsilon (and the desired precision in ULPs), @see eps_equal (Notes on what is equal and what is not!) */
 template<typename T, int D>
 bool IsVecEqual(const cv::Vec<T,D> &a, const cv::Vec<T,D> &b, int ulp)

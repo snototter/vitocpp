@@ -237,8 +237,69 @@ def demo_bbox2d():
 def demo_bbox3d():
     # Bounding boxes
     img = imutils.imread('../data/ninja.jpg', mode='RGB')  # Load grayscale as 3-channel image
+    img_height, img_width = img.shape[:2]
     #TODO check Line-Based Extrinsic Calibration of Range and Image Sensors ICRA 2013
-    return img
+    img_points = np.array([
+        (4.4, 183.4),
+        (76.6, 190.6),
+        (155.5, 197.5),
+        (240.2, 204.8),
+        (328.4, 210.6),
+        (44, 147.1),
+        (103.2, 151.1),
+        (167.7, 156.2),
+        (235, 160),
+        (305.9, 164.7),
+        (122, 125),
+        (175.9, 128.1),
+        (289, 134.4),
+        (327.1, 115.5),
+        (33.4, 253.4)], dtype=np.float32)
+
+    grid_points = [
+        (0, 0),
+        (1, 0),
+        (2, 0),
+        (3, 0),
+        (4, 0),
+        (0, 1),
+        (1, 1),
+        (2, 1),
+        (3, 1),
+        (4, 1),
+        (1, 2),
+        (2, 2),
+        (4, 2),
+        (5, 3),
+        (1, -1)]
+    N = len(grid_points)
+    grid_width_mm = 24.0
+    obj_points = np.array([[s[0]*grid_width_mm, s[1]*grid_width_mm, 0.0] for s in grid_points], dtype=np.float32)
+    focal_length_mm = 5.6
+    sensor_width_mm = 7.3
+    sensor_height_mm = 5.47
+    fl = focal_length_mm / sensor_width_mm * img_width
+    cx = img_width / 2.0
+    cy = img_height / 2.0
+    # Sensor resolution 7296x5472 (40 MP)
+    dist_coeff = np.zeros(4)
+    K = np.float64([[fl, 0, cx], [0, fl, cy], [0, 0, 1]])
+
+    # print(K)
+    # print(obj_points, obj_points.shape, np.transpose(obj_points))
+    # print(img_points.shape)
+    # objectPoints = np.random.random((10,3,1))
+    # imagePoints = np.random.random((10,2,1))
+    # cameraMatrix = np.eye(3)
+    # distCoeffs = np.zeros((5,1))
+    # ret, rvec, tvec = cv2.solvePnP(objectPoints, imagePoints, cameraMatrix, distCoeffs)
+    ret, rvec, tvec = cv2.solvePnP(obj_points.reshape((N, 3, 1)), img_points.reshape((N, 2, 1)), K, dist_coeff) #, flags=cv2.SOLVEPNP_UPNP)
+    print(ret, rvec, tvec)
+    verts = cv2.projectPoints(obj_points, rvec, tvec, K, dist_coeff)[0].reshape(-1, 2)
+    print(verts)
+    vis_img = imvis.draw_points(img, np.transpose(img_points), color=(255, 0, 0))
+    vis_img = imvis.draw_points(vis_img, np.transpose(verts), color=(0, 255, 255))
+    return vis_img
 
 
 if __name__ == "__main__":
