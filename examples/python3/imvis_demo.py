@@ -108,29 +108,37 @@ def center_bbox3d(box):
 
 
 def demo_pseudocolor():
-    """Pseudocolorin."""
+    """Pseudocoloring."""
     peaks = imutils.imread('../data/peaks.png', mode='L')
+    # For visualization purposes only, reduce input to a few
+    # distinct categories/labels:
+    data = ((peaks / 25) - 5).astype(np.int16)
+    names = ['Bone', 'Turbo', 'Magma', 'Viridis']
     images = list()
-    pc = imvis.pseudocolor(
-        peaks, limits=[0, 255],  # uint8 data
-        color_map=colormaps.colormap_temperature_rgb)
-    images.append(pc)
-    pc = imvis.pseudocolor(
-        peaks.astype(np.int32), limits=[0, 255],  # int32 data
-        color_map=colormaps.colormap_turbo_rgb)
-    images.append(pc)
-    pc = imvis.pseudocolor(
-        peaks.astype(np.float64)/255.0,  # default limits are [0, 1]
-        color_map=colormaps.colormap_viridis_rgb)
-    images.append(pc)
-    pc = imvis.pseudocolor(
-        ((peaks / 25) - 5).astype(np.int16),  # reduce input to few categories
-        limits=None,   # Will be computed from data
-        color_map=colormaps.colormap_viridis_rgb)
-    images.append(pc)
+    for name in names:
+        pc = imvis.pseudocolor(
+            data, limits=None,  # Compute min/max from data
+            color_map=colormaps.by_name(name, return_rgb=True))
+        images.append(pc)
+
     # Display as a single collage
-    collage = imvis.make_collage(images, padding=10, bg_color=(0, 0, 0), num_images_per_row=len(images))
+    padding = 10
+    # Add alpha channel to render the collage nicely for the repo's README
+    images[0] = np.dstack((images[0], 255*np.ones(images[0].shape[:2], dtype=np.uint8)))
+    collage = imvis.make_collage(images, padding=padding, bg_color=(0, 0, 0, 0), num_images_per_row=len(images))
+
+    # Add labels
+    height, width = collage.shape[:2]
+    mask_width = (width - (len(names)-1)*padding) / len(names)
+    for i in range(len(names)):
+        pos = (i * (mask_width + padding) + mask_width/2, height - 10)
+        collage = imvis.draw_text_box(collage, names[i],
+            pos, text_anchor='south', bg_color=(0, 0, 0),
+            font_color=(-1, -1, -1), font_scale=1.0,
+            font_thickness=1, padding=5, fill_opacity=0.8)
+
     imvis.imshow(collage, title='Pseudocoloring', wait_ms=-1)
+    imutils.imsave('example-pseudocolor.png', collage)
 
 
 def demo_overlay():
@@ -194,7 +202,7 @@ def demo_primitives():
         font_scale=1.0, font_thickness=1,
         padding=5, fill_opacity=0.8)
 
-    return vis_img
+    imvis.imshow(vis_img, title='Drawing Primitives', wait_ms=10)
 
 
 def demo_bbox2d():
@@ -203,7 +211,7 @@ def demo_bbox2d():
     img = imutils.imread('../data/ninja.jpg', mode='RGB')  # Load grayscale as 3-channel image
     bboxes2d = [
         # ((178, 164, 43, 29), (255, 0, 255), '', True),  # Dashed violett rect (at the target's dot)
-        (np.array([177, 76, 147, 53]), (0, 255, 255), 'Sword'),  # Also accepts a 4-element np.array
+        (np.array([177, 76, 147, 53]), (0, 255, 255), 'Katana'),  # Also accepts a 4-element np.array
         ]
     vis_img = imvis.draw_bboxes2d(
         img, bboxes2d, text_anchor='south',
@@ -212,7 +220,7 @@ def demo_bbox2d():
 
     # Rotated bounding box
     vis_img = imvis.draw_rotated_bboxes2d(vis_img,
-        [((252, 148, 60, 30, 15), (0, 200, 0), 'Shoes'),
+        [((252, 148, 60, 30, 15), (0, 200, 0), 'Tabi'),
         ((80, 68, 150, 90, -10), (0, 255, 255), 'Lens')],
         line_width=2,
         fill_opacity=0.4,
@@ -389,70 +397,76 @@ def show_off_boxes3d():
         vis_img = np.zeros((768, 1024, 3), dtype=np.uint8)
         vis_img = imvis.draw_bboxes3d(vis_img, [box3da, rotate_bbox3d(box3db, 0, 0, angle), box3dc], 
                     K, R, t, line_width=3, text_anchor='center', non_overlapping=True)
-    
+        vis_img = imvis.draw_text_box(vis_img, 'Press ESC to cancel', (512, 5), text_anchor='north')
         k = imvis.imshow(vis_img, title="3d bbox (non-overlapping)", wait_ms=100) & 0xFF
         if k == 27:
-            break
+            return
 
 
     # Show off (2)
     for angle in range(0,360,2):
         vis_img = np.zeros((768, 1024, 3), dtype=np.uint8)
         vis_img = imvis.draw_bboxes3d(vis_img, [rotate_bbox3d_center(box3da, angle, 0, 0)], K, R, t, line_width=3, dash_length=-1, text_anchor='southeast')
+        vis_img = imvis.draw_text_box(vis_img, 'Press ESC to cancel', (512, 5), text_anchor='north')
         k = imvis.imshow(vis_img, title="3d bbox", wait_ms=10) & 0xFF
         if k == 27:
-            break
+            return
 
     # Show off (3)
     for angle in range(0,360,2):
         vis_img = np.zeros((768, 1024, 3), dtype=np.uint8)
         vis_img = imvis.draw_bboxes3d(vis_img, [rotate_bbox3d_center(box3da, 0, angle, 0)], K, R, t, line_width=3)
+        vis_img = imvis.draw_text_box(vis_img, 'Press ESC to cancel', (512, 5), text_anchor='north')
         k = imvis.imshow(vis_img, title="3d bbox", wait_ms=10) & 0xFF
         if k == 27:
-            break
+            return
 
     # Show off (4)
     for angle in range(0,360,2):
         vis_img = np.zeros((768, 1024, 3), dtype=np.uint8)
         vis_img = imvis.draw_bboxes3d(vis_img, [rotate_bbox3d_center(box3da, 0, 0, angle)], K, R, t, line_width=3)
+        vis_img = imvis.draw_text_box(vis_img, 'Press ESC to cancel', (512, 5), text_anchor='north')
         k = imvis.imshow(vis_img, title="3d bbox", wait_ms=10) & 0xFF
         if k == 27:
-            break
+            return
 
     # Show off (5)
     for shift in range(0,-48,-1):
         vis_img = np.zeros((768, 1024, 3), dtype=np.uint8)
         vis_img = imvis.draw_bboxes3d(vis_img, [shift_bbox3d(rotate_bbox3d(box3da, 0, 0, 10), 1.9, shift/10.0, 0)], K, R, t, line_width=3)
+        vis_img = imvis.draw_text_box(vis_img, 'Press ESC to cancel', (512, 5), text_anchor='north')
         k = imvis.imshow(vis_img, title="3d bbox", wait_ms=50) & 0xFF
         if k == 27:
-            break
+            return
 
     # Show off (6)
     box = rotate_bbox3d_center(box3da, 90, 0, 0)
     for shift in range(0,-54,-1):
         vis_img = np.zeros((768, 1024, 3), dtype=np.uint8)
         vis_img = imvis.draw_bboxes3d(vis_img, [shift_bbox3d(box, 1.5, shift/10.0, 0)], K, R, t, line_width=3)
+        vis_img = imvis.draw_text_box(vis_img, 'Press ESC to cancel', (512, 5), text_anchor='north')
         k = imvis.imshow(vis_img, title="3d bbox", wait_ms=50) & 0xFF
         if k == 27:
-            break
+            return
 
     # Show off (7)
     box = rotate_bbox3d_center(box3da, 40, 0, 20)
     for shift in range(0,-60,-1):
         vis_img = np.zeros((768, 1024, 3), dtype=np.uint8)
         vis_img = imvis.draw_bboxes3d(vis_img, [shift_bbox3d(box, 1.5, shift/10.0, 0)], K, R, t, line_width=3)
+        vis_img = imvis.draw_text_box(vis_img, 'Press ESC to cancel', (512, 5), text_anchor='north')
         k = imvis.imshow(vis_img, title="3d bbox", wait_ms=50) & 0xFF
         if k == 27:
-            break
+            return
 
     # Show off (8)
     for shift in range(0,-63,-1):
         vis_img = np.zeros((768, 1024, 3), dtype=np.uint8)
         vis_img = imvis.draw_bboxes3d(vis_img, [shift_bbox3d(rotate_bbox3d_center(box3db, 10, 10, -20), 1, 4+shift/10.0, 1.5)], K, R, t, line_width=3)
+        vis_img = imvis.draw_text_box(vis_img, 'Press ESC to cancel', (512, 5), text_anchor='north')
         k = imvis.imshow(vis_img, title="3d bbox", wait_ms=50) & 0xFF
         if k == 27:
-            break
-
+            return
 
 
 if __name__ == "__main__":
