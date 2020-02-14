@@ -34,7 +34,8 @@ Some of `vcp`'s highlights:
 
   ![Pseudocoloring Example](./doc/example-pseudocolor.png)
 * <b>Math</b> utilities - besides enabling most of the fancy visualizations within `vcp::imvis`, you can also do basic geometry tasks with the `vcp::math` module (e.g. computing tangents of circles, line (segment) intersection, and quite a lot more).
-TODO add line intersect example, tangents, poly (chull, rdp)
+
+  ![Geometry Example](./doc/example-geometry.png)
 * <b>C++</b> utilities - for basic file/path and string manipulation, sorting, and more (if you want to avoid heavier dependencies, such as Boost).
 
 
