@@ -42,23 +42,89 @@ def _tangent_helper(img, center1, radius1, center2, radius2):
 
 
 def demo_intersect(img):
-    lines = [
-        ((32, 64), (160, 32)),
-        ((96, 24), (96, 170))]
-    circles = [
-        ((88, 160), 32),
-        ((140, 196), 42)]
-    img = imvis.draw_lines(img, lines, default_color=(255, 0, 255), line_width=2)
+    #TODO move vertical line to the left!
+    l1 = ((96, 24), (96, 170)) # vertical line
+    l2 = ((32, 64), (160, 32)) # top slanted line
+    l3 = ((128, 96), (192, 80)) # bottom slanted line
+    lines = [l1, l2, l3]
+    c1 = ((88, 160), 32) # Center, radius 
+    c2 = ((140, 196), 42)
+    circles = [c1, c2]
 
+    intersection_points = list() # "Real" intersection points
+    wannabe_intersection_points = list() # Points which would be intersection points if the segments were infinite lines
+
+    ##### Line-Line/Segment intersections
+    img = imvis.draw_lines(img, lines, default_color=(255, 0, 255), line_width=2)
+    ipl_12 = math2d.intersection_line_line_segment(l1, l2)
+    intersection_points.append(ipl_12)
+    # Line SEGMENT l3 doesn't intersect the vertical line
+    ipl_13 = math2d.intersection_line_line_segment(l1, l3)
+    assert ipl_13 is None
+    # ... but they intersect, if we assume l3 was a line
+    ipl_13 = math2d.intersection_line_line(l1, l3)
+    wannabe_intersection_points.append(ipl_13)
+    ipl_23 = math2d.intersection_line_line(l2, l3)
+    assert ipl_23 is None
+
+    ##### Line-Circle intersections
+    def _app(lst, cint):
+        if cint[0] > 0:
+            lst.append(cint[1])
+        if cint[0] > 1:
+            lst.append(cint[2])
+    intersect = math2d.intersection_line_segment_circle(l1, *c1)
+    _app(intersection_points, intersect)
+    # To get the second point, we need to interpret the segment as an infinite line
+    intersect = math2d.intersection_line_circle(l1, *c1)
+    for idx in range(intersect[0]):
+        p = intersect[1 + idx]
+        if not p in intersection_points:
+            wannabe_intersection_points.append(p)
+    # The other lines will never intersect the circle
+    intersect = math2d.intersection_line_segment_circle(l2, *c1)
+    assert intersect[0] == 0
+
+    ##### Circle-Circle intersections
+    #TODO
+    
+    ##### Draw
     img = imvis.draw_circles(img, [c[0] for c in circles], [c[1] for c in circles],
         default_color=(0, 255, 255), thickness=2)
+    # TODO use draw_crosses
+    img = imvis.draw_points(img, intersection_points, color=(0, 255, 0), radius=10, line_width=2, opacity=1)
+    img = imvis.draw_points(img, wannabe_intersection_points, color=(0, 0, 255), radius=10, line_width=2, opacity=1)
     return img
+
+
+def demo_tangents(img):
+    c1 = ((272, 80), 42) # Center, radius 
+    c2 = ((248, 196), 32)
+    return _tangent_helper(img, *c1, *c2)
+
+
+def demo_convhull(img):
+    pts = [
+        (512, 32),
+        (480, 77),
+        (520, 200),
+        (570, 96)
+    ]
+    #TODO random sample?
+    chull = math2d.convex_hull(pts)
+    img = imvis.draw_polygon(img, chull, color=(255, 0, 255), line_width=3, dash_length=-1, fill_opacity=0.3)
+    return imvis.draw_points(img, pts, color=(0, 0, 255), radius=5, line_width=-1, opacity=1)
 
 
 if __name__ == "__main__":
     # RGBA, transparent image
     vis_img = np.zeros((256, 1024, 4))
     vis_img = demo_intersect(vis_img)
+
+    vis_img = demo_tangents(vis_img)
+
+    vis_img = demo_convhull(vis_img)
+
     imvis.imshow(vis_img, title='Math Utilities', wait_ms=-1)
     # # #TODO remove this
     # # print(math2d.circle_from_three_points((0,0), (0,0), (10, 20)))
