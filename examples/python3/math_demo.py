@@ -112,7 +112,8 @@ def demo_convhull(img):
     ]
     #TODO random sample?
     chull = math2d.convex_hull(pts)
-    img = imvis.draw_polygon(img, chull, color=(255, 0, 255), line_width=3, dash_length=-1, fill_opacity=0.3)
+    # Draw convex hull as closed polygon (need to append first hull point)
+    img = imvis.draw_polygon(img, [*chull, chull[0]], color=(255, 0, 255), line_width=3, dash_length=-1, fill_opacity=0.3)
     return imvis.draw_points(img, pts, color=(0, 0, 255), radius=5, line_width=-1, opacity=1)
 
 
@@ -126,6 +127,7 @@ if __name__ == "__main__":
     vis_img = demo_convhull(vis_img)
 
     imvis.imshow(vis_img, title='Math Utilities', wait_ms=-1)
+    imutils.imsave('../../doc/example-math.png', vis_img)
     # # #TODO remove this
     # # print(math2d.circle_from_three_points((0,0), (0,0), (10, 20)))
 
