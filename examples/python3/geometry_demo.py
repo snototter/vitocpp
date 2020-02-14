@@ -94,13 +94,24 @@ def demo_intersect(img):
     # TODO use draw_crosses
     img = imvis.draw_points(img, intersection_points, color=(0, 255, 0), radius=10, line_width=2, opacity=1)
     img = imvis.draw_points(img, wannabe_intersection_points, color=(0, 0, 255), radius=10, line_width=2, opacity=1)
-    return img
+    # Add label
+    return imvis.draw_text_box(img, '2D Intersection',
+            (110, img.shape[0]-10),
+            text_anchor='south', bg_color=(0, 0, 0),
+            font_color=(-1, -1, -1), font_scale=1.0,
+            font_thickness=1, padding=5, fill_opacity=0.8)
 
 
 def demo_tangents(img):
     c1 = ((272, 80), 42) # Center, radius 
     c2 = ((248, 196), 32)
-    return _tangent_helper(img, *c1, *c2)
+    img = _tangent_helper(img, *c1, *c2)
+    # Add label
+    return imvis.draw_text_box(img, 'Tangents',
+            (256, img.shape[0]-10),
+            text_anchor='south', bg_color=(0, 0, 0),
+            font_color=(-1, -1, -1), font_scale=1.0,
+            font_thickness=1, padding=5, fill_opacity=0.8)
 
 
 def demo_convhull(img):
@@ -114,7 +125,13 @@ def demo_convhull(img):
     chull = math2d.convex_hull(pts)
     # Draw convex hull as closed polygon (need to append first hull point)
     img = imvis.draw_polygon(img, [*chull, chull[0]], color=(255, 0, 255), line_width=3, dash_length=-1, fill_opacity=0.3)
-    return imvis.draw_points(img, pts, color=(0, 0, 255), radius=5, line_width=-1, opacity=1)
+    img = imvis.draw_points(img, pts, color=(0, 0, 255), radius=5, line_width=-1, opacity=1)
+    # Add label
+    return imvis.draw_text_box(img, 'Polygons/Hull',
+            (530, img.shape[0]-10),
+            text_anchor='south', bg_color=(0, 0, 0),
+            font_color=(-1, -1, -1), font_scale=1.0,
+            font_thickness=1, padding=5, fill_opacity=0.8)
 
 
 if __name__ == "__main__":
