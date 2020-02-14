@@ -269,7 +269,7 @@ cv::Mat DrawRotatedBoundingBoxes2D(const cv::Mat &image, const std::vector<vcp::
   return img;
 }
 
-
+//TODO make DrawCrosses()
 cv::Mat DrawPoints(const cv::Mat &image, const std::vector<cv::Point> &points, const py::object &py_color,
                    int radius, int line_width, double alpha)
 {
@@ -810,6 +810,7 @@ PYBIND11_MODULE(imvis_cpp, m)
         "C++ part of draw_points().",
         py::arg("image"), py::arg("points"), py::arg("color"),
         py::arg("radius"), py::arg("line_width"), py::arg("opacity"));
+
 
   m.def("draw_circles", &vpi::DrawCircles,
         "Draw circles.\n"

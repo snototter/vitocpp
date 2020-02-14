@@ -107,7 +107,7 @@ py::tuple IntersectionLineCircle(const geo2d::Line2d &line, const cv::Vec2d &cen
 py::tuple IntersectionLineSegmentCircle(const geo2d::Line2d &segment, const cv::Vec2d &center, double radius)
 {
   cv::Vec2d intersection1, intersection2;
-  int num_intersections = geo2d::IntersectionLineCircle(segment, center, radius, intersection1, intersection2);
+  int num_intersections = geo2d::IntersectionLineSegmentCircle(segment, center, radius, intersection1, intersection2);
   if (num_intersections == 0)
     return py::make_tuple(num_intersections, py::none(), py::none());
   if (num_intersections == 1)
