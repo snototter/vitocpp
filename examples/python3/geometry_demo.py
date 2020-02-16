@@ -129,7 +129,7 @@ def demo_convhull(img):
     #TODO random sample?
     chull = math2d.convex_hull(pts)
     # Draw convex hull as closed polygon (need to append first hull point)
-    img = imvis.draw_polygon(img, [*chull, chull[0]], color=(0, 255, 255), line_width=3, dash_length=-1, fill_opacity=0.3)
+    img = imvis.draw_polygon(img, [*chull, chull[0]], color=(0, 255, 255), line_width=3, dash_length=-1, fill_opacity=0.8)
     img = imvis.draw_points(img, pts, color=(0, 0, 255), radius=5, line_width=-1, opacity=1)
     # Add label
     return imvis.draw_text_box(img, 'Polygons/Hull',
@@ -141,7 +141,7 @@ def demo_convhull(img):
 
 if __name__ == "__main__":
     # RGBA, transparent image
-    vis_img = np.zeros((256, 1024, 4))
+    vis_img = np.zeros((256, 600, 4))
     vis_img = demo_intersect(vis_img)
 
     vis_img = demo_tangents(vis_img)
