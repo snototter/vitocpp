@@ -10,6 +10,7 @@ then
   pip3 install --upgrade pip
   pip3 install -r ../../src/python3/requirements.txt
   pip3 install matplotlib
+  pip3 install pytest
 
   # Set up OpenCV - assumes that you already installed it!
   echo "Trying to link to your OpenCV installation"

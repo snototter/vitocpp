@@ -2,14 +2,16 @@
 # coding=utf-8
 """A demo application showing some math capabilities."""
 
+import pytest
 import numpy as np
 import os
 import sys
-import matplotlib.pyplot as plt
+# import matplotlib.pyplot as plt
 
 # Add path to the vcp package
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'gen'))
 from vcp import math2d
+from vcp import math3d
 from vcp import imutils
 from vcp import imvis
 
@@ -41,36 +43,111 @@ def _tangent_helper(img, center1, radius1, center2, radius2):
     return img
 
 
+def test_circle_creation():
+    cres = math2d.circle_from_three_points((0,0), (0,0), (10, 20))
+    assert cres[0] == False
+    x, y, r = 3, 4, 5
+    cres = math2d.circle_from_three_points((x, y+r), (x, y-r), (x+r, y))
+    assert cres[0]
+    assert cres[1][0] == x and cres[1][1] == y
+    assert cres[2] == r
+
+
+def plane_approx(p, expected):
+    for i in range(len(expected)):
+        assert p[i] == pytest.approx(expected[i])
+
+
+def test_plane_creation():
+    plane = math3d.plane_from_three_points((10,234,0), (13,-23,-16), (234.2,37,999))
+    plane_approx(plane, (-0.976462, -0.02473778, 0.21426381, 15.553265))
+    # Collinear - should be all 0, and a warning issued
+    plane = math3d.plane_from_three_points((-7,3,0), (3,3,10), (5,3,12))
+    plane_approx(plane, (0, 0, 0, 0))
+
+
+def test_plane_distances():
+    # Compute distances:
+    plane = math3d.plane_from_three_points((-1,-2,2), (-1,2,2), (1,0,1))
+    pt1, pt2, pt3 = (0,15,2), np.array([1.40425069,  0.,  4.30850138]), (3,0,0)
+    assert math3d.distance_point_plane(pt1, plane) == pytest.approx(plane[0])
+     # Exactly 3.14 away from the plane's z-intercept
+    assert math3d.distance_point_plane(pt2, plane) == pytest.approx(-3.14)
+    assert math3d.distance_point_plane(pt3, plane) == pytest.approx(0)
+
+
+def test_point_on_plane():
+    plane = math3d.plane_from_three_points((-1,-2,2), (-1,2,2), (1,0,1))
+    pt = -plane[3]*np.array(plane)[:3]
+    # print('Point ({:.1f},{:.1f},{:.1f}) is {:.1f} from plane'.format(pt[0], pt[1], pt[2], math3d.distance_point_plane(pt, plane)))
+    assert math3d.distance_point_plane(pt, plane) == pytest.approx(0)
+    pt = -plane[3]*np.array(plane)[:3]  + np.array(plane)[:3]
+    # print('Point ({:.1f},{:.1f},{:.1f}) is {:.1f} from plane (should be 1.0)'.format(pt[0], pt[1], pt[2], math3d.distance_point_plane(pt, plane)))
+    assert math3d.distance_point_plane(pt, plane) == pytest.approx(1.0)
+    pt = -plane[3]*np.array(plane)[:3]  - 23.0*np.array(plane)[:3]
+    assert math3d.distance_point_plane(pt, plane) == pytest.approx(-23)
+
+
+def test_foo():
+    groundplane = [0.0, 0, 1, 0]
+    print('Angle between line and plane: {} degrees (90?)'.format(np.rad2deg(math3d.angle_line_plane(
+        ((0,0,0),(0,0,1)), groundplane))))
+    print('Angle between line and plane: {} degrees (45?)'.format(np.rad2deg(math3d.angle_line_plane(
+        ((0,0,0),(0,1,1)), groundplane))))
+    print('Angle between line and plane: {} degrees '.format(np.rad2deg(math3d.angle_line_plane(
+        ((0,0,0),(1,1,1)), groundplane))))
+    print('Angle between line and plane: {} degrees (0?), parallel (on plane)!!! intersection point is: {}'.format(np.rad2deg(math3d.angle_line_plane(
+        ((0,0,0),(1,1,0)), groundplane)), math3d.intersection_line_plane(((0,0,0),(1,1,0)), groundplane)))
+    print('Angle between line and plane: {} degrees (0?), parallel (not on plane)!!! intersection point is: {}'.format(np.rad2deg(math3d.angle_line_plane(
+        ((0,0,1),(1,1,1)), groundplane)), math3d.intersection_line_plane(((0,0,1),(1,1,1)), groundplane))) # What to do with parallel? TODO
+    print('Angle between line and plane: {} degrees (close to 0, but still larger than?)'.format(np.rad2deg(math3d.angle_line_plane(
+        ((0,0,1000),(0,10000,1000.1)), groundplane))))
+    print
+
+    # Plane and line/segment intersections
+    lines = [((0,0,0), (0,0,1)),
+        ((0,1,0), (3,-1,1)),
+        ((0,1.9,0), (0,-1,1.5)),
+        ((-1,-1,1.9),(-1,1,1.9))]
+    expected_segment = [False, True, True, False]
+    expected_line = [True, True, True, False]
+    for i, line in enumerate(lines):
+        # Segment intersection
+        pt = math3d.intersection_line_segment_plane(line, plane)
+        intercepts = pt is not None
+        if intercepts:
+            print('Segment {} intersects plane {} at {} (should be {})'.format(line, plane, pt, expected_segment[i]))
+        else:
+            print('Segment {} does not intersect plane (should be {})'.format(line, expected_segment[i]))
+
+        if intercepts is not expected_segment[i]:
+            raise ValueError("Wrong result for line segment[{}]".format(i))
+
+        # Line intersection
+        pt = math3d.intersection_line_plane(line, plane)
+        intercepts = pt is not None
+        if intercepts:
+            print('Line {} intersects plane {} at {} (should be {})'.format(line, plane, pt, expected_line[i]))
+        else:
+            print('Line {} does not intersect plane (should be {})'.format(line, expected_line[i]))
+
+        if intercepts is not expected_line[i]:
+            raise ValueError("Wrong result for line[{}]".format(i))
+        print('\n')
+
+    # Point to line/line segment distance
+    line = ((1,1,1), (1,1,3))
+    points =        [(2,-1,0.5), (0,0,0), (1,1,1), (1,1,2.9), (1,1,3.25), (1,-1,2)]
+    expected_line = [2.2361,     1.4142,        0,      0,        0,        2]
+    expected_segment=[ 2.2913,   1.7321,        0,      0,        0.25,     2]
+    for i, pt in enumerate(points):
+        dist = math3d.distance3d_point_line_segment(pt, line)
+        print('Point {} is {} away from segment {}, should be {}'.format(pt, dist, line, expected_segment[i]))
+        dist = math3d.distance3d_point_line(pt, line)
+        print('Point {} is {} away from line {}, should be {}\n'.format(pt, dist, line, expected_line[i]))
+
+
 if __name__ == "__main__":
-    # #TODO remove this
-    # print(math2d.circle_from_three_points((0,0), (0,0), (10, 20)))
-
-    # # Plane from 3 points
-    # plane = cmath.plane_from_three_points((10,234,0), (13,-23,-16), (234.2,37,999))
-    # print(plane)
-
-    # # Collinear - should be all 0, and a warning issued
-    # plane = cmath.plane_from_three_points((-7,3,0), (3,3,10), (5,3,12))
-    # print(plane)
-
-    # # Compute distances:
-    # plane = cmath.plane_from_three_points((-1,-2,2), (-1,2,2), (1,0,1))
-    # print(plane)
-    # pt1, pt2, pt3 = (0,15,2), np.array([1.40425069,  0.,  4.30850138]), (3,0,0)
-
-    # print(cmath.distance3d_point_plane(pt1, plane)) # Something
-    # print(cmath.distance3d_point_plane(pt2, plane)) # Exactly 3.14 away from the plane's z-intercept
-    # print(cmath.distance3d_point_plane(pt3, plane)) # On the plane (x-intercept)
-    # # Point on plane
-    # pt = -plane[3]*np.array(plane)[:3]
-    # print('Point ({:.1f},{:.1f},{:.1f}) is {:.1f} from plane'.format(pt[0], pt[1], pt[2], cmath.distance3d_point_plane(pt, plane)))
-    # pt = -plane[3]*np.array(plane)[:3]  + np.array(plane)[:3]
-    # print('Point ({:.1f},{:.1f},{:.1f}) is {:.1f} from plane (should be 1.0)'.format(pt[0], pt[1], pt[2], cmath.distance3d_point_plane(pt, plane)))
-    # pt = -plane[3]*np.array(plane)[:3]  - 23.0*np.array(plane)[:3]
-    # print('Point ({:.1f},{:.1f},{:.1f}) is {:.1f} from plane (should be -23.0)'.format(pt[0], pt[1], pt[2], cmath.distance3d_point_plane(pt, plane)))
-    # print
-
-
     # groundplane = [0.0, 0, 1, 0]
     # print('Angle between line and plane: {} degrees (90?)'.format(np.rad2deg(cmath.angle_line_plane(
     #     ((0,0,0),(0,0,1)), groundplane))))
