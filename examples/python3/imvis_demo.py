@@ -113,7 +113,7 @@ def demo_pseudocolor():
     # For visualization purposes only, reduce input to a few
     # distinct categories/labels:
     data = ((peaks / 25) - 5).astype(np.int16)
-    names = ['Bone', 'Turbo', 'Magma', 'Viridis']
+    names = ['Bone', 'Magma', 'Viridis']
     images = list()
     for name in names:
         pc = imvis.pseudocolor(
@@ -138,7 +138,7 @@ def demo_pseudocolor():
             font_thickness=1, padding=5, fill_opacity=0.8)
 
     imvis.imshow(collage, title='Pseudocoloring', wait_ms=-1)
-    imutils.imsave('example-pseudocolor.png', collage)
+    imutils.imsave('../../doc/example-pseudocolor.png', collage)
 
 
 def demo_overlay():
