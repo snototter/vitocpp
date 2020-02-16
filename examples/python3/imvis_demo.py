@@ -125,7 +125,7 @@ def demo_pseudocolor():
     padding = 10
     # Add alpha channel to render the collage nicely for the repo's README
     images[0] = np.dstack((images[0], 255*np.ones(images[0].shape[:2], dtype=np.uint8)))
-    collage = imvis.make_collage(images, padding=padding, bg_color=(0, 0, 0, 0), num_images_per_row=len(images))
+    collage = imvis.make_collage(images, padding=padding, fixed_size_per_image=(200, 200), bg_color=(0, 0, 0, 0), num_images_per_row=len(images))
 
     # Add labels
     height, width = collage.shape[:2]
