@@ -13,39 +13,12 @@ from vcp import math2d
 from vcp import imutils
 from vcp import imvis
 
-def _tangent_helper(img, center1, radius1, center2, radius2):
-    num_transverse, tt1, tt2 = math2d.transverse_common_tangents_circles(center1, radius1, center2, radius2)
-    num_direct, td1, td2 = math2d.direct_common_tangents_circles(center1, radius1, center2, radius2)
-    
-    tt = list()
-    if num_transverse > 0:
-        tt.append(tt1)
-        if num_transverse == 2:
-            tt.append(tt2)
-    if tt:
-        img = imvis.draw_lines(img, tt, default_color=(255, 0, 0), line_width=2)
-
-    td = list()
-    if num_direct > 0:
-        td.append(td1)
-        if num_direct == 2:
-            td.append(td2)
-    if td:
-        img = imvis.draw_lines(img, td, default_color=(0, 255, 0), line_width=2)
-
-    img = imvis.draw_points(img, [center1], color=(0, 0, 255), radius=radius1, line_width=1)
-    img = imvis.draw_points(img, [center2], color=(0, 0, 255), radius=radius2, line_width=1)
-
-    bboxes = [([center1[0]-radius1, center1[1]-radius1, 2*radius1, 2*radius1], (0, 0, 255), '{:d} | {:d}'.format(num_transverse, num_direct))]
-    img = imvis.draw_bboxes2d(img, bboxes, text_anchor='center', line_width=0, fill_opacity=0.0)
-    return img
-
 
 def demo_intersect(img):
     #TODO move vertical line to the left!
-    l1 = ((96, 24), (96, 170)) # vertical line
+    l1 = ((76, 24), (76, 170)) # vertical line
     l2 = ((32, 64), (160, 32)) # top slanted line
-    l3 = ((128, 96), (192, 80)) # bottom slanted line
+    l3 = ((108, 96), (172, 80)) # bottom slanted line
     lines = [l1, l2, l3]
     c1 = ((88, 160), 32) # Center, radius 
     c2 = ((150, 180), 42)
@@ -55,7 +28,6 @@ def demo_intersect(img):
     wannabe_intersection_points = list() # Points which would be intersection points if the segments were infinite lines
 
     ##### Line-Line/Segment intersections
-    img = imvis.draw_lines(img, lines, default_color=(255, 0, 255), line_width=2)
     ipl_12 = math2d.intersection_line_line_segment(l1, l2)
     intersection_points.append(ipl_12)
     # Line SEGMENT l3 doesn't intersect the vertical line
@@ -92,9 +64,11 @@ def demo_intersect(img):
     ##### Draw
     img = imvis.draw_circles(img, [c[0] for c in circles], [c[1] for c in circles],
         default_color=(0, 255, 255), thickness=2)
-    # TODO use draw_crosses
-    img = imvis.draw_points(img, intersection_points, color=(60, 180, 0), radius=10, line_width=2, opacity=1)
-    img = imvis.draw_points(img, wannabe_intersection_points, color=(200, 0, 0), radius=10, line_width=2, opacity=1)
+    img = imvis.draw_lines(img, lines, default_color=(0, 0, 200), line_width=2)
+    # img = imvis.draw_points(img, intersection_points, color=(60, 180, 0), radius=10, line_width=2, opacity=1)
+    # img = imvis.draw_points(img, wannabe_intersection_points, color=(200, 0, 0), radius=10, line_width=2, opacity=1)
+    img = imvis.draw_crosses(img, intersection_points, color=(60, 180, 0), diagonal=20, line_width=2, vertical=False, opacity=1)
+    img = imvis.draw_crosses(img, wannabe_intersection_points, color=(200, 0, 0), diagonal=20, line_width=2, vertical=False, dash_length=9, opacity=1)
     # Add label
     return imvis.draw_text_box(img, '2D Intersection',
             (110, img.shape[0]-10),
@@ -103,13 +77,43 @@ def demo_intersect(img):
             font_thickness=1, padding=5, fill_opacity=0.8)
 
 
+def _tangent_helper(img, center1, radius1, center2, radius2):
+    num_transverse, tt1, tt2 = math2d.transverse_common_tangents_circles(center1, radius1, center2, radius2)
+    num_direct, td1, td2 = math2d.direct_common_tangents_circles(center1, radius1, center2, radius2)
+    
+    tt = list()
+    if num_transverse > 0:
+        tt.append(tt1)
+        if num_transverse == 2:
+            tt.append(tt2)
+    if tt:
+        img = imvis.draw_lines(img, tt, default_color=(200, 0, 0), line_width=2)
+
+    td = list()
+    if num_direct > 0:
+        td.append(td1)
+        if num_direct == 2:
+            td.append(td2)
+    if td:
+        img = imvis.draw_lines(img, td, default_color=(60, 180, 0), line_width=2)
+
+    img = imvis.draw_circles(img, [center1, center2], [radius1, radius2],
+        default_color=(0, 255, 255), thickness=2)
+
+    # bboxes = [([center1[0]-radius1, center1[1]-radius1, 2*radius1, 2*radius1], (0, 0, 255), '{:d} | {:d}'.format(num_transverse, num_direct))]
+    # img = imvis.draw_bboxes2d(img, bboxes, text_anchor='center', line_width=0, fill_opacity=0.0)
+    return img
+
+
 def demo_tangents(img):
-    c1 = ((272, 80), 38) # Center, radius 
-    c2 = ((350, 130), 50)
+    c1 = ((260, 40), 32) # Center, radius 
+    c2 = ((300, 130), 45)
+    c3 = ((300, 195), 20)
     img = _tangent_helper(img, *c1, *c2)
+    img = _tangent_helper(img, *c2, *c3)
     # Add label
     return imvis.draw_text_box(img, 'Tangents',
-            (256, img.shape[0]-10),
+            (296, img.shape[0]-10),
             text_anchor='south', bg_color=(0, 0, 0),
             font_color=(-1, -1, -1), font_scale=1.0,
             font_thickness=1, padding=5, fill_opacity=0.8)
@@ -125,7 +129,7 @@ def demo_convhull(img):
     #TODO random sample?
     chull = math2d.convex_hull(pts)
     # Draw convex hull as closed polygon (need to append first hull point)
-    img = imvis.draw_polygon(img, [*chull, chull[0]], color=(255, 0, 255), line_width=3, dash_length=-1, fill_opacity=0.3)
+    img = imvis.draw_polygon(img, [*chull, chull[0]], color=(0, 255, 255), line_width=3, dash_length=-1, fill_opacity=0.3)
     img = imvis.draw_points(img, pts, color=(0, 0, 255), radius=5, line_width=-1, opacity=1)
     # Add label
     return imvis.draw_text_box(img, 'Polygons/Hull',

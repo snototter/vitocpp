@@ -335,4 +335,5 @@ def draw_crosses(
         pts = points
     else:
         raise ValueError('draw_crosses expects a list or numpy.ndarray as input')
-    return draw_points__(image, pts, color, diagonal, line_width, vertical, dash_length, opacity)
+    return draw_crosses__(image, pts, color=color, diagonal=diagonal,
+        line_width=line_width, dash_length=dash_length, vertical=vertical, opacity=opacity)

@@ -771,8 +771,6 @@ void DrawDashedLine(const cv::Point &pt1, const cv::Point &pt2, const cv::Scalar
   const int num_segments = utils::MakeOdd<int>(static_cast<int>(std::ceil(distance / dash_length)));
   const int num_dashes = (num_segments+1)/2;
 
-  //std::cout << "Distance/dash_length = x steps: " << distance << "/" << dash_length << " = " << (distance/dash_length) << " (" << num_steps << "), dist per step: " << step_size <<  std::endl;
-
   const double ddash_length = distance / static_cast<double>(num_segments);
   const cv::Vec2d segment_offset = 2.0 * ddash_length * direction;
 
@@ -1239,7 +1237,7 @@ void DrawCrosses(cv::Mat &image, const std::vector<cv::Point> &points, const std
   VCP_CHECK(alpha >= 0.0 && alpha <= 1.0);
 
   cv::Mat draw_on = image.clone();
-  const double dh = diagonal / 2.0;
+  const double offset = vertical ? diagonal / 2.0 : diagonal / (2.0 * std::sqrt(2.0));
   for (size_t i = 0; i < points.size(); ++i)
   {
     cv::Point p1, p2, p3, p4;
@@ -1247,37 +1245,38 @@ void DrawCrosses(cv::Mat &image, const std::vector<cv::Point> &points, const std
     {
       // Draw a plus sign, vertical line:
       p1.x = points[i].x;
-      p1.y = static_cast<int>(points[i].y - dh);
+      p1.y = static_cast<int>(points[i].y - offset);
       p2.x = p1.x;
-      p2.y = static_cast<int>(points[i].y + dh);
+      p2.y = static_cast<int>(points[i].y + offset);
       // Horizontal line.
-      p3.x = static_cast<int>(points[i].y - dh);
+      p3.x = static_cast<int>(points[i].x - offset);
       p3.y = points[i].y;
-      p4.x = static_cast<int>(points[i].x + dh);
+      p4.x = static_cast<int>(points[i].x + offset);
       p4.y = p3.y;
     }
     else
     {
       // Draw a cross, top-left to bottom-right:
-      p1.x = static_cast<int>(points[i].x - dh);
-      p1.y = static_cast<int>(points[i].y - dh);
-      p2.x = static_cast<int>(points[i].x + dh);
-      p2.y = static_cast<int>(points[i].y + dh);
+      p1.x = static_cast<int>(points[i].x - offset);
+      p1.y = static_cast<int>(points[i].y - offset);
+      p2.x = static_cast<int>(points[i].x + offset);
+      p2.y = static_cast<int>(points[i].y + offset);
       // Bottom-left to top-right.
       p3.x = p1.x;
       p3.y = p2.y;
       p4.x = p2.x;
       p4.y = p1.y;
     }
+
     if (dash_length > 0)
     {
-      DrawDashedLine(p1, p2, colors[i], dash_length, line_width, image);
-      DrawDashedLine(p3, p4, colors[i], dash_length, line_width, image);
+      DrawDashedLine(p1, p2, colors[i], dash_length, line_width, draw_on);
+      DrawDashedLine(p3, p4, colors[i], dash_length, line_width, draw_on);
     }
     else
     {
-      cv::line(image, p1, p2, colors[i], line_width);
-      cv::line(image, p3, p4, colors[i], line_width);
+      cv::line(draw_on, p1, p2, colors[i], line_width);
+      cv::line(draw_on, p3, p4, colors[i], line_width);
     }
   }
 
