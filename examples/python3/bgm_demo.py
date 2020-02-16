@@ -74,24 +74,34 @@ def demo(pseudocolor=True, inspect=False):
             iminspect.show(mask)
 
     padding = 10
-    collage = imvis.make_collage([imutils.imread('../data/ninja-seq.png'), *fg_masks],
+    collage = imvis.make_collage(fg_masks,
         padding=padding,
-        fixed_size_per_image=(240, 320),
+        fixed_size_per_image=(200, 266),
         bg_color=(0, 0, 0, 0),
-        num_images_per_row=5)
+        num_images_per_row=2)
+    input_seq = imutils.imread('../data/ninja-seq.png')
+    collage = imvis.make_collage([input_seq, collage],
+        padding=padding, bg_color=(0, 0, 0, 0))
 
     # Overlay names
-    names = ['Input'] + [bg.name() for bg in bgmodels]
     height, width = collage.shape[:2]
-    mask_width = (width - (len(names)-1)*padding) / len(names)
+    collage = imvis.draw_text_box(collage, 'Input',
+            (input_seq.shape[1]/2, height/4), text_anchor='center', bg_color=(255, 255, 255),
+            font_color=(-1, -1, -1), font_scale=1.0,
+            font_thickness=1, padding=5, fill_opacity=0.8)
+
+    names = [bg.name() for bg in bgmodels]
+    mask_width = (width-input_seq.shape[1] - padding) / 2
     for i in range(len(names)):
-        pos = (i * (mask_width + padding) + mask_width/2, height - 10 if i > 0 else height/5)
+        pos = (input_seq.shape[1] + padding + (i % 2) * (mask_width + padding) + mask_width/2,
+            (i // 2) * (266 + padding) + 266 - 10)
         collage = imvis.draw_text_box(collage, names[i],
             pos, text_anchor='south', bg_color=(255, 255, 255),
             font_color=(-1, -1, -1), font_scale=1.0,
             font_thickness=1, padding=5, fill_opacity=0.8)
 
     imvis.imshow(collage, title="Background Subtraction", wait_ms=-1)
+    imutils.imsave('../../doc/example-bgm.png', collage)
 
 
 if __name__ == "__main__":
