@@ -53,17 +53,17 @@ def test_circle_creation():
     assert cres[2] == r
 
 
-def plane_approx(p, expected):
+def tuple_approx(p, expected):
     for i in range(len(expected)):
         assert p[i] == pytest.approx(expected[i])
 
 
 def test_plane_creation():
     plane = math3d.plane_from_three_points((10,234,0), (13,-23,-16), (234.2,37,999))
-    plane_approx(plane, (-0.976462, -0.02473778, 0.21426381, 15.553265))
+    tuple_approx(plane, (-0.976462, -0.02473778, 0.21426381, 15.553265))
     # Collinear - should be all 0, and a warning issued
     plane = math3d.plane_from_three_points((-7,3,0), (3,3,10), (5,3,12))
-    plane_approx(plane, (0, 0, 0, 0))
+    tuple_approx(plane, (0, 0, 0, 0))
 
 
 def test_plane_distances():
@@ -88,23 +88,28 @@ def test_point_on_plane():
     assert math3d.distance_point_plane(pt, plane) == pytest.approx(-23)
 
 
-def test_foo():
+def test_plane_angles():
     groundplane = [0.0, 0, 1, 0]
-    print('Angle between line and plane: {} degrees (90?)'.format(np.rad2deg(math3d.angle_line_plane(
-        ((0,0,0),(0,0,1)), groundplane))))
-    print('Angle between line and plane: {} degrees (45?)'.format(np.rad2deg(math3d.angle_line_plane(
-        ((0,0,0),(0,1,1)), groundplane))))
-    print('Angle between line and plane: {} degrees '.format(np.rad2deg(math3d.angle_line_plane(
-        ((0,0,0),(1,1,1)), groundplane))))
-    print('Angle between line and plane: {} degrees (0?), parallel (on plane)!!! intersection point is: {}'.format(np.rad2deg(math3d.angle_line_plane(
-        ((0,0,0),(1,1,0)), groundplane)), math3d.intersection_line_plane(((0,0,0),(1,1,0)), groundplane)))
-    print('Angle between line and plane: {} degrees (0?), parallel (not on plane)!!! intersection point is: {}'.format(np.rad2deg(math3d.angle_line_plane(
-        ((0,0,1),(1,1,1)), groundplane)), math3d.intersection_line_plane(((0,0,1),(1,1,1)), groundplane))) # What to do with parallel? TODO
-    print('Angle between line and plane: {} degrees (close to 0, but still larger than?)'.format(np.rad2deg(math3d.angle_line_plane(
-        ((0,0,1000),(0,10000,1000.1)), groundplane))))
-    print
+    assert np.rad2deg(math3d.angle_line_plane(
+        ((0,0,0),(0,0,1)), groundplane)) == pytest.approx(90)
+    assert np.rad2deg(math3d.angle_line_plane(
+        ((0,0,0),(0,1,1)), groundplane)) == pytest.approx(45)
+    assert np.rad2deg(math3d.angle_line_plane(
+        ((0,0,0),(1,1,1)), groundplane)) == pytest.approx(35.26438968)
+    # Line parallel to plane (ON plane):
+    assert np.rad2deg(math3d.angle_line_plane(
+        ((0,0,0),(1,1,0)), groundplane)) == pytest.approx(0)
+    tuple_approx(math3d.intersection_line_plane(((0,0,0),(1,1,0)), groundplane), (0, 0, 0))
+    # Line parallel to plane (OFF plane):
+    assert np.rad2deg(math3d.angle_line_plane(
+        ((0,0,1),(1,1,1)), groundplane)) == pytest.approx(0)
+    assert math3d.intersection_line_plane(((0,0,1),(1,1,1)), groundplane) is None
+    assert np.rad2deg(math3d.angle_line_plane(
+        ((0,0,1000),(0,10000,1000.1)), groundplane)) == pytest.approx(0.000572957795111855)
 
-    # Plane and line/segment intersections
+
+def test_plane_line_intersection():
+    plane = math3d.plane_from_three_points((-1,-2,2), (-1,2,2), (1,0,1))
     lines = [((0,0,0), (0,0,1)),
         ((0,1,0), (3,-1,1)),
         ((0,1.9,0), (0,-1,1.5)),
@@ -115,26 +120,15 @@ def test_foo():
         # Segment intersection
         pt = math3d.intersection_line_segment_plane(line, plane)
         intercepts = pt is not None
-        if intercepts:
-            print('Segment {} intersects plane {} at {} (should be {})'.format(line, plane, pt, expected_segment[i]))
-        else:
-            print('Segment {} does not intersect plane (should be {})'.format(line, expected_segment[i]))
-
-        if intercepts is not expected_segment[i]:
-            raise ValueError("Wrong result for line segment[{}]".format(i))
+        assert intercepts == expected_segment[i]
 
         # Line intersection
         pt = math3d.intersection_line_plane(line, plane)
         intercepts = pt is not None
-        if intercepts:
-            print('Line {} intersects plane {} at {} (should be {})'.format(line, plane, pt, expected_line[i]))
-        else:
-            print('Line {} does not intersect plane (should be {})'.format(line, expected_line[i]))
+        assert intercepts == expected_line[i]
 
-        if intercepts is not expected_line[i]:
-            raise ValueError("Wrong result for line[{}]".format(i))
-        print('\n')
 
+def test_point_line_distance3d():
     # Point to line/line segment distance
     line = ((1,1,1), (1,1,3))
     points =        [(2,-1,0.5), (0,0,0), (1,1,1), (1,1,2.9), (1,1,3.25), (1,-1,2)]
@@ -142,9 +136,9 @@ def test_foo():
     expected_segment=[ 2.2913,   1.7321,        0,      0,        0.25,     2]
     for i, pt in enumerate(points):
         dist = math3d.distance3d_point_line_segment(pt, line)
-        print('Point {} is {} away from segment {}, should be {}'.format(pt, dist, line, expected_segment[i]))
+        assert dist == pytest.approx(expected_segment[i])
         dist = math3d.distance3d_point_line(pt, line)
-        print('Point {} is {} away from line {}, should be {}\n'.format(pt, dist, line, expected_line[i]))
+        assert dist == pytest.approx(expected_line[i])
 
 
 if __name__ == "__main__":
