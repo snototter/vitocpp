@@ -48,7 +48,7 @@ def demo_intersect(img):
     l3 = ((128, 96), (192, 80)) # bottom slanted line
     lines = [l1, l2, l3]
     c1 = ((88, 160), 32) # Center, radius 
-    c2 = ((140, 196), 42)
+    c2 = ((150, 180), 42)
     circles = [c1, c2]
 
     intersection_points = list() # "Real" intersection points
@@ -86,14 +86,15 @@ def demo_intersect(img):
     assert intersect[0] == 0
 
     ##### Circle-Circle intersections
-    #TODO
+    intersect = math2d.intersection_circle_circle(*c1, *c2)
+    _app(intersection_points, intersect)
     
     ##### Draw
     img = imvis.draw_circles(img, [c[0] for c in circles], [c[1] for c in circles],
         default_color=(0, 255, 255), thickness=2)
     # TODO use draw_crosses
-    img = imvis.draw_points(img, intersection_points, color=(0, 255, 0), radius=10, line_width=2, opacity=1)
-    img = imvis.draw_points(img, wannabe_intersection_points, color=(0, 0, 255), radius=10, line_width=2, opacity=1)
+    img = imvis.draw_points(img, intersection_points, color=(60, 180, 0), radius=10, line_width=2, opacity=1)
+    img = imvis.draw_points(img, wannabe_intersection_points, color=(200, 0, 0), radius=10, line_width=2, opacity=1)
     # Add label
     return imvis.draw_text_box(img, '2D Intersection',
             (110, img.shape[0]-10),
@@ -103,8 +104,8 @@ def demo_intersect(img):
 
 
 def demo_tangents(img):
-    c1 = ((272, 80), 42) # Center, radius 
-    c2 = ((248, 196), 32)
+    c1 = ((272, 80), 38) # Center, radius 
+    c2 = ((350, 130), 50)
     img = _tangent_helper(img, *c1, *c2)
     # Add label
     return imvis.draw_text_box(img, 'Tangents',

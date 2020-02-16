@@ -140,6 +140,7 @@ def test_point_line_distance3d():
         dist = math3d.distance3d_point_line(pt, line)
         assert dist == pytest.approx(expected_line[i], 1e-4)
 
+#TODO test is_point_in_circle intersection_circle_circle, etc.
 
 def test_rdp():
     # RDP polyline simplification:

@@ -237,9 +237,20 @@ bool IntersectionLineSegmentLineSegment(const Line2d &a, const Line2d &b, cv::Ve
 int IntersectionLineCircle(const Line2d &a, const cv::Vec2d &center, double radius, cv::Vec2d &intersection1, cv::Vec2d &intersection2);
 // Collision detection via projection: https://stackoverflow.com/questions/1073336/circle-line-segment-collision-detection-algorithm
 
+/** @brief Checks if the line segment intersects the circle and sets intersection points accordingly.
+ * @return Number of intersection points, i.e. 0, 1, or 2.
+ */
 int IntersectionLineSegmentCircle(const Line2d &a, const cv::Vec2d &center, double radius, cv::Vec2d &intersection1, cv::Vec2d &intersection2);
 
+/** @brief Constructs the circle such that all 3 points lie radius away from the center. If no such circle exists, returns false. */
 bool CircleFrom3Points(const cv::Vec2d &pt1, const cv::Vec2d &pt2, const cv::Vec2d &pt3, cv::Vec2d &center, double &radius);
+
+
+/** @brief Checks if the circles intersect and sets the intersection points accordingly.
+ * @return Number of intersection points, i.e. -1 (infinitely many intersection points), 0, 1, or 2.
+ */
+int IntersectionCircleCircle(const cv::Vec2d &center1, const double radius1, const cv::Vec2d &center2, const double radius2, cv::Vec2d &intersection1, cv::Vec2d &intersection2);
+
 
 /** @brief Clips the line such that only the part within the rectangle remains. Check result.empty() afterwards. */
 Line2d ClipLineByRectangle(const Line2d &line, const cv::Rect2d &rect);

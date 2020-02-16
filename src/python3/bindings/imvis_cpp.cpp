@@ -269,7 +269,32 @@ cv::Mat DrawRotatedBoundingBoxes2D(const cv::Mat &image, const std::vector<vcp::
   return img;
 }
 
-//TODO make DrawCrosses()
+cv::Mat DrawCrosses(const cv::Mat &image, const std::vector<cv::Point> &points, const py::object &py_color,
+                   int diagonal, int line_width, int dash_length, bool vertical, double alpha)
+{
+  cv::Mat img = image.clone();
+
+  if (py::isinstance<py::list>(py_color))
+  {
+    const py::list list = py_color.cast<py::list>();
+    if (py::len(list) != points.size())
+      throw std::runtime_error("Lengths of points and corresponding colors doesn't match!");
+
+    std::vector<cv::Scalar> colors;
+    for (size_t i = 0; i < points.size(); ++i)
+      colors.push_back(vcp::python::conversion::PyObjectToScalar(list[i], nullptr));
+
+    vcp::imvis::drawing::DrawCrosses(img, points, colors, diagonal, line_width, dash_length, alpha, vertical);
+  }
+  else
+  {
+    const cv::Scalar single_color = vcp::python::conversion::PyObjectToScalar(py_color, nullptr);
+    vcp::imvis::drawing::DrawCrosses(img, points, single_color, diagonal, line_width, dash_length, alpha, vertical, false);
+  }
+
+  return img;
+}
+
 cv::Mat DrawPoints(const cv::Mat &image, const std::vector<cv::Point> &points, const py::object &py_color,
                    int radius, int line_width, double alpha)
 {
@@ -810,6 +835,13 @@ PYBIND11_MODULE(imvis_cpp, m)
         "C++ part of draw_points().",
         py::arg("image"), py::arg("points"), py::arg("color"),
         py::arg("radius"), py::arg("line_width"), py::arg("opacity"));
+
+
+  m.def("draw_crosses__", &vpi::DrawCrosses,
+        "C++ part of draw_crosses().",
+        py::arg("image"), py::arg("points"), py::arg("color"),
+        py::arg("diagonal"), py::arg("line_width"), py::arg("dash_length"),
+        py::arg("vertical"), py::arg("opacity"));
 
 
   m.def("draw_circles", &vpi::DrawCircles,

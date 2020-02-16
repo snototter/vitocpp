@@ -93,14 +93,28 @@ py::tuple IsPointLeftOfLine(const cv::Vec2d &pt, const geo2d::Line2d &line)
 py::tuple IntersectionLineCircle(const geo2d::Line2d &line, const cv::Vec2d &center, double radius)
 {
   cv::Vec2d intersection1, intersection2;
-  int num_intersections = geo2d::IntersectionLineCircle(line, center, radius, intersection1, intersection2);
+  const int num_intersections = geo2d::IntersectionLineCircle(line, center, radius, intersection1, intersection2);
   if (num_intersections == 0)
     return py::make_tuple(num_intersections, py::none(), py::none());
   if (num_intersections == 1)
     return py::make_tuple(num_intersections, intersection1, py::none());
   if (num_intersections == 2)
     return py::make_tuple(num_intersections, intersection1, intersection2);
-  VCP_ERROR("Invalid number (" + std::to_string(num_intersections) + ") of intersection points!");
+  VCP_ERROR("VCP library returned invalid number (" + std::to_string(num_intersections) + ") of intersection points!");
+}
+
+
+py::tuple IntersectionCircleCircle(const cv::Vec2d &center1, const double radius1, const cv::Vec2d &center2, const double radius2)
+{
+  cv::Vec2d intersection1, intersection2;
+  const int num_intersections = geo2d::IntersectionCircleCircle(center1, radius1, center2, radius2, intersection1, intersection2);
+  if (num_intersections <= 0)
+    return py::make_tuple(num_intersections, py::none(), py::none());
+  if (num_intersections == 1)
+    return py::make_tuple(num_intersections, intersection1, py::none());
+  if (num_intersections == 2)
+    return py::make_tuple(num_intersections, intersection1, intersection2);
+  VCP_ERROR("VCP library returned invalid number (" + std::to_string(num_intersections) + ") of intersection points!");
 }
 
 
@@ -487,12 +501,26 @@ PYBIND11_MODULE(math2d, m)
 
 
   m.def("is_point_in_circle", &vpmg::IsPointInCircle,
-        "Checks if given point lies within (or exactly on) the circle.\n"
+        "Checks if given point lies within (or exactly on) the circle.\n\n"
         ":param pt: (x,y) point to test.\n"
         ":param center: (cx,cy) of the circle.\n"
-        ":param radius: radius of the circle."
+        ":param radius: radius of the circle.\n"
         ":return: tuple of two boolean flags: (in_or_on, exactly_on)",
         py::arg("pt"), py::arg("center"), py::arg("radius"));
+
+
+  m.def("intersection_circle_circle", &vpmg::IntersectionCircleCircle,
+        "Computes the intersection points of the two circles.\n\n"
+        ":param c1: center of first circle as tuple(x,y).\n"
+        ":param r1: radius of first circle as float.\n"
+        ":params c2, r2: center and radius of second circle.\n"
+        ":return: tuple(num_intersect, ip1, ip2), where num_intersect\n"
+        "         can be -1 (infinitely many), 0 (circles too far away or\n"
+        "         one inside the other), 1 (circles touch in one point) or\n"
+        "         2 (standard intersection); ip1 and ip2 are the intersection\n"
+        "         points as tuple(x,y) or None.",
+        py::arg("c1"), py::arg("r1"),
+        py::arg("c2"), py::arg("r2"));
 
 
   m.def("transverse_common_tangents_circles", &vpmg::TransverseCommonTangentsBetweenCircles,

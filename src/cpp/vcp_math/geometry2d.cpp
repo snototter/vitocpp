@@ -878,6 +878,44 @@ bool CircleFrom3Points(const cv::Vec2d &pt1, const cv::Vec2d &pt2, const cv::Vec
 }
 
 
+int IntersectionCircleCircle(const cv::Vec2d &center1, const double radius1,
+                             const cv::Vec2d &center2, const double radius2,
+                             cv::Vec2d &intersection1, cv::Vec2d &intersection2)
+{
+  const double dist = Distance(center1, center2);
+  // Too far apart?
+  if (dist > (radius1 + radius2))
+    return 0;
+  // One circle contained within the other?
+  if (dist < std::fabs(radius1 - radius2))
+    return 0;
+  if (math::eps_zero(dist) && math::eps_equal(radius1, radius2))
+    return -1;
+
+  const double dist_sqr = dist * dist;
+  const double r1_sqr = radius1 * radius1;
+  const double r2_sqr = radius2 * radius2;
+  const double r1smr2s = r1_sqr - r2_sqr;
+  const double a = r1smr2s / (2 * dist_sqr);
+  const double c = std::sqrt(2.0 * (radius1*radius1 + radius2*radius2) / dist_sqr - (r1smr2s * r1smr2s) / (dist_sqr*dist_sqr) - 1.0);
+
+  const double fx = (center1[0]+center2[0]) / 2.0 + a * (center2[0] - center1[0]);
+  const double gx = c * (center2[1] - center1[1]) / 2.0;
+  const double ix1 = fx + gx;
+  const double ix2 = fx - gx;
+
+  const double fy = (center1[1]+center2[1]) / 2.0 + a * (center2[1] - center1[1]);
+  const double gy = c * (center1[0] - center2[0]) / 2.0;
+  const double iy1 = fy + gy;
+  const double iy2 = fy - gy;
+
+  intersection1 = cv::Vec2d(ix1, iy1);
+  if (math::eps_zero(gx) && math::eps_zero(gy))
+    return 1;
+  intersection2 = cv::Vec2d(ix2, iy2);
+  return 2;
+}
+
 
 Line2d ClipLineByRectangle(const Line2d &line, const cv::Rect2d &rect)
 {

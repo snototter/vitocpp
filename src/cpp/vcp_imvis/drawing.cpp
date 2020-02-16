@@ -1231,6 +1231,83 @@ void DrawPoints(cv::Mat &image, const std::vector<cv::Point> &points, const cv::
 }
 
 
+void DrawCrosses(cv::Mat &image, const std::vector<cv::Point> &points, const std::vector<cv::Scalar> &colors,
+                 int diagonal, int line_width, int dash_length, double alpha, bool vertical)
+{
+  VCP_LOG_DEBUG("DrawCrosses() with different colors.");
+  VCP_CHECK(points.size() == colors.size());
+  VCP_CHECK(alpha >= 0.0 && alpha <= 1.0);
+
+  cv::Mat draw_on = image.clone();
+  const double dh = diagonal / 2.0;
+  for (size_t i = 0; i < points.size(); ++i)
+  {
+    cv::Point p1, p2, p3, p4;
+    if (vertical)
+    {
+      // Draw a plus sign, vertical line:
+      p1.x = points[i].x;
+      p1.y = static_cast<int>(points[i].y - dh);
+      p2.x = p1.x;
+      p2.y = static_cast<int>(points[i].y + dh);
+      // Horizontal line.
+      p3.x = static_cast<int>(points[i].y - dh);
+      p3.y = points[i].y;
+      p4.x = static_cast<int>(points[i].x + dh);
+      p4.y = p3.y;
+    }
+    else
+    {
+      // Draw a cross, top-left to bottom-right:
+      p1.x = static_cast<int>(points[i].x - dh);
+      p1.y = static_cast<int>(points[i].y - dh);
+      p2.x = static_cast<int>(points[i].x + dh);
+      p2.y = static_cast<int>(points[i].y + dh);
+      // Bottom-left to top-right.
+      p3.x = p1.x;
+      p3.y = p2.y;
+      p4.x = p2.x;
+      p4.y = p1.y;
+    }
+    if (dash_length > 0)
+    {
+      DrawDashedLine(p1, p2, colors[i], dash_length, line_width, image);
+      DrawDashedLine(p3, p4, colors[i], dash_length, line_width, image);
+    }
+    else
+    {
+      cv::line(image, p1, p2, colors[i], line_width);
+      cv::line(image, p3, p4, colors[i], line_width);
+    }
+  }
+
+  if (alpha < 1.0)
+    cv::addWeighted(draw_on, alpha, image, 1.0-alpha, 0.0, image);
+  else
+    image = draw_on;
+}
+
+
+void DrawCrosses(cv::Mat &image, const std::vector<cv::Point> &points,
+                 const cv::Scalar &color, int diagonal, int line_width,
+                 int dash_length, double alpha, bool vertical, bool flip_color_channels)
+{
+  VCP_LOG_DEBUG("DrawCrosses() with single color.");
+  std::vector<cv::Scalar> colors;
+  colors.reserve(points.size());
+  const bool valid_color = !((color[0] < 0.0) || (color[1] < 0.0) || (color[2] < 0.0));
+  for (size_t i = 0; i < points.size(); ++i)
+  {
+    const cv::Scalar ptcolor = valid_color ? color : kExemplaryColors[i % kExemplaryColorsSize];
+    if (flip_color_channels)
+      colors.push_back(cv::Scalar(ptcolor.val[2], ptcolor.val[1], ptcolor.val[0]));
+    else
+      colors.push_back(ptcolor);
+  }
+
+  DrawCrosses(image, points, colors, diagonal, line_width, dash_length, alpha, vertical);
+}
+
 void DrawEllipse(cv::Mat &image, const cv::RotatedRect &rect, const cv::Scalar &color, int line_width, double fill_opacity)
 {
   VCP_LOG_DEBUG("DrawEllipse()");

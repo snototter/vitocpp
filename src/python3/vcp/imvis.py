@@ -300,3 +300,39 @@ def draw_points(image, points, color=(-1.0,-1.0,-1.0), radius=5, line_width=-1, 
         raise ValueError('draw_points expects a list or numpy.ndarray as input')
     return draw_points__(image, pts, color, radius, line_width, opacity)
 
+
+def draw_crosses(
+        image, points, color=(-1.0,-1.0,-1.0), diagonal=15, line_width=1,
+        vertical=False, dash_length=-1, opacity=1.0):
+    """Draw +/x at the 2xN points given as numpy array or list of (x,y) tuples onto the image.
+
+    :param image: input image.
+
+    :param points: 2xN numpy.array or list of tuples: [(x0,y0), (x1,y1), ...].
+
+    :param color: may be a single RGB(A)/BGR(A) tuple or a list of RGB/BGR tuples.
+                  If it's a single tuple and (-1,-1,-1), the crosses will be drawn
+                  by alternating colors.
+                  If it's a list of tuples, points[i] will be drawn with color[i].
+                  Otherwise (color is a single tuple), all points are drawn with 
+                  the same color.
+    
+    :param diagonal:   diagonal/line length (int) of the crosses.
+
+    :param line_width: line thickness (int).
+
+    :param vertical:    True if you want to draw '+', otherwise 'x' will be drawn.
+
+    :param dash_length: lines will be dashed if > 0 (int).
+
+    :param opacity:    opacity in [0,1]
+
+    :return: image (numpy.array)
+    """
+    if type(points) is np.ndarray:
+        pts = [(points[0,i], points[1,i]) for i in range(points.shape[1])]
+    elif type(points) is list:
+        pts = points
+    else:
+        raise ValueError('draw_crosses expects a list or numpy.ndarray as input')
+    return draw_points__(image, pts, color, diagonal, line_width, vertical, dash_length, opacity)

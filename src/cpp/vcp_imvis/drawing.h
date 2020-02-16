@@ -203,6 +203,24 @@ void DrawPoints(cv::Mat &image, const std::vector<cv::Point> &points, const std:
 void DrawPoints(cv::Mat &image, const std::vector<cv::Point> &points, const cv::Scalar &color=cv::Scalar::all(-1.0), int radius=5, int line_width=-1, double alpha=1.0, bool flip_color_channels=false);
 
 
+/** @brief Draw x/+ marks at the given points, potentially transparent.
+ *
+ * Use the convenience overload which assigns a single (or alternating) color(s).
+ * Provide length of diagonal (in pixels).
+ * Provide line width in pixels.
+ * Dash length > 0 to draw crosses dashed.
+ * Set vertical true to draw "+", otherwise "x".
+ * Alpha = 0 (not visible), alpha=1 (fully opaque).
+ */
+void DrawCrosses(cv::Mat &image, const std::vector<cv::Point> &points, const std::vector<cv::Scalar> &colors, int diagonal=15, int line_width=1, int dash_length=0, double alpha=1.0, bool vertical=true);
+
+
+/** @brief Convenience function to DrawCrosses(...) which assigns a single color (if color is a valid cv::Scalar) or alternating colors from kExemplaryColors (if color=(-1,-1,-1)).
+ * flip_color_channels: if input image is RGB (instead of BGR), you can also adjust the exemplary colors by setting the flip flag to true (since they are defined as RGB).
+ */
+void DrawCrosses(cv::Mat &image, const std::vector<cv::Point> &points, const cv::Scalar &color=cv::Scalar::all(-1.0), int diagonal=15, int line_width=1, int dash_length=0, double alpha=1.0, bool vertical=true, bool flip_color_channels=false);
+
+
 /** @brief Draws the given circles.
  * If thickness < 0, the circle will be filled. Otherwise the contour will be
  * drawn with this line width.

@@ -118,6 +118,11 @@ if [ ! -d "${PYBIND_NAME}" ]; then
     ## Set local(!) install path
     cmake -DPYBIND11_INSTALL=ON -DCMAKE_INSTALL_PREFIX=../install -DPYBIND11_TEST=OFF ..
     make install
+    if [ $? -ne 0 ]; then
+          echo "  [vcp] Cannot set up pybind11!"
+          cd $CURR_WORK_DIR
+          exit 24
+      fi
     cd ../..
     rm ${archive}
 fi
