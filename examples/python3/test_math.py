@@ -136,72 +136,83 @@ def test_point_line_distance3d():
     expected_segment=[ 2.2913,   1.7321,        0,      0,        0.25,     2]
     for i, pt in enumerate(points):
         dist = math3d.distance3d_point_line_segment(pt, line)
-        assert dist == pytest.approx(expected_segment[i])
+        assert dist == pytest.approx(expected_segment[i], 1e-4)
         dist = math3d.distance3d_point_line(pt, line)
-        assert dist == pytest.approx(expected_line[i])
+        assert dist == pytest.approx(expected_line[i], 1e-4)
+
+
+def test_rdp():
+    # RDP polyline simplification:
+    def to_xy(a):
+        N = len(a)
+        x = np.array([e[0] for e in a])
+        y = np.array([e[1] for e in a])
+        return (x,y)
+
+    x = np.arange(0,5,0.02)
+    y = np.exp(-x) * np.cos(2.0*np.pi*x)
+    polyline = [(x[i], y[i]) for i in range(len(x))]
+    polyline_simple = math2d.simplify_trajectory_rdp(polyline, 0.5)
+    assert len(polyline) == 250
+    assert len(polyline_simple) == 5
+    # Check that start/end stays the same
+    assert polyline[0] == pytest.approx(polyline_simple[0])
+    assert polyline[-1] == pytest.approx(polyline_simple[-1])
+    # xs, ys = to_xy(polyline_simple)
+    # plt.plot(xs, ys)
+    # plt.show()
+
+    polyline_simple = math2d.simplify_trajectory_rdp(polyline, 0.1)
+    assert len(polyline_simple) == 8
+    assert polyline[0] == pytest.approx(polyline_simple[0])
+    assert polyline[-1] == pytest.approx(polyline_simple[-1])
+    # xs, ys = to_xy(polyline_simple)
+    # plt.plot(xs, ys)
+    # plt.show()
+
+
+def test_point_in_poly():
+    # Point in polygon tests:
+    polygon = [(1,1), (2,4), (4,4), (2,2), (4,1)] # open polygon
+    pt = (0,0)
+    assert math2d.is_point_in_closed_polygon(pt, polygon) == False
+    pt = (1,1)
+    assert math2d.is_point_in_closed_polygon(pt, polygon) == True
+    pt = (2,1.5)
+    assert math2d.is_point_in_closed_polygon(pt, polygon) == True
+    pt = (2,1)
+    assert math2d.is_point_in_closed_polygon(pt, polygon) == True
+    pt = (3,2)
+    assert math2d.is_point_in_closed_polygon(pt, polygon) == False
+    pt = (4.5,4)
+    assert math2d.is_point_in_closed_polygon(pt, polygon) == False
+
+
+def test_point_poly_distance():
+    # Point to polygon distance:
+    polygon = [(1,1), (2,4), (4,4), (2,2), (4,1)] # open polygon
+    pt = (0,0)
+    assert math2d.distance_point_closed_polygon(pt, polygon) == pytest.approx(np.sqrt(2))
+    pt = (1,1)
+    assert math2d.distance_point_closed_polygon(pt, polygon) == pytest.approx(0)
+    pt = (2,1.5)
+    expected = 0.4472135954999579
+    assert math2d.distance_point_closed_polygon(pt, polygon) == pytest.approx(-expected)
+    pt = (2,1)
+    assert math2d.distance_point_closed_polygon(pt, polygon) == pytest.approx(0)
+    pt = (3,2)
+    assert math2d.distance_point_closed_polygon(pt, polygon) == pytest.approx(expected)
+    pt = (4.5,4)
+    assert math2d.distance_point_closed_polygon(pt, polygon) == pytest.approx(0.5)
+    
+    polygon = [(1,1), (1,-1), (-1,-1), (-1,1)]
+    pt = (-1, -0.781278)
+    assert math2d.distance_point_closed_polygon(pt, polygon) == pytest.approx(0)
+    assert math2d.is_point_in_closed_polygon(pt, polygon) == True
 
 
 if __name__ == "__main__":
-    # groundplane = [0.0, 0, 1, 0]
-    # print('Angle between line and plane: {} degrees (90?)'.format(np.rad2deg(cmath.angle_line_plane(
-    #     ((0,0,0),(0,0,1)), groundplane))))
-    # print('Angle between line and plane: {} degrees (45?)'.format(np.rad2deg(cmath.angle_line_plane(
-    #     ((0,0,0),(0,1,1)), groundplane))))
-    # print('Angle between line and plane: {} degrees '.format(np.rad2deg(cmath.angle_line_plane(
-    #     ((0,0,0),(1,1,1)), groundplane))))
-    # print('Angle between line and plane: {} degrees (0?)'.format(np.rad2deg(cmath.angle_line_plane(
-    #     ((0,0,0),(1,1,0)), groundplane))))
-    # print('Angle between line and plane: {} degrees (0?)'.format(np.rad2deg(cmath.angle_line_plane(
-    #     ((0,0,1),(1,1,1)), groundplane)))) # What to do with parallel? TODO
-    # print('Angle between line and plane: {} degrees (close to 0, but still larger than?)'.format(np.rad2deg(cmath.angle_line_plane(
-    #     ((0,0,1000),(0,10000,1000.1)), groundplane))))
-    # print
-
-
-    # # Plane and line/segment intersections
-    # lines = [((0,0,0), (0,0,1)),
-    #     ((0,1,0), (3,-1,1)),
-    #     ((0,1.9,0), (0,-1,1.5)),
-    #     ((-1,-1,1.9),(-1,1,1.9))]
-    # expected_segment = [False, True, True, False]
-    # expected_line = [True, True, True, False]
-    # for i, line in enumerate(lines):
-    #     # Segment intersection
-    #     pt = cmath.intersection3d_line_segment_plane(line, plane)
-    #     intercepts = pt is not None
-    #     if intercepts:
-    #         print('Segment {} intersects plane {} at {} (should be {})'.format(line, plane, pt, expected_segment[i]))
-    #     else:
-    #         print('Segment {} does not intersect plane (should be {})'.format(line, expected_segment[i]))
-
-    #     if intercepts is not expected_segment[i]:
-    #         raise ValueError("Wrong result for line segment[{}]".format(i))
-
-    #     # Line intersection
-    #     pt = cmath.intersection3d_line_plane(line, plane)
-    #     intercepts = pt is not None
-    #     if intercepts:
-    #         print('Line {} intersects plane {} at {} (should be {})'.format(line, plane, pt, expected_line[i]))
-    #     else:
-    #         print('Line {} does not intersect plane (should be {})'.format(line, expected_line[i]))
-
-    #     if intercepts is not expected_line[i]:
-    #         raise ValueError("Wrong result for line[{}]".format(i))
-    #     print('\n')
-
-    # # Point to line/line segment distance
-    # line = ((1,1,1), (1,1,3))
-    # points =        [(2,-1,0.5), (0,0,0), (1,1,1), (1,1,2.9), (1,1,3.25), (1,-1,2)]
-    # expected_line = [2.2361,     1.4142,        0,      0,        0,        2]
-    # expected_segment=[ 2.2913,   1.7321,        0,      0,        0.25,     2]
-    # for i, pt in enumerate(points):
-    #     dist = cmath.distance3d_point_line_segment(pt, line)
-    #     print('Point {} is {} away from segment {}, should be {}'.format(pt, dist, line, expected_segment[i]))
-    #     dist = cmath.distance3d_point_line(pt, line)
-    #     print('Point {} is {} away from line {}, should be {}\n'.format(pt, dist, line, expected_line[i]))
-
-    
-    # Rotate rect: #TODO not math related
+    # Rotate rect: #TODO not math related - move to imvis demo
     rgb = imutils.imread('../../examples/data/flamingo.jpg', mode='RGB', flip_channels=False)
     im_height, im_width = rgb.shape[0], rgb.shape[1]
     center = (im_width/2.0, im_height/2.0)
@@ -213,40 +224,7 @@ if __name__ == "__main__":
 
     imvis.imshow(vis_img, title="rotated rect", wait_ms=200)
 
-
-    ########################################################################
-    ## Polygon
-    # RDP polyline simplification:
-    def to_xy(a):
-        N = len(a)
-        x = np.array([e[0] for e in a])
-        y = np.array([e[1] for e in a])
-        return (x,y)
-
-    x = np.arange(0,5,0.02)
-    y = np.exp(-x) * np.cos(2.0*np.pi*x)
-    polyline = [(x[i], y[i]) for i in range(len(x))]
-    plt.plot(x, y)
-    # plt.show()
-
-    polyline_simple = math2d.simplify_trajectory_rdp(polyline, 0.5)
-    print('RDP from {} points down to {}'.format(len(polyline), len(polyline_simple)))
-    print('Original start|end:', polyline[0], polyline[-1])
-    print('Simplified:        ', polyline_simple[0], polyline_simple[-1])
-    xs, ys = to_xy(polyline_simple)
-    plt.plot(xs, ys)
-    # plt.show()
-
-    polyline_simple = math2d.simplify_trajectory_rdp(polyline, 0.1)
-    print('RDP from {} points down to {}'.format(len(polyline), len(polyline_simple)))
-    print('Original start|end:', polyline[0], polyline[-1])
-    print('Simplified:        ', polyline_simple[0], polyline_simple[-1])
-    print
-    xs, ys = to_xy(polyline_simple)
-    plt.plot(xs, ys)
-    print('Waiting for you to close plot')
-    plt.show()
-
+    #TODO make testable
     ## Find the convex hull of this polyline
     # First, scale it to the target image size
     target_sz = (1024,768)
@@ -280,44 +258,6 @@ if __name__ == "__main__":
         vis_img = imvis.draw_rotated_rects(vis_img, [rrect], line_width=2, color=(0,0,255))
         imvis.imshow(vis_img, title="polygon", wait_ms=-1)
     
-
-    # Point in polygon tests:
-    polygon = [(1,1), (2,4), (4,4), (2,2), (4,1)] # open polygon
-    pt = (0,0)
-    print('Is {} in polygon? {} should be False'.format(pt, math2d.is_point_in_closed_polygon(pt, polygon)))
-    pt = (1,1)
-    print('Is {} in polygon? {} should be True'.format(pt, math2d.is_point_in_closed_polygon(pt, polygon)))
-    pt = (2,1.5)
-    print('Is {} in polygon? {} should be True'.format(pt, math2d.is_point_in_closed_polygon(pt, polygon)))
-    pt = (2,1)
-    print('Is {} in polygon? {} should be True'.format(pt, math2d.is_point_in_closed_polygon(pt, polygon)))
-    pt = (3,2)
-    print('Is {} in polygon? {} should be False'.format(pt, math2d.is_point_in_closed_polygon(pt, polygon)))
-    pt = (4.5,4)
-    print('Is {} in polygon? {} should be False'.format(pt, math2d.is_point_in_closed_polygon(pt, polygon)))
-    print
-
-    # Point to polygon distance:
-    polygon = [(1,1), (2,4), (4,4), (2,2), (4,1)] # open polygon
-    pt = (0,0)
-    print('Distance {} to poly: {}, should be {}'.format(pt, math2d.distance_point_closed_polygon(pt, polygon), np.sqrt(2)))
-    pt = (1,1)
-    print('Distance {} to poly: {}, should be 0'.format(pt, math2d.distance_point_closed_polygon(pt, polygon)))
-    pt = (2,1.5)
-    print('Distance {} to poly: {}, should be less than 0.5'.format(pt, math2d.distance_point_closed_polygon(pt, polygon)))
-    pt = (2,1)
-    print('Distance {} to poly: {}, should be 0'.format(pt, math2d.distance_point_closed_polygon(pt, polygon)))
-    pt = (3,2)
-    print('Distance {} to poly: {}, should be less than 0.5'.format(pt, math2d.distance_point_closed_polygon(pt, polygon)))
-    pt = (4.5,4)
-    print('Distance {} to poly: {}, should be 0.5'.format(pt, math2d.distance_point_closed_polygon(pt, polygon)))
-    print
-
-    polygon = [(1,1), (1,-1), (-1,-1), (-1,1)]
-    pt = (-1, -0.781278)
-    print('Distance {} to poly: {}'.format(pt, math2d.distance_point_closed_polygon(pt, polygon)))
-    print('         {} inside:  {}'.format(pt, math2d.is_point_in_closed_polygon(pt, polygon)))
-
 
     #################
     # Line - Circle
