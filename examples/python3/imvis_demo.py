@@ -486,20 +486,21 @@ if __name__ == "__main__":
     # Add alpha channel to render the README visualization nicely for web display
     images[0] = np.dstack((images[0], 255*np.ones(images[0].shape[:2], dtype=np.uint8)))
     padding=10
-    collage = imvis.make_collage(images, padding=padding, bg_color=(0, 0, 0, 0), num_images_per_row=len(images))
+    collage = imvis.make_collage(images, padding=padding, bg_color=(0, 0, 0, 0), fixed_size_per_image=(300, 225), num_images_per_row=2)
     
     # Add labels
     height, width = collage.shape[:2]
-    mask_width = (width - (len(names)-1)*padding) / len(names)
+    mask_width = (width - padding) / 2
     for i in range(len(names)):
-        pos = (i * (mask_width + padding) + mask_width/2, height - 10)
+        pos = ((i % 2) * (mask_width + padding) + mask_width/2,
+            (i // 2) * (225 + padding) + (225 - 10))
         collage = imvis.draw_text_box(collage, names[i],
             pos, text_anchor='south', bg_color=(0, 0, 0),
             font_color=(-1, -1, -1), font_scale=1.0,
             font_thickness=1, padding=5, fill_opacity=0.8)
 
     imvis.imshow(collage, title='Basic Drawing', wait_ms=-1)
-    # imutils.imsave('example-imvis.png', collage)
+    imutils.imsave('../../doc/example-imvis.png', collage)
 
     # ############################################################################
     # Drawing basic shapes/primitives
