@@ -143,7 +143,7 @@ Especially for the "best effort streaming" module, tests become quite difficult 
   ```
 
 ### Python
-* You can find the Python3 tests at `<VCP_ROOT_DIR>/examples/python3`, <i>i.e.</i> all files following the pattern `test_*.py`.
+* You can find the Python3 tests at `<VCP_ROOT_DIR>/examples/python3`, _i.e._ all files following the pattern `test_*.py`.
 * Testing requires `pytest`:
   ```bash
   $ cd <VCP_ROOT_DIR>/examples/python3
