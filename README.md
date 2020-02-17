@@ -112,8 +112,8 @@ Currently, there are only python applications, which you can find at `<VCP_ROOT_
 While all of vcp has been tested "in-the-wild", unit tests are rather sparse, unfortunately.
 Especially for the "best effort streaming" module, tests become quite difficult to automate (threading + the need for the specific hardware connected to the test server).
 
-Anyhow, testing requires `gtest`, which you'll probably need to build yourself - this is a no-brainer, see:
-* Set up `libgtest`:
+### C++
+* Testing the C++ core library requires `gtest`:
   ```bash
   $ sudo apt-get install libgtest-dev
 
@@ -139,6 +139,14 @@ Anyhow, testing requires `gtest`, which you'll probably need to build yourself -
   $ ctest -V
   ```
 
+### Python
+* You can find the Python3 tests at `<VCP_ROOT_DIR>/examples/python3`, <i>i.e.</i> all files following the pattern `test_*.py`.
+* Testing requires `pytest`:
+  ```bash
+  $ cd <VCP_ROOT_DIR>/examples/python3
+  $ source .venv3/bin/activate
+  $ pytest
+  ```
 
 ##TODOs
 * [ ] BESt module
@@ -161,7 +169,6 @@ Anyhow, testing requires `gtest`, which you'll probably need to build yourself -
   * [ ] Mobotix, etc.
 * [ ] Python bindings
   * [ ] best
-* [ ] Move python demos (e.g. math2d/3d) to unit tests
 * [ ] Increase unit test coverage
 * [ ] C++ Tools/examples
   * [ ] Viewer
