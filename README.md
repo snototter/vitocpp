@@ -148,10 +148,11 @@ Especially for the "best effort streaming" module, tests become quite difficult 
   ```bash
   $ cd <VCP_ROOT_DIR>/examples/python3
   $ source .venv3/bin/activate
+  $ pip install pytest
   $ pytest
   ```
 
-##TODOs
+## TODOs
 * [ ] BESt module
   * [ ] Load intrinsics
   * [ ] Load extrinsics
