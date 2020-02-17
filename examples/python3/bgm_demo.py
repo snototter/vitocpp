@@ -4,6 +4,7 @@
 
 import os
 import sys
+import cv2
 import numpy as np
 from vito import pyutils
 # Add path to the vcp package
@@ -82,14 +83,14 @@ def demo(pseudocolor=True, inspect=False):
         fixed_size_per_image=(200, 266),
         bg_color=(0, 0, 0, 0),
         num_images_per_row=2)
-    input_seq = imutils.imread('../data/ninja-seq.png')
+    input_seq = cv2.resize(imutils.imread('../data/ninja-seq.png'), (200, 266))
     collage = imvis.make_collage([input_seq, collage],
         padding=padding, bg_color=(0, 0, 0, 0))
 
     # Overlay names
     height, width = collage.shape[:2]
     collage = imvis.draw_text_box(collage, 'Input',
-            (input_seq.shape[1]/2, height/4), text_anchor='center', bg_color=(255, 255, 255),
+            (input_seq.shape[1]/2, height/3+20), text_anchor='center', bg_color=(255, 255, 255),
             font_color=(-1, -1, -1), font_scale=1.0,
             font_thickness=1, padding=5, fill_opacity=0.8)
 
