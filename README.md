@@ -68,12 +68,13 @@ Some of `vcp`'s highlights:
 
 ## Tools
 This repository comes with a few "tools", i.e. standalone applications that go beyond simple demos/examples.
-Currently, there are only python applications, which you can find at `<VCP_ROOT_DIR>/examples/python3/tools`.
+Currently (as of Jan/2020), there are only python applications available, which you can find at `<VCP_ROOT_DIR>/examples/python3/tools`.
 * Set up the <b>virtual environment</b>. If you didn't use the `./build-scripts/build-X.sh` script to prepare the library, you should run:
   ```bash
   $ cd <VCP_ROOT_DIR>/examples/python3
   $ ./prepare_environment_py3.sh
   $ source .venv3/bin/activate
+  $ cd tools
   ```
 * <b>3D image plots</b>. Plot a single image (`plot-image.py`) or an image sequence (`plot-image-sequence.py`) by interactively adjusting the camera extrinsics.
 
@@ -82,6 +83,7 @@ Currently, there are only python applications, which you can find at `<VCP_ROOT_
 
 
 ## Examples
+Besides the more complex `tools`, there are also simple demos showcasing the library capabilities.
 ### C++
 * The C++ applications at `<VCP_ROOT_DIR>/examples/cpp` demonstrate how you can use `vcp` from your own CMake projects. After building the vcp library, building these examples is as easy as:
   ```bash
@@ -92,8 +94,6 @@ Currently, there are only python applications, which you can find at `<VCP_ROOT_
   ```
 * Highly recommended examples (best/well documented, useful functionality):
   * `best_demo`
-  * `imvis_demo` TODO
-  * `imutils_demo` TODO
 
 
 ### Python
@@ -106,7 +106,10 @@ Currently, there are only python applications, which you can find at `<VCP_ROOT_
   $ python imvis_demo.py
   ```
 * Highly recommended examples (best/well documented, useful functionality):
-  * `bgm_demo.py`
+  * `bgm_demo.py` - Usage example of the background subtraction module.
+  * `geometry_demoy.py` - Usage example of the `math2d` and `math3d` modules.
+  * `imutils_demo.py` - Usage example of the `imutils` (image manipulation) module.
+  * `imvis_demo.py` - Usage example for visualization utilities within the `imvis` module.
 
 ## Tests
 While all of vcp has been tested "in-the-wild", unit tests are rather sparse, unfortunately.
