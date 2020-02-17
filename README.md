@@ -1,5 +1,5 @@
 # vitocpp/vcp
-C++/Python 3 utilities for common vision tasks, e.g. streaming, visualization or image manipulation.
+C++/Python 3 utilities for common vision tasks, _e.g._ streaming, visualization or image manipulation.
 
 <b>Note:</b> As of 01/2020 this repository is <b>WIP</b>, I'm rewriting my utilities (especially simplifying the streaming module) over the next couple of months.
 
@@ -33,7 +33,7 @@ Some of `vcp`'s highlights:
   Back when I started working on this library, OpenCV didn't provide pseudocoloring capabilities. The `vcp::imvis` module allows visualization via common color maps (you might remember these from such frameworks as MATLAB, matplotlib, and whatnot).
 
   ![Pseudocoloring Example](./doc/example-pseudocolor.png)
-* <b>Math</b> utilities - besides enabling most of the fancy visualizations within `vcp::imvis`, you can also do basic geometry tasks with the `vcp::math` module (e.g. computing tangents of circles, line (segment) intersection, and quite a lot more).
+* <b>Math</b> utilities - besides enabling most of the fancy visualizations within `vcp::imvis`, you can also do basic geometry tasks with the `vcp::math` module (_e.g._ computing tangents of circles, line (segment) intersection, and quite a lot more).
 
   ![Geometry Example](./doc/example-geometry.png)
 * <b>C++</b> utilities - for basic file/path and string manipulation, sorting, and more (if you want to avoid heavier dependencies, such as Boost).
@@ -50,7 +50,7 @@ Some of `vcp`'s highlights:
 ## Installation
 * If you want to build the C++ library and Python3 bindings, simply run `./build-scripts/build-ubuntu-18.04.sh`, this will:
   * Check and ask you to install missing system packages.
-  * Configure the build (depending on which optional packages you installed, e.g. `libk4a` to stream from Azure Kinect).
+  * Configure the build (depending on which optional packages you installed, _e.g._ `libk4a` to stream from Azure Kinect).
   * Build the C++ `vcp` libraries and corresponding Python3 bindings.
   * Build the example applications and prepare the virtual environment for Python demos.
 * If you prefer to do it on your own, crank up CMake:
@@ -67,7 +67,7 @@ Some of `vcp`'s highlights:
 
 
 ## Tools
-This repository comes with a few "tools", i.e. standalone applications that go beyond simple demos/examples.
+This repository comes with a few "tools", _i.e._ standalone applications that go beyond simple demos/examples.
 Currently (as of Jan/2020), there are only python applications available, which you can find at `<VCP_ROOT_DIR>/examples/python3/tools`.
 * Set up the <b>virtual environment</b>. If you didn't use the `./build-scripts/build-X.sh` script to prepare the library, you should run:
   ```bash
@@ -162,7 +162,7 @@ Especially for the "best effort streaming" module, tests become quite difficult 
     * [ ] RGB+D
   * [x] Monocular/stereo
     * [x] Stereo IP cam streams as separate monocular sinks
-    * [x] "Real" stereo cams (e.g. ZED) could be split in VCP or by the library user (currently, the latter is preferred)
+    * [x] "Real" stereo cams (_e.g._ ZED) could be split in VCP or by the library user (currently, the latter is preferred)
     * [ ] Add frame-type stereo-left, stereo-right for rectification (if needed)
   * [x] RealSense
   * [ ] Azure Kinect
