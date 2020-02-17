@@ -63,12 +63,12 @@ def demo_intersect(img):
     
     ##### Draw
     img = imvis.draw_circles(img, [c[0] for c in circles], [c[1] for c in circles],
-        default_color=(0, 255, 255), thickness=2)
-    img = imvis.draw_lines(img, lines, default_color=(0, 0, 200), line_width=2)
+        default_color=(0, 0, 200), thickness=3)
+    img = imvis.draw_lines(img, lines, default_color=(0, 0, 200), line_width=3)
     # img = imvis.draw_points(img, intersection_points, color=(60, 180, 0), radius=10, line_width=2, opacity=1)
     # img = imvis.draw_points(img, wannabe_intersection_points, color=(200, 0, 0), radius=10, line_width=2, opacity=1)
-    img = imvis.draw_crosses(img, intersection_points, color=(60, 180, 0), diagonal=20, line_width=2, vertical=False, opacity=1)
-    img = imvis.draw_crosses(img, wannabe_intersection_points, color=(200, 0, 0), diagonal=20, line_width=2, vertical=False, dash_length=9, opacity=1)
+    img = imvis.draw_crosses(img, intersection_points, color=(60, 180, 0), diagonal=20, line_width=3, vertical=False, opacity=1)
+    img = imvis.draw_crosses(img, wannabe_intersection_points, color=(200, 0, 0), diagonal=20, line_width=3, vertical=False, dash_length=9, opacity=1)
     # Add label
     return imvis.draw_text_box(img, '2D Intersection',
             (110, img.shape[0]-10),
@@ -87,7 +87,7 @@ def _tangent_helper(img, center1, radius1, center2, radius2):
         if num_transverse == 2:
             tt.append(tt2)
     if tt:
-        img = imvis.draw_lines(img, tt, default_color=(200, 0, 0), line_width=2)
+        img = imvis.draw_lines(img, tt, default_color=(200, 0, 0), line_width=3)
 
     td = list()
     if num_direct > 0:
@@ -95,13 +95,7 @@ def _tangent_helper(img, center1, radius1, center2, radius2):
         if num_direct == 2:
             td.append(td2)
     if td:
-        img = imvis.draw_lines(img, td, default_color=(60, 180, 0), line_width=2)
-
-    img = imvis.draw_circles(img, [center1, center2], [radius1, radius2],
-        default_color=(0, 255, 255), thickness=2)
-
-    # bboxes = [([center1[0]-radius1, center1[1]-radius1, 2*radius1, 2*radius1], (0, 0, 255), '{:d} | {:d}'.format(num_transverse, num_direct))]
-    # img = imvis.draw_bboxes2d(img, bboxes, text_anchor='center', line_width=0, fill_opacity=0.0)
+        img = imvis.draw_lines(img, td, default_color=(60, 180, 0), line_width=3)
     return img
 
 
@@ -109,6 +103,10 @@ def demo_tangents(img):
     c1 = ((260, 40), 32) # Center, radius 
     c2 = ((300, 130), 45)
     c3 = ((300, 195), 20)
+
+    img = imvis.draw_circles(img, [c1[0], c2[0], c3[0]], [c1[1], c2[1], c3[1]],
+        default_color=(0, 0, 200), thickness=3)
+    
     img = _tangent_helper(img, *c1, *c2)
     img = _tangent_helper(img, *c2, *c3)
     # Add label
@@ -120,17 +118,24 @@ def demo_tangents(img):
 
 
 def demo_convhull(img):
-    pts = [
-        (512, 32),
-        (480, 77),
-        (520, 200),
-        (570, 96)
-    ]
+    # pts = [
+    #     (480, 26),
+    #     (508, 188),
+    #     (512, 32),
+    #     (480, 77),
+    #     (520, 200),
+    #     (570, 96)
+    # ]
+    pts = list()
+    for _ in range(30):
+        x = np.random.randint(450, img.shape[1] - 20)
+        y = np.random.randint(10, img.shape[0] - 40)
+        pts.append((x, y))
     #TODO random sample?
     chull = math2d.convex_hull(pts)
     # Draw convex hull as closed polygon (need to append first hull point)
     img = imvis.draw_polygon(img, [*chull, chull[0]], color=(0, 255, 255), line_width=3, dash_length=-1, fill_opacity=0.8)
-    img = imvis.draw_points(img, pts, color=(0, 0, 255), radius=5, line_width=-1, opacity=1)
+    img = imvis.draw_points(img, pts, color=(0, 0, 255), radius=3, line_width=-1, opacity=1)
     # Add label
     return imvis.draw_text_box(img, 'Polygons/Hull',
             (530, img.shape[0]-10),
