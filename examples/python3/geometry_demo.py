@@ -100,9 +100,9 @@ def _tangent_helper(img, center1, radius1, center2, radius2):
 
 
 def demo_tangents(img):
-    c1 = ((260, 40), 32) # Center, radius 
-    c2 = ((300, 130), 45)
-    c3 = ((300, 195), 20)
+    c1 = ((300, 40), 32) # Center, radius 
+    c2 = ((340, 130), 45)
+    c3 = ((340, 195), 20)
 
     img = imvis.draw_circles(img, [c1[0], c2[0], c3[0]], [c1[1], c2[1], c3[1]],
         default_color=(0, 0, 200), thickness=3)
@@ -111,7 +111,7 @@ def demo_tangents(img):
     img = _tangent_helper(img, *c2, *c3)
     # Add label
     return imvis.draw_text_box(img, 'Tangents',
-            (296, img.shape[0]-10),
+            (326, img.shape[0]-10),
             text_anchor='south', bg_color=(0, 0, 0),
             font_color=(-1, -1, -1), font_scale=1.0,
             font_thickness=1, padding=5, fill_opacity=0.8)
