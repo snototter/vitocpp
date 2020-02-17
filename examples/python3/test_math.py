@@ -54,6 +54,7 @@ def test_circle_creation():
 
 
 def tuple_approx(p, expected):
+    assert len(p) == len(expected)
     for i in range(len(expected)):
         assert p[i] == pytest.approx(expected[i])
 
@@ -210,6 +211,18 @@ def test_point_poly_distance():
     pt = (-1, -0.781278)
     assert math2d.distance_point_closed_polygon(pt, polygon) == pytest.approx(0)
     assert math2d.is_point_in_closed_polygon(pt, polygon) == True
+
+
+def test_closest_point2d():
+    line = ((1, 1), (3, 3))
+    pts = [(-1, 0), (0.5, 1.5), (2.5, 1.5), (3, 3), (6, 2)]
+    exp_line = [(-0.5, -0.5), (1, 1), (2, 2), (3, 3), (4, 4)]
+    exp_segment = [(1, 1), (1, 1), (2, 2), (3, 3), (3, 3)]
+    for i in range(len(pts)):
+        res = math2d.closest_point_on_line(pts[i], line)
+        tuple_approx(res, exp_line[i])
+        res = math2d.closest_point_on_line_segment(pts[i], line)
+        tuple_approx(res, exp_segment[i])
 
 
 if __name__ == "__main__":
