@@ -4,6 +4,7 @@
 
 import os
 import sys
+import numpy as np
 from vito import pyutils
 # Add path to the vcp package
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'gen'))
@@ -74,6 +75,8 @@ def demo(pseudocolor=True, inspect=False):
             iminspect.show(mask)
 
     padding = 10
+    # Add alpha channel to render the README visualization nicely for web display
+    fg_masks[0] = np.dstack((fg_masks[0], 255 * np.ones(fg_masks[0].shape[:2], dtype=np.uint8)))
     collage = imvis.make_collage(fg_masks,
         padding=padding,
         fixed_size_per_image=(200, 266),
