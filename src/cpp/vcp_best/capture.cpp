@@ -6,7 +6,7 @@
 #include <vcp_utils/string_utils.h>
 #include <vcp_math/geometry3d.h>
 #include <vcp_utils/file_utils.h>
-
+#include <vcp_utils/sort_utils.h>
 
 #include <sstream>
 #include <exception>
@@ -32,7 +32,6 @@
 #include <chrono>
 
 //FIXME add WaitForNext(timeout)
-//FIXME rename isFrameAvailable
 
 namespace vcp
 {
@@ -50,6 +49,7 @@ public:
     VCP_LOG_DEBUG("MultiDeviceCapture::MultiDeviceCapture()");
     num_devices_ = 0;
     LoadConfig(config);
+    SanityCheck();
   }
 
   void LoadConfig(const vcp::config::ConfigParams &config)
@@ -455,7 +455,6 @@ public:
     return frames;
   }
 
-
 private:
   std::vector<std::unique_ptr<StreamSink>> sinks_; // Potentially less than streams/frames
   std::vector<FrameType> frame_types_; // Note: they will be per stream/frame, not per device
@@ -471,6 +470,12 @@ private:
 #ifdef VCP_BEST_WITH_REALSENSE2
   bool multiple_realsenses_;
 #endif // VCP_BEST_WITH_REALSENSE2
+
+  void SanityCheck()
+  {
+    if (!vcp::utils::HasUniqueItems(frame_labels_))
+      VCP_ERROR("Frame labels aren't unique - aborting before you'll run into runtime issues!");
+  }
 };
 
 

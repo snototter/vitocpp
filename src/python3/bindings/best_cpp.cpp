@@ -12,16 +12,16 @@
 #include <opencv2/core/core.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <pvt_config/config_params.h>
-#include <pvt_utils/string_utils.h>
-#include <pvt_utils/pvt_error.h>
+#include <vcp_utils/string_utils.h>
+#include <vcp_utils/pvt_error.h>
 
 #include "config.h"
 
-#include <pvt_utils/timing_utils.h>
-#include <pvt_icc/capture.h>
-#include <pvt_icc/liveview.h>
+#include <vcp_utils/timing_utils.h>
+#include <vcp_icc/capture.h>
+#include <vcp_best/liveview.h>
 
-#ifdef WITH_IPCAMERA
+#ifdef VCP_BEST_WITH_IPCAMERA
   #include <pvt_icc/capture_ipcam.h>
 #endif
 #ifdef WITH_K4A
@@ -882,7 +882,7 @@ PYBIND11_MODULE(capture, m)
         "Returns a list of connected RealSense2 devices.", py::arg("warn_if_no_devices")=true);
 
   m.def("store_extrinsics", &pyicc::StoreExtrinsics,
-        "Saves the extrinsic calibration file.", //TODO doc
+        "Saves the extrinsic calibration to the given file.", //TODO doc
         py::arg("filename"), py::arg("labels"), py::arg("extrinsics"));
 
 }

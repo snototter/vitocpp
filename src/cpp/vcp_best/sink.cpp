@@ -249,6 +249,7 @@ bool GetColorAsBgrFromConfig(const vcp::config::ConfigParams &config,
                              std::vector<std::string> &configured_keys)
 {
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "color_as_bgr"), configured_keys.end());
+  //FIXME rm: VCP_LOG_FAILURE("LOOKING UP: " << cam_group << ".color_as_bgr, setting ex:" << config.SettingExists(cam_group + ".color_as_bgr") << " val: " << config.GetBoolean(cam_group + ".color_as_bgr"));
   return GetOptionalBoolFromConfig(config, cam_group, "color_as_bgr", false);
 }
 
@@ -395,5 +396,6 @@ std::vector<std::string> GetCameraConfigParameterNames(const vcp::config::Config
   }
   return camera_parameters;
 }
+
 } // namespace best
 } // namespace vcp

@@ -94,6 +94,7 @@ void Stream(const std::string &config_file)
     frames = capture->Next();
     VCP_TOC_ASSIGN(elapsed_ms);
 
+
     // Again, the following is only needed for this demo.
     // We filter invalid frames, colorize depth/IR streams, etc.
     std::vector<cv::Mat> valid_raw, valid_vis;
@@ -154,7 +155,7 @@ void Stream(const std::string &config_file)
           10, 0.5, cv::Scalar(255, 0, 0), cv::Scalar::all(-1),
           cv::FONT_HERSHEY_PLAIN, 1.5, 2);
     }
-
+VCP_LOG_FAILURE_DEFAULT("Overlayed!");
 //    viewer->PushImageRequest(collage);
 //    VCP_LOG_FAILURE("Viewer fps: " << viewer->GetRequestFrameRate() << " vs " << viewer->GetDisplayFrameRate());
 //    int k = viewer->GetLastUserInput();

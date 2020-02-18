@@ -2,6 +2,7 @@
 #define __VCP_UTILS_SORT_UTILS_H__
 
 #include <vector>
+#include <map>
 #include <algorithm>
 #include <utility>
 #include <exception>
@@ -12,7 +13,6 @@ namespace vcp
 {
 namespace utils
 {
-
 /** @brief Extract the keys from a map container. */
 template <typename M>
 std::vector<typename M::key_type> GetMapKeys(const M &map)
@@ -130,6 +130,38 @@ std::vector<_T> SortVector(const std::vector<_T> &data, bool (*cmp)(const _T &, 
   return copy;
 }
 
+/** @brief Finds all duplicate entries in 'data' and stores their frequencies in item_count. */
+template <typename _T>
+void FindDuplicates(const std::vector<_T> &data, std::map<_T, size_t> &item_count)
+{
+  item_count.clear();
+  // Compute frequency for each item
+  for (const auto &item : data)
+  {
+    auto ires = item_count.insert(std::pair<_T, size_t>(item, 1));
+    if (ires.second == false) // Key existed already
+      ires.first->second++;
+  }
+
+  // Remove unique items from the map
+  auto it = item_count.begin();
+  while (it != item_count.end())
+  {
+    if (it->second == 1)
+      it = item_count.erase(it);
+    else
+      it++;
+  }
+}
+
+/** @brief Returns true if there are no duplicates in the given vector. Convienience wrapper to @see FindDuplicates(). */
+template <typename _T>
+bool HasUniqueItems(const std::vector<_T> &data)
+{
+  std::map<_T, size_t> duplicates;
+  FindDuplicates(data, duplicates);
+  return duplicates.empty();
+}
 } // namespace utils
 } // namespace vcp
 

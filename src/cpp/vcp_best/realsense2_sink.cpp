@@ -24,6 +24,79 @@ namespace realsense2
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::best::realsense2"
 
+std::string RSStreamTypeToString(const RSStreamType &s)
+{
+  std::string rep;
+  switch (s)
+  {
+  case RSStreamType::COLOR_DEPTH:
+    rep = "rgbd";
+    break;
+
+  case RSStreamType::COLOR:
+    rep = "color";
+    break;
+
+  case RSStreamType::DEPTH:
+    rep = "depth";
+    break;
+
+  default:
+    std::stringstream str;
+    str << "(" << static_cast<int>(s) << ")";
+    rep = str.str();
+    break;
+  }
+
+  return vcp::utils::string::Lower(rep);
+}
+
+RSStreamType RSStreamTypeFromString(const std::string &s)
+{
+  const std::string lower = vcp::utils::string::Replace(vcp::utils::string::Lower(s), "_", "-");
+
+  if (lower.compare("rgbd") == 0
+      || lower.compare("rgb-d") == 0
+      || lower.compare("rgb-depth") == 0
+      || lower.compare("bgrd") == 0
+      || lower.compare("bgr-d") == 0
+      || lower.compare("bgr-depth") == 0
+      || lower.compare("color-depth") == 0)
+    return RSStreamType::COLOR_DEPTH;
+
+  if (lower.compare("rgb") == 0
+      || lower.compare("bgr") == 0
+      || lower.compare("color") == 0
+      || lower.compare("color-only") == 0)
+    return RSStreamType::COLOR;
+
+  if (lower.compare("depth") == 0
+      || lower.compare("d") == 0
+      || lower.compare("depth-only") == 0)
+    return RSStreamType::DEPTH;
+
+  VCP_ERROR("RSStreamTypeFromString(): Cannot convert '" << s << "' to RSStreamType.");
+}
+
+
+std::ostream &operator<<(std::ostream &stream, const RSStreamType &s)
+{
+  stream << "RSStreamType::" << RSStreamTypeToString(s);
+  return stream;
+}
+
+
+bool RealSense2SinkParams::IsColorStreamEnabled() const
+{
+  return stream_type == RSStreamType::COLOR || stream_type == RSStreamType::COLOR_DEPTH;
+}
+
+bool RealSense2SinkParams::IsDepthStreamEnabled() const
+{
+  return stream_type == RSStreamType::DEPTH || stream_type == RSStreamType::COLOR_DEPTH;
+}
+
+
 #define MAKE_STRING_TO_RS2OPTIONS_IF(str, O) if (str.compare(#O) == 0) { return O; }
 rs2_option StringToOption(const std::string &option_name)
 {
@@ -83,7 +156,26 @@ void SetOptionsFromConfig(const config::ConfigParams &config, const std::string 
     options.push_back(std::make_pair<rs2_option, float>(StringToOption(p.first), static_cast<float>(p.second)));
 }
 
-  //FIXME ip cam/webcam height/width vs resolution - support both
+
+RSStreamType GetRSStreamTypeFromConfig(const vcp::config::ConfigParams &config,
+                                       const std::string &cam_group,
+                                       std::vector<std::string> &configured_keys)
+{
+  const std::vector<std::string> keys = { "stream_type", "stream", "enabled_stream" };
+  for (const auto &k : keys)
+  {
+    const std::string ck = cam_group + "." + k;
+    if (config.SettingExists(ck))
+    {
+      configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), k), configured_keys.end());
+      return RSStreamTypeFromString(config.GetString(ck));
+    }
+  }
+  // By default, enable both rgb and depth.
+  return RSStreamType::COLOR_DEPTH;
+}
+
+
 RealSense2SinkParams RealSense2SinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param)
 {
   std::vector<std::string> configured_keys = config.ListConfigGroupParameters(cam_param);
@@ -92,6 +184,8 @@ RealSense2SinkParams RealSense2SinkParamsFromConfig(const vcp::config::ConfigPar
   RealSense2SinkParams params(sink_params);
   params.serial_number = GetOptionalStringFromConfig(config, cam_param, "serial_number", kEmptyRealSense2SerialNumber);
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "serial_number"), configured_keys.end());
+
+  params.stream_type = GetRSStreamTypeFromConfig(config, cam_param, configured_keys);
 
   const cv::Size rgb_res = ParseResolutionFromConfig(config, cam_param, "rgb_", configured_keys);
   if (rgb_res.width > 0 && rgb_res.height > 0)
@@ -420,60 +514,79 @@ cv::Mat TFromExtrinsics(const rs2_extrinsics &extrinsics)
 }
 
 
-void DumpCalibration(rs2::pipeline_profile &profile, const std::string &filename,
-                     const bool align_depth_to_color, const float depth_scale, const bool verbose)
+void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams &params, const float depth_scale)
 {
-  if (filename.empty())
+  //FIXME what if rgb only?!
+  if (params.calibration_file.empty())
     VCP_ERROR("DumpCalibration() called with empty file name!");
 
-  cv::FileStorage fs(filename, cv::FileStorage::WRITE);
+  cv::FileStorage fs(params.calibration_file, cv::FileStorage::WRITE);
   if (!fs.isOpened())
-    VCP_ABORT("Cannot open '" << filename << "' to store calibration!");
+    VCP_ABORT("Cannot open '" << params.calibration_file << "' to store calibration!");
 
-  rs2::video_stream_profile depth_profile = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
-  rs2::video_stream_profile rgb_profile = profile.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>();
+  cv::Mat Krgb, Drgb;
+  int rgb_width, rgb_height;
 
-  const rs2_intrinsics depth_intrinsics = depth_profile.get_intrinsics();
-  const rs2_extrinsics depth_extrinsics = depth_profile.get_extrinsics_to(rgb_profile);
-  const rs2_intrinsics rgb_intrinsics = rgb_profile.get_intrinsics();
-  const rs2_extrinsics rgb_extrinsics = rgb_profile.get_extrinsics_to(depth_profile);
+  const bool align_d2c = params.IsColorStreamEnabled() && params.IsDepthStreamEnabled() && params.align_depth_to_color;
 
-  const cv::Mat Krgb = KFromIntrinsics(rgb_intrinsics);
-  const cv::Mat Drgb = DFromIntrinsics(rgb_intrinsics);
-  const int rgb_width = rgb_intrinsics.width;
-  const int rgb_height = rgb_intrinsics.height;
+  if (params.IsColorStreamEnabled())
+  {
+    rs2::video_stream_profile rgb_profile = profile.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>();
+    const rs2_intrinsics rgb_intrinsics = rgb_profile.get_intrinsics();
 
-  const cv::Mat Kdepth = align_depth_to_color ? Krgb : KFromIntrinsics(depth_intrinsics);
-  const cv::Mat Ddepth = align_depth_to_color ? Drgb : DFromIntrinsics(depth_intrinsics);
-  const int depth_width = align_depth_to_color ? rgb_width : depth_intrinsics.width;
-  const int depth_height = align_depth_to_color ? rgb_height : depth_intrinsics.height;
+    Krgb = KFromIntrinsics(rgb_intrinsics);
+    Drgb = DFromIntrinsics(rgb_intrinsics);
+    rgb_width = rgb_intrinsics.width;
+    rgb_height = rgb_intrinsics.height;
 
-  const cv::Mat Rdepth2color = align_depth_to_color ? cv::Mat::eye(3, 3, CV_64FC1) : RFromExtrinsics(depth_extrinsics);
-  const cv::Mat Tdepth2color = align_depth_to_color ? cv::Mat::zeros(3, 1, CV_64FC1) : TFromExtrinsics(depth_extrinsics);
-  const cv::Mat Rcolor2depth = align_depth_to_color ? cv::Mat::eye(3, 3, CV_64FC1) : RFromExtrinsics(rgb_extrinsics);
-  const cv::Mat Tcolor2depth = align_depth_to_color ? cv::Mat::zeros(3, 1, CV_64FC1) : TFromExtrinsics(rgb_extrinsics);
+    fs << "K_rgb" << Krgb;
+    fs << "D_rgb" << Drgb;
+    fs << "width_rgb" << rgb_width;
+    fs << "height_rgb" << rgb_height;
 
-  fs << "K_rgb" << Krgb;
-  fs << "D_rgb" << Drgb;
-  fs << "width_rgb" << rgb_width;
-  fs << "height_rgb" << rgb_height;
+    if (params.IsDepthStreamEnabled())
+    {
+      rs2::video_stream_profile depth_profile = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
+      const rs2_extrinsics rgb_extrinsics = rgb_profile.get_extrinsics_to(depth_profile);
+      const cv::Mat Rcolor2depth = align_d2c ? cv::Mat::eye(3, 3, CV_64FC1) : RFromExtrinsics(rgb_extrinsics);
+      const cv::Mat Tcolor2depth = align_d2c ? cv::Mat::zeros(3, 1, CV_64FC1) : TFromExtrinsics(rgb_extrinsics);
+      fs << "R_rgb2depth" << Rcolor2depth;
+      fs << "t_rgb2depth" << Tcolor2depth;
+    }
+  }
 
-  fs << "K_depth" << Kdepth;
-  fs << "D_depth" << Ddepth;
-  fs << "width_depth" << depth_width;
-  fs << "height_depth" << depth_height;
-  fs << "depth_scale" << depth_scale;
+  if (params.IsDepthStreamEnabled())
+  {
+    rs2::video_stream_profile depth_profile = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
+    const rs2_intrinsics depth_intrinsics = depth_profile.get_intrinsics();
 
-  fs << "R_depth2rgb" << Rdepth2color;
-  fs << "t_depth2rgb" << Tdepth2color;
-  fs << "R_rgb2depth" << Rcolor2depth;
-  fs << "t_rgb2depth" << Tcolor2depth;
+    const cv::Mat Kdepth = align_d2c ? Krgb : KFromIntrinsics(depth_intrinsics);
+    const cv::Mat Ddepth = align_d2c ? Drgb : DFromIntrinsics(depth_intrinsics);
+    const int depth_width = align_d2c ? rgb_width : depth_intrinsics.width;
+    const int depth_height = align_d2c ? rgb_height : depth_intrinsics.height;
+
+    fs << "K_depth" << Kdepth;
+    fs << "D_depth" << Ddepth;
+    fs << "width_depth" << depth_width;
+    fs << "height_depth" << depth_height;
+    fs << "depth_scale" << depth_scale;
+
+    if (params.IsColorStreamEnabled())
+    {
+      rs2::video_stream_profile rgb_profile = profile.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>();
+      const rs2_extrinsics depth_extrinsics = depth_profile.get_extrinsics_to(rgb_profile);
+      const cv::Mat Rdepth2color = align_d2c ? cv::Mat::eye(3, 3, CV_64FC1) : RFromExtrinsics(depth_extrinsics);
+      const cv::Mat Tdepth2color = align_d2c ? cv::Mat::zeros(3, 1, CV_64FC1) : TFromExtrinsics(depth_extrinsics);
+      fs << "R_depth2rgb" << Rdepth2color;
+      fs << "t_depth2rgb" << Tdepth2color;
+    }
+  }
 
   fs << "type" << "rgbd";
   fs.release();
 
-  if (verbose)
-    VCP_LOG_INFO("RealSense calibration has been saved to '" << filename << "'. Change the camera configuration if you want to prevent overwriting this calibration during the next start.");
+  if (params.verbose)
+    VCP_LOG_INFO("RealSense calibration has been saved to '" << params.calibration_file << "'. Change the camera's calibration file parameter if you want to prevent overwriting it upon the next start.");
 }
 
 
@@ -547,6 +660,8 @@ void DebugFramesetMetadata(const std::string &serial_number, const rs2::frameset
 
   for (const auto &&frame : frameset)
   {
+    if (!frame)
+      continue;
     const std::string stream_type = frame.get_profile().stream_type() == RS2_STREAM_DEPTH ? "depth" : "color";
     metadata_str << std::endl << "  " << stream_type;
     for (const auto &att : attributes_to_query)
@@ -569,7 +684,16 @@ void DebugFramesetMetadata(const std::string &serial_number, const rs2::frameset
   }
 
   // Explicitly add frame# to compare against metadata (since md frame count gets stuck after a few seconds), weird behavior as of March/2019
-  metadata_str << std::endl << "Frame numbers: " << frameset.get_color_frame().get_frame_number() << " vs " << frameset.get_depth_frame().get_frame_number();
+  metadata_str << std::endl << "Frame numbers: ";
+  if (frameset.get_color_frame().get() != nullptr)
+    metadata_str << frameset.get_color_frame().get_frame_number();
+  else
+    metadata_str << "---";
+  metadata_str << " vs ";
+  if (frameset.get_depth_frame().get() != nullptr)
+    metadata_str << frameset.get_depth_frame().get_frame_number();
+  else
+    metadata_str << "---";
 
   VCP_LOG_DEBUG_DEFAULT(metadata_str.str());
 }
@@ -590,9 +714,13 @@ public:
     rgbd_params_(params),
     dev_opened_(false),
     serial_number_(kEmptyRealSense2SerialNumber),
-    available_(0)
+    available_(0),
+    color_stream_enabled_(false),
+    depth_stream_enabled_(false)
   {
     VCP_LOG_DEBUG("RealSense2RGBDSink::RealSense2RGBDSink()");
+    color_stream_enabled_ = rgbd_params_.IsColorStreamEnabled();
+    depth_stream_enabled_ = rgbd_params_.IsDepthStreamEnabled();
   }
 
   virtual ~RealSense2RGBDSink()
@@ -640,13 +768,31 @@ public:
 
     if (rgbd_params_.verbose)
       VCP_LOG_INFO("Configuring streams of RealSense device [" << rgbd_params_.serial_number << "]");
+
+    if (!(color_stream_enabled_ || depth_stream_enabled_))
+    {
+      VCP_LOG_FAILURE("You disabled both, color and depth stream - cannot start streaming from RealSense device [" << rgbd_params_.serial_number << "]");
+      return false;
+    }
+
     try
     {
-      config_.enable_stream(RS2_STREAM_COLOR, rgbd_params_.rgb_width, rgbd_params_.rgb_height,
-                           rgbd_params_.color_as_bgr ? RS2_FORMAT_BGR8 : RS2_FORMAT_RGB8,
-                           rgbd_params_.rgb_frame_rate);
-      config_.enable_stream(RS2_STREAM_DEPTH, rgbd_params_.depth_width, rgbd_params_.depth_height,
-                           RS2_FORMAT_Z16, rgbd_params_.depth_frame_rate);
+      if (color_stream_enabled_)
+      {
+        VCP_LOG_INFO("Enabling " << rgbd_params_.rgb_width << "x" << rgbd_params_.rgb_height
+                     << " color stream " << (rgbd_params_.color_as_bgr ? "BGR" : "RGB")
+                     << " @" << rgbd_params_.rgb_frame_rate << " fps");
+        config_.enable_stream(RS2_STREAM_COLOR, rgbd_params_.rgb_width, rgbd_params_.rgb_height,
+                             rgbd_params_.color_as_bgr ? RS2_FORMAT_BGR8 : RS2_FORMAT_RGB8,
+                             rgbd_params_.rgb_frame_rate);
+      }
+      if (depth_stream_enabled_)
+      {
+        VCP_LOG_INFO("Enabling " << rgbd_params_.depth_width << "x" << rgbd_params_.depth_height
+                     << " depth stream " << " @" << rgbd_params_.depth_frame_rate << " fps");
+        config_.enable_stream(RS2_STREAM_DEPTH, rgbd_params_.depth_width, rgbd_params_.depth_height,
+                             RS2_FORMAT_Z16, rgbd_params_.depth_frame_rate);
+      }
       return true;
     }
     catch (const rs2::error &e)
@@ -693,24 +839,34 @@ public:
   std::vector<cv::Mat> Next() override
   {
     cv::Mat rgb, depth;
-    image_queue_mutex_.lock();
-    if (rgb_queue_->Empty() || depth_queue_->Empty())
-    {
-      rgb = cv::Mat();
-      depth = cv::Mat();
-    }
-    else
-    {
-      // Retrieve oldest image in queue.
-      rgb = rgb_queue_->Front().clone();
-      rgb_queue_->PopFront();
-      depth = depth_queue_->Front().clone();
-      depth_queue_->PopFront();
-    }
-    image_queue_mutex_.unlock();
     std::vector<cv::Mat> res;
-    res.push_back(rgb);
-    res.push_back(depth);
+    image_queue_mutex_.lock();
+    if (color_stream_enabled_)
+    {
+      if (rgb_queue_->Empty())
+        rgb = cv::Mat();
+      else
+      {
+        // Retrieve oldest image in queue
+        rgb = rgb_queue_->Front().clone();
+        rgb_queue_->PopFront();
+      }
+      res.push_back(rgb);
+    }
+
+    if (depth_stream_enabled_)
+    {
+      if (depth_queue_->Empty())
+        depth = cv::Mat();
+      else
+      {
+        // Retrieve oldest image in queue
+        depth = depth_queue_->Front().clone();
+        depth_queue_->PopFront();
+      }
+      res.push_back(depth);
+    }
+    image_queue_mutex_.unlock();   
     return res;
   }
 
@@ -723,9 +879,9 @@ public:
   {
     size_t num = 0;
     image_queue_mutex_.lock();
-    if (!rgb_queue_->Empty())
+    if (color_stream_enabled_ && !rgb_queue_->Empty())
         ++num;
-    if (!depth_queue_->Empty())
+    if (depth_stream_enabled_ && !depth_queue_->Empty())
         ++num;
     image_queue_mutex_.unlock();
     return num;
@@ -734,7 +890,7 @@ public:
   int IsFrameAvailable() const override
   {
     image_queue_mutex_.lock();
-    const bool empty = rgb_queue_->Empty() || depth_queue_->Empty();
+    const bool empty = (color_stream_enabled_ && rgb_queue_->Empty()) || (depth_stream_enabled_ && depth_queue_->Empty());
     image_queue_mutex_.unlock();
     if (empty)
       return 0;
@@ -743,7 +899,12 @@ public:
 
   size_t NumStreams() const override
   {
-    return 2;
+    size_t ns = 0;
+    if (color_stream_enabled_)
+      ++ns;
+    if (depth_stream_enabled_)
+      ++ns;
+    return ns;
   }
 
   size_t NumDevices() const override
@@ -753,28 +914,26 @@ public:
 
   FrameType FrameTypeAt(size_t stream_index) const override
   {
-    switch(stream_index)
-    {
-      case 0:
-        return FrameType::RGBD_IMAGE;
-      case 1:
-        return FrameType::RGBD_DEPTH;
-      default:
-        VCP_ERROR("stream_index (" << stream_index << ") out of bounds.");
-    }
+    std::vector<FrameType> types;
+    if (color_stream_enabled_)
+      types.push_back(FrameType::RGBD_IMAGE);
+    if (depth_stream_enabled_)
+      types.push_back(FrameType::RGBD_DEPTH);
+    if (stream_index >= types.size())
+      VCP_ERROR("stream_index " << stream_index << " is out-of-bounds");
+    return types[stream_index];
   }
 
   std::string StreamLabel(size_t stream_index) const override
   {
-    switch(stream_index)
-    {
-      case 0:
-        return rgbd_params_.sink_label + "-rgb";
-      case 1:
-        return rgbd_params_.sink_label + "-depth";
-      default:
-        VCP_ERROR("stream_index (" << stream_index << ") out of bounds.");
-    }
+    std::vector<std::string> labels;
+    if (color_stream_enabled_)
+      labels.push_back(rgbd_params_.sink_label + "-rgb");
+    if (depth_stream_enabled_)
+      labels.push_back(rgbd_params_.sink_label + "-depth");
+    if (stream_index >= labels.size())
+      VCP_ERROR("stream_index " << stream_index << " is out-of-bounds");
+    return labels[stream_index];
   }
 
   SinkParams SinkParamsAt(size_t stream_index) const override
@@ -796,6 +955,8 @@ private:
   bool dev_opened_;
   std::string serial_number_;
   std::atomic<int> available_;
+  bool color_stream_enabled_;
+  bool depth_stream_enabled_;
   rs2::config config_;
 
   void Receive()
@@ -813,18 +974,24 @@ private:
     {
       VCP_ERROR("Could not start capturing pipeline for RealSense [" << serial_number_ << "]. If you get 'non-descriptive' error messages below, check your configuration file/sensor parameters carefully." << std::endl << "librealsense error: " << e.what());
     }
-VCP_LOG_FAILURE("A");
+
     // Get sensors corresponding to color and depth
     rs2::sensor rgb_sensor, depth_sensor;
     GetRgbDepthSensors(profile.get_device(), rgb_sensor, depth_sensor);
 
     // Configure the streams
-    for (const std::pair<rs2_option, float> &option : rgbd_params_.rgb_options)
-      SetOption(rgb_sensor, option.first, option.second, rgbd_params_.verbose);
+    if (color_stream_enabled_)
+    {
+      for (const std::pair<rs2_option, float> &option : rgbd_params_.rgb_options)
+        SetOption(rgb_sensor, option.first, option.second, rgbd_params_.verbose);
+    }
 
-    for (const std::pair<rs2_option, float> &option : rgbd_params_.depth_options)
-      SetOption(depth_sensor, option.first, option.second, rgbd_params_.verbose);
-VCP_LOG_FAILURE("B configured");
+    if (depth_stream_enabled_)
+    {
+      for (const std::pair<rs2_option, float> &option : rgbd_params_.depth_options)
+        SetOption(depth_sensor, option.first, option.second, rgbd_params_.verbose);
+    }
+
     // Check if we need to align the depth to the color reference view
     const cv::Size rgb_size(rgbd_params_.rgb_width, rgbd_params_.rgb_height);
     const cv::Size depth_size = rgbd_params_.align_depth_to_color
@@ -835,23 +1002,27 @@ VCP_LOG_FAILURE("B configured");
     // Set up filters
     rs2::spatial_filter spatial_filter;
     rs2::temporal_filter temporal_filter;
-    const bool filter_spatially = !rgbd_params_.spatial_filter_options.empty();
-    for (const auto &p : rgbd_params_.spatial_filter_options)
-      SetFilterOption(spatial_filter, p.first, p.second, "Spatial Filter", rgbd_params_.verbose);
+    const bool filter_spatially = depth_stream_enabled_ && !rgbd_params_.spatial_filter_options.empty();
+    if (depth_stream_enabled_)
+    {
+      for (const auto &p : rgbd_params_.spatial_filter_options)
+        SetFilterOption(spatial_filter, p.first, p.second, "Spatial Filter", rgbd_params_.verbose);
+    }
 
-    const bool filter_temporally = !rgbd_params_.temporal_filter_options.empty();
-    for (const auto &p : rgbd_params_.temporal_filter_options)
-      SetFilterOption(temporal_filter, p.first, p.second, "Temporal Filter", rgbd_params_.verbose);
-VCP_LOG_FAILURE("C filter set");
+    const bool filter_temporally = depth_stream_enabled_ && !rgbd_params_.temporal_filter_options.empty();
+    if (depth_stream_enabled_)
+    {
+      for (const auto &p : rgbd_params_.temporal_filter_options)
+        SetFilterOption(temporal_filter, p.first, p.second, "Temporal Filter", rgbd_params_.verbose);
+    }
 
     // Now that the pipeline started, we can query the depth scale of the sensor.
-    const float depth_scale = GetDepthUnits(depth_sensor);
+    const float depth_scale = depth_stream_enabled_ ? GetDepthUnits(depth_sensor) : 1.0f;
 
     // Dump calibration (now that the stream profile should know the intrinsics and extrinsics ;-)
     if (rgbd_params_.write_calibration)
-      DumpCalibration(profile, rgbd_params_.calibration_file, rgbd_params_.align_depth_to_color,
-                      depth_scale, rgbd_params_.verbose);
-VCP_LOG_FAILURE("D calib written");
+      DumpCalibration(profile, rgbd_params_, depth_scale);
+
 #ifdef VCP_BEST_DEBUG_FRAMERATE
     std::chrono::high_resolution_clock::time_point previous_time_point_frameset = std::chrono::high_resolution_clock::now();
     std::chrono::high_resolution_clock::time_point previous_time_point_rgb = std::chrono::high_resolution_clock::now();
@@ -866,23 +1037,27 @@ VCP_LOG_FAILURE("D calib written");
     {
       try
       {
-        VCP_LOG_FAILURE("xxx wait for frames");
         rs2::frameset frameset = pipe.wait_for_frames();
-        VCP_LOG_FAILURE("xxx frameset received");
+
         if (frameset)
         {
           // Reset error count
           consecutive_error_count = 0;
 
-          if (rgbd_params_.align_depth_to_color)
+          if (rgbd_params_.align_depth_to_color && depth_stream_enabled_ && color_stream_enabled_)
             frameset = align_to.process(frameset);
 
-          rs2::frame color = frameset.get_color_frame();
-          rs2::frame depth = frameset.get_depth_frame();
+          rs2::frame color;
+          if (color_stream_enabled_)
+            color = frameset.get_color_frame();
+
+          rs2::frame depth;
+          if (depth_stream_enabled_)
+            depth = frameset.get_depth_frame();
 
           // Check frame numbers to skip duplicate frames!
-          const auto color_fnr = color.get_frame_number();
-          const auto depth_fnr = depth.get_frame_number();
+          const unsigned long long color_fnr = color.get() != nullptr ? color.get_frame_number() : std::numeric_limits<unsigned long long>::max();
+          const unsigned long long depth_fnr = depth.get() != nullptr ? depth.get_frame_number() : std::numeric_limits<unsigned long long>::max();
 
           const bool is_new_color = rgb_prev_fnr_ != color_fnr;
           const bool is_new_depth = depth_prev_fnr_ != depth_fnr;
@@ -937,14 +1112,14 @@ VCP_LOG_FAILURE("D calib written");
             depth = temporal_filter.process(depth);
 
           cv::Mat cvrgb;
-          if (is_new_color)
+          if (is_new_color && color_stream_enabled_)
           {
             cvrgb = FrameToMat(color, rgb_size);
             rgb_prev_fnr_ = color_fnr;
           }
 
           cv::Mat cvdepth;
-          if (is_new_depth)
+          if (is_new_depth && depth_stream_enabled_)
           {
             if (rgbd_params_.depth_in_meters)
               cvdepth = FrameToDepth(depth, depth_size, depth_scale);
@@ -955,9 +1130,9 @@ VCP_LOG_FAILURE("D calib written");
           }
 
           image_queue_mutex_.lock();
-          if (!cvrgb.empty())
+          if (color_stream_enabled_ && !cvrgb.empty())
             rgb_queue_->PushBack(cvrgb.clone());
-          if (!cvdepth.empty())
+          if (depth_stream_enabled_ && !cvdepth.empty())
             depth_queue_->PushBack(cvdepth.clone());
           image_queue_mutex_.unlock();
 
@@ -966,8 +1141,8 @@ VCP_LOG_FAILURE("D calib written");
               << "] frameset with new (" << (is_new_color ? "color" : "     ") << "|" << (is_new_depth ? "depth" : "     ") << ") after "
               << std::fixed << std::setprecision(1) << std::setw(6) << duration_frameset.count() << " ms, fps (frameset, col, dep): "
               << std::setw(5) << (1000.0 / ms_between_frameset) << ", "
-              << std::setw(5) << (1000.0 / ms_between_rgb) << ", "
-              << std::setw(5) << (1000.0 / ms_between_depth));
+              << std::setw(5) << (color_stream_enabled_ ? (1000.0 / ms_between_rgb) : 0.0) << ", "
+              << std::setw(5) << (depth_stream_enabled_ ? (1000.0 / ms_between_depth) : 0.0));
 #endif // VCP_BEST_DEBUG_FRAMERATE
         }
         else
