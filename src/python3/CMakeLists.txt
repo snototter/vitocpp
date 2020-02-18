@@ -127,7 +127,27 @@ install(TARGETS
 ##################################################################
 ## BESt
 if(VCP_BUILD_BEST)
-    message(STATUS "TODO add BESt bindings & use same c++ preprocessor defines as in the c++ library (IPCAM, K4A, etc.)")
+    python_add_module(best_cpp
+        bindings/best_cpp.cpp
+        bindings/conversion/np_cv_conversion.h
+        bindings/conversion/np_cv_conversion.cpp
+        bindings/conversion/cv_core_conversion.h
+        bindings/conversion/cv_core_conversion.cpp
+    )
+    target_link_libraries(best_cpp
+        ${PYTHON_LIBRARIES}
+        ${VCP_LIBRARIES}
+    )
+    set_target_properties(best_cpp PROPERTIES
+        ARCHIVE_OUTPUT_NAME best_cpp${ARCHIVE_OUTPUT_POSTFIX}
+        PREFIX ""
+        OUTPUT_NAME best_cpp
+        SUFFIX ${${PROJECT_NAME}_PY_SUFFIX}
+    )
+    install(TARGETS
+        best_cpp
+        ${PYTHON_INSTALL_CONFIGURATIONS}
+        LIBRARY DESTINATION "${PYVCP_LIBRARY_DESTINATION}/best")
 endif()
 
 

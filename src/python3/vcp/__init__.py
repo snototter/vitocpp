@@ -6,6 +6,7 @@ See VCP_ROOT_DIR/examples/python3 for an overview.
 """
 
 __all__ = [
+    'best', 'bgm',
     'colormaps', 'config',
     'imutils', 'imvis',
     'math2d', 'math3d',
