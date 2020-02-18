@@ -16,10 +16,10 @@ from vcp import imvis
 from vcp import best
 
 
-def streaming_demo(cfg_file):
-    print('\n\n\nLoading streaming configuration: {}'.format(cfg_file)) # todo ensure absolute paths!
+def streaming_demo(cfg_file, folder):
+    print('\n\n\nLoading streaming configuration: {}'.format(cfg_file)) # TODO ensure absolute paths!
     capture = best.Capture()
-    capture.load_libconfig(cfg_file)
+    capture.load_libconfig(os.path.join(folder, cfg_file), rel_path_base_dir=folder)
     if not capture.open():
         raise RuntimeError('Cannot open devices')
     if not capture.start():
@@ -34,11 +34,11 @@ def streaming_demo(cfg_file):
 
 def demo():
     folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'data-best')
-    cfg_files = [os.path.join(folder, file) for file in os.listdir(folder) if file.endswith(".cfg")]
+    cfg_files = [file for file in os.listdir(folder) if file.endswith(".cfg")]
     
     for cf in cfg_files:
         try:
-            streaming_demo(cf)
+            streaming_demo(cf, folder)
         except RuntimeError as e:
             print('[ERROR] While streaming: {}'.format(e))
 

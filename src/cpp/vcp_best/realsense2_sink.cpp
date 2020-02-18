@@ -522,7 +522,7 @@ void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams 
 
   cv::FileStorage fs(params.calibration_file, cv::FileStorage::WRITE);
   if (!fs.isOpened())
-    VCP_ABORT("Cannot open '" << params.calibration_file << "' to store calibration!");
+    VCP_ERROR("Cannot open '" << params.calibration_file << "' to store calibration!");
 
   cv::Mat Krgb, Drgb;
   int rgb_width, rgb_height;

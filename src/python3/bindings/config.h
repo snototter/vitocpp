@@ -110,7 +110,10 @@ public:
    * Otherwise, a substring of the setting name must match the given key, e.g. key 'path' would match both
    * 'camera1.path.driver' and 'camera2.path.driver'.
    */
-  void EnsureAbsolutePaths(const std::vector<std::string> &param_names, const std::string &absolute_base_path, bool use_exact_keys, bool verbose);
+  void EnsureAbsolutePaths(const std::vector<std::string> &param_names, const std::string &absolute_base_path, bool use_exact_keys, bool verbose)
+  {
+    params_->EnsureAbsolutePaths(param_names, absolute_base_path, use_exact_keys, verbose);
+  }
 
   //---------------------------------------------
   // Getter/Setter: Scalars

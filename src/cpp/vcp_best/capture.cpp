@@ -563,64 +563,6 @@ Capture:
 }
 
 
-
-
-void ConfigWrapper::EnsureAbsolutePaths(const std::vector<std::string> &param_names, const std::string &absolute_base_path, bool use_exact_keys, bool verbose)
-{
-  if (use_exact_keys)
-  {
-    for (const auto &k : param_names)
-    {
-      if (params_->SettingExists(k) && !vcp::utils::file::IsAbsolute(params_->GetString(k)))
-      {
-        params_->SetString(k, vcp::utils::file::FullFile(absolute_base_path, params_->GetString(k)));
-        if (verbose)
-          VCP_LOG_INFO_DEFAULT("Updated config path '" << k << "' to '" << params_->GetString(k) << "'");
-      }
-    }
-  }
-  else
-  {
-    // Grab a list of all known/configured parameters.
-    const std::vector<std::string> configured_params = params_->ListConfigParameters();
-
-    // Convert these parameter names to lower case.
-    std::vector<std::string> configured_params_lower;
-    configured_params_lower.reserve(configured_params.size());
-    for (const auto &c : configured_params)
-    {
-      std::string lower(c);
-      vcp::utils::string::ToLower(lower);
-      configured_params_lower.push_back(lower);
-    }
-
-    // Iterate all given parameter names, convert to
-    // lower case, and replace relative by absolute path
-    // if the given name partially is contained in
-    // the full parameter name.
-    for (const auto &pn : param_names)
-    {
-      std::string lower(pn);
-      vcp::utils::string::ToLower(lower);
-
-      for (size_t i = 0; i < configured_params_lower.size(); ++i)
-      {
-        if (configured_params_lower[i].find(lower) == std::string::npos)
-          continue;
-
-        const std::string k = configured_params[i];
-        if (vcp::utils::file::IsAbsolute(params_->GetString(k)))
-          continue;
-
-        params_->SetString(k, vcp::utils::file::FullFile(absolute_base_path, params_->GetString(k)));
-        if (verbose)
-          VCP_LOG_INFO("Updated config path '" << k << "' to '" << params_->GetString(k) << "'");
-      }
-    }
-  }
-}
-
-
 std::unique_ptr<Capture> CreateCapture(const vcp::config::ConfigParams &config)
 {
   return std::unique_ptr<MultiDeviceCapture>(new MultiDeviceCapture(config));
