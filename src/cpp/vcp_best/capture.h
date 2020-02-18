@@ -31,7 +31,8 @@ namespace best
  * Who in the right mind would want to do that? ;-) We do, frequently!
  *
  * Workflow:
- * 1. Write a configuration and create the capture object
+ * TODO @deprecated - check the python3 best_demo and adjust the documentation!!!
+ * 1. Write a configuration file and create the capture object
  *    via vcp::best::CreateCapture().
  * 2. OpenDevices(), so they can be properly initialized.
  *    Check if initialization succeeded: AreAllDevicesAvailable().

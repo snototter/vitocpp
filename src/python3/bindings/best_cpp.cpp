@@ -59,24 +59,27 @@ public:
       capture_.reset();
   }
 
-  void LoadConfigCpp(const std::string &config_file)
+  void LoadConfigCpp(const std::string &config_file, const std::string &rel_path_base_dir)
   {
-    const auto config = vcp::config::LoadConfigParamsCpp(config_file);
-    capture_ = vcp::best::CreateCapture(*config);
+    auto config = vcp::config::LoadConfigParamsCpp(config_file);
+    capture_ = vcp::best::CreateCapture(*config, rel_path_base_dir);
   }
 
-  void LoadConfigJson(const std::string &json_str, bool is_json_string)
+  void LoadConfigJsonString(const std::string &json_str, const std::string &rel_path_base_dir)
   {
-    const auto config = vcp::config::LoadConfigParamsJson(json_str, is_json_string);
-    capture_ = vcp::best::CreateCapture(*config);
+    LoadConfigJson(json_str, true, rel_path_base_dir);
   }
 
-  void LoadConfigParams(const vcp::python::config::ConfigWrapper &config)
+  void LoadConfigJsonFile(const std::string &json_file, const std::string &rel_path_base_dir)
+  {
+    LoadConfigJson(json_file, false, rel_path_base_dir);
+  }
+
+  void LoadConfigParams(const vcp::python::config::ConfigWrapper &config, const std::string &rel_path_base_dir)
   {
     const vcp::config::ConfigParams &params = config.AsConfigParams();
-    capture_ = vcp::best::CreateCapture(params);
+    capture_ = vcp::best::CreateCapture(params, rel_path_base_dir);
   }
-
 
   /** @brief Returns true if the capturing device/s is/are available. */
   bool AreAllDevicesAvailable() const
@@ -288,6 +291,13 @@ private:
       }
     }
     return numpy_frames;
+  }
+
+
+  void LoadConfigJson(const std::string &json_str, bool is_json_string, const std::string &rel_path_base_dir)
+  {
+    const auto config = vcp::config::LoadConfigParamsJson(json_str, is_json_string);
+    capture_ = vcp::best::CreateCapture(*config, rel_path_base_dir);
   }
 
 };
@@ -793,13 +803,25 @@ PYBIND11_MODULE(best_cpp, m)
   py::class_<pybest::CaptureWrapper>(m, "Capture")
       .def(py::init<>())
       .def("load_libconfig", &pybest::CaptureWrapper::LoadConfigCpp,
-           "Init the capture from a libconfig configuration file.", py::arg("config_file"))
-      .def("load_json", &pybest::CaptureWrapper::LoadConfigJson,
-           "Init the capture from a JSON string (is_json_string=True) or file.",
-           py::arg("json_str"), py::arg("is_json_string")=true)
+           "Init the capture from a libconfig configuration file.\n"
+           "If you set rel_path_base_dir, all relative file paths will\n"
+           "be prefixed accordingly.",
+           py::arg("config_file"), py::arg("rel_path_base_dir")=std::string())
+      .def("load_json_string", &pybest::CaptureWrapper::LoadConfigJsonString,
+           "Init the capture from a JSON string.\n"
+           "If you set rel_path_base_dir, all relative file paths will\n"
+           "be prefixed accordingly.",
+           py::arg("json_str"), py::arg("rel_path_base_dir")=std::string())
+      .def("load_json_file", &pybest::CaptureWrapper::LoadConfigJsonFile,
+           "Init the capture from a JSON file.\n"
+           "If you set rel_path_base_dir, all relative file paths will\n"
+           "be prefixed accordingly.",
+           py::arg("json_file"), py::arg("rel_path_base_dir")=std::string())
       .def("load_vcp_config", &pybest::CaptureWrapper::LoadConfigParams,
-           "Init the capture from a vcp.config.Config() object.",
-           py::arg("config"))
+           "Init the capture from a vcp.config.Config() object.\n"
+           "If you set rel_path_base_dir, all relative file paths will\n"
+           "be prefixed accordingly.",
+           py::arg("config"), py::arg("rel_path_base_dir")=std::string())
       .def("all_devices_available", &pybest::CaptureWrapper::AreAllDevicesAvailable,
            "Returns True if the capturing device/s is/are available.")
       .def("all_frames_available", &pybest::CaptureWrapper::AreAllFramesAvailable,
