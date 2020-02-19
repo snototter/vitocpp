@@ -445,11 +445,8 @@ public:
     if (params_.verbose)
       VCP_LOG_INFO_DEFAULT("Opening Kinect Azure device");
 
-    if (!GetDevice(k4a_device_, params_))
-    {
-      VCP_LOG_FAILURE("Cannot open Kinect Azure device");
+    if (!GetDevice(k4a_device_, params_)) // This call already issues a warning if no device is available
       return false;
-    }
 
     serial_number_ = GetSerialNumber(k4a_device_);
     if (serial_number_.empty())

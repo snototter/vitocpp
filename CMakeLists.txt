@@ -20,17 +20,18 @@ option(VCP_BUILD_IMVIS "Build visualization module." ON)
 option(VCP_BUILD_MATH "Build math utility module." ON)
 #option(VCP_BUILD_TRACKING "Build tracking library." ON)
 option(VCP_BUILD_UI "Build simple UI utility module." ON)
-#option(VCP_BUILD_DOC "Build doxygen documentation" OFF)
+#option(VCP_BUILD_DOC "Build doxygen documentation" ON)
+option(VCP_BUILD_PYTHON "Build Python bindings." ON)
 # Everybody was unit-testing:
 option(VCP_BUILD_TESTS "Build tests, requires GTest." OFF)
-option(VCP_BUILD_PYTHON "Build Python bindings." ON)
-#
+
+
 # Logging related
 set(VCP_LOG_LEVEL "info" CACHE STRING "Select logging level")
 set_property(CACHE VCP_LOG_LEVEL PROPERTY STRINGS debug info warning failure)
-#
+
 option(VCP_LOG_LOCATION "Logged messages include source file location." OFF)
-#
+
 option(VCP_LOG_STACK_TRACE_ON_ERROR "Log stack trace on exception/exit/abort." ON)
 
 

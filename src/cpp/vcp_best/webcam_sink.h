@@ -40,10 +40,34 @@ bool IsWebcamSink(const std::string &type_param);
 WebcamSinkParams WebcamSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
 
 
-/** @brief Returns a StreamSink wrapper to access a webcam using OpenCV's Capture capabilities. Use the templated @see CreateWebcamSink(). */
+struct WebcamDeviceInfo
+{
+  std::string dev_name;  // Device identifier, e.g. /dev/video1
+  int device_nr;         // Device number as used by OpenCV, e.g. 1
+  std::string name;      // Name from the device's metadata (queried via v4l on linux)
+
+  /** @brief Default c'tor. */
+  WebcamDeviceInfo() : dev_name("Unknown"), device_nr(-1), name("Unknown") {}
+
+  /** @brief Comparison operator. */
+  bool operator<(const WebcamDeviceInfo &other) { return device_nr < other.device_nr; }
+
+  /** @brief Comparison operator. */
+  bool operator>(const WebcamDeviceInfo &other) { return device_nr > other.device_nr; }
+};
+
+/** @brief Returns a vector of connected webcams.
+ *
+ * If warn_if_no_devices is true and there are no webcams connected, a warning message will be displayed upon stderr.
+ * If include_incompatible_devices is true, unsupported devices will be listed too - these are USB devices which
+ * couldn't be opened via OpenCV's VideoCapture (e.g. RealSense or Kinect).
+ */
+std::vector<WebcamDeviceInfo> ListWebcams(bool warn_if_no_devices=true, bool include_incompatible_devices=false);
+
+/** @brief Returns a StreamSink wrapper to access a webcam using OpenCV's VideoCapture capabilities. Use the templated @see CreateWebcamSink(). */
 std::unique_ptr<StreamSink> CreateBufferedWebcamSink(const WebcamSinkParams &params, std::unique_ptr<SinkBuffer> sink_buffer);
 
-
+/** @brief Returns a StreamSink wrapper to access a webcam using OpenCV's VideoCapture. */
 template <int BufferCapacity>
 std::unique_ptr<StreamSink> CreateWebcamSink(const WebcamSinkParams &params)
 {

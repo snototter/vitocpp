@@ -1,28 +1,9 @@
 cmake_minimum_required(VERSION 3.1)
 project(vcp-bindings)
 
-
 message("Configuring Python3 bindings")
-#TODO move to utils
-#TODO check https://stackoverflow.com/questions/10984442/how-to-detect-c11-support-of-a-compiler-with-cmake
-#foreach(i ${CMAKE_CXX_COMPILE_FEATURES})
-#    message("${i}")
-#endforeach()
-
-#TODO include in main project, so the logging parameters are all the same both for c++ and python
-# Logging related
-#set(VCP_LOG_LEVEL "info" CACHE STRING "Select logging level")
-#set_property(CACHE VCP_LOG_LEVEL PROPERTY STRINGS debug info warning failure)
-##
-#option(VCP_LOG_LOCATION "Logged messages include source file location." OFF)
-##
-#option(VCP_LOG_STACK_TRACE_ON_ERROR "Log stack trace on exception/exit/abort." ON)
-
 set(PYVCP_LIBRARY_DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../../gen/vcp")
 
-#TODO https://stackoverflow.com/questions/16212538/cmake-depending-on-another-project
-#TODO do we really need 14 for the python bindings, or 11?
-#TODO install to VCP_ROOT_DIR/gen/python/vcp
 IF(NOT WIN32)
     add_definitions(-std=c++11 -fPIC -Wall -Wpedantic -Wextra)
 ENDIF(NOT WIN32)
@@ -104,6 +85,7 @@ install(TARGETS
 
 ##################################################################
 ## Config module - needed for configuration of BESt
+message(STATUS "[vcp-bindings] Configuring vcp.config")
 python_add_module(config
     bindings/config.cpp
     bindings/config.h
@@ -125,8 +107,22 @@ install(TARGETS
 
 
 ##################################################################
-## BESt
+## BESt - multicam streaming module
 if(VCP_BUILD_BEST)
+    message(STATUS "[vcp-bindings] Configuring vcp.best")
+    if(VCP_BEST_WITH_IPCAM)
+        add_definitions(-DVCP_BEST_WITH_IPCAM -DVCP_BEST_WITH_IPCAM_HTTP -DVCP_BEST_WITH_IPCAM_RTSP)
+    endif()
+    if (VCP_BEST_WITH_MATRIXVISION)
+        add_definitions(-DWITH_MATRIXVISION)
+    endif()
+    if (VCP_BEST_WITH_REALSENSE2)
+        add_definitions(-DVCP_BEST_WITH_REALSENSE2)
+    endif()
+    if (VCP_BEST_WITH_K4A)
+      add_definitions(-DVCP_BEST_WITH_K4A)
+    endif()
+
     python_add_module(best_cpp
         bindings/best_cpp.cpp
         bindings/conversion/np_cv_conversion.h
@@ -154,6 +150,7 @@ endif()
 ##################################################################
 ## BGM utilities module
 if(VCP_BUILD_BGM)
+    message(STATUS "[vcp-bindings] Configuring vcp.bgm")
     python_add_module(bgm
         bindings/bgm.cpp
         bindings/conversion/np_cv_conversion.h

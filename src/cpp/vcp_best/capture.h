@@ -30,28 +30,27 @@ namespace best
  *
  * Who in the right mind would want to do that? ;-) We do, frequently!
  *
- * Workflow:
- * TODO @deprecated - check the python3 best_demo and adjust the documentation!!!
+ * Typical streaming workflow:
  * 1. Write a configuration file and create the capture object
  *    via vcp::best::CreateCapture().
  * 2. OpenDevices(), so they can be properly initialized.
- *    Check if initialization succeeded: AreAllDevicesAvailable().
- * 3. Start() streaming.
- *    Additionally, you may want to wait until the first set of first
- *    is available, @see WaitForInitialFrames(). Some devices take quite
- *    long to start up.
- * 4. Next() - empty cv::Mat entries correspond to missing
- *    frames.
- *    * You can query if frames are available for all sinks, via @see AreAllFramesAvailable().
+ *    Check if initialization succeeded: @see AreAllDevicesAvailable().
+ * 3. StartStreams().
+ *    Note that some devices take quite long (5-10 seconds in our tests)
+ *    to initialize the streams, so you may want to use a blocking call
+ *    to @see WaitForFrames().
+ * 4. Next() returns a vector of the currently available (enqueued) frames.
+ *    * Empty cv::Mat entries correspond to missing frames.
+ *    * You can query if frames are available for all sinks via @see AreAllFramesAvailable().
  *      However, this is NOT guaranteed to work if you use @see FastForward()
  *      or @see Previous(). The issue is that the user may choose to arbitrarily
  *      query the next/previous frames on those sinks.
  *    * You can check how many valid frames are available, via @see NumAvailableFrames().
- * 5. StopStreaming() or simply shut down - Capture will gracefully shut down anyways.
+ * 5. StopStreaming() or simply shut down the capture (see Step 7).
  * 6. Repeat 3-5 if you want to restart streaming.
  *    Note: didn't test restarting exhaustively, so there may some devices
  *    that don't support that.
- * 7. CloseDevices() or simply shut down - Capture will gracefully shut down anyways.
+ * 7. CloseDevices() to gracefully shut down.
  *
  * // TODO doc numframes/numdevices/configurationkeys/etc.
  */
@@ -83,11 +82,11 @@ public:
   /** @brief Starts the image streams. */
   virtual bool StartStreams() = 0;
 
-  /** @brief After starting, you can wait for the first set of images to become available.
+  /** @brief Use this blocking call to wait for the next set of images to become available.
    * Specify a timeout in milliseconds, after that the result will indicate whether
    * frames from all devices/sinks are available or not.
    */
-  virtual bool WaitForInitialFrames(double timeout_ms) const = 0;
+  virtual bool WaitForFrames(double timeout_ms, bool verbose) const = 0;
 
   /** @brief Stops the image streams. */
   virtual bool StopStreams() = 0;

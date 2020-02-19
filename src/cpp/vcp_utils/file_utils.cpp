@@ -7,18 +7,17 @@
 
 // C includes for mkdir/mkpath and IsDir
 #include <errno.h>
-#ifdef HAVE_UNISTD_H
-#include <unistd.h>
-#endif /* HAVE_UNISTD_H */
 #include <string.h>
-#include <sys/stat.h>
+#include <limits.h>
 #include <sys/types.h>
+#include <sys/stat.h>
+#include <stdlib.h>
 
 #if defined(_WIN16) || defined(_WIN32) || defined(_WIN64) || defined(WINDOWS)
   #error "Include headers for file handling on Windows!"
 #else // Unix variants provide stat and dirent
   #include <dirent.h>
-  #include <sys/stat.h>
+  #include <unistd.h>
 #endif
 
 #undef VCP_LOGGING_COMPONENT
@@ -78,6 +77,7 @@ bool CompareFilenames(const std::string &filename1, const std::string &filename2
 }
 
 } // namespace dir_entry_filters
+
 
 namespace
 {
@@ -183,6 +183,29 @@ std::string FullFile(std::initializer_list<std::string> path_tokens)
   return path.str();
 }
 
+
+std::string RealPath(const std::string &path)
+{
+  std::string resolved(path);
+#if defined(__linux__) || defined(__unix__)
+  char buf[PATH_MAX]; // PATH_MAX (limits.h) includes the terminating null character \0
+  const char *res = realpath(path.c_str(), buf);
+  if (res)
+  {
+    resolved = std::string(buf);
+  }
+  else
+  {
+    VCP_LOG_FAILURE("Cannot resolve '" << path << "' via realpath()");
+    perror("realpath");
+  }
+#else
+  VCP_LOG_FAILURE("RealPath() is currently only supported on unix-based operating systems!");
+#endif
+  return resolved;
+}
+
+
 bool Exists(const std::string &name)
 {
   std::ifstream f(name.c_str());
@@ -190,6 +213,7 @@ bool Exists(const std::string &name)
   f.close();
   return status;
 }
+
 
 // taken from http://stackoverflow.com/questions/18100097/portable-way-to-check-if-directory-exists-windows-linux-c
 bool IsDir(const std::string &path)

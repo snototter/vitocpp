@@ -10,19 +10,13 @@ namespace vcp
 {
 namespace utils
 {
-/**
- * @brief Path and filename utilities (e.g. mkdir, listdir, exists, etc.)
- */
+/** @brief Path and filename utilities (e.g. mkdir, listdir, exists, etc.) */
 namespace file
 {
-/**
- * @brief Commonly used directory entry filters for vcp::utils::file::ListDirContents().
- */
+/** @brief Commonly used directory entry filters for vcp::utils::file::ListDirContents(). */
 namespace filename_filter
 {
-/**
- * @brief Directory entry filter to include everything, i.e. simply returns true.
- */
+/** @brief Directory entry filter to include everything, i.e. simply returns true. */
 bool IncludeAll(const std::string &filename);
 
 
@@ -45,6 +39,7 @@ bool HasImageExtension(const std::string &filename);
  */
 bool CompareFileLengthsAndNames(const std::string &filename1, const std::string &filename2);
 
+
 /**
  * @brief Comparator to sort a container of filename strings alphabetically.
  *
@@ -57,40 +52,53 @@ bool CompareFilenames(const std::string &filename1, const std::string &filename2
 /** @brief Platform-specific file separator (slash or backslash). */
 extern const char kFileSeparator;
 
+
 /**
- * @brief Similar to MATLAB's fullfile, this function concatenates the given paths (Note: currently only appends missing file separators, no reduction of ../, etc).
+ * @brief Similar to MATLAB's fullfile, this function concatenates the given paths.
+ *
+ * Note: this function only appends missing file separators, no reduction of ../, etc.
+ * Use @see RealPath() if you want to resolve these links, too.
  */
 std::string FullFile(const std::string &p1, const std::string &p2);
 
+
 /**
- * @brief Similar to MATLAB's fullfile, this function concatenates the given path tokens (Note: currently only appends missing file separators, no reduction of ../, etc).
+ * @brief Similar to MATLAB's fullfile, this function concatenates the given path tokens.
+ *
+ * Note: this function only appends missing file separators, no reduction of ../, etc.
+ * Use @see RealPath() if you want to resolve these links, too.
  */
 std::string FullFile(const std::vector<std::string> &path_tokens);
 
+
 /**
- * @brief Similar to MATLAB's fullfile, this function concatenates the given path tokens (Note: currently only appends missing file separators, no reduction of ../, etc).
+ * @brief Similar to MATLAB's fullfile, this function concatenates the given path tokens.
+ *
+ * Note: this function only appends missing file separators, no reduction of ../, etc.
+ * Use @see RealPath() if you want to resolve these links, too.
  */
 std::string FullFile(std::initializer_list<std::string> path_tokens);
 
-/**
- * @brief Checks if the given file/directory already exists.
- */
+
+/** @brief Return the path with all symbolic links resolved. */
+std::string RealPath(const std::string &path);
+
+
+/** @brief Checks if the given file/directory already exists. */
 bool Exists(const std::string &name);
 
-/**
- * @brief Check if the given path exists and is a directory.
- */
+
+/**  @brief Check if the given path exists and is a directory. */
 bool IsDir(const std::string &path);
 
-/**
- * @brief Check if the given path is absolute.
- */
+
+/** @brief Check if the given path is absolute. */
 bool IsAbsolute(const std::string &path);
 
-/**
- * @brief CreatePath Like mkdir -p. Default permissions 775.
- */
+
+/** @brief CreatePath Like mkdir -p. Default permissions 775. */
 bool CreatePath(const std::string &path);
+
 
 /**
  * @brief Returns a list of all directory contents for which the given EntryFilter returns true.
@@ -114,6 +122,7 @@ std::vector<std::string> ListDirContents(const std::string &directory,
                                          bool include_files = true,
                                          bool (*FilenameComparator)(const std::string &a, const std::string &b) = &filename_filter::CompareFileLengthsAndNames);
 
+
 /**
  * @brief Returns a list of at most max_num_entries directory contents for which the given EntryFilter returns true.
  * Note that for large directories, the sorted result might not be what you expect - for efficiency, we iterate over the
@@ -134,6 +143,7 @@ std::vector<std::string> ListOrPeekDirContents(const std::string &directory,
                                                bool skip_parent_self_links = true,
                                                bool include_files = true,
                                                bool (*FilenameComparator)(const std::string &a, const std::string &b) = &filename_filter::CompareFileLengthsAndNames);
+
 
 /** @brief Returns the extension (e.g. '.cpp') of the given filename (full path or base name). Returns empty string if there is no dot. */
 std::string GetExtension(const std::string &filename);

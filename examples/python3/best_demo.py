@@ -20,19 +20,57 @@ def streaming_demo(cfg_file, folder):
     print('\n\n\nLoading streaming configuration: {}'.format(cfg_file)) # TODO ensure absolute paths!
     capture = best.Capture()
     capture.load_libconfig(os.path.join(folder, cfg_file), rel_path_base_dir=folder)
+
+    print('Starting to stream {} sinks from {} devices'.format(capture.num_streams(), capture.num_devices()))
+    print('The configured capture yields the following streams:')
+    print('  Labels:             {}'.format(capture.frame_labels()))
+    print('  Configuration keys: {}'.format(capture.configuration_keys()))
+    print('  Frame types:        {}'.format(capture.frame_types()))
+
     if not capture.open():
         raise RuntimeError('Cannot open devices')
     if not capture.start():
         raise RuntimeError('Cannot start streams')
-    if not capture.wait_for_initial_frames(5000):
+    # Some cameras (especially our tested RGBD sensors) take quite long to provide the 
+    # initial frameset, so it's recommended to wait a bit longer for the device to finish
+    # initialization.
+    if not capture.wait_for_frames(5000):
         raise RuntimeError("Didn't receive an initial frameset within 5 seconds")
-    
+
+    while capture.all_devices_available():
+        # wait_for_frames returns true, if frames for *all* streams are available.
+        # Thus, we don't have to check for None frames afterwards.
+        if not capture.wait_for_frames(1000.0):
+            print('[WARNING]: wait_for_frames timed out')
+
+        # Query the frames (since we know that all streams are available now)
+        frames = capture.next()
+
+        # Display them
+        collage = imvis.make_collage(frames)
+        k = imvis.imshow(collage, title='streams', wait_ms=10)
+        if k == 27 or k == ord('q'):
+            break
+
     if not capture.stop():
         raise RuntimeError('Cannot stop streams')
     if not capture.close():
         raise RuntimeError('Cannot close devices')
 
+
+def list_devices():
+    handles = [('Webcams', best.list_webcams), ('RealSense2', best.list_realsense2_devices),
+        ('mvBlueFox3', best.list_mvbluefox3_devices), ('Kinect Azure', best.list_k4a_devices)]
+    for h in handles:
+        try:
+            print('Listing connected {}:\n{}\n'.format(h[0], h[1]()))
+        except Exception as e:
+            print('[Exception occured]: {}\n'.format(e))
+
+
 def demo():
+    list_devices()
+
     folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'data-best')
     cfg_files = [file for file in os.listdir(folder) if file.endswith(".cfg")]
     
@@ -40,7 +78,7 @@ def demo():
         try:
             streaming_demo(cf, folder)
         except RuntimeError as e:
-            print('[ERROR] While streaming: {}'.format(e))
+            print('[ERROR] while streaming: {}'.format(e))
 
 
 if __name__ == "__main__":

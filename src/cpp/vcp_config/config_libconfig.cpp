@@ -878,6 +878,7 @@ public:
                            const std::string &absolute_base_path,
                            bool use_exact_keys, bool verbose) override
     {
+    //FIXME handle file:// values (e.g. within custom_url)
       if (use_exact_keys)
       {
         for (const auto &k : param_names)
@@ -907,16 +908,18 @@ public:
 
         // Iterate all given parameter names, convert to
         // lower case, and replace relative by absolute path
-        // if the given name partially is contained in
-        // the full parameter name.
+        // if the parameter name ends with the given name.
         for (const auto &pn : param_names)
         {
           const std::string lower = vcp::utils::string::Lower(pn);
 
           for (size_t i = 0; i < configured_params_lower.size(); ++i)
           {
-            if (configured_params_lower[i].find(lower) == std::string::npos)
+            if (!vcp::utils::string::EndsWith(configured_params_lower[i], lower))
               continue;
+
+//            if (configured_params_lower[i].find(lower) == std::string::npos)
+//              continue;
 
             const std::string k = configured_params[i];
             if (vcp::utils::file::IsAbsolute(GetString(k)))

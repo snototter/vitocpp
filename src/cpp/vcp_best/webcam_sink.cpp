@@ -3,6 +3,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <map>
 
 #include <opencv2/core/version.hpp>
 #if CV_VERSION_MAJOR < 3
@@ -83,28 +84,32 @@ public:
     if (params_.device_number < 0)
     {
 #if defined(__linux__) || defined(__unix__)
-      const auto devices = vcp::utils::file::ListDirContents("/dev", [](const std::string &f) -> bool {
-        if (vcp::utils::string::StartsWith(f, "video"))
-        {
-          // We need to skip RealSense devices, as we cannot open them with default OpenCV settings.
-          // Similarly, we skip Azure Kinect devices, as we had some troubles with frequently failing
-          // color streams.
-          const std::string name = vcp::utils::file::SlurpAsciiFile(
-                vcp::utils::file::FullFile("/sys/class/video4linux/", vcp::utils::file::FullFile(f, "name")));
-          // Return false for the directory list if the hardware info contains "RealSense" or "Azure Kinect"
-          return name.find("RealSense") == std::string::npos && name.find("Azure Kinect") == std::string::npos;
-        }
-        return false;
-      }, true, true, true, &vcp::utils::file::filename_filter::CompareFileLengthsAndNames);
+//      const auto devices = vcp::utils::file::ListDirContents("/dev", [](const std::string &f) -> bool {
+//        if (vcp::utils::string::StartsWith(f, "video"))
+//        {
+//          // We need to skip RealSense devices, as we cannot open them with default OpenCV settings.
+//          // Similarly, we skip Azure Kinect devices, as we had some troubles with frequently failing
+//          // color streams.
+//          const std::string name = vcp::utils::file::SlurpAsciiFile(
+//                vcp::utils::file::FullFile("/sys/class/video4linux/", vcp::utils::file::FullFile(f, "name")));
+//          // Return false for the directory list if the hardware info contains "RealSense" or "Azure Kinect"
+//          return name.find("RealSense") == std::string::npos && name.find("Azure Kinect") == std::string::npos;
+//        }
+//        return false;
+//      }, true, true, true, &vcp::utils::file::filename_filter::CompareFileLengthsAndNames);
+
+
+//      params_.device_number = std::atoi(devices[0].substr(5).c_str()); // Strip the beginning 'video'
+      const auto devices = ListWebcams(false, false);
       if (devices.empty())
       {
         VCP_LOG_FAILURE("No webcam is connected to your PC!");
         return false;
       }
+      params_.device_number = devices[0].device_nr;
 
-      params_.device_number = std::atoi(devices[0].substr(5).c_str()); // Strip the beginning 'video'
       if (params_.verbose)
-        VCP_LOG_INFO_DEFAULT("Trying to open webcam /dev/" << devices[0]);
+        VCP_LOG_INFO_DEFAULT("Trying to open webcam /dev/" << devices[0].name);
 #else
       VCP_LOG_FAILURE("Searching for a webcam is only supported on unix-based operating systems!");
       return false
@@ -362,6 +367,77 @@ WebcamSinkParams WebcamSinkParamsFromConfig(const vcp::config::ConfigParams &con
   WarnOfUnusedParameters(cam_param, configured_keys);
 
   return WebcamSinkParams(sink_params, device, resolution, frame_rate);
+}
+
+
+std::vector<WebcamDeviceInfo> ListWebcams(bool warn_if_no_devices, bool include_incompatible_devices)
+{
+  // https://unix.stackexchange.com/questions/344784/how-to-map-sys-bus-usb-devices-to-dev-video
+  std::vector<WebcamDeviceInfo> infos;
+#if defined(__linux__) || defined(__unix__)
+  bool (*entry_filter)(const std::string &) = include_incompatible_devices ?
+      [](const std::string &f) -> bool { return vcp::utils::string::StartsWith(f, "video"); }
+  :
+      [](const std::string &f) -> bool {
+          if (vcp::utils::string::StartsWith(f, "video"))
+          {
+            // We need to skip RealSense devices, as we cannot open them with default OpenCV settings.
+            // Similarly, we skip Azure Kinect devices, as we had some troubles with frequently failing
+            // color streams.
+            const std::string name = vcp::utils::file::SlurpAsciiFile(
+                  vcp::utils::file::FullFile("/sys/class/video4linux/", vcp::utils::file::FullFile(f, "name")));
+            // Return false for the directory list if the hardware info contains "RealSense" or "Azure Kinect"
+            return name.find("RealSense") == std::string::npos && name.find("Azure Kinect") == std::string::npos;
+          }
+          return false;
+        };
+  const std::vector<std::string> devices = vcp::utils::file::ListDirContents("/dev",
+                                                                             entry_filter, true, true, true, &vcp::utils::file::filename_filter::CompareFileLengthsAndNames);
+
+  std::map<std::string, WebcamDeviceInfo> collected;
+  for (const auto &dev : devices)
+  {
+    WebcamDeviceInfo inf;
+    inf.dev_name = "/dev/" + dev;
+    inf.device_nr = std::atoi(dev.substr(5).c_str()); // Strip the beginning 'video'
+    inf.name = vcp::utils::file::SlurpAsciiFile(
+          vcp::utils::file::FullFile("/sys/class/video4linux/", vcp::utils::file::FullFile(dev, "name")));
+    vcp::utils::string::Trim(inf.name);
+
+    // We need to combine the *** symlinked devices (each physical device can have up to 64 /dev/video* nodes)
+    const std::string resolved_path = vcp::utils::file::RealPath("/sys/class/video4linux/" + dev);
+    const size_t pos = resolved_path.find("video4linux");
+    if (pos != std::string::npos)
+    {
+      const std::string realpath = resolved_path.substr(0, pos);
+      auto ires = collected.insert(std::pair<std::string, WebcamDeviceInfo>(realpath, inf));
+      if (ires.second == false)
+      {
+        if (ires.first->second > inf)
+          ires.first->second = inf;
+      }
+    }
+    else
+    {
+      VCP_LOG_FAILURE("Resolved video device path '" << resolved_path << "' doesn't contain 'video4linux'."
+                      << std::endl << "Adding it to the list of available devices.");
+      infos.push_back(inf);
+    }
+  }
+
+  for (auto it = collected.begin(); it != collected.end(); it++)
+    infos.push_back(it->second);
+
+#else
+  // Non-unix
+  VCP_LOG_FAILURE("Listing available webcams is only supported for unix-based operating systems!");
+#endif
+
+  if (devices.empty() && warn_if_no_devices)
+  {
+    VCP_LOG_WARNING("No webcam connected!");
+  }
+  return infos;
 }
 
 

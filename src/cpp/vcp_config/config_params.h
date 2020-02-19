@@ -182,9 +182,12 @@ public:
   /** @brief Prefix all keys in param_names by absolute_base_path (if they're relative).
    *
    * If use_exakt_keys is true, you have to provide the exakt parameter name, e.g. "group1.subgroup.filename".
-   * Otherwise, the key "filename" would match "group1.filename", "video_filename", "group2.not_a_filename", etc.
+   * Otherwise, all parameter names which end with the given name will be matched.
+   * For example, the key "filename" would match "group1.filename", "video_filename", "group2.not_a_filename", etc.
+   * BUT would NOT match "group1.a_filename_that_is_not_matched".
    */
-  virtual void EnsureAbsolutePaths(const std::vector<std::string> &param_names, const std::string &absolute_base_path, bool use_exact_keys, bool verbose) = 0;
+  virtual void EnsureAbsolutePaths(const std::vector<std::string> &param_names, const std::string &absolute_base_path,
+                                   bool use_exact_keys, bool verbose) = 0;
 
 protected:
   ConfigParams() {}

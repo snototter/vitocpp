@@ -366,9 +366,9 @@ public:
     return success;
   }
 
-  bool WaitForInitialFrames(double timeout_ms) const override
+  bool WaitForFrames(double timeout_ms, bool verbose) const override
   {
-    VCP_LOG_DEBUG("MultiDeviceCapture::WaitForInitialFrames()");
+    VCP_LOG_DEBUG("MultiDeviceCapture::WaitForFrames()");
     std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     double elapsed_ms = 0;
     while (elapsed_ms < timeout_ms)
@@ -376,17 +376,23 @@ public:
       bool available = true;
       for (size_t i = 0; i < sinks_.size(); ++i)
         available = available && sinks_[i]->IsFrameAvailable();
+
       if (available)
         return true;
-      VCP_LOG_WARNING_NSEC("Not all sinks are ready. Continue waiting for "
+
+      if (verbose)
+      {
+        VCP_LOG_WARNING_NSEC("Not all sinks are ready. Continue waiting for "
                         << std::fixed << std::setprecision(2) << (std::max(timeout_ms - elapsed_ms, 0.0) / 1000) << " sec.", 0.5);
-      std::this_thread::sleep_for(std::chrono::milliseconds(50));
+      }
+      std::this_thread::sleep_for(std::chrono::milliseconds(10));
 
       const auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli>>(
                 std::chrono::high_resolution_clock::now() - start);
       elapsed_ms = duration.count();
     }
-    VCP_LOG_FAILURE("Not all sinks are ready. Aborting after " << std::fixed << std::setprecision(2) << elapsed_ms/1000 << " sec.");
+    if (verbose)
+      VCP_LOG_FAILURE("Not all sinks are ready. Aborting after " << std::fixed << std::setprecision(2) << elapsed_ms/1000 << " sec.");
     return false;
   }
 
@@ -946,12 +952,6 @@ std::unique_ptr<Capture> CreateCapture(const vcp::config::ConfigParams &config)
 //    fs.release();
 //  }
 //};
-
-
-//std::unique_ptr<RectifiedCapture> CreateRectifiedCapture(const pvt::config::ConfigParams &config, bool force_loading_extrinsics)
-//{
-//  return std::unique_ptr<RectifiedCaptureImpl>(new RectifiedCaptureImpl(config, force_loading_extrinsics));
-//}
 
 } // namespace best
 } // namespace vcp

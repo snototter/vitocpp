@@ -37,6 +37,7 @@
 #ifdef VCP_BEST_WITH_REALSENSE2
   #include <vcp_best/realsense2_sink.h>
 #endif
+#include <vcp_best/webcam_sink.h>
 
 namespace vcp
 {
@@ -123,13 +124,13 @@ public:
     return capture_->StartStreams();
   }
 
-  /** @brief After starting, you can wait for the first set of images to become available.
+  /** @brief Use this blocking call to wait for the next set of images to become available.
    * Specify a timeout in milliseconds, after that the result will indicate whether
    * frames from all devices/sinks are available or not.
    */
-  bool WaitForInitialFrames(double timeout_ms)
+  bool WaitForFrames(double timeout_ms, bool verbose)
   {
-    return capture_->WaitForInitialFrames(timeout_ms);
+    return capture_->WaitForFrames(timeout_ms, verbose);
   }
 
   /** @brief Stops the image streams. */
@@ -251,6 +252,12 @@ public:
     return fts;
   }
 
+  std::string FrameTypeAt(size_t stream_index) const
+  {
+    const auto ft = capture_->FrameTypes();
+    return vcp::best::FrameTypeToString(ft[stream_index]);
+  }
+
 
 //  py::object ReturnNone(size_t /*sink_index*/) const
 //  {
@@ -306,9 +313,16 @@ private:
   {
     if (rel_path_base_dir.empty())
       return;
-    //TODO FIXME get list of file path names
-    VCP_LOG_FAILURE("TODO/FIXME: list all path parameters we need to adjust");
-    std::vector<std::string> param_names = {"calibration_file"};
+    // These parameters are usually used in my camera configuration files to
+    // link to files/paths - thus, they should be adjusted if the current
+    // working directory differs from the one you had in mind when creating
+    // the configuration...
+    const std::vector<std::string> param_names = {
+      "extrinsic_calibration_file",               // Multi-cam calibration
+      "calibration_file",                         // Intrinsic calibration
+      "video_file", "video", "file", "filename",  // VideoFileSink
+      "directory"                                 // ImageDirectorySink
+    };
     params.EnsureAbsolutePaths(param_names, rel_path_base_dir, false, true);
   }
 };
@@ -611,7 +625,7 @@ py::list ListRealSense2Devices(bool warn_if_no_devices)
 {
   py::list list;
 #ifdef VCP_BEST_WITH_REALSENSE2
-  const std::vector<vcp::best::rs2::RealSense2DeviceInfo> devices = pvt::icc::ListRealSense2Devices(warn_if_no_devices);
+  const std::vector<vcp::best::realsense2::RealSense2DeviceInfo> devices = vcp::best::realsense2::ListRealSense2Devices(warn_if_no_devices);
 
   for (const auto &dev : devices)
     list.append(py::make_tuple(dev.serial_number, dev.name));
@@ -624,11 +638,21 @@ py::list ListRealSense2Devices(bool warn_if_no_devices)
 }
 
 
+py::list ListWebcams(bool warn_if_no_devices, bool include_incompatible_devices)
+{
+  py::list list;
+  const auto devices = vcp::best::webcam::ListWebcams(warn_if_no_devices, include_incompatible_devices);
+  for (const auto &dev : devices)
+    list.append(py::make_tuple(dev.device_nr, dev.dev_name, dev.name));
+  return list;
+}
+
+
 py::list ListK4ADevices(bool warn_if_no_devices)
 {
   py::list list;
-#ifdef WITH_K4A //FIXME
-  const std::vector<pvt::icc::K4ADeviceInfo> devices = pvt::icc::ListK4ADevices(warn_if_no_devices);
+#ifdef VCP_BEST_WITH_K4A
+  const std::vector<vcp::best::k4a::K4ADeviceInfo> devices = vcp::best::k4a::ListK4ADevices(warn_if_no_devices);
 
   for (const auto &dev : devices)
     list.append(py::make_tuple(dev.serial_number, dev.name));
@@ -812,6 +836,7 @@ PYBIND11_MODULE(best_cpp, m)
   m.doc() = "vcp BESt capturing module - allows streaming from multiple cameras.";
 
   py::class_<pybest::CaptureWrapper>(m, "Capture")
+// Initialization
       .def(py::init<>())
       .def("load_libconfig", &pybest::CaptureWrapper::LoadConfigCpp,
            "Init the capture from a libconfig configuration file.\n"
@@ -832,15 +857,7 @@ PYBIND11_MODULE(best_cpp, m)
            "Init the capture from a vcp.config.Config() object.\n"
            "If you want to ensure absolute file paths, call config.ensure_absolute_file_paths() before!",
            py::arg("config"))
-      .def("all_devices_available", &pybest::CaptureWrapper::AreAllDevicesAvailable,
-           "Returns True if the capturing device/s is/are available.")
-      .def("all_frames_available", &pybest::CaptureWrapper::AreAllFramesAvailable,
-           "Returns true if frames (from all devices) can be retrieved (i.e. have been enqueued).")
-      .def("num_available_frames", &pybest::CaptureWrapper::NumAvailableFrames,
-           "Returns the number of available frames.\n\n"
-           "Might be useful if one of your sinks stops working/streaming and you still want to continue\n"
-           "processing, etc. In such a case, @see all_frames_available() would return false, whereas here\n"
-           "you get the actual number of frames and can decide what to do for yourself.")
+// Workflow:
       .def("open", &pybest::CaptureWrapper::OpenDevices,
            "Initialize devices, returns bool.")
       .def("close", &pybest::CaptureWrapper::CloseDevices,
@@ -849,51 +866,85 @@ PYBIND11_MODULE(best_cpp, m)
            "Starts the image streams, returns bool.")
       .def("stop", &pybest::CaptureWrapper::StopStreams,
            "Stops the image streams, returns bool.")
-      .def("wait_for_initial_frames", &pybest::CaptureWrapper::WaitForInitialFrames,
-           "After opening & starting, you can wait for the first set of images to become available.\n"
-           "Specify a timeout in milliseconds (float)), after which the result (bool) will indicate whether\n"
-           "frames from all devices/sinks are available or not.",
-           py::arg("timeout_ms")=5000.0);
+// Query frames:
+      .def("wait_for_frames", &pybest::CaptureWrapper::WaitForFrames,
+           "Use this blocking call to wait for the next set of images to\n"
+           "become available.\n"
+           "Specify a timeout in milliseconds (float), after which the\n"
+           "boolean result will indicate whether frames from all devices/sinks\n"
+           "are available or not.",
+           py::arg("timeout_ms")=5000.0, py::arg("verbose")=true)
+      .def("next", &pybest::CaptureWrapper::NextFrame,
+           "Returns the currently available frames as a list of images,\n"
+           "i.e. numpy ndarray or None. The output list will have exactly\n"
+           "one item per configured stream (NOT sink)."
+           "Empty frames (i.e. None) may occur if you query faster than the stream's\n"
+           "frame rate.\n"
+           "Use the flip_channel flag to flip the layer order of color.\n",
+           py::arg("flip_channels")=false)
+      .def("previous", &pybest::CaptureWrapper::PreviousFrame,
+           "Some sinks support retrieving the previous frame, i.e. video and\n"
+           "image directory. Others will raise an exception. @see next()\n"
+           "for description of the return value and parameter.",
+           py::arg("flip_channels")=true)
+      .def("fast_forward", &pybest::CaptureWrapper::FastForward,
+           "Some sinks support skipping frames (if num_frames > 1), i.e. video and\n"
+           "image directory. Others will raise an exception. @see next_frame()\n"
+           "for description of the return value and 'flip_channel'.",
+           py::arg("num_frames"), py::arg("flip_channel")=true)
+// Info/Status
+        .def("all_devices_available", &pybest::CaptureWrapper::AreAllDevicesAvailable,
+             "Returns True if the capturing device/s is/are available.")
+        .def("all_frames_available", &pybest::CaptureWrapper::AreAllFramesAvailable,
+             "Returns true if frames (from all devices) can be retrieved (i.e. have been enqueued).")
+        .def("num_available_frames", &pybest::CaptureWrapper::NumAvailableFrames,
+             "Returns the number of available frames.\n\n"
+             "Might be useful if one of your sinks stops working/streaming and you still want to continue\n"
+             "processing, etc. In such a case, @see all_frames_available() would return false, whereas here\n"
+             "you get the actual number of frames and can decide what to do for yourself.")
+      .def("num_streams", &pybest::CaptureWrapper::NumStreams,
+           "Returns the number of configured streams (NOT the number of sinks).")
+      .def("num_devices", &pybest::CaptureWrapper::NumDevices,
+           "Returns the number of devices/sinks (NOT the number of streams/frames).\n"
+           "While this number corresponds to the number of 'software sinks' used in VCP,\n"
+           "it may not be exactly the number of physical devices: For example, you could\n"
+           "configure 2 IP streams from the same device, one configured by its IP and the\n"
+           "other by its hostname. Handling such cases would be too complex.")
+      .def("frame_labels", &pybest::CaptureWrapper::FrameLabels,
+           "Returns the (user-defined) frame labels.\n"
+           "Note that:\n"
+           " - The order may differ from the one you used in the configuration file.\n"
+           "   This is because some devices must be handled specifically (e.g. multiple\n"
+           "   simultaneous RTSP streams, or synchronized/triggered RGBD sensors).\n"
+           " - The labels may also differ because you specify a per-device label. Sinks\n"
+           "   with multiple streams (e.g. or RGBD) will prefix the label accordingly.")
+      .def("frame_label", &pybest::CaptureWrapper::FrameLabel,
+           "Returns the (user-defined) frame label for frame/stream at the given stream_index.",
+           py::arg("stream_index"))
+      .def("configuration_keys", &pybest::CaptureWrapper::ConfigurationKeys,
+           "Returns the configuration parameter name, e.g. 'cameraX', for\n"
+           "each stream/frame.\n"
+           "See comments on @see frame_labels() why this might be of interest\n"
+           "to you. However, it's usually better to query the @see frame_labels()\n"
+           "and/or @see frame_types() instead.")
+      .def("configuration_key", &pybest::CaptureWrapper::ConfigurationKey,
+           "Returns the configuration parameter name for frame/stream at the given stream_index.",
+           py::arg("stream_index"))
+      .def("frame_types", &pybest::CaptureWrapper::FrameTypes,
+           "Returns the FrameType (string) for each stream/frame.\n"
+           "See comments on @see frame_labels() why you cannot assume\n"
+           "that the frames will be in the same order you specified\n"
+           "in your configuration file.\n"
+           "Thus, use @see configuration_keys() in combination with\n"
+           "this FrameType information to access a specific stream.\n\n"
+           "This has only be taken into account if you mix the data\n"
+           "sources (e.g. stream webcams + RGBD + RTSP).")
+      .def("frame_type", &pybest::CaptureWrapper::FrameTypeAt,
+           "Returns the FrameType of the frame/stream at the given stream_index.",
+           py::arg("stream_index"));
 
-//      .def("next_frame", &pybest::CaptureWrapper::NextFrame,
-//           "Returns the currently available frames as a list of numpy ndarrays\n"
-//           "(or None). Exactly one list element per stream in this capture.\n"
-//           "Empty (None) frames may occur if you query faster than the stream's\n"
-//           "frame rate.\n"
-//           "Use the return_rgb flag to receive (color) streams as RGB (true) or\n"
-//           "BGR (false).", py::arg("return_rgb")=true)
-//      .def("previous_frame", &pybest::CaptureWrapper::PreviousFrame,
-//           "Some sinks support retrieving the previous frame (i.e. video and\n"
-//           "image directory). Otherwise operates in the same way as next_frame.",
-//           py::arg("return_rgb")=true)
-//      .def("fast_forward", &pybest::CaptureWrapper::FastForward,
-//           "Some sinks support skipping frames (if num_frames > 1), i.e. video and\n"
-//           "image directory. Otherwise operates in the same way as next_frame.",
-//           py::arg("num_frames"), py::arg("return_rgb")=true)
-//      .def("get_labels", &pybest::CaptureWrapper::GetLabels,
-//           "Returns a list of all registered labels - the label\n"
-//           "indices follow the same ordering as the frames returned \n"
-//           "from next_frame().")
-//      .def("get_label", &pybest::CaptureWrapper::GetLabel,
-//           "Returns the label of the sink at the given index - the label\n"
-//           "indices follow the same ordering as the frames returned\n"
-//           "from next_frame().", py::arg("sink_index"))
-//      .def("get_corresponding_config_keys", &pybest::CaptureWrapper::GetCorrespondingConfigKeys,
-//           "Returns a list of corresponding config file keys - as\n"
-//           "camera1, camera2 may not be the same ordering as cam_idx=0, cam_idx=1\n"
-//           "in a multi-cam setup (when you mix different camera types)!")
-//      .def("get_corresponding_config_key", &pybest::CaptureWrapper::GetCorrespondingConfigKey,
-//           "Return the corresponding config file key (i.e. 'cameraX') for the stream at sink_index",
-//           py::arg("sink_index"))
-//      .def("get_stream_type", &pybest::CaptureWrapper::GetStreamType,
-//           "Returns the type (mono, stereo, rgbd_color, rgbd_depth, unknown, ...) of the\n"
-//           "stream at index i, i.e. frames[i] is of get_stream_type(i),\n"
-//           "where frames = next_frame()",
-//           py::arg("stream_index"))
-//      .def("get_stream_types", &pybest::CaptureWrapper::GetStreamTypes,
-//           "Returns the type (mono, stereo, rgbd_color, rgbd_depth, unknown, ...) for\n"
-//           "each stream (so you know frames[i], with frames = next_frame(), will be of type[i]).")
-//      .def("get_camera_matrix", &pybest::CaptureWrapper::ReturnNone,
+
+  //      .def("get_camera_matrix", &pybest::CaptureWrapper::ReturnNone,
 //           "Returns None - method is only useful for a RectifiedCapture object",
 //           py::arg("sink_index"))
 //      .def("get_camera_matrix_right", &pybest::CaptureWrapper::ReturnNone,
@@ -962,6 +1013,11 @@ PYBIND11_MODULE(best_cpp, m)
 
   m.def("list_realsense2_devices", &pybest::ListRealSense2Devices,
         "Returns a list of connected RealSense2 devices.", py::arg("warn_if_no_devices")=true);
+
+  m.def("list_webcams", &pybest::ListWebcams,
+        "Returns a list of connected webcams.",
+        py::arg("warn_if_no_devices")=true,
+        py::arg("include_incompatible_devices")=false);
 
   m.def("store_extrinsics", &pybest::StoreExtrinsics,
         "Saves the extrinsic calibration to the given file.", //TODO doc
