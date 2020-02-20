@@ -26,7 +26,7 @@ enum class ImgTransform : int
   ROTATE_270  = 16,  /**< Rotate by 90 degrees counter-clockwise. */
   HISTOGRAM_EQUALIZATION = 32, /**< Perform histogram equalization. */
 
-
+//TODO nice-to-have: color quantization (min-variance, x-bit, ...)
   COLOR_HSV = 256,  /**< Convert (transformed) image to HSV color space. */
   COLOR_LAB = 512,  /**< Convert (transformed) image to Lab color space. */
   GRAYSCALE = 1024  /**< Convert (transformed) image to single-channel grayscale. */
