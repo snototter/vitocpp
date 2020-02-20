@@ -74,6 +74,8 @@ std::string ImgTransformToString(const ImgTransform &t)
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(ROTATE_180);
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(ROTATE_270);
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(HISTOGRAM_EQUALIZATION);
+
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(GRAYSCALE);
   default:
     std::stringstream str;
     str << "(" << static_cast<int>(t) << ")";
@@ -124,6 +126,12 @@ ImgTransform ImgTransformFromToken(const std::string &s)
       || lower.compare("equalizehistogram") == 0
       || lower.compare("histogramequalization") == 0)
     return ImgTransform::HISTOGRAM_EQUALIZATION;
+
+  if (lower.compare("grayscale") == 0
+      || lower.compare("gray") == 0
+      || lower.compare("grey") == 0
+      || lower.compare("greyscale") == 0)
+    return ImgTransform::GRAYSCALE;
 
   VCP_ERROR("ImgTransformFromString(): Cannot convert '" << s << "' to ImgTransform.");
 }
@@ -237,6 +245,10 @@ cv::Mat ApplyImageTransformation(const cv::Mat &img, const ImgTransform &transfo
 
   if ((transform & ImgTransform::HISTOGRAM_EQUALIZATION) != ImgTransform::NONE)
     res = HistogramEqualization(res);
+
+  // Grayscale conversion should happen last
+  if ((transform & ImgTransform::GRAYSCALE) != ImgTransform::NONE)
+    res = Grayscale(res);
 
   return res;
 }

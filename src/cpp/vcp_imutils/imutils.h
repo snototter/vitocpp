@@ -25,6 +25,8 @@ enum class ImgTransform : int
   ROTATE_180  =  8,  /**< Rotate by 180 degrees. */
   ROTATE_270  = 16,  /**< Rotate by 90 degrees counter-clockwise. */
   HISTOGRAM_EQUALIZATION = 32, /**< Perform histogram equalization. */
+
+  GRAYSCALE = 1024  /**< Convert (transformed) image to single-channel grayscale. */
 };
 
 // Operator overloads
