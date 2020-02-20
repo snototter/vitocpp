@@ -46,12 +46,40 @@ def streaming_demo(cfg_file, folder):
         # Query the frames (since we know that all streams are available now)
         frames = capture.next()
 
-        # Display them
-        collage = imvis.make_collage(frames)
+        if any([f is None for f in frames]):
+            print('FUCK YOU: ', [f is None for f in frames])
+            raise RuntimeError('stop it!')
+
+        # Colorize depth/infrared images for visualization
+        def _col_dir(f):
+            # RealSense infrared is provided (by default) in Y8 format
+            if f.dtype == np.uint8:
+                return f
+            # Depth values are usually 16bit, in millimeters
+            return imvis.pseudocolor(f, limits=[0, 5000], color_map=colormaps.colormap_turbo_rgb)
+
+        vis_frames = [
+                _col_dir(frames[idx])
+                if capture.is_depth(idx) or capture.is_infrared(idx)
+                else frames[idx]
+            for idx in range(len(frames))]
+
+        # Overlay stream labels
+        vis_frames = [
+            imvis.draw_text_box(vis_frames[idx], capture.frame_label(idx),
+                (vis_frames[idx].shape[1]//2, 10), 'north',
+                bg_color=(0, 0, 0), font_color=(-1, -1, -1),
+                font_scale=1.0, font_thickness=1,
+                padding=5, fill_opacity=0.5)
+            for idx in range(len(vis_frames))]
+
+        # Display the images (as a single image/collage)
+        collage = imvis.make_collage(vis_frames, num_images_per_row=2)
         k = imvis.imshow(collage, title='streams', wait_ms=10)
         if k == 27 or k == ord('q'):
             break
 
+    # Shut down gracefully (would be called upon desctruction anyways)
     if not capture.stop():
         raise RuntimeError('Cannot stop streams')
     if not capture.close():
@@ -72,7 +100,8 @@ def demo():
     list_devices()
 
     folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'data-best')
-    cfg_files = [file for file in os.listdir(folder) if file.endswith(".cfg")]
+    # cfg_files = [file for file in os.listdir(folder) if file.endswith(".cfg")]
+    cfg_files = ['realsense.cfg'] #, 'image_sequence.cfg', 'k4a.cfg', 'webcam.cfg']
     
     for cf in cfg_files:
         try:

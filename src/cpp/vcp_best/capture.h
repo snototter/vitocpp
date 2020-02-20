@@ -141,6 +141,10 @@ public:
   virtual std::vector<std::string> FrameLabels() const = 0;
 
 
+  /** @brief Look up the FrameLabel for a specific stream/frame, also refer to @see FrameLabels(). */
+  virtual std::string FrameLabelAt(size_t stream_index) const = 0;
+
+
   /** @brief Returns the configuration parameter name, i.e. "cameraX", for
    * each stream/frame.
    * See comments on @see FrameLabels() why this might be of interest
@@ -148,6 +152,10 @@ public:
    * and/or @see FrameTypes().
    */
   virtual std::vector<std::string> ConfigurationKeys() const = 0;
+
+
+  /** @brief Look up the configuration key/parameter name for a specific stream/frame, also refer to @see ConfigurationKeys(). */
+  virtual std::string ConfigurationKeyAt(size_t stream_index) const = 0;
 
 
   /** @brief Returns the FrameType for each stream/frame.
@@ -162,9 +170,15 @@ public:
    */
   virtual std::vector<FrameType> FrameTypes() const = 0;
 
+
+  /** @brief Look up the FrameType for a specific stream/frame, also refer to @see FrameTypes(). */
+  virtual FrameType FrameTypeAt(size_t stream_index) const = 0;
+
+
 protected:
   Capture() {}
 };
+
 
 /** Overload the stream operator '<<' to print a Capture. */
 std::ostream& operator<<(std::ostream & os, const Capture &cap);
@@ -174,10 +188,9 @@ std::ostream& operator<<(std::ostream & os, const Capture &cap);
 std::unique_ptr<Capture> CreateCapture(const vcp::config::ConfigParams &config);
 
 
-
 ////---------------------------------------------------------------------------------------------------------------------------
 ///** @brief Base class to access rectified image stream(s). Requires valid calibration files. */
-////TODO move to capture
+////TODO remove
 //class RectifiedCapture : public Capture
 //{
 //public:

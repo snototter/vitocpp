@@ -21,9 +21,16 @@ extern const std::string kEmptyRealSense2SerialNumber;
 /** @brief Strongly typed enum to select which RealSense streams to enable. */
 enum class RSStreamType
 {
-  COLOR_DEPTH, /**< Both RGB and depth. */
-  COLOR, /**< Only RGB. */
-  DEPTH /**< Only depth. */
+  COLOR_DEPTH,      /**< Both RGB and depth. */
+  COLOR_DEPTH_IRL,  /**< RGB, depth and left IR. */
+  COLOR_DEPTH_IR2,  /**< RGB, depth and both IR. */
+  COLOR,            /**< Only RGB. */
+  DEPTH,            /**< Only depth. */
+  DEPTH_IRL,        /**< Only depth and left IR. */
+  DEPTH_IR2,        /**< Only depth and both IR. */
+  INFRARED_LEFT,    /**< Only left IR. */
+  INFRARED_RIGHT,   /**< Only left IR. */
+  INFRARED2         /**< Both infrared images only. */
 };
 
 
@@ -91,6 +98,8 @@ struct RealSense2SinkParams : SinkParams
 
   bool IsColorStreamEnabled() const;
   bool IsDepthStreamEnabled() const;
+  bool IsInfrared1StreamEnabled() const;
+  bool IsInfrared2StreamEnabled() const;
 };
 
 
@@ -112,7 +121,9 @@ RealSense2SinkParams RealSense2SinkParamsFromConfig(const vcp::config::ConfigPar
  * @brief Creates a StreamSink to capture from an Intel RealSense device using librealsense2.
  * @param sink_buffer A sink buffer which will be used as image queue.
  */
-std::unique_ptr<StreamSink> CreateBufferedRealSense2Sink(const RealSense2SinkParams &params, std::unique_ptr<SinkBuffer> rgb_buffer, std::unique_ptr<SinkBuffer> depth_buffer);
+std::unique_ptr<StreamSink> CreateBufferedRealSense2Sink(const RealSense2SinkParams &params,
+        std::unique_ptr<SinkBuffer> rgb_buffer, std::unique_ptr<SinkBuffer> depth_buffer,
+        std::unique_ptr<SinkBuffer> ir1_buffer, std::unique_ptr<SinkBuffer> ir2_buffer);
 
 /**
  * @brief Creates a StreamSink to capture from an Intel RealSense device, specify size of the image queue as template parameter.
@@ -120,7 +131,11 @@ std::unique_ptr<StreamSink> CreateBufferedRealSense2Sink(const RealSense2SinkPar
 template <int BufferCapacity>
 std::unique_ptr<StreamSink> CreateRealSense2Sink(const RealSense2SinkParams &params)
 {
-  return CreateBufferedRealSense2Sink(params, std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()), std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()));
+  return CreateBufferedRealSense2Sink(params,
+          std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()),
+          std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()),
+          std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()),
+          std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()));
 }
 
 /** @brief Returns a list of connected RealSense devices. */

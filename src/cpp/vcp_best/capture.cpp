@@ -275,14 +275,29 @@ public:
     return keys;
   }
 
+  std::string ConfigurationKeyAt(size_t stream_index) const override
+  {
+    return sink_params_[stream_index].configuration_key;
+  }
+
   std::vector<std::string> FrameLabels() const override
   {
     return frame_labels_;
   }
 
+  std::string FrameLabelAt(size_t stream_index) const override
+  {
+    return frame_labels_[stream_index];
+  }
+
   std::vector<FrameType> FrameTypes() const override
   {
     return frame_types_;
+  }
+
+  FrameType FrameTypeAt(size_t stream_index) const override
+  {
+    return frame_types_[stream_index];
   }
 
   bool AreAllDevicesAvailable() const override
@@ -463,8 +478,8 @@ public:
 
 private:
   std::vector<std::unique_ptr<StreamSink>> sinks_; // Potentially less than streams/frames
-  std::vector<FrameType> frame_types_; // Note: they will be per stream/frame, not per device
-  std::vector<SinkParams> sink_params_; // Note: they will be per stream/frame, not per device
+  std::vector<FrameType> frame_types_;  // Note: they will be per stream/frame (i.e. possibly duplicated), not per device
+  std::vector<SinkParams> sink_params_; // Note: they will be per stream/frame (i.e. possibly duplicated), not per device
   std::vector<std::string> frame_labels_;
   size_t num_devices_;
 
@@ -480,7 +495,17 @@ private:
   void SanityCheck()
   {
     if (!vcp::utils::HasUniqueItems(frame_labels_))
-      VCP_ERROR("Frame labels aren't unique - aborting before you'll run into runtime issues!");
+      VCP_ERROR("Frame labels aren't unique - adjust the configuration!");
+
+    for (size_t i = 0; i < frame_types_.size(); ++i)
+    {
+      if (frame_types_[i] == FrameType::UNKNOWN)
+      {
+        VCP_LOG_WARNING("'Unknown' frame type for stream '"
+                        << frame_labels_[i] << "', configured via parameter '"
+                        << ConfigurationKeyAt(i) << "'");
+      }
+    }
   }
 };
 

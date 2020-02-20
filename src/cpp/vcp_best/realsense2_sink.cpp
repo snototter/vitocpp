@@ -24,6 +24,7 @@ namespace realsense2
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::best::realsense2"
 
+//FIXME new enums!!!!!
 std::string RSStreamTypeToString(const RSStreamType &s)
 {
   std::string rep;
@@ -33,12 +34,40 @@ std::string RSStreamTypeToString(const RSStreamType &s)
     rep = "rgbd";
     break;
 
+  case RSStreamType::COLOR_DEPTH_IRL:
+    rep = "rgbd-ir";
+    break;
+
+  case RSStreamType::COLOR_DEPTH_IR2:
+    rep = "rgbd-ir2";
+    break;
+
   case RSStreamType::COLOR:
     rep = "color";
     break;
 
-  case RSStreamType::DEPTH:
-    rep = "depth";
+    case RSStreamType::DEPTH:
+      rep = "depth";
+      break;
+
+  case RSStreamType::DEPTH_IRL:
+    rep = "depth-ir-left";
+    break;
+
+  case RSStreamType::DEPTH_IR2:
+    rep = "depth-ir-both";
+    break;
+
+  case RSStreamType::INFRARED_LEFT:
+    rep = "irl";
+    break;
+
+  case RSStreamType::INFRARED_RIGHT:
+    rep = "irr";
+    break;
+
+  case RSStreamType::INFRARED2:
+    rep = "ir2";
     break;
 
   default:
@@ -53,27 +82,72 @@ std::string RSStreamTypeToString(const RSStreamType &s)
 
 RSStreamType RSStreamTypeFromString(const std::string &s)
 {
-  const std::string lower = vcp::utils::string::Replace(vcp::utils::string::Lower(s), "_", "-");
+  const std::string lower = vcp::utils::string::Replace(
+        vcp::utils::string::Replace(vcp::utils::string::Lower(s), "_", "-"),
+        "-", "");
 
   if (lower.compare("rgbd") == 0
-      || lower.compare("rgb-d") == 0
-      || lower.compare("rgb-depth") == 0
+      || lower.compare("rgbdepth") == 0
       || lower.compare("bgrd") == 0
-      || lower.compare("bgr-d") == 0
-      || lower.compare("bgr-depth") == 0
-      || lower.compare("color-depth") == 0)
+      || lower.compare("bgrdepth") == 0
+      || lower.compare("colordepth") == 0)
     return RSStreamType::COLOR_DEPTH;
+
+  if (lower.compare("rgbdir") == 0
+      || lower.compare("rgbdirleft") == 0
+      || lower.compare("rgbdepthir") == 0
+      || lower.compare("rgbdepthirleft") == 0
+      || lower.compare("rgbdepthinfrared") == 0
+      || lower.compare("rgbdepthinfraredleft") == 0
+      || lower.compare("colordepthinfrared") == 0
+      || lower.compare("colordepthinfraredleft") == 0)
+    return RSStreamType::COLOR_DEPTH_IRL;
+
+  if (lower.compare("rgbdir2") == 0
+      || lower.compare("rgbdirboth") == 0
+      || lower.compare("rgbdepthir2") == 0
+      || lower.compare("rgbdepthirboth") == 0
+      || lower.compare("rgbdepthinfrared2") == 0
+      || lower.compare("rgbdepthinfraredboth") == 0
+      || lower.compare("colordepthinfrared2") == 0
+      || lower.compare("colordepthinfraredboth") == 0)
+    return RSStreamType::COLOR_DEPTH_IR2;
 
   if (lower.compare("rgb") == 0
       || lower.compare("bgr") == 0
-      || lower.compare("color") == 0
-      || lower.compare("color-only") == 0)
+      || lower.compare("color") == 0)
     return RSStreamType::COLOR;
 
-  if (lower.compare("depth") == 0
-      || lower.compare("d") == 0
-      || lower.compare("depth-only") == 0)
+  if (lower.compare("depth") == 0)
     return RSStreamType::DEPTH;
+
+  if (lower.compare("depthir") == 0
+      || lower.compare("depthirleft") == 0
+      || lower.compare("depthinfrared") == 0
+      || lower.compare("depthinfraredleft") == 0)
+    return RSStreamType::DEPTH_IRL;
+
+  if (lower.compare("depthir2") == 0
+      || lower.compare("depthirboth") == 0
+      || lower.compare("depthinfrared2") == 0
+      || lower.compare("depthinfraredboth") == 0)
+    return RSStreamType::DEPTH_IR2;
+
+  if (lower.compare("ir") == 0
+      || lower.compare("infrared") == 0
+      || lower.compare("irleft") == 0
+      || lower.compare("infraredleft") == 0)
+    return RSStreamType::INFRARED_LEFT;
+
+  if (lower.compare("infraredright") == 0
+      || lower.compare("irright") == 0)
+    return RSStreamType::INFRARED_RIGHT;
+
+  if (lower.compare("ir2") == 0
+      || lower.compare("irboth") == 0
+      || lower.compare("infrared2") == 0
+      || lower.compare("infraredboth") == 0)
+    return RSStreamType::INFRARED2;
 
   VCP_ERROR("RSStreamTypeFromString(): Cannot convert '" << s << "' to RSStreamType.");
 }
@@ -88,12 +162,38 @@ std::ostream &operator<<(std::ostream &stream, const RSStreamType &s)
 
 bool RealSense2SinkParams::IsColorStreamEnabled() const
 {
-  return stream_type == RSStreamType::COLOR || stream_type == RSStreamType::COLOR_DEPTH;
+  return stream_type == RSStreamType::COLOR
+      || stream_type == RSStreamType::COLOR_DEPTH
+      || stream_type == RSStreamType::COLOR_DEPTH_IRL
+      || stream_type == RSStreamType::COLOR_DEPTH_IR2;
 }
 
 bool RealSense2SinkParams::IsDepthStreamEnabled() const
 {
-  return stream_type == RSStreamType::DEPTH || stream_type == RSStreamType::COLOR_DEPTH;
+  return stream_type == RSStreamType::DEPTH
+      || stream_type == RSStreamType::DEPTH_IRL
+      || stream_type == RSStreamType::DEPTH_IR2
+      || stream_type == RSStreamType::COLOR_DEPTH
+      || stream_type == RSStreamType::COLOR_DEPTH_IRL
+      || stream_type == RSStreamType::COLOR_DEPTH_IR2;
+}
+
+bool RealSense2SinkParams::IsInfrared1StreamEnabled() const
+{
+  return stream_type == RSStreamType::INFRARED_LEFT
+      || stream_type == RSStreamType::INFRARED2
+      || stream_type == RSStreamType::DEPTH_IRL
+      || stream_type == RSStreamType::DEPTH_IR2
+      || stream_type == RSStreamType::COLOR_DEPTH_IRL
+      || stream_type == RSStreamType::COLOR_DEPTH_IR2;
+}
+
+bool RealSense2SinkParams::IsInfrared2StreamEnabled() const
+{
+  return stream_type == RSStreamType::INFRARED_RIGHT
+      || stream_type == RSStreamType::INFRARED2
+      || stream_type == RSStreamType::DEPTH_IR2
+      || stream_type == RSStreamType::COLOR_DEPTH_IR2;
 }
 
 
@@ -513,10 +613,39 @@ cv::Mat TFromExtrinsics(const rs2_extrinsics &extrinsics)
   return T;
 }
 
+void DumpIrCalib(rs2::pipeline_profile &profile, cv::FileStorage &fs, int ir_index, const std::string &ir_name, const RealSense2SinkParams &params)
+{
+  rs2::video_stream_profile ir_profile = profile.get_stream(RS2_STREAM_INFRARED, ir_index).as<rs2::video_stream_profile>();
+  const rs2_intrinsics ir_intrinsics = ir_profile.get_intrinsics();
 
+  const cv::Mat Kir = KFromIntrinsics(ir_intrinsics);
+  const cv::Mat Dir = DFromIntrinsics(ir_intrinsics);
+  const int ir_width = ir_intrinsics.width;
+  const int ir_height = ir_intrinsics.height;
+
+  const std::string key_k = "K_" + ir_name;
+  fs << key_k << Kir;
+  const std::string key_d = "D_" + ir_name;
+  fs << key_d << Dir;
+  const std::string key_w = "width_" + ir_name;
+  fs << key_w << ir_width;
+  const std::string key_h = "height_" + ir_name;
+  fs << key_h << ir_height;
+
+  if (params.IsColorStreamEnabled())
+  {
+    rs2::video_stream_profile rgb_profile = profile.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>();
+    const rs2_extrinsics ir_extrinsics = ir_profile.get_extrinsics_to(rgb_profile);
+    const cv::Mat Rir2color = RFromExtrinsics(ir_extrinsics);
+    const cv::Mat Tir2color = TFromExtrinsics(ir_extrinsics);
+    const std::string key_r = "R_" + ir_name + "2rgb";
+    fs << key_r << Rir2color;
+    const std::string key_t = "t_" + ir_name + "2rgb";
+    fs << key_t << Tir2color;
+  }
+}
 void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams &params, const float depth_scale)
 {
-  //FIXME what if rgb only?!
   if (params.calibration_file.empty())
     VCP_ERROR("DumpCalibration() called with empty file name!");
 
@@ -560,6 +689,7 @@ void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams 
     rs2::video_stream_profile depth_profile = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
     const rs2_intrinsics depth_intrinsics = depth_profile.get_intrinsics();
 
+    VCP_LOG_FAILURE("Krgb vs Kdepth: " << std::endl << Krgb << std::endl<<KFromIntrinsics(depth_intrinsics));
     const cv::Mat Kdepth = align_d2c ? Krgb : KFromIntrinsics(depth_intrinsics);
     const cv::Mat Ddepth = align_d2c ? Drgb : DFromIntrinsics(depth_intrinsics);
     const int depth_width = align_d2c ? rgb_width : depth_intrinsics.width;
@@ -582,6 +712,12 @@ void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams 
     }
   }
 
+  if (params.IsInfrared1StreamEnabled())
+  {
+    VCP_LOG_FAILURE("DUMPING IR1");
+    DumpIrCalib(profile, fs, 1, "ir_left", params);
+  }
+
   fs << "type" << "rgbd";
   fs.release();
 
@@ -593,7 +729,6 @@ void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams 
 std::vector<RealSense2DeviceInfo> ListRealSense2Devices(bool warn_if_no_devices)
 {
   rs2::context context;
-
   const rs2::device_list device_list = context.query_devices();
   uint32_t num_devices = device_list.size();
 
@@ -662,7 +797,10 @@ void DebugFramesetMetadata(const std::string &serial_number, const rs2::frameset
   {
     if (!frame)
       continue;
-    const std::string stream_type = frame.get_profile().stream_type() == RS2_STREAM_DEPTH ? "depth" : "color";
+    const std::string stream_type = frame.get_profile().stream_type() == RS2_STREAM_DEPTH
+        ? "depth"
+        : (frame.get_profile().stream_type() == RS2_STREAM_INFRARED
+           ? "infrared" : (frame.get_profile().stream_type() == RS2_STREAM_COLOR ? "color" : "unknown/not-yet-mapped"));
     metadata_str << std::endl << "  " << stream_type;
     for (const auto &att : attributes_to_query)
     {
@@ -670,15 +808,7 @@ void DebugFramesetMetadata(const std::string &serial_number, const rs2::frameset
       {
         const auto val = frame.get_frame_metadata(att);
         metadata_str << std::endl << "    " << rs2_frame_metadata_value_to_string(att) << ": ";
-//        if (att == RS2_FRAME_METADATA_FRAME_TIMESTAMP || att == RS2_FRAME_METADATA_SENSOR_TIMESTAMP
-//            || att == RS2_FRAME_METADATA_TIME_OF_ARRIVAL || att == RS2_FRAME_METADATA_BACKEND_TIMESTAMP)
-//        {
-//          metadata_str << format_usec(val);
-//        }
-//        else
-//        {
           metadata_str << val;
-//        }
       }
     }
   }
@@ -686,14 +816,24 @@ void DebugFramesetMetadata(const std::string &serial_number, const rs2::frameset
   // Explicitly add frame# to compare against metadata (since md frame count gets stuck after a few seconds), weird behavior as of March/2019
   metadata_str << std::endl << "Frame numbers: ";
   if (frameset.get_color_frame().get() != nullptr)
-    metadata_str << frameset.get_color_frame().get_frame_number();
+    metadata_str << "C " << frameset.get_color_frame().get_frame_number();
   else
-    metadata_str << "---";
-  metadata_str << " vs ";
+    metadata_str << "C ---";
+  metadata_str << ", ";
   if (frameset.get_depth_frame().get() != nullptr)
-    metadata_str << frameset.get_depth_frame().get_frame_number();
+    metadata_str << "D" << frameset.get_depth_frame().get_frame_number();
   else
-    metadata_str << "---";
+    metadata_str << "D ---";
+  metadata_str << ", ";
+  if (frameset.get_infrared_frame(1).get() != nullptr)
+    metadata_str << "IR1 " << frameset.get_infrared_frame(1).get_frame_number();
+  else
+    metadata_str << "IR1 ---";
+  metadata_str << ", ";
+  if (frameset.get_infrared_frame(2).get() != nullptr)
+    metadata_str << "IR2 " << frameset.get_infrared_frame(2).get_frame_number();
+  else
+    metadata_str << "IR2 ---";
 
   VCP_LOG_DEBUG_DEFAULT(metadata_str.str());
 }
@@ -704,23 +844,28 @@ class RealSense2RGBDSink : public StreamSink
 public:
   RealSense2RGBDSink(const RealSense2SinkParams &params,
                      std::unique_ptr<SinkBuffer> rgb_buffer,
-                     std::unique_ptr<SinkBuffer> depth_buffer)
+                     std::unique_ptr<SinkBuffer> depth_buffer,
+                     std::unique_ptr<SinkBuffer> ir1_buffer,
+                     std::unique_ptr<SinkBuffer> ir2_buffer)
     : StreamSink(),
     continue_capture_(false),
     rgb_queue_(std::move(rgb_buffer)),
     depth_queue_(std::move(depth_buffer)),
+    ir1_queue_(std::move(ir1_buffer)),
+    ir2_queue_(std::move(ir2_buffer)),
     rgb_prev_fnr_(std::numeric_limits<unsigned long long>::max()),
     depth_prev_fnr_(std::numeric_limits<unsigned long long>::max()),
+    ir1_prev_fnr_(std::numeric_limits<unsigned long long>::max()),
+    ir2_prev_fnr_(std::numeric_limits<unsigned long long>::max()),
     rgbd_params_(params),
     dev_opened_(false),
-    serial_number_(kEmptyRealSense2SerialNumber),
-    available_(0),
-    color_stream_enabled_(false),
-    depth_stream_enabled_(false)
+    available_(0)
   {
     VCP_LOG_DEBUG("RealSense2RGBDSink::RealSense2RGBDSink()");
     color_stream_enabled_ = rgbd_params_.IsColorStreamEnabled();
     depth_stream_enabled_ = rgbd_params_.IsDepthStreamEnabled();
+    ir1_stream_enabled_ = rgbd_params_.IsInfrared1StreamEnabled();
+    ir2_stream_enabled_ = rgbd_params_.IsInfrared2StreamEnabled();
   }
 
   virtual ~RealSense2RGBDSink()
@@ -769,9 +914,9 @@ public:
     if (rgbd_params_.verbose)
       VCP_LOG_INFO("Configuring streams of RealSense device [" << rgbd_params_.serial_number << "]");
 
-    if (!(color_stream_enabled_ || depth_stream_enabled_))
+    if (!(color_stream_enabled_ || depth_stream_enabled_ || ir1_stream_enabled_ || ir2_stream_enabled_))
     {
-      VCP_LOG_FAILURE("You disabled both, color and depth stream - cannot start streaming from RealSense device [" << rgbd_params_.serial_number << "]");
+      VCP_LOG_FAILURE("You disabled all streams - cannot start streaming from RealSense device [" << rgbd_params_.serial_number << "]");
       return false;
     }
 
@@ -789,9 +934,25 @@ public:
       if (depth_stream_enabled_)
       {
         VCP_LOG_INFO("Enabling " << rgbd_params_.depth_width << "x" << rgbd_params_.depth_height
-                     << " depth stream " << " @" << rgbd_params_.depth_frame_rate << " fps");
+                     << " depth stream @" << rgbd_params_.depth_frame_rate << " fps");
         config_.enable_stream(RS2_STREAM_DEPTH, rgbd_params_.depth_width, rgbd_params_.depth_height,
                              RS2_FORMAT_Z16, rgbd_params_.depth_frame_rate);
+      }
+      if (ir1_stream_enabled_)
+      {
+        VCP_LOG_INFO("Enabling " << rgbd_params_.depth_width << "x" << rgbd_params_.depth_height
+                     << " left infrared stream @" << rgbd_params_.depth_frame_rate << " fps");
+        config_.enable_stream(RS2_STREAM_INFRARED, 1,
+                              rgbd_params_.depth_width, rgbd_params_.depth_height, RS2_FORMAT_Y8, rgbd_params_.depth_frame_rate);
+        //TODO calibration of infrared streams is not stored currently!
+      }
+      if (ir2_stream_enabled_)
+      {
+        VCP_LOG_INFO("Enabling " << rgbd_params_.depth_width << "x" << rgbd_params_.depth_height
+                     << " right infrared stream @" << rgbd_params_.depth_frame_rate << " fps");
+        config_.enable_stream(RS2_STREAM_INFRARED, 2,
+                              rgbd_params_.depth_width, rgbd_params_.depth_height, RS2_FORMAT_Y8, rgbd_params_.depth_frame_rate);
+        //TODO calibration of infrared streams is not stored currently!
       }
       return true;
     }
@@ -838,7 +999,7 @@ public:
 
   std::vector<cv::Mat> Next() override
   {
-    cv::Mat rgb, depth;
+    cv::Mat rgb, depth, ir1, ir2;
     std::vector<cv::Mat> res;
     image_queue_mutex_.lock();
     if (color_stream_enabled_)
@@ -866,6 +1027,32 @@ public:
       }
       res.push_back(depth);
     }
+
+    if (ir1_stream_enabled_)
+    {
+      if (ir1_queue_->Empty())
+        ir1 = cv::Mat();
+      else
+      {
+        // Retrieve oldest image in queue
+        ir1 = ir1_queue_->Front().clone();
+        ir1_queue_->PopFront();
+      }
+      res.push_back(ir1);
+    }
+
+    if (ir2_stream_enabled_)
+    {
+      if (ir2_queue_->Empty())
+        ir2 = cv::Mat();
+      else
+      {
+        // Retrieve oldest image in queue
+        ir2 = ir2_queue_->Front().clone();
+        ir2_queue_->PopFront();
+      }
+      res.push_back(ir2);
+    }
     image_queue_mutex_.unlock();   
     return res;
   }
@@ -883,6 +1070,10 @@ public:
         ++num;
     if (depth_stream_enabled_ && !depth_queue_->Empty())
         ++num;
+    if (ir1_stream_enabled_ && !ir1_queue_->Empty())
+        ++num;
+    if (ir2_stream_enabled_ && !ir2_queue_->Empty())
+        ++num;
     image_queue_mutex_.unlock();
     return num;
   }
@@ -890,7 +1081,10 @@ public:
   int IsFrameAvailable() const override
   {
     image_queue_mutex_.lock();
-    const bool empty = (color_stream_enabled_ && rgb_queue_->Empty()) || (depth_stream_enabled_ && depth_queue_->Empty());
+    const bool empty = (color_stream_enabled_ && rgb_queue_->Empty())
+        || (depth_stream_enabled_ && depth_queue_->Empty())
+        || (ir1_stream_enabled_ && ir1_queue_->Empty())
+        || (ir2_stream_enabled_ && ir2_queue_->Empty());
     image_queue_mutex_.unlock();
     if (empty)
       return 0;
@@ -903,6 +1097,10 @@ public:
     if (color_stream_enabled_)
       ++ns;
     if (depth_stream_enabled_)
+      ++ns;
+    if (ir1_stream_enabled_)
+      ++ns;
+    if (ir2_stream_enabled_)
       ++ns;
     return ns;
   }
@@ -919,6 +1117,10 @@ public:
       types.push_back(FrameType::RGBD_IMAGE);
     if (depth_stream_enabled_)
       types.push_back(FrameType::RGBD_DEPTH);
+    if (ir1_stream_enabled_)
+      types.push_back(FrameType::INFRARED);
+    if (ir2_stream_enabled_)
+      types.push_back(FrameType::INFRARED);
     if (stream_index >= types.size())
       VCP_ERROR("stream_index " << stream_index << " is out-of-bounds");
     return types[stream_index];
@@ -931,6 +1133,10 @@ public:
       labels.push_back(rgbd_params_.sink_label + "-rgb");
     if (depth_stream_enabled_)
       labels.push_back(rgbd_params_.sink_label + "-depth");
+    if (ir1_stream_enabled_)
+      labels.push_back(rgbd_params_.sink_label + "-ir-left");
+    if (ir2_stream_enabled_)
+      labels.push_back(rgbd_params_.sink_label + "-ir-right");
     if (stream_index >= labels.size())
       VCP_ERROR("stream_index " << stream_index << " is out-of-bounds");
     return labels[stream_index];
@@ -949,20 +1155,25 @@ private:
   mutable std::mutex image_queue_mutex_;
   std::unique_ptr<SinkBuffer> rgb_queue_;
   std::unique_ptr<SinkBuffer> depth_queue_;
+  std::unique_ptr<SinkBuffer> ir1_queue_;
+  std::unique_ptr<SinkBuffer> ir2_queue_;
   std::atomic<unsigned long long> rgb_prev_fnr_; // since frames might be duplicated by the SDK, we need to filter them manually by frame number :-(
   std::atomic<unsigned long long> depth_prev_fnr_;
+  std::atomic<unsigned long long> ir1_prev_fnr_;
+  std::atomic<unsigned long long> ir2_prev_fnr_;
   RealSense2SinkParams rgbd_params_;
   bool dev_opened_;
-  std::string serial_number_;
   std::atomic<int> available_;
   bool color_stream_enabled_;
   bool depth_stream_enabled_;
+  bool ir1_stream_enabled_;
+  bool ir2_stream_enabled_;
   rs2::config config_;
 
   void Receive()
   {
     if (rgbd_params_.verbose)
-      VCP_LOG_INFO("Starting RealSense streaming pipeline for device [" << serial_number_ << "]");
+      VCP_LOG_INFO("Starting RealSense streaming pipeline for device [" << rgbd_params_.serial_number << "]");
     // Start the librealsense2 pipeline before configuring the sensors (except for configuring stream resolution/frame rate; this has already been done)!
     rs2::pipeline pipe;
     rs2::pipeline_profile profile;
@@ -972,7 +1183,10 @@ private:
     }
     catch (const rs2::error &e)
     {
-      VCP_ERROR("Could not start capturing pipeline for RealSense [" << serial_number_ << "]. If you get 'non-descriptive' error messages below, check your configuration file/sensor parameters carefully." << std::endl << "librealsense error: " << e.what());
+      VCP_ERROR("Could not start capturing pipeline for RealSense [" << rgbd_params_.serial_number
+                << "]." << std::endl
+                << "          If you get 'non-descriptive' error messages below, check your configuration file/sensor parameters carefully."
+                << std::endl << "Corresponding librealsense2 error: " << e.what());
     }
 
     // Get sensors corresponding to color and depth
@@ -995,6 +1209,8 @@ private:
     // Check if we need to align the depth to the color reference view
     const cv::Size rgb_size(rgbd_params_.rgb_width, rgbd_params_.rgb_height);
     const cv::Size depth_size = rgbd_params_.align_depth_to_color
+        ? rgb_size : cv::Size(rgbd_params_.depth_width, rgbd_params_.depth_height);
+    const cv::Size ir_size = rgbd_params_.align_depth_to_color
         ? rgb_size : cv::Size(rgbd_params_.depth_width, rgbd_params_.depth_height);
     rs2::align align_to(RS2_STREAM_COLOR);
     size_t consecutive_error_count = 0;
@@ -1021,15 +1237,19 @@ private:
 
     // Dump calibration (now that the stream profile should know the intrinsics and extrinsics ;-)
     if (rgbd_params_.write_calibration)
-      DumpCalibration(profile, rgbd_params_, depth_scale);
+      DumpCalibration(profile, rgbd_params_, depth_scale); //FIXME store IR intrinsics!
 
 #ifdef VCP_BEST_DEBUG_FRAMERATE
     std::chrono::high_resolution_clock::time_point previous_time_point_frameset = std::chrono::high_resolution_clock::now();
     std::chrono::high_resolution_clock::time_point previous_time_point_rgb = std::chrono::high_resolution_clock::now();
     std::chrono::high_resolution_clock::time_point previous_time_point_depth = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point previous_time_point_ir1 = std::chrono::high_resolution_clock::now();
+    std::chrono::high_resolution_clock::time_point previous_time_point_ir2 = std::chrono::high_resolution_clock::now();
     double ms_between_frameset = -1.0;
     double ms_between_rgb = -1.0;
     double ms_between_depth = -1.0;
+    double ms_between_ir1 = -1.0;
+    double ms_between_ir2 = -1.0;
 #endif // DEBUG_RS2_FRAMERATE
 
     available_ = 1;
@@ -1044,7 +1264,7 @@ private:
           // Reset error count
           consecutive_error_count = 0;
 
-          if (rgbd_params_.align_depth_to_color && depth_stream_enabled_ && color_stream_enabled_)
+          if (rgbd_params_.align_depth_to_color && color_stream_enabled_)
             frameset = align_to.process(frameset);
 
           rs2::frame color;
@@ -1055,16 +1275,27 @@ private:
           if (depth_stream_enabled_)
             depth = frameset.get_depth_frame();
 
+          rs2::frame ir1, ir2;
+          if (ir1_stream_enabled_)
+            ir1 = frameset.get_infrared_frame(1);
+          if (ir2_stream_enabled_)
+            ir2 = frameset.get_infrared_frame(2);
+
           // Check frame numbers to skip duplicate frames!
           const unsigned long long color_fnr = color.get() != nullptr ? color.get_frame_number() : std::numeric_limits<unsigned long long>::max();
           const unsigned long long depth_fnr = depth.get() != nullptr ? depth.get_frame_number() : std::numeric_limits<unsigned long long>::max();
+          const unsigned long long ir1_fnr = ir1.get() != nullptr ? ir1.get_frame_number() : std::numeric_limits<unsigned long long>::max();
+          const unsigned long long ir2_fnr = ir2.get() != nullptr ? ir2.get_frame_number() : std::numeric_limits<unsigned long long>::max();
 
           const bool is_new_color = rgb_prev_fnr_ != color_fnr;
           const bool is_new_depth = depth_prev_fnr_ != depth_fnr;
+          const bool is_new_ir1 = ir1_prev_fnr_ != ir1_fnr;
+          const bool is_new_ir2 = ir2_prev_fnr_ != ir2_fnr;
 
-          if (!is_new_color && !is_new_depth)
+          if (!(is_new_color || is_new_depth || is_new_ir1 || is_new_ir2))
           {
-            VCP_LOG_FAILURE("RealSense [" << serial_number_ << "] received a frameset with duplicated color AND depth stream!");
+            VCP_LOG_FAILURE("RealSense [" << rgbd_params_.serial_number
+                            << "] received a frameset with all configured streams duplicated!");
             continue;
           }
 
@@ -1102,7 +1333,31 @@ private:
             else
               ms_between_depth = ms_ema_alpha * duration_depth.count() + (1.0 - ms_ema_alpha) * ms_between_depth;
           }
-          DebugFramesetMetadata(serial_number_, frameset);
+
+          if (is_new_ir1)
+          {
+            const auto duration_ir1 = std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(now - previous_time_point_ir1);
+            previous_time_point_ir1 = now;
+
+            if (ms_between_ir1 < 0.0)
+              ms_between_ir1 = duration_ir1.count();
+            else
+              ms_between_ir1 = ms_ema_alpha * duration_ir1.count() + (1.0 - ms_ema_alpha) * ms_between_ir1;
+          }
+
+          if (is_new_ir2)
+          {
+            const auto duration_ir2 = std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(now - previous_time_point_ir2);
+            previous_time_point_ir2 = now;
+
+            if (ms_between_ir2 < 0.0)
+              ms_between_ir2 = duration_ir2.count();
+            else
+              ms_between_ir2 = ms_ema_alpha * duration_ir2.count() + (1.0 - ms_ema_alpha) * ms_between_ir2;
+          }
+
+          //TODO IR1 and IR2
+          DebugFramesetMetadata(rgbd_params_.serial_number, frameset);
 #endif // VCP_BEST_DEBUG_FRAMERATE
 
           if (filter_spatially)
@@ -1129,20 +1384,44 @@ private:
             depth_prev_fnr_ = depth_fnr;
           }
 
+          cv::Mat cvir1, cvir2;
+          if (is_new_ir1 && ir1_stream_enabled_)
+          {
+            cvir1 = FrameToMat(ir1, ir_size);
+            ir1_prev_fnr_ = ir1_fnr;
+          }
+          if (is_new_ir2 && ir2_stream_enabled_)
+          {
+            cvir2 = FrameToMat(ir2, ir_size);
+            ir2_prev_fnr_ = ir2_fnr;
+          }
+
           image_queue_mutex_.lock();
           if (color_stream_enabled_ && !cvrgb.empty())
             rgb_queue_->PushBack(cvrgb.clone());
           if (depth_stream_enabled_ && !cvdepth.empty())
             depth_queue_->PushBack(cvdepth.clone());
+          if (ir1_stream_enabled_ && !cvir1.empty())
+            ir1_queue_->PushBack(cvir1.clone());
+          if (ir2_stream_enabled_ && !cvir2.empty())
+            ir2_queue_->PushBack(cvir2.clone());
           image_queue_mutex_.unlock();
 
 #ifdef VCP_BEST_DEBUG_FRAMERATE
-          VCP_LOG_DEBUG_DEFAULT("RealSense [" << serial_number_
-              << "] frameset with new (" << (is_new_color ? "color" : "     ") << "|" << (is_new_depth ? "depth" : "     ") << ") after "
-              << std::fixed << std::setprecision(1) << std::setw(6) << duration_frameset.count() << " ms, fps (frameset, col, dep): "
+          VCP_LOG_DEBUG_DEFAULT("RS2 [" << rgbd_params_.serial_number
+              << "] received new ("
+              << (is_new_color ? "color" : "     ") << "|"
+              << (is_new_depth ? "depth" : "     ") << "|"
+              << (is_new_ir1 ? " ir1 " : "    ") << "|"
+              << (is_new_ir2 ? " ir2 " : "    ")
+              << ") after "
+              << std::fixed << std::setprecision(1) << std::setw(6) << duration_frameset.count()
+              << " ms, fps (frameset, C, D, IR1, IR2): "
               << std::setw(5) << (1000.0 / ms_between_frameset) << ", "
-              << std::setw(5) << (color_stream_enabled_ ? (1000.0 / ms_between_rgb) : 0.0) << ", "
-              << std::setw(5) << (depth_stream_enabled_ ? (1000.0 / ms_between_depth) : 0.0));
+              << std::setw(5) << (color_stream_enabled_ ? (1000.0 / ms_between_rgb) : -1.0) << ", "
+              << std::setw(5) << (depth_stream_enabled_ ? (1000.0 / ms_between_depth) : -1.0) << ", "
+              << std::setw(5) << (ir1_stream_enabled_ ? (1000.0 / ms_between_ir1) : -1.0) << ", "
+              << std::setw(5) << (ir2_stream_enabled_ ? (1000.0 / ms_between_ir2) : -1.0));
 #endif // VCP_BEST_DEBUG_FRAMERATE
         }
         else
@@ -1166,9 +1445,16 @@ private:
 };
 
 
-std::unique_ptr<StreamSink> CreateBufferedRealSense2Sink(const RealSense2SinkParams &params, std::unique_ptr<SinkBuffer> rgb_buffer, std::unique_ptr<SinkBuffer> depth_buffer)
+std::unique_ptr<StreamSink> CreateBufferedRealSense2Sink(const RealSense2SinkParams &params,
+                                                         std::unique_ptr<SinkBuffer> rgb_buffer,
+                                                         std::unique_ptr<SinkBuffer> depth_buffer,
+                                                         std::unique_ptr<SinkBuffer> ir1_buffer,
+                                                         std::unique_ptr<SinkBuffer> ir2_buffer)
 {
-  return std::unique_ptr<realsense2::RealSense2RGBDSink>(new realsense2::RealSense2RGBDSink(params, std::move(rgb_buffer), std::move(depth_buffer)));
+  return std::unique_ptr<realsense2::RealSense2RGBDSink>(
+        new realsense2::RealSense2RGBDSink(params,
+                                           std::move(rgb_buffer), std::move(depth_buffer),
+                                           std::move(ir1_buffer), std::move(ir2_buffer)));
 }
 
 

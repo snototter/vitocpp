@@ -208,10 +208,9 @@ public:
     return capture_->FrameLabels();
   }
 
-  std::string FrameLabel(size_t sink_index) const
+  std::string FrameLabel(size_t stream_index) const
   {
-    const auto lbls = capture_->FrameLabels();
-    return lbls[sink_index];
+    return capture_->FrameLabelAt(stream_index);
   }
 
 
@@ -228,8 +227,7 @@ public:
 
   std::string ConfigurationKey(size_t stream_index) const
   {
-    const auto keys = capture_->ConfigurationKeys();
-    return keys[stream_index];
+    return capture_->ConfigurationKeyAt(stream_index);
   }
 
 
@@ -254,10 +252,33 @@ public:
 
   std::string FrameTypeAt(size_t stream_index) const
   {
-    const auto ft = capture_->FrameTypes();
-    return vcp::best::FrameTypeToString(ft[stream_index]);
+    return vcp::best::FrameTypeToString(capture_->FrameTypeAt(stream_index));
   }
 
+  bool IsFrameMonocular(size_t stream_index) const
+  {
+    return capture_->FrameTypeAt(stream_index) == vcp::best::FrameType::MONOCULAR;
+  }
+
+  bool IsFrameStereo(size_t stream_index) const
+  {
+    return capture_->FrameTypeAt(stream_index) == vcp::best::FrameType::STEREO;
+  }
+
+  bool IsFrameRgbdImage(size_t stream_index) const
+  {
+    return capture_->FrameTypeAt(stream_index) == vcp::best::FrameType::RGBD_IMAGE;
+  }
+
+  bool IsFrameDepth(size_t stream_index) const
+  {
+    return capture_->FrameTypeAt(stream_index) == vcp::best::FrameType::RGBD_DEPTH;
+  }
+
+  bool IsFrameInfrared(size_t stream_index) const
+  {
+    return capture_->FrameTypeAt(stream_index) == vcp::best::FrameType::INFRARED;
+  }
 
 //  py::object ReturnNone(size_t /*sink_index*/) const
 //  {
@@ -892,7 +913,7 @@ PYBIND11_MODULE(best_cpp, m)
            "image directory. Others will raise an exception. @see next_frame()\n"
            "for description of the return value and 'flip_channel'.",
            py::arg("num_frames"), py::arg("flip_channel")=true)
-// Info/Status
+// Info & status queries
         .def("all_devices_available", &pybest::CaptureWrapper::AreAllDevicesAvailable,
              "Returns True if the capturing device/s is/are available.")
         .def("all_frames_available", &pybest::CaptureWrapper::AreAllFramesAvailable,
@@ -941,6 +962,32 @@ PYBIND11_MODULE(best_cpp, m)
            "sources (e.g. stream webcams + RGBD + RTSP).")
       .def("frame_type", &pybest::CaptureWrapper::FrameTypeAt,
            "Returns the FrameType of the frame/stream at the given stream_index.",
+           py::arg("stream_index"))
+      .def("is_monocular", &pybest::CaptureWrapper::IsFrameMonocular,
+           "Check if the frame at the given index is of type 'monocular',\n"
+           "i.e. grayscale or color. Note that for some streams, we cannot\n"
+           "automatically derive the frame type, e.g. USB stereo cameras vs\n"
+           "monocular cameras - there, it is the user's responsibility to\n"
+           "properly set the 'frame_type' parameter wihtin the configuration.",
+           py::arg("stream_index"))
+      .def("is_stereo", &pybest::CaptureWrapper::IsFrameStereo,
+           "Check if the frame at the given index is of type 'stereo',\n"
+           "Note that for some streams, we cannot automatically derive the\n"
+           "frame type, e.g. USB stereo cameras vs monocular cameras - there,\n"
+           "it is the user's responsibility to properly set the 'frame_type'\n"
+           "parameter wihtin the configuration.",
+           py::arg("stream_index"))
+      .def("is_rgbd_image", &pybest::CaptureWrapper::IsFrameRgbdImage,
+           "Check if the frame at the given index is of type 'rgbd-image',\n"
+           "i.e. the color stream of a RGBD camera.",
+           py::arg("stream_index"))
+      .def("is_depth", &pybest::CaptureWrapper::IsFrameDepth,
+           "Check if the frame at the given index is of type 'depth',\n"
+           "i.e. 16 bit depth measurements.",
+           py::arg("stream_index"))
+      .def("is_infrared", &pybest::CaptureWrapper::IsFrameInfrared,
+           "Check if the frame at the given index is of type 'infrared',\n"
+           "i.e. intensity measurements (16bit Kinect, 8bit RealSense).",
            py::arg("stream_index"));
 
 
