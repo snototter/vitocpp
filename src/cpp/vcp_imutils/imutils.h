@@ -16,15 +16,24 @@ namespace imutils
 {
 
 /** @brief Strongly typed enum to do basic transformations (e.g. rotate/flip) of images. */
-enum class ImgTransform
+enum class ImgTransform : int
 {
-  NONE,        /**< Images will be provided as-is. */
-  MIRROR_HORZ, /**< Mirror horizontally. */
-  MIRROR_VERT, /**< Mirror vertically. */
-  ROTATE_90,       /**< Rotate 90 degrees clockwise. */
-  ROTATE_180,      /**< Rotate by 180 degrees. */
-  ROTATE_270       /**< Rotate by 90 degrees counter-clockwise. */
+  NONE        =  0,  /**< Images will be provided as-is. */
+  MIRROR_HORZ =  1,  /**< Mirror horizontally. */
+  MIRROR_VERT =  2,  /**< Mirror vertically. */
+  ROTATE_90   =  4,  /**< Rotate 90 degrees clockwise. */
+  ROTATE_180  =  8,  /**< Rotate by 180 degrees. */
+  ROTATE_270  = 16,  /**< Rotate by 90 degrees counter-clockwise. */
+  HISTOGRAM_EQUALIZATION = 32, /**< Perform histogram equalization. */
 };
+
+// Operator overloads
+ImgTransform operator &(ImgTransform lhs, ImgTransform rhs);
+ImgTransform operator ^(ImgTransform lhs, ImgTransform rhs);
+ImgTransform operator ~(ImgTransform rhs);
+ImgTransform& operator |=(ImgTransform &lhs, ImgTransform rhs);
+ImgTransform& operator &=(ImgTransform &lhs, ImgTransform rhs);
+ImgTransform& operator ^=(ImgTransform &lhs, ImgTransform rhs);
 
 /** @brief String representation for ImageTransformation. */
 std::string ImgTransformToString(const ImgTransform &t);
@@ -47,6 +56,9 @@ cv::Mat Rotate180(const cv::Mat &img);
 
 /** @brief Rotate image 90 degrees counter-clockwise. */
 cv::Mat Rotate270(const cv::Mat &img);
+
+/** @brief Applies histogram equalization. */
+cv::Mat HistogramEqualization(const cv::Mat &img, bool is_rgb=false);
 
 /** @brief Apply a basic image transformation (e.g. rotation/flipping). */
 cv::Mat ApplyImageTransformation(const cv::Mat &img, const vcp::imutils::ImgTransform &transform);

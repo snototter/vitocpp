@@ -18,6 +18,49 @@ namespace vcp
 namespace imutils
 {
 
+ImgTransform operator &(ImgTransform lhs, ImgTransform rhs)
+{
+    return static_cast<ImgTransform> (
+        static_cast<std::underlying_type<ImgTransform>::type>(lhs) &
+        static_cast<std::underlying_type<ImgTransform>::type>(rhs));
+}
+
+ImgTransform operator ^(ImgTransform lhs, ImgTransform rhs)
+{
+    return static_cast<ImgTransform> (
+        static_cast<std::underlying_type<ImgTransform>::type>(lhs) ^
+        static_cast<std::underlying_type<ImgTransform>::type>(rhs));
+}
+
+ImgTransform operator ~(ImgTransform rhs)
+{
+    return static_cast<ImgTransform> (~static_cast<std::underlying_type<ImgTransform>::type>(rhs));
+}
+
+ImgTransform& operator |=(ImgTransform &lhs, ImgTransform rhs)
+{
+    lhs = static_cast<ImgTransform> (
+        static_cast<std::underlying_type<ImgTransform>::type>(lhs) |
+        static_cast<std::underlying_type<ImgTransform>::type>(rhs));
+    return lhs;
+}
+
+ImgTransform& operator &=(ImgTransform &lhs, ImgTransform rhs)
+{
+    lhs = static_cast<ImgTransform> (
+        static_cast<std::underlying_type<ImgTransform>::type>(lhs) &
+        static_cast<std::underlying_type<ImgTransform>::type>(rhs));
+    return lhs;
+}
+
+ImgTransform& operator ^=(ImgTransform &lhs, ImgTransform rhs)
+{
+    lhs = static_cast<ImgTransform> (
+        static_cast<std::underlying_type<ImgTransform>::type>(lhs) ^
+        static_cast<std::underlying_type<ImgTransform>::type>(rhs));
+    return lhs;
+}
+
 #define MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(st) case ImgTransform::st: rep = std::string(#st); break
 std::string ImgTransformToString(const ImgTransform &t)
 {
@@ -30,6 +73,7 @@ std::string ImgTransformToString(const ImgTransform &t)
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(ROTATE_90);
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(ROTATE_180);
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(ROTATE_270);
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(HISTOGRAM_EQUALIZATION);
   default:
     std::stringstream str;
     str << "(" << static_cast<int>(t) << ")";
@@ -42,13 +86,16 @@ std::string ImgTransformToString(const ImgTransform &t)
 }
 
 
-ImgTransform ImgTransformFromString(const std::string &s)
+ImgTransform ImgTransformFromToken(const std::string &s)
 {
   // Convert to lowercase, remove dash and underscore.
-  const std::string lower = vcp::utils::string::Replace(
+  const std::string lower = vcp::utils::string::Trim(
         vcp::utils::string::Replace(
-          vcp::utils::string::Lower(s), "-", ""),
-        "_", "");
+          vcp::utils::string::Replace(
+              vcp::utils::string::Lower(s)
+              , "-", ""),
+          "_", ""));
+
   if (lower.empty() || lower.compare("none") == 0)
     return ImgTransform::NONE;
 
@@ -72,7 +119,22 @@ ImgTransform ImgTransformFromString(const std::string &s)
       || lower.compare("rot270") == 0)
     return ImgTransform::ROTATE_270;
 
+  if (lower.compare("histeq") == 0
+      || lower.compare("equalizehist") == 0
+      || lower.compare("equalizehistogram") == 0
+      || lower.compare("histogramequalization") == 0)
+    return ImgTransform::HISTOGRAM_EQUALIZATION;
+
   VCP_ERROR("ImgTransformFromString(): Cannot convert '" << s << "' to ImgTransform.");
+}
+
+ImgTransform ImgTransformFromString(const std::string &s)
+{
+  const auto tokens = vcp::utils::string::Split(vcp::utils::string::Replace(s, ";", ","), ',');
+  ImgTransform t = ImgTransform::NONE;
+  for (const auto &token : tokens)
+    t |= ImgTransformFromToken(token);
+  return t;
 }
 
 cv::Mat MirrorHorizontally(const cv::Mat &img)
@@ -123,35 +185,59 @@ cv::Mat Rotate270(const cv::Mat &img)
   return res;
 }
 
+cv::Mat HistogramEqualization(const cv::Mat &img, bool is_rgb)
+{
+  cv::Mat res;
+  if (img.channels() == 3 || img.channels() == 4)
+  {
+    // Convert to luminance - chrominance
+    cv::Mat ycrcb;
+    cv::cvtColor(img, ycrcb, is_rgb ? CV_RGB2YCrCb : CV_BGR2YCrCb);
+    // Split channels
+    std::vector<cv::Mat> channels;
+    cv::split(ycrcb, channels);
+    // Equalize luminance channel and restore image
+    cv::equalizeHist(channels[0], channels[0]);
+    cv::merge(channels, ycrcb);
+    cv::cvtColor(ycrcb, res, is_rgb ? CV_YCrCb2RGB : CV_YCrCb2BGR);
+  }
+  else if (img.channels() == 1)
+  {
+    cv::equalizeHist(img, res);
+  }
+  else
+    VCP_ERROR("Only single-channel or RGB/RGBA input images are supported for histogram equalization.");
+  return res;
+}
+
 cv::Mat ApplyImageTransformation(const cv::Mat &img, const ImgTransform &transform)
 {
   cv::Mat res;
   if (img.empty())
     return res;
 
-  switch(transform)
-  {
-    case ImgTransform::NONE:
-      res = img.clone();
-      break;
-    case ImgTransform::MIRROR_HORZ:
-      res = MirrorHorizontally(img);
-      break;
-    case ImgTransform::MIRROR_VERT:
-      res = MirrorVertically(img);
-      break;
-    case ImgTransform::ROTATE_90:
-      res = Rotate90(img);
-      break;
-    case ImgTransform::ROTATE_180:
-      res = Rotate180(img);
-      break;
-    case ImgTransform::ROTATE_270:
-      res = Rotate270(img);
-      break;
-    default:
-      VCP_ERROR("ImgTransform " << static_cast<int>(transform) << " is not supported.");
-  }
+  if (transform == ImgTransform::NONE)
+      return img.clone();
+
+  res = img.clone();
+  if ((transform & ImgTransform::MIRROR_HORZ) != ImgTransform::NONE)
+    res = MirrorHorizontally(res);
+
+  if ((transform & ImgTransform::MIRROR_VERT) != ImgTransform::NONE)
+    res = MirrorVertically(res);
+
+  if ((transform & ImgTransform::ROTATE_90) != ImgTransform::NONE)
+    res = Rotate90(res);
+
+  if ((transform & ImgTransform::ROTATE_180) != ImgTransform::NONE)
+    res = Rotate180(res);
+
+  if ((transform & ImgTransform::ROTATE_270) != ImgTransform::NONE)
+    res = Rotate270(res);
+
+  if ((transform & ImgTransform::HISTOGRAM_EQUALIZATION) != ImgTransform::NONE)
+    res = HistogramEqualization(res);
+
   return res;
 }
 

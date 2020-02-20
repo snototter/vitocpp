@@ -47,19 +47,21 @@ std::string Upper(const std::string &s) {
 }
 
 // trim from start
-std::string &LTrim(std::string &s) {
+std::string LTrim(const std::string &totrim) {
+  std::string s(totrim);
   s.erase(s.begin(), std::find_if(s.begin(), s.end(), std::not1(std::ptr_fun<int, int>(std::isspace))));
   return s;
 }
 
 // trim from end
-std::string &RTrim(std::string &s) {
+std::string RTrim(const std::string &totrim) {
+  std::string s(totrim);
   s.erase(std::find_if(s.rbegin(), s.rend(), std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
   return s;
 }
 
 // trim from both ends
-std::string &Trim(std::string &s) {
+std::string Trim(const std::string &s) {
   return LTrim(RTrim(s));
 }
 

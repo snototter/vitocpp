@@ -48,17 +48,17 @@ namespace string
   /**
    * @brief Remove leading and trailing white space
    */
-  std::string &Trim(std::string &s);
+  std::string Trim(const std::string &s);
 
   /**
    * @brief Remove leading white space
    */
-  std::string &LTrim(std::string &s);
+  std::string LTrim(const std::string &totrim);
 
   /**
    * @brief Remove trailing white space
    */
-  std::string &RTrim(std::string &s);
+  std::string RTrim(const std::string &totrim);
 
   //TODO test! (uses strtol and strtod, so both integer and single/double precision types should be covered)
   /** @brief Checks whether the string contains a valid number. */
