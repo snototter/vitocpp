@@ -261,6 +261,7 @@ cv::Mat ConvertToHsv(const cv::Mat &img, bool is_rgb)
   }
   else
     VCP_ERROR("Only RGB/BGR (+alpha) input images are supported for HSV conversion.");
+  return res;
 }
 
 cv::Mat ConvertToLab(const cv::Mat &img, bool is_rgb)
@@ -276,6 +277,7 @@ cv::Mat ConvertToLab(const cv::Mat &img, bool is_rgb)
   }
   else
     VCP_ERROR("Only RGB/BGR (+alpha) input images are supported for L*a*b* conversion.");
+  return res;
 }
 
 cv::Mat ApplyImageTransformation(const cv::Mat &img, const ImgTransform &transform)

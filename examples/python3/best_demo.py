@@ -46,10 +46,6 @@ def streaming_demo(cfg_file, folder):
         # Query the frames (since we know that all streams are available now)
         frames = capture.next()
 
-        if any([f is None for f in frames]):
-            print('FUCK YOU: ', [f is None for f in frames])
-            raise RuntimeError('stop it!')
-
         # Colorize depth/infrared images for visualization
         def _col_dir(f):
             # RealSense infrared is provided (by default) in Y8 format
