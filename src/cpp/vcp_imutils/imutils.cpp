@@ -75,6 +75,8 @@ std::string ImgTransformToString(const ImgTransform &t)
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(ROTATE_270);
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(HISTOGRAM_EQUALIZATION);
 
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_HSV);
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_LAB);
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(GRAYSCALE);
   default:
     std::stringstream str;
@@ -132,6 +134,14 @@ ImgTransform ImgTransformFromToken(const std::string &s)
       || lower.compare("grey") == 0
       || lower.compare("greyscale") == 0)
     return ImgTransform::GRAYSCALE;
+
+  if (lower.compare("hsv") == 0
+      || lower.compare("colorhsv") == 0)
+    return ImgTransform::COLOR_HSV;
+
+  if (lower.compare("lab") == 0
+      || lower.compare("colorlab") == 0)
+    return ImgTransform::COLOR_LAB;
 
   VCP_ERROR("ImgTransformFromString(): Cannot convert '" << s << "' to ImgTransform.");
 }
@@ -200,22 +210,72 @@ cv::Mat HistogramEqualization(const cv::Mat &img, bool is_rgb)
   {
     // Convert to luminance - chrominance
     cv::Mat ycrcb;
-    cv::cvtColor(img, ycrcb, is_rgb ? CV_RGB2YCrCb : CV_BGR2YCrCb);
+    if (img.channels() == 3)
+    {
+      cv::cvtColor(img, ycrcb, is_rgb ? CV_RGB2YCrCb : CV_BGR2YCrCb);
+    }
+    else
+    {
+      cv::Mat c3;
+      cv::cvtColor(img, c3, CV_BGRA2BGR);
+      cv::cvtColor(c3, ycrcb, is_rgb ? CV_RGB2YCrCb : CV_BGR2YCrCb);
+    }
+
     // Split channels
     std::vector<cv::Mat> channels;
     cv::split(ycrcb, channels);
+
     // Equalize luminance channel and restore image
     cv::equalizeHist(channels[0], channels[0]);
     cv::merge(channels, ycrcb);
-    cv::cvtColor(ycrcb, res, is_rgb ? CV_YCrCb2RGB : CV_YCrCb2BGR);
+    if (img.channels() == 3)
+    {
+      cv::cvtColor(ycrcb, res, is_rgb ? CV_YCrCb2RGB : CV_YCrCb2BGR);
+    }
+    else
+    {
+      cv::Mat c3;
+      cv::cvtColor(ycrcb, c3, is_rgb ? CV_YCrCb2RGB : CV_YCrCb2BGR);
+      cv::cvtColor(c3, res, CV_BGR2BGRA);
+    }
   }
   else if (img.channels() == 1)
   {
     cv::equalizeHist(img, res);
   }
   else
-    VCP_ERROR("Only single-channel or RGB/RGBA input images are supported for histogram equalization.");
+    VCP_ERROR("Only single-channel or RGB/BGR (+alpha) input images are supported for histogram equalization.");
   return res;
+}
+
+cv::Mat ConvertToHsv(const cv::Mat &img, bool is_rgb)
+{
+  cv::Mat res;
+  if (img.channels() == 3)
+    cv::cvtColor(img, res, is_rgb ? CV_RGB2HSV : CV_BGR2HSV);
+  else if (img.channels() == 4)
+  {
+    cv::Mat c3;
+    cv::cvtColor(img, c3, CV_BGRA2BGR);
+    cv::cvtColor(c3, res, is_rgb ? CV_RGB2HSV : CV_BGR2HSV);
+  }
+  else
+    VCP_ERROR("Only RGB/BGR (+alpha) input images are supported for HSV conversion.");
+}
+
+cv::Mat ConvertToLab(const cv::Mat &img, bool is_rgb)
+{
+  cv::Mat res;
+  if (img.channels() == 3)
+    cv::cvtColor(img, res, is_rgb ? CV_RGB2Lab : CV_BGR2Lab);
+  else if (img.channels() == 4)
+  {
+    cv::Mat c3;
+    cv::cvtColor(img, c3, CV_BGRA2BGR);
+    cv::cvtColor(c3, res, is_rgb ? CV_RGB2Lab : CV_BGR2Lab);
+  }
+  else
+    VCP_ERROR("Only RGB/BGR (+alpha) input images are supported for L*a*b* conversion.");
 }
 
 cv::Mat ApplyImageTransformation(const cv::Mat &img, const ImgTransform &transform)
@@ -245,6 +305,12 @@ cv::Mat ApplyImageTransformation(const cv::Mat &img, const ImgTransform &transfo
 
   if ((transform & ImgTransform::HISTOGRAM_EQUALIZATION) != ImgTransform::NONE)
     res = HistogramEqualization(res);
+
+  if ((transform & ImgTransform::COLOR_HSV) != ImgTransform::NONE)
+    res = ConvertToHsv(res);
+
+  if ((transform & ImgTransform::COLOR_LAB) != ImgTransform::NONE)
+    res = ConvertToLab(res);
 
   // Grayscale conversion should happen last
   if ((transform & ImgTransform::GRAYSCALE) != ImgTransform::NONE)

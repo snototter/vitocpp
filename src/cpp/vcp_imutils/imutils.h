@@ -26,6 +26,9 @@ enum class ImgTransform : int
   ROTATE_270  = 16,  /**< Rotate by 90 degrees counter-clockwise. */
   HISTOGRAM_EQUALIZATION = 32, /**< Perform histogram equalization. */
 
+
+  COLOR_HSV = 256,  /**< Convert (transformed) image to HSV color space. */
+  COLOR_LAB = 512,  /**< Convert (transformed) image to Lab color space. */
   GRAYSCALE = 1024  /**< Convert (transformed) image to single-channel grayscale. */
 };
 
@@ -61,6 +64,12 @@ cv::Mat Rotate270(const cv::Mat &img);
 
 /** @brief Applies histogram equalization. */
 cv::Mat HistogramEqualization(const cv::Mat &img, bool is_rgb=false);
+
+/** @brief Convenience wrapper to cv::cvtColor to be used as ImgTransformation (within the BESt vcp module). */
+cv::Mat ConvertToHsv(const cv::Mat &img, bool is_rgb=false);
+
+/** @brief Convenience wrapper to cv::cvtColor to be used as ImgTransformation (within the BESt vcp module). */
+cv::Mat ConvertToLab(const cv::Mat &img, bool is_rgb=false);
 
 /** @brief Apply a basic image transformation (e.g. rotation/flipping). */
 cv::Mat ApplyImageTransformation(const cv::Mat &img, const vcp::imutils::ImgTransform &transform);
