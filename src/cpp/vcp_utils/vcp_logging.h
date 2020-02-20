@@ -29,10 +29,10 @@
  */
 
 
-
+/** @brief Macro to suppress "unused variable" warnings. */
 #define VCP_UNUSED_VAR(var) (void)(var)
 
-
+/** @brief Within vcp, each namespace will redefine the VCP_LOGGING_COMPONENT to obtain more meaningful log messages. */
 #define VCP_LOGGING_COMPONENT nullptr
 
 
@@ -147,9 +147,13 @@
 #ifdef VCP_LOG_LOCATION
     #define VCP_LOG_FAILURE(msg)    VCP_LOG_FAILURE_LOCATION(msg)
     #define VCP_LOG_FAILURE_NSEC(msg, nsec)  VCP_LOG_FAILURE_LOCATION_NSEC(msg, nsec)
+    #define VCP_LOG_ERROR(msg)      VCP_LOG_FAILURE_LOCATION(msg)
+    #define VCP_LOG_ERROR_NSEC(msg, nsec)    VCP_LOG_FAILURE_LOCATION_NSEC(msg, nsec)
 #else // VCP_LOG_LOCATION
     #define VCP_LOG_FAILURE(msg)    VCP_LOG_FAILURE_DEFAULT(msg)
     #define VCP_LOG_FAILURE_NSEC(msg, nsec)  VCP_LOG_FAILURE_DEFAULT_NSEC(msg, nsec)
+    #define VCP_LOG_ERROR(msg)      VCP_LOG_FAILURE_DEFAULT(msg)
+    #define VCP_LOG_ERROR_NSEC(msg, nsec)    VCP_LOG_FAILURE_DEFAULT_NSEC(msg, nsec)
 #endif // VCP_LOG_LOCATION
 
 
