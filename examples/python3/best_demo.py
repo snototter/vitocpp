@@ -98,7 +98,6 @@ def demo():
     folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'data-best')
     # cfg_files = [file for file in os.listdir(folder) if file.endswith(".cfg")]
     cfg_files = ['realsense.cfg'] #, 'image_sequence.cfg', 'k4a.cfg', 'webcam.cfg']
-    cfg_files = ['webcam.cfg']
     
     for cf in cfg_files:
         try:
@@ -107,11 +106,4 @@ def demo():
             print('[ERROR] while streaming: {}'.format(e))
 
 if __name__ == "__main__":
-    
-    # demo()
-    #res = imutils.transform(np.ones((3,3), dtype=np.uint8), 'gray2rgb', 'bgr2lab', 'histeq', 'rot90')
-    img = np.array([[0, 128, 255], [255, 255, 0]], dtype=np.uint8)
-    img = imutils.imread('/home/snototter/Pictures/possegger.jpg')
-    # img = imutils.imread('/home/snototter/workspace/sandbox/ColorNaming/car.jpg')
-    res = imutils.transform(img, 'rgb2cn')
-    imvis.imshow(res, wait_ms=-1)
+    demo()
