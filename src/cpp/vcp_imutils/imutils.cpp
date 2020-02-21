@@ -539,8 +539,6 @@ cv::Mat ApplyImageTransformation(const cv::Mat &img, const ImgTransform &transfo
 
 cv::Mat ApplyImageTransformations(const cv::Mat &img, const std::vector<ImgTransform> &transforms)
 {
-  VCP_LOG_FAILURE("FIXME_REMOVE: about to apply the transformations: " << transforms);
-
   if (img.empty())
     return cv::Mat();
   if (transforms.empty())

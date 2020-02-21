@@ -619,7 +619,6 @@ public:
       // which sets up the streaming environment and does
       // all the nasty stuff to get the decoded images.
       // Then, this "multi-sink" returns all frames in a vector.
-      //FIXME simplify rtsp sink: no image concatenation anymore!
       const std::vector<cv::Mat> query = sinks_[i]->Next();
       frames.insert(frames.end(), query.begin(), query.end());
     }

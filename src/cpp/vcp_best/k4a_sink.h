@@ -107,7 +107,6 @@ struct K4ASinkParams : SinkParams
       color_control_auto(color_control_auto),
       color_control_manual(color_control_manual)
   {}
-//FIXME k4a add IR stream
 
   bool IsColorStreamEnabled() const;
   bool IsDepthStreamEnabled() const;

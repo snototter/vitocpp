@@ -24,7 +24,6 @@ namespace realsense2
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::best::realsense2"
 
-//FIXME new enums!!!!!
 std::string RSStreamTypeToString(const RSStreamType &s)
 {
   std::string rep;

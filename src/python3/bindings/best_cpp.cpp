@@ -280,22 +280,9 @@ public:
     return capture_->FrameTypeAt(stream_index) == vcp::best::FrameType::INFRARED;
   }
 
-//  py::object ReturnNone(size_t /*sink_index*/) const
-//  {
-//    return py::none();
-//  }
-
-
-//  py::tuple ReturnNoneTuple(size_t /*sink_index*/) const
-//  {
-//    return py::make_tuple(py::none(), py::none());
-//  }
-
-
 private:
   std::unique_ptr<vcp::best::Capture> capture_;
 
-  //FIXME rename param to flip_channels
   py::list FramesToList(const std::vector<cv::Mat> frames, bool flip_channels)
   {
     py::list numpy_frames;
@@ -723,8 +710,6 @@ bool StoreExtrinsics(const std::string &filename, const std::vector<std::string>
   //FIXME
   return false;
 }
-
-// FIXME ensureabsolutepaths, etc.
 
 class LiveViewWrapper
 {

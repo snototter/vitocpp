@@ -17,7 +17,6 @@
     #include <opencv2/imgproc.hpp>
 #endif
 
-//FIXME k4a VCP_BEST_DEBUG_FRAMERATE
 #ifdef VCP_BEST_WITH_K4A_MJPG
     #if CV_VERSION_MAJOR < 3
         #include <opencv2/highgui/highgui.hpp>
@@ -739,7 +738,6 @@ private:
     // Save calibration if requested.
     if (params_.write_calibration)
     {
-      //TODO FIXME!!
       VCP_LOG_FAILURE("TODO FIXME: need to save calibration!");
       GetCalibration(sensor_calibration);
       //TODO look into:

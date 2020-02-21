@@ -16,6 +16,9 @@ from vcp import imvis
 
 if __name__ == "__main__":
     rgb = imutils.imread('../data/flamingo.jpg', mode='RGB', flip_channels=False) # Load as BGR
+    # Discretization
+    vis = imutils.transform(rgb, 'rgb2cn')
+    imvis.imshow(vis, 'discretization')
 
     # Cartoonification
     rgb = imutils.cartoonify(rgb, num_pyramid_levels=3,

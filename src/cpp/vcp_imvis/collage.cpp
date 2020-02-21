@@ -342,8 +342,6 @@ cv::Mat RenderPerspective(const cv::Mat &image,
   math::MinMaxVec(projected, prj_min, prj_max);
   const cv::Vec2d prj_span = prj_max - prj_min;
   const cv::Size span = cv::Size(
-        //FIXME check if rounding causes issue: static_cast<int>(std::ceil(prj_span[0])),
-        //static_cast<int>(std::ceil(prj_span[1])));
         static_cast<int>(prj_span[0]),
       static_cast<int>(prj_span[1]));
   // Store the projected region (might contain negative coordinates which we'll shift next)

@@ -31,8 +31,6 @@
 #endif
 #include <chrono>
 
-//FIXME add WaitForNext(timeout)
-
 namespace vcp
 {
 namespace best

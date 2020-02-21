@@ -125,20 +125,7 @@ struct SinkParams
   {}
 };
 
-/**
- * @brief Abstract base class for all device sinks.
- *
- FIXME adapt doc* Intended use:
- * * Instantiate (via factory, pass configuration parameters).
- * * StartStream() starts a separate std::thread to receive camera stream.
- * * GetNextFrame() retrieves the next unprocessed frame (or empty if no frame
- *   is available). <tt>Note</tt> that the actual sink might use a limited
- *   image queue (i.e. the next frame is only guaranteed to be the oldest
- *   within the sink's buffer).
- * * GetMostRecentFrame() retrieves the most recent frame (or empty if no frame
- *   is available).
- * * Terminate() stops the stream and cleans up.
- */
+/** @brief Abstract base class for all device sinks. */
 class StreamSink
 {
 protected:
