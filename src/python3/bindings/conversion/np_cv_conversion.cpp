@@ -219,9 +219,9 @@ cv::Mat NDArrayToMat(const py::array &ndarray)
   return mat;
 }
 
+
 py::array MatToNDArray(const cv::Mat &mat)
 {
-  //FIXME try to initialize empty ndarray: array() : array({{0}}, static_cast<const double *>(nullptr)) {}
   // Might correctly be returned as None.
   if (mat.empty())
   {

@@ -1,5 +1,6 @@
 #include "imutils.h"
 #include "matutils.h"
+#include "constants.h"
 #include <vcp_math/common.h>
 #include <vcp_math/geometry2d.h>
 #include <vcp_math/conversions.h>
@@ -13,31 +14,34 @@
 #endif
 #include <opencv2/imgproc/imgproc.hpp>
 
+#define VCP_VERBOSE_TIMING
+#include <vcp_utils/timing_utils.h>
+
 namespace vcp
 {
 namespace imutils
 {
 
-ImgTransform operator &(ImgTransform lhs, ImgTransform rhs)
+ImgTransform operator&(ImgTransform lhs, ImgTransform rhs)
 {
     return static_cast<ImgTransform> (
         static_cast<std::underlying_type<ImgTransform>::type>(lhs) &
         static_cast<std::underlying_type<ImgTransform>::type>(rhs));
 }
 
-ImgTransform operator ^(ImgTransform lhs, ImgTransform rhs)
+ImgTransform operator^(ImgTransform lhs, ImgTransform rhs)
 {
     return static_cast<ImgTransform> (
         static_cast<std::underlying_type<ImgTransform>::type>(lhs) ^
         static_cast<std::underlying_type<ImgTransform>::type>(rhs));
 }
 
-ImgTransform operator ~(ImgTransform rhs)
+ImgTransform operator~(ImgTransform rhs)
 {
     return static_cast<ImgTransform> (~static_cast<std::underlying_type<ImgTransform>::type>(rhs));
 }
 
-ImgTransform& operator |=(ImgTransform &lhs, ImgTransform rhs)
+ImgTransform& operator|=(ImgTransform &lhs, ImgTransform rhs)
 {
     lhs = static_cast<ImgTransform> (
         static_cast<std::underlying_type<ImgTransform>::type>(lhs) |
@@ -45,7 +49,7 @@ ImgTransform& operator |=(ImgTransform &lhs, ImgTransform rhs)
     return lhs;
 }
 
-ImgTransform& operator &=(ImgTransform &lhs, ImgTransform rhs)
+ImgTransform& operator&=(ImgTransform &lhs, ImgTransform rhs)
 {
     lhs = static_cast<ImgTransform> (
         static_cast<std::underlying_type<ImgTransform>::type>(lhs) &
@@ -53,12 +57,18 @@ ImgTransform& operator &=(ImgTransform &lhs, ImgTransform rhs)
     return lhs;
 }
 
-ImgTransform& operator ^=(ImgTransform &lhs, ImgTransform rhs)
+ImgTransform& operator^=(ImgTransform &lhs, ImgTransform rhs)
 {
     lhs = static_cast<ImgTransform> (
         static_cast<std::underlying_type<ImgTransform>::type>(lhs) ^
         static_cast<std::underlying_type<ImgTransform>::type>(rhs));
     return lhs;
+}
+
+std::ostream& operator<<(std::ostream & os, const ImgTransform &t)
+{
+  os << ImgTransformToString(t);
+  return os;
 }
 
 #define MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(st) case ImgTransform::st: rep = std::string(#st); break
@@ -75,14 +85,23 @@ std::string ImgTransformToString(const ImgTransform &t)
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(ROTATE_270);
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(HISTOGRAM_EQUALIZATION);
 
-  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_HSV);
-  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_LAB);
-  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(GRAYSCALE);
-  default:
-    std::stringstream str;
-    str << "(" << static_cast<int>(t) << ")";
-    rep = str.str();
-    break;
+#ifdef VCP_IMUTILS_WITH_COLORNAMES
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_RGB2COLORNAME);
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_BGR2COLORNAME);
+#endif
+
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_GRAY2RGB);
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_RGB2HSV);
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_BGR2HSV);
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_RGB2LAB);
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_BGR2LAB);
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_RGB2GRAY);
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_BGR2GRAY);
+//  default:
+//    std::stringstream str;
+//    str << "(" << static_cast<int>(t) << ")";
+//    rep = str.str();
+//    break;
   }
 
   vcp::utils::string::ToLower(rep);
@@ -90,7 +109,7 @@ std::string ImgTransformToString(const ImgTransform &t)
 }
 
 
-ImgTransform ImgTransformFromToken(const std::string &s)
+ImgTransform ImgTransformFromString(const std::string &s)
 {
   // Convert to lowercase, remove dash and underscore.
   const std::string lower = vcp::utils::string::Trim(
@@ -129,30 +148,79 @@ ImgTransform ImgTransformFromToken(const std::string &s)
       || lower.compare("histogramequalization") == 0)
     return ImgTransform::HISTOGRAM_EQUALIZATION;
 
-  if (lower.compare("grayscale") == 0
-      || lower.compare("gray") == 0
-      || lower.compare("grey") == 0
-      || lower.compare("greyscale") == 0)
-    return ImgTransform::GRAYSCALE;
+#ifdef VCP_IMUTILS_WITH_COLORNAMES
+  if (lower.compare("rgb2cn") == 0
+      || lower.compare("rgb2colorname") == 0)
+    return ImgTransform::COLOR_RGB2COLORNAME;
 
+  if (lower.compare("bgr2cn") == 0
+      || lower.compare("bgr2colorname") == 0)
+    return ImgTransform::COLOR_BGR2COLORNAME;
+
+  if (lower.compare("cn") == 0
+      || lower.compare("colorname") == 0)
+  {
+    VCP_LOG_WARNING("Ambiguous ImgTransform '" << s << "' will be converted to RGB2COLORNAME. Consider replacing it by explicit 'bgr2cn' or 'rgb2cn'.");
+    return ImgTransform::COLOR_RGB2COLORNAME;
+  }
+  //TODO add cnprobs (11-channel output!)
+#endif
+
+  if (lower.compare("rgb2hsv") == 0)
+    return ImgTransform::COLOR_RGB2HSV;
+  if (lower.compare("bgr2hsv") == 0)
+    return ImgTransform::COLOR_BGR2HSV;
   if (lower.compare("hsv") == 0
       || lower.compare("colorhsv") == 0)
-    return ImgTransform::COLOR_HSV;
+  {
+    VCP_LOG_WARNING("Ambiguous ImgTransform '" << s << "' will be converted to RGB2HSV. Consider replacing it by explicit 'bgr2hsv' or 'rgb2hsv'.");
+    return ImgTransform::COLOR_RGB2HSV;
+  }
 
+  if (lower.compare("rgb2lab") == 0)
+    return ImgTransform::COLOR_RGB2LAB;
+  if (lower.compare("bgr2lab") == 0)
+    return ImgTransform::COLOR_BGR2LAB;
   if (lower.compare("lab") == 0
       || lower.compare("colorlab") == 0)
-    return ImgTransform::COLOR_LAB;
+  {
+    VCP_LOG_WARNING("Ambiguous ImgTransform '" << s << "' will be converted to RGB2LAB. Consider replacing it by explicit 'bgr2lab' or 'rgb2lab'.");
+    return ImgTransform::COLOR_RGB2LAB;
+  }
+
+  if (lower.compare("gray2rgb") == 0
+      || lower.compare("gray2bgr") == 0
+      || lower.compare("grey2rgb") == 0
+      || lower.compare("grey2bgr") == 0)
+    return ImgTransform::COLOR_GRAY2RGB;
+
+  if (lower.compare("rgb2gray") == 0
+      || lower.compare("rgb2grey") == 0)
+    return ImgTransform::COLOR_RGB2GRAY;
+  if (lower.compare("bgr2gray") == 0
+      || lower.compare("bgr2grey") == 0)
+    return ImgTransform::COLOR_BGR2GRAY;
+  if (lower.compare("gray") == 0
+      || lower.compare("grayscale") == 0
+      || lower.compare("grey") == 0
+      || lower.compare("greyscale") == 0)
+  {
+    VCP_LOG_WARNING("Ambiguous ImgTransform '" << s << "' will be converted to RGB2GRAY. Consider replacing it by explicit 'bgr2gray' or 'rgb2gray'.");
+    return ImgTransform::COLOR_RGB2GRAY;
+  }
 
   VCP_ERROR("ImgTransformFromString(): Cannot convert '" << s << "' to ImgTransform.");
 }
 
-ImgTransform ImgTransformFromString(const std::string &s)
+
+std::vector<ImgTransform> ImgTransformsFromString(const std::string &s)
 {
+  std::vector<ImgTransform> transforms;
   const auto tokens = vcp::utils::string::Split(vcp::utils::string::Replace(s, ";", ","), ',');
-  ImgTransform t = ImgTransform::NONE;
   for (const auto &token : tokens)
-    t |= ImgTransformFromToken(token);
-  return t;
+    transforms.push_back(ImgTransformFromString(token));
+
+  return transforms;
 }
 
 cv::Mat MirrorHorizontally(const cv::Mat &img)
@@ -280,44 +348,210 @@ cv::Mat ConvertToLab(const cv::Mat &img, bool is_rgb)
   return res;
 }
 
+#ifdef VCP_IMUTILS_WITH_COLORNAMES
+template <bool PROBS>
+cv::Mat ColorNameHelper(const cv::Mat &rgb, bool output_rgb)
+{
+  VCP_INIT_TIC_TOC;
+  VCP_TIC;
+  if (rgb.type() != CV_8UC3)
+    VCP_ERROR("CN (color name) conversion util expects RGB uint8 input, not " << CVMatDepthToString(rgb.depth(), rgb.channels()));
+
+  cv::Mat out;
+  if (PROBS)
+    out = cv::Mat(rgb.rows, rgb.cols, CV_MAKETYPE(CV_32F, 11));
+  else
+    out = cv::Mat(rgb.rows, rgb.cols, CV_8UC3);
+
+  // Optimize the per-pixel loop if possible:
+  int rows = rgb.rows;
+  int cols = rgb.cols;
+  if (rgb.isContinuous() && out.isContinuous())
+  {
+    cols = rows * cols;
+    rows = 1;
+  }
+
+  unsigned index;
+  for (int row = 0; row < rows; ++row)
+  {
+    const uchar* rgb_ptr = rgb.ptr<uchar>(row);
+    float* probs_ptr = PROBS ? out.ptr<float>(row) : nullptr;
+    uchar* color_ptr = PROBS ? nullptr : out.ptr<uchar>(row);
+
+    for (int col = 0; col < cols; col++)
+    {
+      index =
+          (rgb_ptr[0] >> 3)
+          + (static_cast<unsigned>(rgb_ptr[1] >> 3) << 5)
+          + (static_cast<unsigned>(rgb_ptr[2] >> 3) << 10);
+
+      if (PROBS)
+      {
+        probs_ptr[0] = kColorNameProbabilitiesRgb[index][0];
+        probs_ptr[1] = kColorNameProbabilitiesRgb[index][1];
+        probs_ptr[2] = kColorNameProbabilitiesRgb[index][2];
+        probs_ptr[3] = kColorNameProbabilitiesRgb[index][3];
+        probs_ptr[4] = kColorNameProbabilitiesRgb[index][4];
+        probs_ptr[5] = kColorNameProbabilitiesRgb[index][5];
+        probs_ptr[6] = kColorNameProbabilitiesRgb[index][6];
+        probs_ptr[7] = kColorNameProbabilitiesRgb[index][7];
+        probs_ptr[8] = kColorNameProbabilitiesRgb[index][8];
+        probs_ptr[9] = kColorNameProbabilitiesRgb[index][9];
+        probs_ptr[10] = kColorNameProbabilitiesRgb[index][10];
+        probs_ptr += 11;
+      }
+      else
+      {
+        if (output_rgb)
+        {
+          color_ptr[0] = kColorNameColorsRgb[kColorNameColorLookup[index]][0];
+          color_ptr[1] = kColorNameColorsRgb[kColorNameColorLookup[index]][1];
+          color_ptr[2] = kColorNameColorsRgb[kColorNameColorLookup[index]][2];
+        }
+        else
+        {
+          color_ptr[0] = kColorNameColorsRgb[kColorNameColorLookup[index]][2];
+          color_ptr[1] = kColorNameColorsRgb[kColorNameColorLookup[index]][1];
+          color_ptr[2] = kColorNameColorsRgb[kColorNameColorLookup[index]][0];
+        }
+        color_ptr += 3;
+      }
+      rgb_ptr += 3;
+    }
+  }
+  VCP_TOC("COLORNAMES");
+  return out;
+}
+
+cv::Mat ConvertToColorName(const cv::Mat &img, bool is_rgb)
+{
+  cv::Mat res, cvt;
+  if (img.channels() == 3)
+  {
+    if (is_rgb)
+      res = ColorNameHelper<false>(img, true);
+    else
+    {
+      cv::cvtColor(img, cvt, CV_BGR2RGB);
+      res = ColorNameHelper<false>(cvt, false);
+    }
+  }
+  else if (img.channels() == 4)
+  {
+    if (is_rgb)
+    {
+      cv::cvtColor(img, cvt, CV_RGBA2RGB);
+      res = ColorNameHelper<false>(cvt, true);
+    }
+    else
+    {
+      cv::cvtColor(img, cvt, CV_BGRA2RGB);
+      res = ColorNameHelper<false>(cvt, false);
+    }
+  }
+  else
+    VCP_ERROR("Only RGB/BGR (+alpha) input images are supported for CN (color name) conversion.");
+  return res;
+}
+
+cv::Mat ConvertToColorNameFeature(const cv::Mat &img, bool is_rgb)
+{
+  cv::Mat res, cvt;
+  if (img.channels() == 3)
+  {
+    if (is_rgb)
+      res = ColorNameHelper<true>(img, true);
+    else
+    {
+      cv::cvtColor(img, cvt, CV_BGR2RGB);
+      res = ColorNameHelper<true>(cvt, false);
+    }
+  }
+  else if (img.channels() == 4)
+  {
+    if (is_rgb)
+    {
+      cv::cvtColor(img, cvt, CV_RGBA2RGB);
+      res = ColorNameHelper<true>(cvt, true);
+    }
+    else
+    {
+      cv::cvtColor(img, cvt, CV_BGRA2RGB);
+      res = ColorNameHelper<true>(cvt, false);
+    }
+  }
+  else
+    VCP_ERROR("Only RGB/BGR (+alpha) input images are supported for CN (color name) conversion.");
+  return res;
+}
+#endif
+
 cv::Mat ApplyImageTransformation(const cv::Mat &img, const ImgTransform &transform)
 {
-  cv::Mat res;
   if (img.empty())
-    return res;
+    return cv::Mat();
 
-  if (transform == ImgTransform::NONE)
+  switch (transform)
+  {
+    case ImgTransform::NONE:
       return img.clone();
 
-  res = img.clone();
-  if ((transform & ImgTransform::MIRROR_HORZ) != ImgTransform::NONE)
-    res = MirrorHorizontally(res);
+    case ImgTransform::MIRROR_HORZ:
+      return MirrorHorizontally(img);
+    case ImgTransform::MIRROR_VERT:
+      return MirrorVertically(img);
 
-  if ((transform & ImgTransform::MIRROR_VERT) != ImgTransform::NONE)
-    res = MirrorVertically(res);
+    case ImgTransform::ROTATE_90:
+      return Rotate90(img);
+    case ImgTransform::ROTATE_180:
+      return Rotate180(img);
+    case ImgTransform::ROTATE_270:
+      return Rotate270(img);
 
-  if ((transform & ImgTransform::ROTATE_90) != ImgTransform::NONE)
-    res = Rotate90(res);
+    case ImgTransform::HISTOGRAM_EQUALIZATION:
+      return HistogramEqualization(img);
 
-  if ((transform & ImgTransform::ROTATE_180) != ImgTransform::NONE)
-    res = Rotate180(res);
+#ifdef VCP_IMUTILS_WITH_COLORNAMES
+    case ImgTransform::COLOR_RGB2COLORNAME:
+      return ConvertToColorName(img, true);
+    case ImgTransform::COLOR_BGR2COLORNAME:
+      return ConvertToColorName(img, false);
+#endif
 
-  if ((transform & ImgTransform::ROTATE_270) != ImgTransform::NONE)
-    res = Rotate270(res);
+    case ImgTransform::COLOR_GRAY2RGB:
+      return Grayscale(img, false, false);
+    case ImgTransform::COLOR_RGB2HSV:
+      return ConvertToHsv(img, true);
+    case ImgTransform::COLOR_BGR2HSV:
+      return ConvertToHsv(img, false);
+    case ImgTransform::COLOR_RGB2LAB:
+      return ConvertToLab(img, true);
+    case ImgTransform::COLOR_BGR2LAB:
+      return ConvertToLab(img, false);
+    case ImgTransform::COLOR_RGB2GRAY:
+      return Grayscale(img, true, true);
+    case ImgTransform::COLOR_BGR2GRAY:
+      return Grayscale(img, false, true);
+  }
+  return cv::Mat();
+}
 
-  if ((transform & ImgTransform::HISTOGRAM_EQUALIZATION) != ImgTransform::NONE)
-    res = HistogramEqualization(res);
+cv::Mat ApplyImageTransformations(const cv::Mat &img, const std::vector<ImgTransform> &transforms)
+{
+  VCP_LOG_FAILURE("FIXME_REMOVE: about to apply the transformations: " << transforms);
 
-  if ((transform & ImgTransform::COLOR_HSV) != ImgTransform::NONE)
-    res = ConvertToHsv(res);
+  if (img.empty())
+    return cv::Mat();
+  if (transforms.empty())
+    return img.clone();
 
-  if ((transform & ImgTransform::COLOR_LAB) != ImgTransform::NONE)
-    res = ConvertToLab(res);
-
-  // Grayscale conversion should happen last
-  if ((transform & ImgTransform::GRAYSCALE) != ImgTransform::NONE)
-    res = Grayscale(res);
-
+  cv::Mat res;
+  for (const auto &t : transforms)
+  {
+    const cv::Mat &input = res.empty() ? img : res;
+    res = ApplyImageTransformation(input, t);
+  }
   return res;
 }
 

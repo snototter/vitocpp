@@ -191,8 +191,15 @@ template<class T>
 std::ostream& operator<<(std::ostream& stream, const std::vector<T>& values)
 {
   stream << "{ ";
-  std::copy(std::begin(values), std::end(values), std::ostream_iterator<T>(stream, " "));
-  stream << '}';
+  //More elegant: std::copy(std::begin(values), std::end(values), std::ostream_iterator<T>(stream, " "));
+  //Easier to read the output:
+  for (size_t i = 0; i < values.size(); ++i)
+  {
+    if (i > 0)
+      stream << ", ";
+    stream << values[i];
+  }
+  stream << " }";
   return stream;
 }
 

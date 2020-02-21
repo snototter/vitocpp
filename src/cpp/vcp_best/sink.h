@@ -98,28 +98,30 @@ struct SinkParams
   /** @brief Should sink/device wrapper log verbosely? */
   bool verbose;
 
-  /** @brief Should incoming images be flipped/rotated? */
-  imutils::ImgTransform transform;
+  /** @brief Basic transformations of input images. */
+  std::vector<imutils::ImgTransform> transforms;
 
+  /** @brief Copy c'tor. */
   SinkParams(const SinkParams &other)
     : sink_type(other.sink_type), frame_type(other.frame_type),
       sink_label(other.sink_label), calibration_file(other.calibration_file),
       configuration_key(other.configuration_key), color_as_bgr(other.color_as_bgr),
-      verbose(other.verbose), transform(other.transform)
+      verbose(other.verbose), transforms(other.transforms)
   {}
 
+  /** @brief Default c'tor. */
   SinkParams(const SinkType &stype,
       const FrameType &ftype,
       const std::string &lbl,
       const std::string &calib_file=std::string(),
       const std::string &config_key=std::string(),
       const bool return_bgr=false, const bool verbose=false,
-      const imutils::ImgTransform &transform=imutils::ImgTransform::NONE)
+      const std::vector<imutils::ImgTransform> &transforms=std::vector<imutils::ImgTransform>())
     : sink_type(stype), frame_type(ftype),
       sink_label(lbl), calibration_file(calib_file),
       configuration_key(config_key),
       color_as_bgr(return_bgr), verbose(verbose),
-      transform(transform)
+      transforms(transforms)
   {}
 };
 

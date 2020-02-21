@@ -7,7 +7,10 @@
 #else
     #include <opencv2/core.hpp>
 #endif
+#include <string>
 #include <vector>
+#include <iostream>
+#include <stdint.h> // For uint32_t
 
 namespace vcp
 {
@@ -16,35 +19,59 @@ namespace imutils
 {
 
 /** @brief Strongly typed enum to do basic transformations (e.g. rotate/flip) of images. */
-enum class ImgTransform : int
+enum class ImgTransform : uint32_t
 {
-  NONE        =  0,  /**< Images will be provided as-is. */
-  MIRROR_HORZ =  1,  /**< Mirror horizontally. */
-  MIRROR_VERT =  2,  /**< Mirror vertically. */
-  ROTATE_90   =  4,  /**< Rotate 90 degrees clockwise. */
-  ROTATE_180  =  8,  /**< Rotate by 180 degrees. */
-  ROTATE_270  = 16,  /**< Rotate by 90 degrees counter-clockwise. */
-  HISTOGRAM_EQUALIZATION = 32, /**< Perform histogram equalization. */
+  NONE        =  0x00,  /**< Images will be provided as-is. */
+  MIRROR_HORZ =  0x01,  /**< Mirror horizontally. */
+  MIRROR_VERT =  0x02,  /**< Mirror vertically. */
+  ROTATE_90   =  0x04,  /**< Rotate 90 degrees clockwise. */
+  ROTATE_180  =  0x08,  /**< Rotate by 180 degrees. */
+  ROTATE_270  =  0x01 << 4,  /**< Rotate by 90 degrees counter-clockwise. */
 
-//TODO nice-to-have: color quantization (min-variance, x-bit, ...)
-  COLOR_HSV = 256,  /**< Convert (transformed) image to HSV color space. */
-  COLOR_LAB = 512,  /**< Convert (transformed) image to Lab color space. */
-  GRAYSCALE = 1024  /**< Convert (transformed) image to single-channel grayscale. */
+  HISTOGRAM_EQUALIZATION = 0x01 << 5, /**< Perform histogram equalization. */
+
+
+//TODO nice-to-have image transforms:
+  // ZERO_MEAN 'zero-mean'
+  // STANDARDIZation 'std' unit-var unit-variance
+  // WHITENing 'whiten', 'whitening'
+// * color quantization (min-variance, x-bit, ...)
+// * whitening (https://stackoverflow.com/a/45290312/400948
+// * colornames colorize/cn probs out (enable/disable via cmake option)
+  // Check https://hadrienj.github.io/posts/Preprocessing-for-deep-learning/
+  // https://stats.stackexchange.com/questions/12842/covariance-and-independence
+// * Gamma correction   https://docs.opencv.org/3.4/d3/dc1/tutorial_basic_linear_transform.html
+#ifdef VCP_IMUTILS_WITH_COLORNAMES
+  COLOR_RGB2COLORNAME = 0x01 << 22, /**< Quantize RGB into the 11 color names/attributes. */
+  COLOR_BGR2COLORNAME = 0x01 << 23, /**< Quantize BGR into the 11 color names/attributes. */
+#endif
+  COLOR_GRAY2RGB = 0x01 << 24,  /**< Convert single-channel grayscale to 3-channel RGB/BGR. */
+  COLOR_RGB2HSV  = 0x01 << 25,  /**< Convert RGB image to HSV color space. */
+  COLOR_BGR2HSV  = 0x01 << 26,  /**< Convert BGR image to HSV color space. */
+  COLOR_RGB2LAB  = 0x01 << 27,  /**< Convert RGB image to Lab color space. */
+  COLOR_BGR2LAB  = 0x01 << 28,  /**< Convert BGR image to Lab color space. */
+  COLOR_RGB2GRAY = 0x01 << 29,  /**< Convert RGB image to single-channel grayscale. */
+  COLOR_BGR2GRAY = 0x01 << 30   /**< Convert BGR image to single-channel grayscale. */
 };
+//TODO make vector of img transformations
 
 // Operator overloads
-ImgTransform operator &(ImgTransform lhs, ImgTransform rhs);
-ImgTransform operator ^(ImgTransform lhs, ImgTransform rhs);
-ImgTransform operator ~(ImgTransform rhs);
-ImgTransform& operator |=(ImgTransform &lhs, ImgTransform rhs);
-ImgTransform& operator &=(ImgTransform &lhs, ImgTransform rhs);
-ImgTransform& operator ^=(ImgTransform &lhs, ImgTransform rhs);
+ImgTransform operator&(ImgTransform lhs, ImgTransform rhs);
+ImgTransform operator^(ImgTransform lhs, ImgTransform rhs);
+ImgTransform operator~(ImgTransform rhs);
+ImgTransform& operator|=(ImgTransform &lhs, ImgTransform rhs);
+ImgTransform& operator&=(ImgTransform &lhs, ImgTransform rhs);
+ImgTransform& operator^=(ImgTransform &lhs, ImgTransform rhs);
+std::ostream& operator<<(std::ostream & os, const ImgTransform &t);
 
 /** @brief String representation for ImageTransformation. */
 std::string ImgTransformToString(const ImgTransform &t);
 
 /** @brief Get the ImageTransformation based on its string representation. */
 ImgTransform ImgTransformFromString(const std::string &s);
+
+/** @brief Parse a comma separated list (string representation) into ImageTransform enums. */
+std::vector<ImgTransform> ImgTransformsFromString(const std::string &s);
 
 
 /** @brief Flip image horizontally. */
@@ -71,8 +98,29 @@ cv::Mat ConvertToHsv(const cv::Mat &img, bool is_rgb=false);
 /** @brief Convenience wrapper to cv::cvtColor to be used as ImgTransformation (within the BESt vcp module). */
 cv::Mat ConvertToLab(const cv::Mat &img, bool is_rgb=false);
 
+#ifdef VCP_IMUTILS_WITH_COLORNAMES
+/**
+ * @brief Discretize the RGB/BGR input image to the 11 base color names, returns an RGB/BGR image.
+ *
+ * See the paper J. van de Weijer, C. Schmid, J. Verbeek, D. Larlus. Learning Color Names
+ * for Real-World Applications. IEEE Trans. on Image Processing, 18(7):1512-23, 2009.
+ */
+cv::Mat ConvertToColorName(const cv::Mat &img, bool is_rgb=false);
+
+/**
+ * @brief Returns the color name/attribute representation (11-dimensional repr. for each pixel).
+ *
+ * See the paper J. van de Weijer, C. Schmid, J. Verbeek, D. Larlus. Learning Color Names
+ * for Real-World Applications. IEEE Trans. on Image Processing, 18(7):1512-23, 2009.
+ */
+cv::Mat ConvertToColorNameFeature(const cv::Mat &img, bool is_rgb=false);
+#endif
+
 /** @brief Apply a basic image transformation (e.g. rotation/flipping). */
 cv::Mat ApplyImageTransformation(const cv::Mat &img, const vcp::imutils::ImgTransform &transform);
+
+/** @brief Applies all given image transformations (in the given order). */
+cv::Mat ApplyImageTransformations(const cv::Mat &img, const std::vector<ImgTransform> &transforms);
 
 
 /** @brief Return rectangular ROI which contains the full image. */

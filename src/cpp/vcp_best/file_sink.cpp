@@ -237,7 +237,7 @@ private:
         eof_ = true;
       }
 
-      const cv::Mat img = imutils::ApplyImageTransformation(frame, params_.transform);
+      const cv::Mat img = imutils::ApplyImageTransformations(frame, params_.transforms);
       // Push into queue
       image_queue_mutex_.lock();
       image_queue_->PushBack(img.clone());
@@ -352,7 +352,7 @@ public:
           else
             enqueue = loaded;
         }
-        const cv::Mat transformed = imutils::ApplyImageTransformation(enqueue, params_.transform);
+        const cv::Mat transformed = imutils::ApplyImageTransformations(enqueue, params_.transforms);
         frames.push_back(transformed);
       }
       else
@@ -505,7 +505,7 @@ public:
     VCP_LOG_DEBUG("~ImageDirectorySink()");
   }
 
-  //TODO log if params.verbose for all file sinks
+  //TODO only log if params.verbose for all file sinks
   bool OpenDevice() override
   {
     if (params_.verbose)
@@ -595,13 +595,13 @@ public:
           else
             enqueue = loaded;
         }
-        const cv::Mat transformed = imutils::ApplyImageTransformation(enqueue, params_.transform);
+        const cv::Mat transformed = imutils::ApplyImageTransformations(enqueue, params_.transforms);
         frames.push_back(transformed);
       }
       else
       {
         const cv::Mat lm = vcp::imutils::LoadMat(vcp::utils::file::FullFile(params_.directory, filenames_[frame_idx_]));
-        frames.push_back(imutils::ApplyImageTransformation(lm, params_.transform));
+        frames.push_back(imutils::ApplyImageTransformations(lm, params_.transforms));
       }
 
       ++frame_idx_;

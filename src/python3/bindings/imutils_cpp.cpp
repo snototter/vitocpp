@@ -67,6 +67,16 @@ py::tuple ResizeAspectAwareWrapper(const cv::Mat &image, const cv::Size &new_siz
   cv::Mat res = vcp::imutils::ResizeKeepAspectRatio(image, new_size, padding_value, center_output, &location);
   return py::make_tuple(res, location);
 }
+
+cv::Mat ApplyImageTransformations(const cv::Mat &image, const py::args &transforms)
+{
+  std::vector<vcp::imutils::ImgTransform> ts;
+  for (size_t i = 0; i < transforms.size(); ++i)
+    ts.push_back(vcp::imutils::ImgTransformFromString(transforms[i].cast<std::string>()));
+
+  return vcp::imutils::ApplyImageTransformations(image, ts);
+}
+
 } // namespace imutils
 } // namespace python
 } // namespace vcp
@@ -263,5 +273,23 @@ PYBIND11_MODULE(imutils_cpp, m)
         "              angle is in degrees(!) as we use OpenCV's RotatedRect.",
         py::arg("image"), py::arg("rects"),
         py::arg("theta"), py::arg("crop") = false);
+
+  m.def("transform", &vpmu::ApplyImageTransformations,
+        "Apply basic image transformations, such as:\n"
+        "*  Mirroring: fliplr, flipud\n"
+        "* Rotation: rot90, rot180, rot270\n"
+        "* Histogram equalization: histeq\n"
+        "* Discretization: rgb2cn, bgr2cn (color names)\n"
+        "* Color space: rgb2hsv, rgb2lab, rgb2gray\n"
+        "               as well as their bgr... versions\n\n"
+        "See the C++ ImgTransform enum (imutils.h) for supported\n"
+        "transformations.\n"
+        "You can simply chain above transformations, for example\n"
+        "  transform(image, 'rot90', 'histeq', 'rgb2cn')\n\n"
+        ":param image: input image as numpy ndarray\n"
+        ":*args:       string representations of\n"
+        "              the desired transformations.\n"
+        ":return: transformed image as numpy ndarray.",
+        py::arg("image"));
 }
 

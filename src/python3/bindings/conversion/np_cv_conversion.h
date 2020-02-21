@@ -36,6 +36,7 @@ namespace conversion
  * The latter (L,W,H) is not supported by our conversion.
  */
 cv::Mat NDArrayToMat(const py::array &ndarray);
+//cv::Mat NDArrayToMat(const py::object &ndarray);
 
 
 /** @brief Convert an OpenCV Mat to a numpy ndarray.
@@ -62,7 +63,7 @@ public:
 
   bool load(handle src, bool)
   {
-    if (src.is_none() || !py::isinstance<py::array>(src))
+    if (!(src.is_none() || py::isinstance<py::array>(src)))
       return false;
 
     value = vcp::python::conversion::NDArrayToMat(py::cast<py::array>(src));
@@ -75,7 +76,7 @@ public:
     py::array arr = vcp::python::conversion::MatToNDArray(src);
     return arr.release();
   }
-}; // type_caster for cv::Mat
+}; // pybind11 type_caster for cv::Mat
 } // namespace detail
 } // namespace pybind11
 

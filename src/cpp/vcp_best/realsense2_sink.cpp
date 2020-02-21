@@ -354,6 +354,7 @@ RealSense2SinkParams RealSense2SinkParamsFromConfig(const vcp::config::ConfigPar
 
 const std::string kEmptyRealSense2SerialNumber = "----";
 
+
 inline cv::Mat FrameToMat(const rs2::frame &f, const cv::Size &size)
 {
   switch(f.get_profile().format())
@@ -1396,15 +1397,20 @@ private:
             ir2_prev_fnr_ = ir2_fnr;
           }
 
+          const cv::Mat trgb = imutils::ApplyImageTransformations(cvrgb, rgbd_params_.transforms);
+          const cv::Mat tdepth = imutils::ApplyImageTransformations(cvdepth, rgbd_params_.transforms);
+          const cv::Mat tir1 = imutils::ApplyImageTransformations(cvir1, rgbd_params_.transforms);
+          const cv::Mat tir2 = imutils::ApplyImageTransformations(cvir1, rgbd_params_.transforms);
+
           image_queue_mutex_.lock();
-          if (color_stream_enabled_ && !cvrgb.empty())
-            rgb_queue_->PushBack(cvrgb.clone());
-          if (depth_stream_enabled_ && !cvdepth.empty())
-            depth_queue_->PushBack(cvdepth.clone());
-          if (ir1_stream_enabled_ && !cvir1.empty())
-            ir1_queue_->PushBack(cvir1.clone());
-          if (ir2_stream_enabled_ && !cvir2.empty())
-            ir2_queue_->PushBack(cvir2.clone());
+          if (color_stream_enabled_ && !trgb.empty())
+            rgb_queue_->PushBack(trgb.clone());
+          if (depth_stream_enabled_ && !tdepth.empty())
+            depth_queue_->PushBack(tdepth.clone());
+          if (ir1_stream_enabled_ && !tir1.empty())
+            ir1_queue_->PushBack(tir1.clone());
+          if (ir2_stream_enabled_ && !tir2.empty())
+            ir2_queue_->PushBack(tir2.clone());
           image_queue_mutex_.unlock();
 
 #ifdef VCP_BEST_DEBUG_FRAMERATE

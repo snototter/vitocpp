@@ -106,6 +106,12 @@ def demo():
         except RuntimeError as e:
             print('[ERROR] while streaming: {}'.format(e))
 
-
 if __name__ == "__main__":
-    demo()
+    
+    # demo()
+    #res = imutils.transform(np.ones((3,3), dtype=np.uint8), 'gray2rgb', 'bgr2lab', 'histeq', 'rot90')
+    img = np.array([[0, 128, 255], [255, 255, 0]], dtype=np.uint8)
+    img = imutils.imread('/home/snototter/Pictures/possegger.jpg')
+    # img = imutils.imread('/home/snototter/workspace/sandbox/ColorNaming/car.jpg')
+    res = imutils.transform(img, 'rgb2cn')
+    imvis.imshow(res, wait_ms=-1)

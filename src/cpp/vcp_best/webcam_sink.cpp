@@ -293,8 +293,8 @@ private:
         else
           cv::cvtColor(retrieved, converted, CV_BGR2RGB);
 
-        // Push into queue
-        const cv::Mat img = imutils::ApplyImageTransformation(converted, params_.transform);
+        // Push into queue after applying configured transformations.
+        const cv::Mat img = imutils::ApplyImageTransformations(converted, params_.transforms);
         image_queue_mutex_.lock();
         image_queue_->PushBack(img.clone());
         image_queue_mutex_.unlock();

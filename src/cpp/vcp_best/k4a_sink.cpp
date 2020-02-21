@@ -854,9 +854,10 @@ private:
       k4a_capture_release(k4a_capture);
       k4a_capture = nullptr;
 
-      const cv::Mat trgb = imutils::ApplyImageTransformation(cvrgb, params_.transform);
-      const cv::Mat tdepth = imutils::ApplyImageTransformation(cvdepth, params_.transform);
-      const cv::Mat tir = imutils::ApplyImageTransformation(cvir, params_.transform);
+      const cv::Mat trgb = imutils::ApplyImageTransformations(cvrgb, params_.transforms);
+      const cv::Mat tdepth = imutils::ApplyImageTransformations(cvdepth, params_.transforms);
+      const cv::Mat tir = imutils::ApplyImageTransformations(cvir, params_.transforms);
+
       image_queue_mutex_.lock();
       if (rgb_stream_enabled_)
         rgb_queue_->PushBack(trgb.clone());

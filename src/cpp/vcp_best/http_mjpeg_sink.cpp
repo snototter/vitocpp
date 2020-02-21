@@ -263,7 +263,8 @@ private:
       else
         cv::cvtColor(decoded, frame, CV_BGR2RGB);
 
-      const cv::Mat img = imutils::ApplyImageTransformation(frame, params_.transform);
+      // Apply basic image transformations if needed.
+      const cv::Mat img = imutils::ApplyImageTransformations(frame, params_.transforms);
       image_queue_mutex_.lock();
       image_queue_->PushBack(img.clone());
       image_queue_mutex_.unlock();

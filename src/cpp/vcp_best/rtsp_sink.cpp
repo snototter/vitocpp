@@ -234,8 +234,6 @@ public:
 
 
 protected:
-//  int concat_width_;
-//  int concat_height_;
   std::vector<std::unique_ptr<SinkBuffer>> image_queues_;
   std::unique_ptr<RtspClientEnvironment> rtsp_client_env_;
   bool verbose_;
@@ -256,7 +254,7 @@ protected:
 
   void EnqueueNextFrame(const cv::Mat &frame, size_t sink_idx)
   {
-    const cv::Mat img = imutils::ApplyImageTransformation(frame, params_[sink_idx].transform);
+    const cv::Mat img = imutils::ApplyImageTransformations(frame, params_[sink_idx].transforms);
     image_queue_mutex_[sink_idx].lock();
     image_queues_[sink_idx]->PushBack(img.clone());
     image_queue_mutex_[sink_idx].unlock();
