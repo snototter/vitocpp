@@ -37,7 +37,6 @@ enum class ImgTransform : uint32_t
   // WHITENing 'whiten', 'whitening'
 // * color quantization (min-variance, x-bit, ...)
 // * whitening (https://stackoverflow.com/a/45290312/400948
-// * colornames colorize/cn probs out (enable/disable via cmake option)
   // Check https://hadrienj.github.io/posts/Preprocessing-for-deep-learning/
   // https://stats.stackexchange.com/questions/12842/covariance-and-independence
 // * Gamma correction   https://docs.opencv.org/3.4/d3/dc1/tutorial_basic_linear_transform.html
