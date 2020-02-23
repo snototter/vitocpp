@@ -47,7 +47,7 @@ void Stream(const std::string &config_file)
   const std::vector<std::string> frame_labels = capture->FrameLabels();
   VCP_LOG_INFO_DEFAULT("Successfully started capture:" << std::endl << *capture);
 
-  if (!capture->WaitForInitialFrames(5000))
+  if (!capture->WaitForFrames(5000, true))
   {
     VCP_LOG_FAILURE("Didn't receive an initial set of frames - aborting.");
     return;
