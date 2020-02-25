@@ -713,10 +713,9 @@ void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams 
   }
 
   if (params.IsInfrared1StreamEnabled())
-  {
-    VCP_LOG_FAILURE("DUMPING IR1");
     DumpIrCalib(profile, fs, 1, "ir_left", params);
-  }
+  if (params.IsInfrared2StreamEnabled())
+    DumpIrCalib(profile, fs, 2, "ir_right", params);
 
   fs << "type" << "rgbd";
   fs.release();
@@ -821,7 +820,7 @@ void DebugFramesetMetadata(const std::string &serial_number, const rs2::frameset
     metadata_str << "C ---";
   metadata_str << ", ";
   if (frameset.get_depth_frame().get() != nullptr)
-    metadata_str << "D" << frameset.get_depth_frame().get_frame_number();
+    metadata_str << "D " << frameset.get_depth_frame().get_frame_number();
   else
     metadata_str << "D ---";
   metadata_str << ", ";
