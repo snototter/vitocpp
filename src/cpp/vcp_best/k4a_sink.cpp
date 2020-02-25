@@ -583,9 +583,9 @@ public:
   {
     std::vector<FrameType> types;
     if (rgb_stream_enabled_)
-      types.push_back(FrameType::RGBD_IMAGE);
+      types.push_back(FrameType::MONOCULAR);
     if (depth_stream_enabled_)
-      types.push_back(FrameType::RGBD_DEPTH);
+      types.push_back(FrameType::DEPTH);
     if (ir_stream_enabled_)
       types.push_back(FrameType::INFRARED);
     return types[stream_index];

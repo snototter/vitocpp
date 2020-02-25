@@ -39,8 +39,7 @@ std::string FrameTypeToString(const FrameType &s)
   {
   MAKE_STREAMTYPE_TO_STRING_CASE(MONOCULAR);
   MAKE_STREAMTYPE_TO_STRING_CASE(STEREO);
-  MAKE_STREAMTYPE_TO_STRING_CASE(RGBD_IMAGE);
-  MAKE_STREAMTYPE_TO_STRING_CASE(RGBD_DEPTH);
+  MAKE_STREAMTYPE_TO_STRING_CASE(DEPTH);
   MAKE_STREAMTYPE_TO_STRING_CASE(INFRARED);
   MAKE_STREAMTYPE_TO_STRING_CASE(UNKNOWN);
   default:
@@ -67,20 +66,16 @@ FrameType FrameTypeFromString(const std::string &s)
   if (lower.compare("monocular") == 0
       || lower.compare("mono") == 0
       || lower.compare("color") == 0
-      || lower.compare("image") == 0)
+      || lower.compare("image") == 0
+      || lower.compare("rgbd-color") == 0)
     return FrameType::MONOCULAR;
 
   if (lower.compare("stereo") == 0)
     return FrameType::STEREO;
 
-  if (lower.compare("rgbd-color") == 0
-      || lower.compare("rgbd-image") == 0)
-    return FrameType::RGBD_IMAGE;
-
   if (lower.compare("depth") == 0
-      || lower.compare("rgbd-depth") == 0
-      || lower.compare("rgbd_depth") == 0)
-    return FrameType::RGBD_DEPTH;
+      || lower.compare("rgbd-depth") == 0)
+    return FrameType::DEPTH;
 
   if (lower.compare("infrared") == 0
       || lower.compare("ir") == 0

@@ -26,9 +26,8 @@ enum class FrameType
   UNKNOWN,     /**< The sink doesn't know (e.g. if you load a video file and don't configure the "frame_type" parameter). */
   MONOCULAR,   /**< Most often, we deal with monocular image streams. */
   STEREO,      /**< Horizontal stereo (a single, concatenated frame consisting of the left and right image) */
-  RGBD_IMAGE,  /**< Image stream from an RGBD device. */
-  RGBD_DEPTH,  /**< Depth stream from an RGBD device, usually uint16. */
-  INFRARED     /**< Infrared stream (intensity values, usually uint16). */
+  DEPTH,       /**< Depth stream, usually uint16 (RealSense, Kinect) or float32 (ZED). */
+  INFRARED     /**< Infrared stream, i.e. intensity values, typically uint16 (Kinect) or uint8 (RealSense). */
 };
 
 
