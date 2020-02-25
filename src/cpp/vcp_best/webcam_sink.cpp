@@ -84,22 +84,6 @@ public:
     if (params_.device_number < 0)
     {
 #if defined(__linux__) || defined(__unix__)
-//      const auto devices = vcp::utils::file::ListDirContents("/dev", [](const std::string &f) -> bool {
-//        if (vcp::utils::string::StartsWith(f, "video"))
-//        {
-//          // We need to skip RealSense devices, as we cannot open them with default OpenCV settings.
-//          // Similarly, we skip Azure Kinect devices, as we had some troubles with frequently failing
-//          // color streams.
-//          const std::string name = vcp::utils::file::SlurpAsciiFile(
-//                vcp::utils::file::FullFile("/sys/class/video4linux/", vcp::utils::file::FullFile(f, "name")));
-//          // Return false for the directory list if the hardware info contains "RealSense" or "Azure Kinect"
-//          return name.find("RealSense") == std::string::npos && name.find("Azure Kinect") == std::string::npos;
-//        }
-//        return false;
-//      }, true, true, true, &vcp::utils::file::filename_filter::CompareFileLengthsAndNames);
-
-
-//      params_.device_number = std::atoi(devices[0].substr(5).c_str()); // Strip the beginning 'video'
       const auto devices = ListWebcams(false, false);
       if (devices.empty())
       {
@@ -112,7 +96,7 @@ public:
         VCP_LOG_INFO_DEFAULT("Trying to open webcam /dev/" << devices[0].name);
 #else
       VCP_LOG_FAILURE("Searching for a webcam is only supported on unix-based operating systems!");
-      return false
+      return false;
 #endif
     }
 
@@ -233,7 +217,7 @@ public:
 
   size_t NumAvailableFrames() const override
   {
-    return static_cast<int>(IsFrameAvailable());
+    return static_cast<size_t>(IsFrameAvailable());
   }
 
   size_t NumStreams() const override
