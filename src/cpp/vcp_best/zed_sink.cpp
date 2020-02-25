@@ -158,6 +158,32 @@ sl::DEPTH_MODE ZedDepthModeFromString(const std::string &s)
 }
 
 
+std::string ZedSensingModeToString(const sl::SENSING_MODE &d)
+{
+  switch(d)
+  {
+    case sl::SENSING_MODE::STANDARD:
+      return "standard";
+    case sl::SENSING_MODE::FILL:
+      return "fill";
+    default:
+      VCP_ERROR("ZED sl::SENSING_MODE '" << static_cast<int>(d) << "' is not yet supported.");
+  }
+}
+
+sl::SENSING_MODE ZedSensingModeFromString(const std::string &s)
+{
+  const std::string lower = vcp::utils::string::Lower(s);
+  if (lower.compare("standard") == 0
+      || lower.compare("default") == 0)
+    return sl::SENSING_MODE::STANDARD;
+
+  if (lower.compare("fill") == 0)
+    return sl::SENSING_MODE::FILL;
+
+  VCP_ERROR("Cannot convert '" << s << "' to sl::SENSING_MODE.");
+}
+
 std::string ZedModelToString(const sl::CameraInformation &ci)
 {
   switch (ci.camera_model)
@@ -176,11 +202,11 @@ std::string ZedModelToString(const sl::CameraInformation &ci)
 
 std::ostream &operator<< (std::ostream &out, const ZedSinkParams &p)
 {
-  out << p.sink_label;
+  out << p.sink_label << ", type: ";
   if (!p.model_name.empty())
-    out << ", " << p.model_name;
+    out << p.model_name;
   else
-    out << ", UNKNOWN ZED";
+    out << "UNKNOWN";
 
   if (p.serial_number < std::numeric_limits<unsigned int>::max())
     out << ", #" << p.serial_number;
@@ -254,9 +280,6 @@ public:
 
   bool OpenDevice() override
   {
-    if (params_.verbose)
-      VCP_LOG_INFO_DEFAULT("Opening " << params_);
-
     if (zed_ && zed_->isOpened())
     {
       VCP_LOG_FAILURE("Device [" << params_ << "] already opened - ignoring OpenDevice() call");
@@ -274,18 +297,22 @@ public:
     init_params.depth_mode = params_.depth_mode;
     init_params.coordinate_units = params_.depth_in_meters ? sl::UNIT::METER : sl::UNIT::MILLIMETER;
     init_params.depth_stabilization = params_.depth_stabilization ? 1 : 0;
+    init_params.sdk_gpu_id = params_.gpu_id;
 
 
     const sl::ERROR_CODE err = zed_->open(init_params);
     if (err != sl::ERROR_CODE::SUCCESS)
     {
-      VCP_LOG_FAILURE("Cannot open ZED camera, sl::ERROR_CODE = " << err);
+      VCP_LOG_FAILURE("Cannot open ZED device, sl::ERROR_CODE = " << err);
       return false;
     }
 
     const sl::CameraInformation ci = zed_->getCameraInformation();
     params_.model_name = ZedModelToString(ci);
     params_.serial_number = ci.serial_number;
+
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Opened " << params_);
     //TODO store intrinsics
     return true;
   }
@@ -499,8 +526,10 @@ private:
   void Receive()
   {
     sl::RuntimeParameters rt_params;
-    rt_params.sensing_mode = sl::SENSING_MODE::STANDARD;
+    rt_params.sensing_mode = params_.sensing_mode;
     rt_params.enable_depth = params_.IsDepthStreamEnabled();
+    rt_params.confidence_threshold = params_.confidence_threshold;
+    rt_params.textureness_confidence_threshold = params_.textureness_threshold;
 
     while (continue_capture_)
     {
@@ -624,7 +653,21 @@ ZedSinkParams ZedSinkParamsFromConfig(const vcp::config::ConfigParams &config, c
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "disable_self_calibration"), configured_keys.end());
   params.disable_self_calibration = GetOptionalBoolFromConfig(config, cam_param, "disable_self_calibration", false);
 
-//TODO add runtime parameters, etc.
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "sensing_mode"), configured_keys.end());
+  params.sensing_mode = ZedSensingModeFromString(
+        GetOptionalStringFromConfig(config, cam_param, "sensing_mode",
+                                    ZedSensingModeToString(params.sensing_mode)));
+
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "confidence_threshold"), configured_keys.end());
+  params.confidence_threshold = GetOptionalIntFromConfig(config, cam_param, "confidence_threshold", params.confidence_threshold);
+
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "textureness_threshold"), configured_keys.end());
+  params.textureness_threshold = GetOptionalIntFromConfig(config, cam_param, "textureness_threshold", params.textureness_threshold);
+
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "gpu_id"), configured_keys.end());
+  params.gpu_id = GetOptionalIntFromConfig(config, cam_param, "gpu_id", params.gpu_id);
+  //TODO add save_calibration/write_calibration
+
   WarnOfUnusedParameters(cam_param, configured_keys);
   return params;
 }

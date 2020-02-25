@@ -34,6 +34,11 @@ struct ZedSinkParams : public SinkParams
   bool flip_image;
   bool disable_self_calibration;
 
+  sl::SENSING_MODE sensing_mode;
+  int confidence_threshold;
+  int textureness_threshold;
+
+  int gpu_id;
   //TODO init by dev-id
   //TODO init by serial-nr
   unsigned int serial_number;
@@ -49,6 +54,10 @@ struct ZedSinkParams : public SinkParams
       const int frame_rate=0,
       const bool flip_image=false,
       const bool disable_self_calibration=false,
+      const sl::SENSING_MODE sensing_mode=sl::SENSING_MODE::STANDARD,
+      const int confidence_threshold=100,
+      const int textureness_threshold=100,
+      const int gpu_id=-1,
       unsigned int serial_number=std::numeric_limits<unsigned int>::max()
       )
     : SinkParams(sink_params),
@@ -60,7 +69,10 @@ struct ZedSinkParams : public SinkParams
       fps(frame_rate),
       flip_image(flip_image),
       disable_self_calibration(disable_self_calibration),
-
+      sensing_mode(sensing_mode),
+      confidence_threshold(confidence_threshold),
+      textureness_threshold(textureness_threshold),
+      gpu_id(gpu_id),
       serial_number(serial_number),
       model_name(std::string())
   {}
