@@ -29,6 +29,9 @@
 #ifdef VCP_BEST_WITH_REALSENSE2
   #include "realsense2_sink.h"
 #endif
+#ifdef VCP_BEST_WITH_ZED
+  #include "zed_sink.h"
+#endif
 #include <chrono>
 
 namespace vcp
@@ -66,6 +69,9 @@ public:
 #endif
 #ifdef VCP_BEST_WITH_REALSENSE2
     std::vector<realsense2::RealSense2SinkParams> realsense2_params;
+#endif
+#ifdef VCP_BEST_WITH_ZED
+    std::vector<zed::ZedSinkParams> zed_params;
 #endif
     std::vector<file::VideoFileSinkParams> video_params;
     std::vector<webcam::WebcamSinkParams> webcam_params;
@@ -116,6 +122,12 @@ public:
           realsense2_params.push_back(realsense2::RealSense2SinkParamsFromConfig(config, cam_config_name));
           break;
 #endif // VCP_BEST_WITH_REALSENSE2
+
+#ifdef VCP_BEST_WITH_ZED
+        case SinkType::ZED:
+          zed_params.push_back(zed::ZedSinkParamsFromConfig(config, cam_config_name));
+          break;
+#endif // VCP_BEST_WITH_ZED
 
         default:
           VCP_LOG_FAILURE("Sink type '" << sink_type << "' is not yet supported!");
@@ -198,6 +210,11 @@ public:
     for (const auto &p : realsense2_params)
       AddSink(realsense2::CreateRealSense2Sink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p));
     multiple_realsenses_ = realsense2_params.size() > 1;
+#endif
+
+#ifdef VCP_BEST_WITH_ZED
+    for (const auto &p : zed_params)
+      AddSink(zed::CreateZedSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p));
 #endif
 
     num_devices_ = 0;

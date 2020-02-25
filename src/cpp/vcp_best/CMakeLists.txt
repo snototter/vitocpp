@@ -10,6 +10,7 @@ option(VCP_BEST_WITH_IPCAM "Build HTTP/RTSP streaming module (requires CURL, liv
 option(VCP_BEST_WITH_REALSENSE2 "Build Intel RealSense streaming module (requires librealsense2)." OFF)
 option(VCP_BEST_WITH_K4A "Build Kinect 4 Azure streaming module (requires libk4a)." OFF)
 option(VCP_BEST_WITH_K4A_MJPG "K4A sends color as MJPG if ON (slow), otherwise BGRA32 (high bandwidth)." OFF)
+option(VCP_BEST_WITH_ZED "Build ZED streaming module (requires StereoLabs ZED SDK)." OFF)
 option(VCP_BEST_DEBUG_FRAMERATE "If enabled, sinks debug their frame rate (Enable DEBUG level!)" ON)
 #TODO use library-wide flag instead option(VCP_BEST_DEBUG_FRAMERATE "Include timing + debug output to analyze streaming frame rates" OFF)
 
@@ -78,6 +79,16 @@ set(PUBLIC_K4A_STREAM_HEADERS
 set(PRIVATE_K4A_STREAM_HEADERS)
 set(K4A_STREAM_SOURCES
     k4a_sink.cpp
+)
+
+
+# StereoLabs ZED streaming files
+set(PUBLIC_ZED_STREAM_HEADERS
+    zed_sink.h
+)
+set(PRIVATE_ZED_STREAM_HEADERS)
+set(ZED_STREAM_SOURCES
+    zed_sink.cpp
 )
 
 
@@ -189,25 +200,57 @@ else()
 endif()
 
 if (VCP_BEST_WITH_K4A)
-  find_package(k4a REQUIRED)
+    find_package(k4a REQUIRED)
 
-  add_definitions(-DVCP_BEST_WITH_K4A)
+    add_definitions(-DVCP_BEST_WITH_K4A)
 
-  set(ICC_EXTERNAL_LIBS ${ICC_EXTERNAL_LIBS} k4a)
-  set(PUBLIC_HEADERS ${PUBLIC_HEADERS} ${PUBLIC_K4A_STREAM_HEADERS})
-  set(PRIVATE_HEADERS ${PRIVATE_HEADERS} ${PRIVATE_K4A_STREAM_HEADERS})
-  set(SOURCES ${SOURCES} ${K4A_STREAM_SOURCES})
+    set(ICC_EXTERNAL_LIBS ${ICC_EXTERNAL_LIBS} k4a)
+    set(PUBLIC_HEADERS ${PUBLIC_HEADERS} ${PUBLIC_K4A_STREAM_HEADERS})
+    set(PRIVATE_HEADERS ${PRIVATE_HEADERS} ${PRIVATE_K4A_STREAM_HEADERS})
+    set(SOURCES ${SOURCES} ${K4A_STREAM_SOURCES})
 
-  message("  [+] Enable Azure Kinect sensors")
+    message("  [+] Enable Azure Kinect sensors")
 
-  if (VCP_BEST_WITH_K4A_MJPG)
-    add_definitions(-DVCP_BEST_WITH_K4A_MJPG)
-    message("      * Using JPG encoded K4A color stream")
-  else()
-    message("      * Using raw BGRA32 K4A color stream")
-  endif()
+    if (VCP_BEST_WITH_K4A_MJPG)
+        add_definitions(-DVCP_BEST_WITH_K4A_MJPG)
+        message("      * Using JPG encoded K4A color stream")
+    else()
+        message("      * Using raw BGRA32 K4A color stream")
+    endif()
 else()
-  message("  [ ] Disable Azure Kinect sensors")
+    message("  [ ] Disable Azure Kinect sensors")
+endif()
+
+
+if (VCP_BEST_WITH_ZED)
+    option(ZED_DIR "ZED SDK path." "/usr/local/zed/")
+    find_package(ZED 3 REQUIRED)
+    include_directories(${ZED_INCLUDE_DIRS})
+    link_directories(${ZED_LIBRARY_DIR})
+
+    # On ZED SDK 3.0.2 the ZED_CUDA_VERSION is empty
+    find_package(CUDA ${ZED_CUDA_VERSION} REQUIRED)
+    include_directories(${CUDA_INCLUDE_DIRS})
+    link_directories(${CUDA_LIBRARY_DIRS})
+
+    # According to the StereoLabs examples, we need to include pthreads
+    # on non-windows platforms, e.g. see https://www.stereolabs.com/blog/hello-world/
+    if(WIN32)
+        set(ZED_EXTRA_LIBS)
+    else()
+        set(ZED_EXTRA_LIBS "pthread")
+    endif()
+ 
+ 
+    add_definitions(-DVCP_BEST_WITH_ZED)
+    set(ICC_EXTERNAL_LIBS ${ICC_EXTERNAL_LIBS} ${ZED_LIBRARIES} ${CUDA_DEP_LIBRARIES_ZED} ${ZED_EXTRA_LIBS})
+    set(PUBLIC_HEADERS ${PUBLIC_HEADERS} ${PUBLIC_ZED_STREAM_HEADERS})
+    set(PRIVATE_HEADERS ${PRIVATE_HEADERS} ${PRIVATE_ZED_STREAM_HEADERS})
+    set(SOURCES ${SOURCES} ${ZED_STREAM_SOURCES})
+
+    message("  [+] Enable ZED stereo sensors")
+else()
+    message("  [ ] Disable ZED stereo sensors")
 endif()
 
 

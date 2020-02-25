@@ -62,6 +62,9 @@ enum class SinkType
 #ifdef VCP_BEST_WITH_REALSENSE2
   REALSENSE,
 #endif
+#ifdef VCP_BEST_WITH_ZED
+  ZED,
+#endif
   VIDEO_FILE,
   WEBCAM
 };

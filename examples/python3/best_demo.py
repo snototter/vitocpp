@@ -98,6 +98,7 @@ def demo():
     folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'data-best')
     # cfg_files = [file for file in os.listdir(folder) if file.endswith(".cfg")]
     cfg_files = ['realsense.cfg'] #, 'image_sequence.cfg', 'k4a.cfg', 'webcam.cfg']
+    cfg_files = ['zed.cfg']
     
     for cf in cfg_files:
         try:
