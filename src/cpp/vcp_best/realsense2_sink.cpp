@@ -332,7 +332,7 @@ RealSense2SinkParams RealSense2SinkParamsFromConfig(const vcp::config::ConfigPar
   realsense2::SetOptionsFromConfig(config, key_depth_options, params.depth_options);
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "depth_options"), configured_keys.end());
 
-  params.depth_in_meters = GetOptionalBoolFromConfig(config, cam_param, "depth_in_meters", true);
+  params.depth_in_meters = GetOptionalBoolFromConfig(config, cam_param, "depth_in_meters", false);
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "depth_in_meters"), configured_keys.end());
 
   params.write_calibration = GetOptionalBoolFromConfig(config, cam_param, "write_calibration", false);

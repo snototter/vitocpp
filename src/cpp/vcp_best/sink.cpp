@@ -20,6 +20,9 @@
 #ifdef VCP_BEST_WITH_MATRIXVISION
     #include "matrixvision_sink.h"
 #endif
+#ifdef VCP_BEST_WITH_ZED
+    #include "zed_sink.h"
+#endif
 
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::best::sink"
@@ -116,6 +119,9 @@ std::string SinkTypeToString(const SinkType &s)
 #ifdef VCP_WITH_REALSENSE2
   MAKE_SINKTYPE_TO_STRING_CASE(REALSENSE);
 #endif
+#ifdef VCP_BEST_WITH_ZED
+  MAKE_SINKTYPE_TO_STRING_CASE(ZED);
+#endif
   MAKE_SINKTYPE_TO_STRING_CASE(VIDEO_FILE);
   MAKE_SINKTYPE_TO_STRING_CASE(WEBCAM);
   default:
@@ -140,13 +146,13 @@ SinkType SinkTypeFromString(const std::string &s)
 #ifdef VCP_BEST_WITH_K4A
   else if (k4a::IsK4A(s))
     return SinkType::K4A;
-#endif // VCP_BEST_WITH_K4A
+#endif
 #ifdef VCP_BEST_WITH_IPCAM
   else if (ipcam::IsMonocularIpCamera(s))
     return SinkType::IPCAM_MONOCULAR;
   else if (ipcam::IsStereoIpCamera(s))
     return SinkType::IPCAM_STEREO;
-#endif // VCP_BEST_WITH_IPCAM
+#endif
 #ifdef VCP_BEST_WITH_REALSENSE2
   else if (realsense2::IsRealSense2(s))
     return SinkType::REALSENSE;
@@ -154,6 +160,10 @@ SinkType SinkTypeFromString(const std::string &s)
 #ifdef VCP_BEST_WITH_MATRIXVISION
   else if (matrixvision::IsMvBlueFox3(s))
     return SinkType::MVBLUEFOX3;
+#endif
+#ifdef VCP_BEST_WITH_ZED
+  else if (zed::IsZedSink(s))
+    return SinkType::ZED;
 #endif
 
   VCP_ERROR("SinkTypeFromString(): Representation '" << s << "' not yet handled.");
@@ -290,6 +300,9 @@ std::string GetSinkTypeStringFromConfig(const vcp::config::ConfigParams &config,
     configured_keys->erase(std::remove(configured_keys->begin(), configured_keys->end(), "sink_type"), configured_keys->end());
   if (config.SettingExists(cam_group + ".sink_type"))
     return config.GetString(cam_group + ".sink_type");
+
+  if (configured_keys)
+    configured_keys->erase(std::remove(configured_keys->begin(), configured_keys->end(), "camera_type"), configured_keys->end());
   if (config.SettingExists(cam_group + ".camera_type"))
     return config.GetString(cam_group + ".camera_type");
   VCP_LOG_WARNING("Mandatory configuration parameter '" << cam_group << ".sink_type' (or '.camera_type') is not specified, looking up the obsolete '" << cam_group << ".type'.");
@@ -311,7 +324,7 @@ SinkType GetSinkTypeFromConfig(const vcp::config::ConfigParams &config,
 
   if (camera_type.empty())
   {
-    VCP_ERROR("Invalid configuration: Neither '" << cam_group << ".sink_type' nor the (obsolete) '" << cam_group << ".type' has been set. Cannot deduce sink type.");
+    VCP_ERROR("Invalid configuration: Neither '" << cam_group << ".sink_type', '.camera_type', nor the (obsolete) '.type' has been set. Cannot deduce sink type.");
   }
   else
   {
