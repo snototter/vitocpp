@@ -208,7 +208,7 @@ std::ostream &operator<< (std::ostream &out, const ZedSinkParams &p)
   else
     out << "UNKNOWN";
 
-  if (p.serial_number < std::numeric_limits<unsigned int>::max())
+  if (p.serial_number != std::numeric_limits<unsigned int>::max())
     out << ", #" << p.serial_number;
   return out;
 }
@@ -299,6 +299,10 @@ public:
     init_params.depth_stabilization = params_.depth_stabilization ? 1 : 0;
     init_params.sdk_gpu_id = params_.gpu_id;
 
+    if (params_.device_id >= 0)
+      init_params.input.setFromCameraID(static_cast<unsigned int>(params_.device_id));
+    if (params_.serial_number != std::numeric_limits<unsigned int>::max())
+      init_params.input.setFromSerialNumber(params_.serial_number);
 
     const sl::ERROR_CODE err = zed_->open(init_params);
     if (err != sl::ERROR_CODE::SUCCESS)
@@ -667,6 +671,21 @@ ZedSinkParams ZedSinkParamsFromConfig(const vcp::config::ConfigParams &config, c
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "gpu_id"), configured_keys.end());
   params.gpu_id = GetOptionalIntFromConfig(config, cam_param, "gpu_id", params.gpu_id);
   //TODO add save_calibration/write_calibration
+
+  const std::string ksn = cam_param + ".serial_number";
+  if (config.SettingExists(ksn))
+  {
+    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "serial_number"), configured_keys.end());
+    params.serial_number = config.GetUnsignedInteger(ksn);
+  }
+
+  const std::string kdev = cam_param + ".device";
+  if (config.SettingExists(kdev))
+  {
+    if (config.SettingExists(ksn))
+      VCP_ERROR("You cannot specify both the device ID and the serial number of the ZED cam '" << cam_param << "'.");
+    params.device_id = config.GetInteger(kdev);
+  }
 
   WarnOfUnusedParameters(cam_param, configured_keys);
   return params;

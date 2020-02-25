@@ -42,6 +42,7 @@ struct ZedSinkParams : public SinkParams
   //TODO init by dev-id
   //TODO init by serial-nr
   unsigned int serial_number;
+  int device_id;
   std::string model_name;
 
   ZedSinkParams(
@@ -58,8 +59,8 @@ struct ZedSinkParams : public SinkParams
       const int confidence_threshold=100,
       const int textureness_threshold=100,
       const int gpu_id=-1,
-      unsigned int serial_number=std::numeric_limits<unsigned int>::max()
-      )
+      unsigned int serial_number=std::numeric_limits<unsigned int>::max(),
+      int device_id=-1)
     : SinkParams(sink_params),
       enabled_streams(streams),
       resolution(resolution),
@@ -74,6 +75,7 @@ struct ZedSinkParams : public SinkParams
       textureness_threshold(textureness_threshold),
       gpu_id(gpu_id),
       serial_number(serial_number),
+      device_id(device_id),
       model_name(std::string())
   {}
 
