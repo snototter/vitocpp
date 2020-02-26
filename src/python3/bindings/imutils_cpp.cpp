@@ -280,6 +280,7 @@ PYBIND11_MODULE(imutils_cpp, m)
         "* Rotation: rot90, rot180, rot270\n"
         "* Histogram equalization: histeq\n"
         "* Discretization: rgb2cn, bgr2cn (color names)\n"
+        "* Surface normals: depth2surfnorm, surfnorm2rgb/bgr\n"
         "* Color space: rgb2hsv, rgb2lab, rgb2gray\n"
         "               as well as their bgr... versions\n\n"
         "See the C++ ImgTransform enum (imutils.h) for supported\n"
@@ -290,6 +291,35 @@ PYBIND11_MODULE(imutils_cpp, m)
         ":*args:       string representations of\n"
         "              the desired transformations.\n"
         ":return: transformed image as numpy ndarray.",
-        py::arg("image"));//TODO add surface normal stuff
+        py::arg("image"));
+
+  m.def("histeq", &vcp::imutils::HistogramEqualization,
+        "Apply histogram equalization. If the input is RGB/BGR,\n"
+        "the image will be converted to YCbCr and histogram equalization\n"
+        "will be performed on the luminance channel Y only.\n\n"
+        ":param image: input image as numpy ndarray.\n"
+        ":param is_rgb: set True for RGB inputs, False for BGR.\n"
+        ":return: equalized image as numpy ndarray.",
+        py::arg("image"), py::arg("is_rgb")=true);
+
+  m.def("surface_normals", &vcp::imutils::ComputeSurfaceNormals,
+        "Compute surface normals. If image is single-channel,\n"
+        "pixel coordinates will be taken as x/y coordinates. If\n"
+        "it is 3-channel, we assume that it is given as XYZ.\n\n"
+        ":param depth: input depth or XYZ matrix as numpy ndarray.\n"
+        ":return: surface normals as WxHx3 numpy ndarray.",
+        py::arg("image"));
+
+  m.def("colorize_surface_normals", &vcp::imutils::ColorizeSurfaceNormals,
+        "Apply normal mapping/colorization to the input surface normals.\n\n"
+        ":param normals: WxHx3 numpy ndarray holding the unit surface normals.\n"
+        ":param output_bgr: set True if you want BGR output.\n"
+        ":return: color mapped WxHx3 uint8 numpy ndarray.",
+        py::arg("normals"), py::arg("output_bgr")=false);
+
+  //TODO #ifdef VCP_IMUTILS_WITH_COLORNAMES
+  //cv::Mat ConvertToColorName(const cv::Mat &img, bool is_rgb=false);
+  //cv::Mat ConvertToColorNameFeature(const cv::Mat &img, bool is_rgb=false);
+//#endif
 }
 

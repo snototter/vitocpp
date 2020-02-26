@@ -18,10 +18,12 @@ def demo_surface_normals():
     depth = imutils.imread('../data/panther-depth.png').astype(np.float32)
     outside = depth > 254
     depth[outside] = 0
-    sn = imutils.transform(depth, "depth2sn")
+    sn = imutils.surface_normals(depth)
+    #sn = imutils.transform(depth, "depth2sn")
     # import iminspect
     # iminspect.show(depth)
-    col = imutils.transform(sn, "sn2rgb")
+    # col = imutils.transform(sn, "sn2rgb")
+    col = imutils.colorize_surface_normals(sn, output_bgr=False)
     imvis.imshow(sn, 'surfnorm-test')
     imvis.imshow(col, 'colorized-test', wait_ms=-1)
     ## Sphere
@@ -39,10 +41,12 @@ def demo_surface_normals():
     depth = 2*r - np.sqrt(zsqr)
     depth[outside] = 0
     
-    sn = imutils.transform(depth, "depth2sn")
+    # sn = imutils.transform(depth, "depth2sn")
+    sn = imutils.surface_normals(depth)
     
     # print(sn.shape, sn.dtype, np.max(sn), np.min(sn))
-    col = imutils.transform(sn, "sn2rgb")
+    # col = imutils.transform(sn, "sn2rgb")
+    col = imutils.colorize_surface_normals(sn, output_bgr=False)
     imvis.imshow(sn, 'surfnorm')
     imvis.imshow(col, 'colorized', wait_ms=-1)
 
@@ -52,7 +56,7 @@ if __name__ == "__main__":
     rgb = imutils.imread('../data/flamingo.jpg', mode='RGB', flip_channels=False) # Load as BGR
     # Discretization
     vis = imutils.transform(rgb, 'rgb2cn')
-    imvis.imshow(vis, 'discretization')
+    imvis.imshow(vis, title='Discretization via ColorNames')
 
     # Cartoonification
     rgb = imutils.cartoonify(rgb, num_pyramid_levels=3,
