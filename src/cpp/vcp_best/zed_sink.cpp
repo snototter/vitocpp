@@ -465,11 +465,11 @@ public:
   {
     std::vector<FrameType> types;
     if (is_left_enabled_)
-      types.push_back(FrameType::RGBD_IMAGE);
+      types.push_back(FrameType::MONOCULAR);
     if (is_right_enabled_)
-      types.push_back(FrameType::RGBD_IMAGE);
+      types.push_back(FrameType::MONOCULAR);
     if (is_depth_enabled_)
-      types.push_back(FrameType::RGBD_DEPTH);
+      types.push_back(FrameType::DEPTH);
     if (stream_index >= types.size())
       VCP_ERROR("stream_index " << stream_index << " is out-of-bounds");
     return types[stream_index];
