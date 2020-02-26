@@ -290,6 +290,6 @@ PYBIND11_MODULE(imutils_cpp, m)
         ":*args:       string representations of\n"
         "              the desired transformations.\n"
         ":return: transformed image as numpy ndarray.",
-        py::arg("image"));
+        py::arg("image"));//TODO add surface normal stuff
 }
 

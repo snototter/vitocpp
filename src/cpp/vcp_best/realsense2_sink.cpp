@@ -717,11 +717,15 @@ void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams 
   if (params.IsInfrared2StreamEnabled())
     DumpIrCalib(profile, fs, 2, "ir_right", params);
 
+  fs << "sink_type" << SinkTypeToString(params.sink_type);
+  fs << "label" << params.sink_label;
+
   fs << "type" << "rgbd";
   fs.release();
 
   if (params.verbose)
-    VCP_LOG_INFO("RealSense calibration has been saved to '" << params.calibration_file << "'. Change the camera's calibration file parameter if you want to prevent overwriting it upon the next start.");
+    VCP_LOG_INFO("RealSense calibration has been saved to '" << params.calibration_file << "'."
+                 << std::endl << "Change the camera's 'calibration_file' parameter if you want to prevent overwriting it upon the next start.");
 }
 
 

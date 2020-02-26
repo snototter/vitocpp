@@ -8,21 +8,27 @@
 
 #include "file_sink.h"
 #include "webcam_sink.h"
+
 #ifdef VCP_BEST_WITH_K4A
     #include "k4a_sink.h"
 #endif
+
 #ifdef VCP_BEST_WITH_IPCAM
     #include "ipcam_sink.h"
 #endif
+
 #ifdef VCP_BEST_WITH_REALSENSE2
     #include "realsense2_sink.h"
 #endif
+
 #ifdef VCP_BEST_WITH_MATRIXVISION
     #include "matrixvision_sink.h"
 #endif
+
 #ifdef VCP_BEST_WITH_ZED
     #include "zed_sink.h"
 #endif
+
 
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::best::sink"
@@ -89,7 +95,7 @@ FrameType FrameTypeFromString(const std::string &s)
 
 std::ostream &operator<<(std::ostream &stream, const FrameType &s)
 {
-  stream << "FrameType::" << FrameTypeToString(s);
+  stream << FrameTypeToString(s);
   return stream;
 }
 
@@ -101,22 +107,28 @@ std::string SinkTypeToString(const SinkType &s)
   switch (s)
   {
   MAKE_SINKTYPE_TO_STRING_CASE(IMAGE_DIR);
-#ifdef VCP_BEST_WITH_IPCAMERA
+
+#ifdef VCP_BEST_WITH_IPCAM
   MAKE_SINKTYPE_TO_STRING_CASE(IPCAM_MONOCULAR);
   MAKE_SINKTYPE_TO_STRING_CASE(IPCAM_STEREO);
 #endif
+
 #ifdef VCP_BEST_WITH_K4A
   MAKE_SINKTYPE_TO_STRING_CASE(K4A);
 #endif
-#ifdef VCP_WITH_MATRIXVISION
+
+#ifdef VCP_BEST_WITH_MATRIXVISION
   MAKE_SINKTYPE_TO_STRING_CASE(MVBLUEFOX3);
 #endif
-#ifdef VCP_WITH_REALSENSE2
+
+#ifdef VCP_BEST_WITH_REALSENSE2
   MAKE_SINKTYPE_TO_STRING_CASE(REALSENSE);
 #endif
+
 #ifdef VCP_BEST_WITH_ZED
   MAKE_SINKTYPE_TO_STRING_CASE(ZED);
 #endif
+
   MAKE_SINKTYPE_TO_STRING_CASE(VIDEO_FILE);
   MAKE_SINKTYPE_TO_STRING_CASE(WEBCAM);
   default:
@@ -126,7 +138,7 @@ std::string SinkTypeToString(const SinkType &s)
     break;
   }
 
-  return rep;
+  return vcp::utils::string::Replace(vcp::utils::string::Lower(rep), "_", "-");
 }
 
 #define MAKE_STRING_TO_SINKTYPE_IF(st, rep)  if (rep.compare(SinkTypeToString(SinkType::st)) == 0) return SinkType::st
@@ -138,24 +150,29 @@ SinkType SinkTypeFromString(const std::string &s)
     return SinkType::VIDEO_FILE;
   else if (webcam::IsWebcamSink(s))
     return SinkType::WEBCAM;
+
 #ifdef VCP_BEST_WITH_K4A
   else if (k4a::IsK4A(s))
     return SinkType::K4A;
 #endif
+
 #ifdef VCP_BEST_WITH_IPCAM
   else if (ipcam::IsMonocularIpCamera(s))
     return SinkType::IPCAM_MONOCULAR;
   else if (ipcam::IsStereoIpCamera(s))
     return SinkType::IPCAM_STEREO;
 #endif
+
 #ifdef VCP_BEST_WITH_REALSENSE2
   else if (realsense2::IsRealSense2(s))
     return SinkType::REALSENSE;
 #endif
+
 #ifdef VCP_BEST_WITH_MATRIXVISION
   else if (matrixvision::IsMvBlueFox3(s))
     return SinkType::MVBLUEFOX3;
 #endif
+
 #ifdef VCP_BEST_WITH_ZED
   else if (zed::IsZedSink(s))
     return SinkType::ZED;
@@ -166,7 +183,7 @@ SinkType SinkTypeFromString(const std::string &s)
 
 std::ostream &operator<<(std::ostream &stream, const SinkType &s)
 {
-  stream << "SinkType::" << SinkTypeToString(s);
+  stream << SinkTypeToString(s);
   return stream;
 }
 
@@ -179,6 +196,7 @@ inline std::string GetConfigKey(const std::string &cam_group, const std::string 
     return key;
   return cam_group + "." + key;
 }
+
 
 std::string GetOptionalStringFromConfig(
     const vcp::config::ConfigParams &config,

@@ -21,50 +21,6 @@ namespace vcp
 {
 namespace imutils
 {
-
-ImgTransform operator&(ImgTransform lhs, ImgTransform rhs)
-{
-    return static_cast<ImgTransform> (
-        static_cast<std::underlying_type<ImgTransform>::type>(lhs) &
-        static_cast<std::underlying_type<ImgTransform>::type>(rhs));
-}
-
-ImgTransform operator^(ImgTransform lhs, ImgTransform rhs)
-{
-    return static_cast<ImgTransform> (
-        static_cast<std::underlying_type<ImgTransform>::type>(lhs) ^
-        static_cast<std::underlying_type<ImgTransform>::type>(rhs));
-}
-
-ImgTransform operator~(ImgTransform rhs)
-{
-    return static_cast<ImgTransform> (~static_cast<std::underlying_type<ImgTransform>::type>(rhs));
-}
-
-ImgTransform& operator|=(ImgTransform &lhs, ImgTransform rhs)
-{
-    lhs = static_cast<ImgTransform> (
-        static_cast<std::underlying_type<ImgTransform>::type>(lhs) |
-        static_cast<std::underlying_type<ImgTransform>::type>(rhs));
-    return lhs;
-}
-
-ImgTransform& operator&=(ImgTransform &lhs, ImgTransform rhs)
-{
-    lhs = static_cast<ImgTransform> (
-        static_cast<std::underlying_type<ImgTransform>::type>(lhs) &
-        static_cast<std::underlying_type<ImgTransform>::type>(rhs));
-    return lhs;
-}
-
-ImgTransform& operator^=(ImgTransform &lhs, ImgTransform rhs)
-{
-    lhs = static_cast<ImgTransform> (
-        static_cast<std::underlying_type<ImgTransform>::type>(lhs) ^
-        static_cast<std::underlying_type<ImgTransform>::type>(rhs));
-    return lhs;
-}
-
 std::ostream& operator<<(std::ostream & os, const ImgTransform &t)
 {
   os << ImgTransformToString(t);
@@ -84,6 +40,10 @@ std::string ImgTransformToString(const ImgTransform &t)
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(ROTATE_180);
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(ROTATE_270);
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(HISTOGRAM_EQUALIZATION);
+
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(DEPTH2SURFACENORMALS);
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_SURFACENORMALS_RGB);
+  MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_SURFACENORMALS_BGR);
 
 #ifdef VCP_IMUTILS_WITH_COLORNAMES
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_RGB2COLORNAME);
@@ -147,6 +107,21 @@ ImgTransform ImgTransformFromString(const std::string &s)
       || lower.compare("equalizehistogram") == 0
       || lower.compare("histogramequalization") == 0)
     return ImgTransform::HISTOGRAM_EQUALIZATION;
+
+  if (lower.compare("depth2sn") == 0
+      || lower.compare("depth2surfnorm") == 0
+      || lower.compare("depth2surfacenormals") == 0)
+    return ImgTransform::DEPTH2SURFACENORMALS;
+
+  if (lower.compare("sn2rgb") == 0
+      || lower.compare("surfnorm2rgb") == 0
+      || lower.compare("surfacenormals2rgb") == 0)
+    return ImgTransform::COLOR_SURFACENORMALS_RGB;
+
+  if (lower.compare("sn2bgr") == 0
+      || lower.compare("surfnorm2bgr") == 0
+      || lower.compare("surfacenormals2bgr") == 0)
+    return ImgTransform::COLOR_SURFACENORMALS_BGR;
 
 #ifdef VCP_IMUTILS_WITH_COLORNAMES
   if (lower.compare("rgb2cn") == 0
@@ -315,6 +290,196 @@ cv::Mat HistogramEqualization(const cv::Mat &img, bool is_rgb)
     VCP_ERROR("Only single-channel or RGB/BGR (+alpha) input images are supported for histogram equalization.");
   return res;
 }
+
+template <typename _T>
+cv::Mat SurfaceNormalsC1Helper(const cv::Mat &depth)
+{
+//  // Barron & Malik
+//  cv::Mat d32;
+//  depth.convertTo(d32, CV_32F);
+
+//  // filters
+//  cv::Mat f1 = (cv::Mat_<float>(3, 3) << 1,  2,  1,
+//                                     0,  0,  0,
+//                                    -1, -2, -1) / 8;
+
+//  cv::Mat f2 = (cv::Mat_<float>(3, 3) << 1, 0, -1,
+//                                     2, 0, -2,
+//                                     1, 0, -1) / 8;
+
+//  cv::Mat f1m, f2m;
+//  cv::flip(f1, f1m, 0);
+//  cv::flip(f2, f2m, 1);
+//  cv::Mat n1, n2;
+//  cv::filter2D(d32, n1, -1, f1m, cv::Point(-1, -1), 0, cv::BORDER_CONSTANT);
+//  cv::filter2D(d32, n2, -1, f2m, cv::Point(-1, -1), 0, cv::BORDER_CONSTANT);
+
+//  n1 *= -1;
+//  n2 *= -1;
+
+//  cv::Mat temp = n1.mul(n1) + n2.mul(n2) + 1;
+//  cv::sqrt(temp, temp);
+
+//  cv::Mat N3 = 1 / temp;
+//  cv::Mat N1 = n1.mul(N3);
+//  cv::Mat N2 = n2.mul(N3);
+
+//  std::vector<cv::Mat> N;
+//  N.push_back(N1);
+//  N.push_back(N2);
+//  N.push_back(N3);
+
+//  cv::Mat normals;
+//  cv::merge(N, normals);
+//  return normals;
+  cv::Mat normals = cv::Mat::zeros(depth.size(), CV_64FC3);
+
+  cv::Vec3d dir;
+  double dzdx, dzdy;
+  for (int row = 1; row < depth.rows-1; ++row)
+  {
+    for (int col = 1; col < depth.cols-1; ++col)
+    {
+      if (depth.at<_T>(row, col) > static_cast<_T>(0))
+      {
+        // Save some computation (we can replace the cross product by the
+        // following derivation), based on https://stackoverflow.com/a/34644939/400948
+        dzdx = (depth.at<_T>(row, col+1) - depth.at<_T>(row, col-1)) / 2.0;
+        dzdy = (depth.at<_T>(row+1, col) - depth.at<_T>(row-1, col)) / 2.0;
+        dir = cv::Vec3d(-dzdx, -dzdy, 1.0);
+        normals.at<cv::Vec3d>(row, col) = cv::normalize(dir); // Already takes care of 0-length vectors.
+      }
+    }
+  }
+  return normals;
+}
+
+
+template <typename _T>
+cv::Mat SurfaceNormalsC3Helper(const cv::Mat &xyz)
+{
+  //TODO compute normals from 3d point coordinates
+  VCP_ERROR("Not yet implemented!");
+}
+
+cv::Mat ComputeSurfaceNormals(const cv::Mat &depth)
+{
+  // For single-channel inputs, we assume the depth has already been
+  // properly scaled, such that we can take image coordinates for x/y
+  // Otherwise, inputs must have 3 channels, x/y/z.
+  if (depth.channels() != 1 && depth.channels() != 3)
+    VCP_ERROR("Input depth must be a single-channel depth image or 3-channel XYZ.");
+
+  switch (depth.type())
+  {
+    case CV_16UC1:
+      return SurfaceNormalsC1Helper<unsigned short>(depth);
+    case CV_16UC3:
+      return SurfaceNormalsC3Helper<unsigned short>(depth);
+    case CV_16SC1:
+      return SurfaceNormalsC1Helper<short>(depth);
+    case CV_16SC3:
+      return SurfaceNormalsC3Helper<short>(depth);
+    case CV_32FC1:
+      return SurfaceNormalsC1Helper<float>(depth);
+    case CV_32FC3:
+      return SurfaceNormalsC3Helper<float>(depth);
+    case CV_32SC1:
+      return SurfaceNormalsC1Helper<int>(depth);
+    case CV_32SC3:
+      return SurfaceNormalsC3Helper<int>(depth);
+    case CV_64FC1:
+      return SurfaceNormalsC1Helper<double>(depth);
+    case CV_64FC3:
+      return SurfaceNormalsC3Helper<double>(depth);
+    default:
+      VCP_ERROR("ComputeSurfaceNormals() does not support depth image type '" << vcp::imutils::CVMatDepthToString(depth.depth(), depth.channels()));
+  }
+}
+
+template<typename _T>
+cv::Mat ColorizeSurfaceNormalsHelper(const cv::Mat &normals, bool output_bgr)
+{
+  cv::Mat colorized(normals.size(), CV_8UC3);
+
+  // Efficiently iterate the normal image
+  int cols = normals.cols;
+  int rows = normals.rows;
+  if (normals.isContinuous() && colorized.isContinuous())
+  {
+    cols = rows * cols;
+    rows = 1;
+  }
+
+  cv::Vec3b color;
+  // Shading direction - naive solution: red light from the left, green
+  // light from the top, and blue light from the front/camera center
+  const cv::Vec<_T, 3> shading_dir_red = cv::normalize(cv::Vec<_T, 3>(1, 0, 0));
+  const cv::Vec<_T, 3> shading_dir_green = cv::normalize(cv::Vec<_T, 3>(0, 1, 0));
+  const cv::Vec<_T, 3> shading_dir_blue = cv::normalize(cv::Vec<_T, 3>(0, 0, -1));
+  const double shading_factor = 0.2;
+
+  for (int row = 0; row < rows; ++row)
+  {
+    const _T* nptr = normals.ptr<_T>(row);
+    uchar* cptr = colorized.ptr<uchar>(row);
+
+    for (int col = 0; col < cols; ++col)
+    {
+      const _T nx = nptr[0];
+      const _T ny = nptr[1];
+      const _T nz = nptr[2];
+      if (nx*nx + ny*ny + nz*nz > static_cast<_T>(0))
+      {
+        // Normal mapping:
+        // X: -1 to +1  ==> Red:     0 to 255
+        // Y: -1 to +1  ==> Green:   0 to 255
+        // Z:  0 to -1  ==> Blue:  128 to 255
+        color[output_bgr ? 2 : 0] = static_cast<uchar>((nx + 1) / 2.0 * 255.0);
+        color[1] = static_cast<uchar>((ny + 1) / 2.0 * 255);
+        color[output_bgr ? 0 : 2] = static_cast<uchar>(std::fabs(nz)*127 + 128);
+
+        // Shading, adapted from https://stackoverflow.com/a/34644939/400948
+        const _T shading_red = std::min(static_cast<_T>(1), std::max(static_cast<_T>(0),
+            static_cast<_T>((1.0 - shading_factor) +
+                            shading_factor * (shading_dir_red[0] * nx + shading_dir_red[1] * ny + shading_dir_red[2] * nz))));
+        const _T shading_green = std::min(static_cast<_T>(1), std::max(static_cast<_T>(0),
+            static_cast<_T>((1.0 - shading_factor) +
+                            shading_factor * (shading_dir_green[0] * nx + shading_dir_green[1] * ny + shading_dir_green[2] * nz))));
+        const _T shading_blue = std::min(static_cast<_T>(1), std::max(static_cast<_T>(0),
+            static_cast<_T>((1.0 - shading_factor) +
+                            shading_factor * (shading_dir_blue[0] * nx + shading_dir_blue[1] * ny + shading_dir_blue[2] * nz))));
+
+        cptr[0] = static_cast<uchar>((output_bgr ? shading_blue : shading_red) * color[0]);
+        cptr[1] = static_cast<uchar>(shading_green * color[1]);
+        cptr[2] = static_cast<uchar>((output_bgr ? shading_red : shading_blue) * color[2]);
+      }
+      else
+      {
+        cptr[0] = 0;
+        cptr[1] = 0;
+        cptr[2] = 0;
+      }
+      cptr += 3;
+      nptr += 3;
+    }
+  }
+  return colorized;
+}
+
+
+cv::Mat ColorizeSurfaceNormals(const cv::Mat &normals, bool output_bgr)
+{
+  if (normals.type() == CV_32FC3)
+    return ColorizeSurfaceNormalsHelper<float>(normals, output_bgr);
+
+  if (normals.type() == CV_64FC3)
+    return ColorizeSurfaceNormalsHelper<double>(normals, output_bgr);
+
+  VCP_ERROR("ColorizeSurfaceNormals() input must be 32FC3 or 64FC3, you provided "
+            << vcp::imutils::CVMatDepthToString(normals.depth(), normals.channels()) << ".");
+}
+
 
 cv::Mat ConvertToHsv(const cv::Mat &img, bool is_rgb)
 {
@@ -511,6 +676,15 @@ cv::Mat ApplyImageTransformation(const cv::Mat &img, const ImgTransform &transfo
 
     case ImgTransform::HISTOGRAM_EQUALIZATION:
       return HistogramEqualization(img);
+
+    case ImgTransform::DEPTH2SURFACENORMALS:
+      return ComputeSurfaceNormals(img);
+
+    case ImgTransform::COLOR_SURFACENORMALS_RGB:
+      return ColorizeSurfaceNormals(img, false);
+    case ImgTransform::COLOR_SURFACENORMALS_BGR:
+      return ColorizeSurfaceNormals(img, true);
+
 
 #ifdef VCP_IMUTILS_WITH_COLORNAMES
     case ImgTransform::COLOR_RGB2COLORNAME:

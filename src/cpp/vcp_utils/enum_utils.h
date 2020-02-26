@@ -10,28 +10,24 @@
 template<typename Enum>
 Enum operator |(Enum lhs, Enum rhs)
 {
-    static_assert(std::is_enum<Enum>::value, "Template parameter is not an enum type");
-
-    using underlying = typename std::underlying_type<Enum>::type;
-
-    return static_cast<Enum> (
-        static_cast<underlying>(lhs) |
-        static_cast<underlying>(rhs)
-    );
+  static_assert(std::is_enum<Enum>::value, "Template parameter is not an enum type");
+  using underlying = typename std::underlying_type<Enum>::type;
+  return static_cast<Enum> (
+    static_cast<underlying>(lhs) |
+    static_cast<underlying>(rhs)
+  );
 }
 
 template<typename Enum>
 Enum& operator |=(Enum& lhs, Enum rhs)
 {
-    static_assert(std::is_enum<Enum>::value, "Template parameter is not an enum type");
-
-    using underlying = typename std::underlying_type<Enum>::type;
-
-    lhs = static_cast<Enum> (
-        static_cast<underlying>(lhs) |
-        static_cast<underlying>(rhs)
-    );
-    return lhs;
+  static_assert(std::is_enum<Enum>::value, "Template parameter is not an enum type");
+  using underlying = typename std::underlying_type<Enum>::type;
+  lhs = static_cast<Enum> (
+    static_cast<underlying>(lhs) |
+    static_cast<underlying>(rhs)
+  );
+  return lhs;
 }
 //TODO add other .= overloads
 
@@ -39,14 +35,47 @@ Enum& operator |=(Enum& lhs, Enum rhs)
 template<typename Enum>
 Enum operator &(Enum lhs, Enum rhs)
 {
-    static_assert(std::is_enum<Enum>::value, "Template parameter is not an enum type");
+  static_assert(std::is_enum<Enum>::value, "Template parameter is not an enum type");
+  using underlying = typename std::underlying_type<Enum>::type;
+  return static_cast<Enum> (
+    static_cast<underlying>(lhs) &
+    static_cast<underlying>(rhs)
+  );
+}
 
-    using underlying = typename std::underlying_type<Enum>::type;
+template<typename Enum>
+Enum& operator &=(Enum& lhs, Enum rhs)
+{
+  static_assert(std::is_enum<Enum>::value, "Template parameter is not an enum type");
+  using underlying = typename std::underlying_type<Enum>::type;
+  lhs = static_cast<Enum> (
+    static_cast<underlying>(lhs) &
+    static_cast<underlying>(rhs)
+  );
+  return lhs;
+}
 
-    return static_cast<Enum> (
-        static_cast<underlying>(lhs) &
-        static_cast<underlying>(rhs)
-    );
+template<typename Enum>
+Enum operator ^(Enum lhs, Enum rhs)
+{
+  static_assert(std::is_enum<Enum>::value, "Template parameter is not an enum type");
+  using underlying = typename std::underlying_type<Enum>::type;
+  return static_cast<Enum> (
+    static_cast<underlying>(lhs) ^
+    static_cast<underlying>(rhs)
+  );
+}
+
+template<typename Enum>
+Enum& operator ^=(Enum& lhs, Enum rhs)
+{
+  static_assert(std::is_enum<Enum>::value, "Template parameter is not an enum type");
+  using underlying = typename std::underlying_type<Enum>::type;
+  lhs = static_cast<Enum> (
+    static_cast<underlying>(lhs) ^
+    static_cast<underlying>(rhs)
+  );
+  return lhs;
 }
 
 template<typename Enum>

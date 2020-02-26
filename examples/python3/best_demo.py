@@ -47,17 +47,21 @@ def streaming_demo(cfg_file, folder):
         frames = capture.next()
 
         # Colorize depth/infrared images for visualization
-        def _col_dir(f):
+        def _col_depth(f):
+            return imutils.transform(f, 'depth2surfnorm', 'surfnorm2rgb')
+            #return imvis.pseudocolor(f, limits=[0, 5000], color_map=colormaps.colormap_turbo_rgb)
+        def _col_ir(f):
             # RealSense infrared is provided (by default) in Y8 format
             if f.dtype == np.uint8:
                 return f
-            # Depth values are usually 16bit, in millimeters
-            return imvis.pseudocolor(f, limits=[0, 5000], color_map=colormaps.colormap_turbo_rgb)
+            return imvis.pseudocolor(f, limits=None, color_map=colormaps.colormap_turbo_rgb)
 
         vis_frames = [
-                _col_dir(frames[idx])
-                if capture.is_depth(idx) or capture.is_infrared(idx)
-                else frames[idx]
+            _col_depth(frames[idx])
+                if capture.is_depth(idx)
+                else (_col_ir(frames[idx])
+                    if capture.is_infrared(idx)
+                    else frames[idx])
             for idx in range(len(frames))]
 
         # Overlay stream labels
@@ -97,8 +101,8 @@ def demo():
 
     folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'data-best')
     # cfg_files = [file for file in os.listdir(folder) if file.endswith(".cfg")]
-    cfg_files = ['realsense.cfg'] #, 'image_sequence.cfg', 'k4a.cfg', 'webcam.cfg']
-    cfg_files = ['zed.cfg']
+    # cfg_files = ['realsense.cfg'] #, 'image_sequence.cfg', 'k4a.cfg', 'webcam.cfg']
+    cfg_files = ['zed.cfg', 'realsense.cfg']
     
     for cf in cfg_files:
         try:

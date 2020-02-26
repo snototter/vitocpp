@@ -40,6 +40,9 @@ enum class ImgTransform : uint32_t
   // Check https://hadrienj.github.io/posts/Preprocessing-for-deep-learning/
   // https://stats.stackexchange.com/questions/12842/covariance-and-independence
 // * Gamma correction   https://docs.opencv.org/3.4/d3/dc1/tutorial_basic_linear_transform.html
+  DEPTH2SURFACENORMALS = 0x01 << 19, /**< Compute surface normals from depth image. */
+  COLOR_SURFACENORMALS_RGB = 0x01 << 20, /**< Colorize a surface normal image (3-channel 32F or 64F), output RGB. */
+  COLOR_SURFACENORMALS_BGR = 0x01 << 21, /**< Colorize a surface normal image (3-channel 32F or 64F), output BGR. */
 #ifdef VCP_IMUTILS_WITH_COLORNAMES
   COLOR_RGB2COLORNAME = 0x01 << 22, /**< Quantize RGB into the 11 color names/attributes. */
   COLOR_BGR2COLORNAME = 0x01 << 23, /**< Quantize BGR into the 11 color names/attributes. */
@@ -52,15 +55,7 @@ enum class ImgTransform : uint32_t
   COLOR_RGB2GRAY = 0x01 << 29,  /**< Convert RGB image to single-channel grayscale. */
   COLOR_BGR2GRAY = 0x01 << 30   /**< Convert BGR image to single-channel grayscale. */
 };
-//TODO make vector of img transformations
 
-// Operator overloads
-ImgTransform operator&(ImgTransform lhs, ImgTransform rhs);
-ImgTransform operator^(ImgTransform lhs, ImgTransform rhs);
-ImgTransform operator~(ImgTransform rhs);
-ImgTransform& operator|=(ImgTransform &lhs, ImgTransform rhs);
-ImgTransform& operator&=(ImgTransform &lhs, ImgTransform rhs);
-ImgTransform& operator^=(ImgTransform &lhs, ImgTransform rhs);
 std::ostream& operator<<(std::ostream & os, const ImgTransform &t);
 
 /** @brief String representation for ImageTransformation. */
@@ -90,6 +85,12 @@ cv::Mat Rotate270(const cv::Mat &img);
 
 /** @brief Applies histogram equalization. */
 cv::Mat HistogramEqualization(const cv::Mat &img, bool is_rgb=false);
+
+/** @brief Compute surface normals from the given (single-channel) depth image. */
+cv::Mat ComputeSurfaceNormals(const cv::Mat &depth);
+
+/** @brief Colorize the given 32FC3 or 64FC3 surface normals. */
+cv::Mat ColorizeSurfaceNormals(const cv::Mat &normals, bool output_bgr=false);
 
 /** @brief Convenience wrapper to cv::cvtColor to be used as ImgTransformation (within the BESt vcp module). */
 cv::Mat ConvertToHsv(const cv::Mat &img, bool is_rgb=false);

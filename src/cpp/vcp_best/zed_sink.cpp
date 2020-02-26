@@ -264,7 +264,8 @@ cv::Mat GetTranslation(const sl::float3 &t)
   return T;
 }
 
-bool DumpCalibration(const ZedSinkParams &params, const sl::CameraInformation &ci)
+// Cannot pass sl::CameraInformation as const reference, because the internal getters aren't declared const!
+bool DumpCalibration(const ZedSinkParams &params, sl::CameraInformation &ci)
 {
   if (params.calibration_file.empty())
   {
@@ -279,7 +280,7 @@ bool DumpCalibration(const ZedSinkParams &params, const sl::CameraInformation &c
   // We store the rectified/undistorted calibration parameters, because by default we
   // yield only these frames. If you ever need unrectified/distorted images, change
   // the zed_->retrieveImage() calls inside Receive() to return sl::VIEW::..._UNRECTIFIED.
-  const sl::CalibrationParameters &calib = ci.calibration_parameters;
+  sl::CalibrationParameters &calib = ci.calibration_parameters;
 
   if (params.IsLeftStreamEnabled() || params.IsDepthStreamEnabled())
   {
@@ -311,22 +312,32 @@ bool DumpCalibration(const ZedSinkParams &params, const sl::CameraInformation &c
     const int wr = calib.right_cam.image_size.width;
     const int hr = calib.right_cam.image_size.height;
 
-    const cv::Mat R = GetRotation(calib.R);
-    const cv::Mat t = GetTranslation(calib.T);
-
     fs << "K_right" << Kr;
     fs << "D_right" << Dr;
     fs << "width_right" << wr;
     fs << "height_right" << hr;
+  }
+
+  // Store stereo transformation if needed
+  if (params.IsDepthStreamEnabled() || params.IsRightStreamEnabled())
+  {
+    const cv::Mat R = GetRotation(calib.R);
+    const cv::Mat t = GetTranslation(calib.T);
+
     fs << "R_right2left" << R;
     fs << "t_right2left" << t;
+    fs << "baseline" << static_cast<double>(calib.getCameraBaseline());
   }
+
+  fs << "sink_type" << SinkTypeToString(params.sink_type);
+  fs << "label" << params.sink_label;
 
   fs << "type" << "stereo";
   fs.release();
 
   if (params.verbose)
-    VCP_LOG_INFO_DEFAULT("Stored ZED calibration to " << params.calibration_file);
+    VCP_LOG_INFO("ZED calibration has been saved to '" << params.calibration_file << "'."
+                 << std::endl << "Change the camera's 'calibration_file' parameter if you want to prevent overwriting it upon the next start.");
 
   return true;
 }

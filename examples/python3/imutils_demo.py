@@ -13,8 +13,42 @@ sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '
 from vcp import imutils
 from vcp import imvis
 
+def demo_surface_normals():
+    # depth = imutils.imread("/home/snototter/workspace/utilities/vito/examples/depth.png")
+    depth = imutils.imread('../data/panther-depth.png').astype(np.float32)
+    outside = depth > 254
+    depth[outside] = 0
+    sn = imutils.transform(depth, "depth2sn")
+    # import iminspect
+    # iminspect.show(depth)
+    col = imutils.transform(sn, "sn2rgb")
+    imvis.imshow(sn, 'surfnorm-test')
+    imvis.imshow(col, 'colorized-test', wait_ms=-1)
+    ## Sphere
+    hh, wh = 256, 256
+    
+    depth = np.zeros((2*hh, 2*wh))
+    r = max(10, min(hh, wh) - 30)
+    x = np.arange(-wh, wh, 1)
+    y = np.arange(-hh, hh, 1)
+    xv, yv = np.meshgrid(x, y)
+    print(xv.shape)
+    zsqr = r**2 - xv**2 - yv**2
+    outside = zsqr < 0
+    zsqr[outside] = 0
+    depth = 2*r - np.sqrt(zsqr)
+    depth[outside] = 0
+    
+    sn = imutils.transform(depth, "depth2sn")
+    
+    # print(sn.shape, sn.dtype, np.max(sn), np.min(sn))
+    col = imutils.transform(sn, "sn2rgb")
+    imvis.imshow(sn, 'surfnorm')
+    imvis.imshow(col, 'colorized', wait_ms=-1)
 
 if __name__ == "__main__":
+    demo_surface_normals()
+
     rgb = imutils.imread('../data/flamingo.jpg', mode='RGB', flip_channels=False) # Load as BGR
     # Discretization
     vis = imutils.transform(rgb, 'rgb2cn')
