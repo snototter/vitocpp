@@ -79,7 +79,7 @@ std::string ZedStreamsToString(const ZedStreams &s)
   return str.str();
 }
 
-std::string ZedResolutionToString(const sl::RESOLUTION &r)
+std::string ZedResolutionToString(const sl::RESOLUTION& r)
 {
   switch(r)
   {
@@ -229,6 +229,108 @@ bool ZedSinkParams::IsDepthStreamEnabled() const
   return (enabled_streams & ZedStreams::DEPTH) == ZedStreams::DEPTH;
 }
 
+cv::Mat GetIntrinsics(const sl::CameraParameters &cp)
+{
+  cv::Mat K = (cv::Mat_<double>(3, 3)
+               << cp.fx, 0.0, cp.cx,
+               0.0, cp.fy, cp.cy,
+               0.0, 0.0, 1.0);
+  return K;
+}
+
+cv::Mat GetDistortion(const sl::CameraParameters &cp)
+{
+  cv::Mat D = (cv::Mat_<double>(5, 1)
+               << cp.disto[0], cp.disto[1],
+               cp.disto[2], cp.disto[3], cp.disto[4]);
+  return D;
+}
+
+cv::Mat GetRotation(const sl::float3 &r)
+{
+  sl::Rotation rot;
+  rot.setRotationVector(r);
+  cv::Mat R = (cv::Mat_<double>(3, 3)
+               << rot.r00, rot.r01, rot.r02,
+               rot.r10, rot.r11, rot.r12,
+               rot.r20, rot.r21, rot.r22);
+  return R;
+}
+
+cv::Mat GetTranslation(const sl::float3 &t)
+{
+  cv::Mat T = (cv::Mat_<double>(3, 1)
+               << t.x, t.y, t.z);
+  return T;
+}
+
+bool DumpCalibration(const ZedSinkParams &params, const sl::CameraInformation &ci)
+{
+  if (params.calibration_file.empty())
+  {
+    VCP_LOG_FAILURE("If you want to dump the ZED calibration, you must specify the filename as calibration_file parameter!");
+    return false;
+  }
+
+  cv::FileStorage fs(params.calibration_file, cv::FileStorage::WRITE);
+  if (!fs.isOpened())
+    VCP_ERROR("Cannot open '" << params.calibration_file << "' to store calibration!");
+
+  // We store the rectified/undistorted calibration parameters, because by default we
+  // yield only these frames. If you ever need unrectified/distorted images, change
+  // the zed_->retrieveImage() calls inside Receive() to return sl::VIEW::..._UNRECTIFIED.
+  const sl::CalibrationParameters &calib = ci.calibration_parameters;
+
+  if (params.IsLeftStreamEnabled() || params.IsDepthStreamEnabled())
+  {
+    const cv::Mat Kl = GetIntrinsics(calib.left_cam);
+    const cv::Mat Dl = GetDistortion(calib.left_cam);
+    const int wl = calib.left_cam.image_size.width;
+    const int hl = calib.left_cam.image_size.height;
+
+    if (params.IsLeftStreamEnabled())
+    {
+      fs << "K_left" << Kl;
+      fs << "D_left" << Dl;
+      fs << "width_left" << wl;
+      fs << "height_left" << hl;
+    }
+    if (params.IsDepthStreamEnabled())
+    {
+      fs << "K_depth" << Kl;
+      fs << "D_depth" << Dl;
+      fs << "width_depth" << wl;
+      fs << "height_depth" << hl;
+    }
+  }
+
+  if (params.IsRightStreamEnabled())
+  {
+    const cv::Mat Kr = GetIntrinsics(calib.right_cam);
+    const cv::Mat Dr = GetDistortion(calib.right_cam);
+    const int wr = calib.right_cam.image_size.width;
+    const int hr = calib.right_cam.image_size.height;
+
+    const cv::Mat R = GetRotation(calib.R);
+    const cv::Mat t = GetTranslation(calib.T);
+
+    fs << "K_right" << Kr;
+    fs << "D_right" << Dr;
+    fs << "width_right" << wr;
+    fs << "height_right" << hr;
+    fs << "R_right2left" << R;
+    fs << "t_right2left" << t;
+  }
+
+  fs << "type" << "stereo";
+  fs.release();
+
+  if (params.verbose)
+    VCP_LOG_INFO_DEFAULT("Stored ZED calibration to " << params.calibration_file);
+
+  return true;
+}
+
 cv::Mat ToCvMat(sl::Mat &input)
 {
   // Mapping between MAT_TYPE and CV_TYPE
@@ -297,7 +399,11 @@ public:
     init_params.depth_mode = params_.depth_mode;
     init_params.coordinate_units = params_.depth_in_meters ? sl::UNIT::METER : sl::UNIT::MILLIMETER;
     init_params.depth_stabilization = params_.depth_stabilization ? 1 : 0;
+    init_params.enable_image_enhancement = params_.enable_image_enhancement;
     init_params.sdk_gpu_id = params_.gpu_id;
+    // We only need the default depth measures (i.e. aligned to the left view)
+    // If you ever change this, make sure to adjust the calibration, too (see DumpCalibration)
+    init_params.enable_right_side_measure = false;
 
     if (params_.device_id >= 0)
       init_params.input.setFromCameraID(static_cast<unsigned int>(params_.device_id));
@@ -311,13 +417,21 @@ public:
       return false;
     }
 
-    const sl::CameraInformation ci = zed_->getCameraInformation();
+    sl::CameraInformation ci = zed_->getCameraInformation();
     params_.model_name = ZedModelToString(ci);
     params_.serial_number = ci.serial_number;
 
     if (params_.verbose)
-      VCP_LOG_INFO_DEFAULT("Opened " << params_);
-    //TODO store intrinsics
+    {
+      VCP_LOG_INFO_DEFAULT("Opened ZED camera (" << params_.model_name << "), SN: " << params_.serial_number
+                           << ", Firmware: " << ci.camera_firmware_version << ", "
+                           << ci.camera_resolution.width << "x" << ci.camera_resolution.height
+                           << " @" << ci.camera_fps << " fps");
+    }
+
+    if (params_.write_calibration)
+      return DumpCalibration(params_, ci);
+
     return true;
   }
 
@@ -670,7 +784,12 @@ ZedSinkParams ZedSinkParamsFromConfig(const vcp::config::ConfigParams &config, c
 
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "gpu_id"), configured_keys.end());
   params.gpu_id = GetOptionalIntFromConfig(config, cam_param, "gpu_id", params.gpu_id);
-  //TODO add save_calibration/write_calibration
+
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "enable_image_enhancement"), configured_keys.end());
+  params.enable_image_enhancement = GetOptionalBoolFromConfig(config, cam_param, "enable_image_enhancement", true);
+
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "write_calibration"), configured_keys.end());
+  params.write_calibration = GetOptionalBoolFromConfig(config, cam_param, "write_calibration", false);
 
   const std::string ksn = cam_param + ".serial_number";
   if (config.SettingExists(ksn))

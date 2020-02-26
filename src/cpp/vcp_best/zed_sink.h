@@ -37,6 +37,9 @@ struct ZedSinkParams : public SinkParams
   sl::SENSING_MODE sensing_mode;
   int confidence_threshold;
   int textureness_threshold;
+  bool enable_image_enhancement;
+
+  bool write_calibration;
 
   int gpu_id;
   //TODO init by dev-id
@@ -58,6 +61,8 @@ struct ZedSinkParams : public SinkParams
       const sl::SENSING_MODE sensing_mode=sl::SENSING_MODE::STANDARD,
       const int confidence_threshold=100,
       const int textureness_threshold=100,
+      const bool enable_image_enhancement=true,
+      const bool write_calibration=false,
       const int gpu_id=-1,
       unsigned int serial_number=std::numeric_limits<unsigned int>::max(),
       int device_id=-1)
@@ -73,6 +78,8 @@ struct ZedSinkParams : public SinkParams
       sensing_mode(sensing_mode),
       confidence_threshold(confidence_threshold),
       textureness_threshold(textureness_threshold),
+      enable_image_enhancement(enable_image_enhancement),
+      write_calibration(write_calibration),
       gpu_id(gpu_id),
       serial_number(serial_number),
       device_id(device_id),
