@@ -885,7 +885,9 @@ public:
         {
           if (SettingExists(k) && !vcp::utils::file::IsAbsolute(GetString(k)))
           {
-            SetString(k, vcp::utils::file::FullFile(absolute_base_path, GetString(k)));
+            SetString(k,
+                      vcp::utils::file::RealPath(
+                        vcp::utils::file::FullFile(absolute_base_path, GetString(k))));
             if (verbose)
               VCP_LOG_INFO_DEFAULT("Updated config path '" << k << "' to '" << GetString(k) << "'");
           }
@@ -917,7 +919,6 @@ public:
           {
             if (!vcp::utils::string::EndsWith(configured_params_lower[i], lower))
               continue;
-
 //            if (configured_params_lower[i].find(lower) == std::string::npos)
 //              continue;
 
@@ -925,7 +926,9 @@ public:
             if (vcp::utils::file::IsAbsolute(GetString(k)))
               continue;
 
-            SetString(k, vcp::utils::file::FullFile(absolute_base_path, GetString(k)));
+            SetString(k,
+                      vcp::utils::file::RealPath(
+                        vcp::utils::file::FullFile(absolute_base_path, GetString(k))));
             if (verbose)
               VCP_LOG_INFO("Updated config path '" << k << "' to '" << GetString(k) << "'");
           }
