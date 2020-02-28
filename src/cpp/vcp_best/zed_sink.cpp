@@ -184,9 +184,9 @@ sl::SENSING_MODE ZedSensingModeFromString(const std::string &s)
   VCP_ERROR("Cannot convert '" << s << "' to sl::SENSING_MODE.");
 }
 
-std::string ZedModelToString(const sl::CameraInformation &ci)
+std::string ZedModelToString(const sl::MODEL &cm)
 {
-  switch (ci.camera_model)
+  switch (cm)
   {
     case sl::MODEL::ZED:
       return "ZED v1";
@@ -195,7 +195,7 @@ std::string ZedModelToString(const sl::CameraInformation &ci)
     case sl::MODEL::ZED_M:
       return "ZED Mini";
     default:
-      VCP_ERROR("Unsupported ZED model '" << static_cast<int>(ci.camera_model) << "'");
+      VCP_ERROR("Unsupported ZED model '" << static_cast<int>(cm) << "'");
   }
   return std::string();
 }
@@ -429,7 +429,7 @@ public:
     }
 
     sl::CameraInformation ci = zed_->getCameraInformation();
-    params_.model_name = ZedModelToString(ci);
+    params_.model_name = ZedModelToString(ci.camera_model);
     params_.serial_number = ci.serial_number;
 
     if (params_.verbose)
@@ -821,6 +821,33 @@ ZedSinkParams ZedSinkParamsFromConfig(const vcp::config::ConfigParams &config, c
   return params;
 }
 
+
+std::vector<ZedDeviceInfo> ListZedDevices(bool warn_if_no_devices, bool list_unavailable_devices)
+{
+  std::vector<ZedDeviceInfo> infos;
+  const std::vector<sl::DeviceProperties> devs = sl::Camera::getDeviceList();
+  if (devs.empty())
+  {
+    if (warn_if_no_devices)
+      VCP_LOG_WARNING("No ZED cameras connected!");
+  }
+  else
+  {
+    for (const auto &dp : devs)
+    {
+      ZedDeviceInfo info;
+      info.available = dp.camera_state == sl::CAMERA_STATE::AVAILABLE;
+      info.serial_number = dp.serial_number;
+      info.device_path = std::string(dp.path.c_str());
+      info.model_name = ZedModelToString(dp.camera_model);
+      infos.push_back(info);
+    }
+    if (infos.empty() && warn_if_no_devices)
+      VCP_LOG_WARNING("All connected ZED cameras are already in use!");
+  }
+
+  return infos;
+}
 
 std::unique_ptr<StreamSink> CreateBufferedZedSink(const ZedSinkParams &params,
     std::unique_ptr<SinkBuffer> sink_buffer_left, std::unique_ptr<SinkBuffer> sink_buffer_right,

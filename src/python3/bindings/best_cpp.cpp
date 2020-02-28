@@ -37,6 +37,9 @@
 #ifdef VCP_BEST_WITH_REALSENSE2
   #include <vcp_best/realsense2_sink.h>
 #endif
+#ifdef VCP_BEST_WITH_ZED
+  #include <vcp_best/zed_sink.h>
+#endif
 #include <vcp_best/webcam_sink.h>
 
 namespace vcp
@@ -612,7 +615,7 @@ py::list ListMvBlueFox3Devices(bool warn_if_no_devices)
     list.append(py::make_tuple(dev.serial_number, dev.name, dev.in_use));
 #else
   (void)warn_if_no_devices;
-  VCP_ERROR("Your vcp library build is missing MatrixVision support!");
+  VCP_ERROR("You didn't enable VCP_BEST_WITH_MATRIXVISION.");
 #endif
   return list;
 }
@@ -629,7 +632,24 @@ py::list ListRealSense2Devices(bool warn_if_no_devices)
 
 #else
   (void)warn_if_no_devices;
-  throw std::runtime_error("You didn't compile the pypvt wrappers with RealSense2 support (CMake should have added -DWITH_REALSENSE2 automatically if PVT_ROOT_DIR/include/pvt_icc/realsense2_sink.h exists?!)");
+  VCP_ERROR("You didn't enable VCP_BEST_WITH_REALSENSE2.");
+#endif
+  return list;
+}
+
+
+py::list ListZedDevices(bool warn_if_no_devices, bool include_unavailable)
+{
+  py::list list;
+#ifdef VCP_BEST_WITH_ZED
+  const std::vector<vcp::best::zed::ZedDeviceInfo> devices = vcp::best::zed::ListZedDevices(warn_if_no_devices, include_unavailable);
+
+  for (const auto &dev : devices)
+    list.append(py::make_tuple(dev.serial_number, dev.model_name, dev.device_path, dev.available));
+
+#else
+  (void)warn_if_no_devices;
+  VCP_ERROR("You didn't enable VCP_BEST_WITH_ZED.");
 #endif
   return list;
 }
@@ -1030,6 +1050,11 @@ PYBIND11_MODULE(best_cpp, m)
 
   m.def("list_realsense2_devices", &pybest::ListRealSense2Devices,
         "Returns a list of connected RealSense2 devices.", py::arg("warn_if_no_devices")=true);
+
+  m.def("list_zed_devices", &pybest::ListZedDevices,
+        "Returns a list of connected ZED devices.",
+        py::arg("warn_if_no_devices")=true,
+        py::arg("include_unavailable_devices")=false);
 
   m.def("list_webcams", &pybest::ListWebcams,
         "Returns a list of connected webcams.",

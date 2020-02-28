@@ -94,37 +94,28 @@ struct ZedSinkParams : public SinkParams
 std::ostream &operator<< (std::ostream &out, const ZedSinkParams &p);
 
 
-/** @brief Given the cameraXX.type (configuration) parameter, checks if the configuration belongs to a WebcamSink. */
+/** @brief Given the cameraXX.type (configuration) parameter, checks if the configuration belongs to a ZED stereo camera. */
 bool IsZedSink(const std::string &type_param);
 
 
-//TODO doc
+/** @brief Parse a ZED stereo camera configuration from the config group "cam_param". */
 ZedSinkParams ZedSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
 
 
-//struct WebcamDeviceInfo
-//{
-//  std::string dev_name;  // Device identifier, e.g. /dev/video1
-//  int device_nr;         // Device number as used by OpenCV, e.g. 1
-//  std::string name;      // Name from the device's metadata (queried via v4l on linux)
+struct ZedDeviceInfo
+{
+  unsigned int serial_number; /**< Serial number of the device. */
+  bool available;           /**< True if available, false if already in use. */
+  std::string device_path;  /**< The system device path. */
+  std::string model_name;   /**< The model name (e.g. ZED2). */
+};
 
-//  /** @brief Default c'tor. */
-//  WebcamDeviceInfo() : dev_name("Unknown"), device_nr(-1), name("Unknown") {}
 
-//  /** @brief Comparison operator. */
-//  bool operator<(const WebcamDeviceInfo &other) { return device_nr < other.device_nr; }
-
-//  /** @brief Comparison operator. */
-//  bool operator>(const WebcamDeviceInfo &other) { return device_nr > other.device_nr; }
-//};
-
-///** @brief Returns a vector of connected webcams.
-// *
-// * If warn_if_no_devices is true and there are no webcams connected, a warning message will be displayed upon stderr.
-// * If include_incompatible_devices is true, unsupported devices will be listed too - these are USB devices which
-// * couldn't be opened via OpenCV's VideoCapture (e.g. RealSense or Kinect).
-// */
-//std::vector<WebcamDeviceInfo> ListZedSensors(bool warn_if_no_devices=true);
+/** @brief Returns a vector of connected ZED stereo cameras.
+ *
+ * If warn_if_no_devices is true and there are no webcams connected, a warning message will be displayed upon stderr.
+ */
+std::vector<ZedDeviceInfo> ListZedDevices(bool warn_if_no_devices=true, bool list_unavailable_devices=false);
 
 /** @brief Returns a StreamSink to access a ZED stereo cam. Use the templated @see CreateZedStereoSink(). */
 std::unique_ptr<StreamSink> CreateBufferedZedSink(const ZedSinkParams &params,

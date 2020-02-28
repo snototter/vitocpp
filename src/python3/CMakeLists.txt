@@ -120,7 +120,18 @@ if(VCP_BUILD_BEST)
         add_definitions(-DVCP_BEST_WITH_REALSENSE2)
     endif()
     if (VCP_BEST_WITH_K4A)
-      add_definitions(-DVCP_BEST_WITH_K4A)
+        add_definitions(-DVCP_BEST_WITH_K4A)
+    endif()
+    if (VCP_BEST_WITH_ZED)
+        add_definitions(-DVCP_BEST_WITH_ZED)
+        find_package(ZED 3 REQUIRED)
+        include_directories(${ZED_INCLUDE_DIRS})
+        link_directories(${ZED_LIBRARY_DIR})
+
+        # On ZED SDK 3.0.2 the ZED_CUDA_VERSION is empty
+        find_package(CUDA ${ZED_CUDA_VERSION} REQUIRED)
+        include_directories(${CUDA_INCLUDE_DIRS})
+        link_directories(${CUDA_LIBRARY_DIRS})
     endif()
 
     python_add_module(best_cpp

@@ -88,7 +88,8 @@ def streaming_demo(cfg_file, folder):
 
 def list_devices():
     handles = [('Webcams', best.list_webcams), ('RealSense2', best.list_realsense2_devices),
-        ('mvBlueFox3', best.list_mvbluefox3_devices), ('Kinect Azure', best.list_k4a_devices)]
+        ('mvBlueFox3', best.list_mvbluefox3_devices), ('Kinect Azure', best.list_k4a_devices),
+        ('ZED', best.list_zed_devices)]
     for h in handles:
         try:
             print('Listing connected {}:\n{}\n'.format(h[0], h[1]()))
