@@ -208,8 +208,6 @@ StreamIntrinsics LoadGenericMonocularCalibration(const cv::FileStorage &fs,
   // Read distortion coefficients, either as "D" or "distortion".
   if (!ReadMat(fs, "D" + postfix, calib_keys, D))
     ReadMat(fs, "distortion" + postfix, calib_keys, D);
-  VCP_LOG_FIXME("REMOVE dummy distortion");
-  D.at<double>(0) = 2;
 
   ReadScalar(fs, "width" + postfix, calib_keys, width, -1);
   ReadScalar(fs, "height" + postfix, calib_keys, height, -1);
@@ -257,11 +255,11 @@ std::vector<calibration::StreamIntrinsics> LoadRealSenseCalibration(const cv::Fi
   // Load standard RGB and depth stream calibration, as with every RGBD sensor.
   std::vector<calibration::StreamIntrinsics> intrinsics = LoadGenericRGBDCalibration(fs, filename, calib_keys);
 
-  const StreamIntrinsics ir_left = LoadGenericMonocularCalibration(fs, filename, "ir_left", calib_keys, "ir_left2rgb");
+  const StreamIntrinsics ir_left = LoadGenericMonocularCalibration(fs, filename, "_ir_left", calib_keys, "_ir_left2rgb");
   if (!ir_left.Empty())
     intrinsics.push_back(ir_left);
 
-  const StreamIntrinsics ir_right = LoadGenericMonocularCalibration(fs, filename, "ir_right", calib_keys, "ir_right2rgb");
+  const StreamIntrinsics ir_right = LoadGenericMonocularCalibration(fs, filename, "_ir_right", calib_keys, "_ir_right2rgb");
   if (!ir_right.Empty())
     intrinsics.push_back(ir_right);
 

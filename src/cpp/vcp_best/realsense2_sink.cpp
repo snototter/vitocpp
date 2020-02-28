@@ -1252,10 +1252,8 @@ private:
     {
       std::vector<calibration::StreamIntrinsics> intrinsics = calibration::LoadIntrinsicsFromFile(rgbd_params_.calibration_file);
       if (!MapIntrinsics(intrinsics))
-      {
-        VCP_LOG_FAILURE("Cannot load all intrinsics for RealSense '" << rgbd_params_.serial_number << "'");
-        return;
-      }
+        VCP_ERROR("Cannot load all intrinsics for RealSense '" << rgbd_params_.serial_number << "'");
+
       if (rgbd_params_.verbose)
         VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for RealSense '" << rgbd_params_.serial_number << "'");
     }
@@ -1438,7 +1436,7 @@ private:
           const cv::Mat trgb = imutils::ApplyImageTransformations(cvrgb, rgbd_params_.transforms);
           const cv::Mat tdepth = imutils::ApplyImageTransformations(cvdepth, rgbd_params_.transforms);
           const cv::Mat tir1 = imutils::ApplyImageTransformations(cvir1, rgbd_params_.transforms);
-          const cv::Mat tir2 = imutils::ApplyImageTransformations(cvir1, rgbd_params_.transforms);
+          const cv::Mat tir2 = imutils::ApplyImageTransformations(cvir2, rgbd_params_.transforms);
 
           image_queue_mutex_.lock();
           if (color_stream_enabled_ && !trgb.empty())
@@ -1535,7 +1533,7 @@ private:
         return false;
       }
     }
-    return false;
+    return true;
   }
 };
 
