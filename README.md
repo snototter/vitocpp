@@ -25,17 +25,17 @@ Some of `vcp`'s highlights:
 * <b>Best effort multiple device streaming</b> with the `vcp::best` module. Useful for quick camera tests and whenever (guaranteed) synchronisation isn't crucial. The goal of this module is to stream from multiple devices simultaneously, without having the ROS overhead. A simple libconfig++-style configuration file allows you to process all streams both in C++ and python. For more details, see the [separate BESt.md documentation](BESt.md).
 * <b>Background subtraction</b> is provided by the `vcp::bgm` module, for example:
 
-  ![Background Subtraction](https://github.com/snototter/vitocpp/blob/master/doc/example-bgm.png)
+  ![Background Subtraction](https://github.com/snototter/vitocpp/raw/master/doc/example-bgm.png)
 * <b>Visualization utilities</b> are provided by the `vcp::imvis` module, for example:
 
-  ![Visualization Example](https://github.com/snototter/vitocpp/blob/master/doc/example-imvis.png)
+  ![Visualization Example](https://github.com/snototter/vitocpp/raw/master/doc/example-imvis.png)
 * <b>Pseudocoloring</b> for data visualization/analysis is also provided by the `vcp::imvis` module.
   Back when I started working on this library, OpenCV didn't provide pseudocoloring capabilities. The `vcp::imvis` module allows visualization via common color maps (you might remember these from such frameworks as MATLAB, matplotlib, and whatnot).
 
-  ![Pseudocoloring Example](https://github.com/snototter/vitocpp/blob/master/doc/example-pseudocolor.png)
+  ![Pseudocoloring Example](https://github.com/snototter/vitocpp/raw/master/doc/example-pseudocolor.png)
 * <b>Math</b> utilities - besides enabling most of the fancy visualizations within `vcp::imvis`, you can also do basic geometry tasks with the `vcp::math` module (_e.g._ computing tangents of circles, line (segment) intersection, and quite a lot more).
 
-  ![Geometry Example](https://github.com/snototter/vitocpp/blob/master/doc/example-geometry.png)
+  ![Geometry Example](https://github.com/snototter/vitocpp/raw/master/doc/example-geometry.png)
 * <b>C++</b> utilities - for basic file/path and string manipulation, sorting, and more (if you want to avoid heavier dependencies, such as Boost).
 
 
@@ -78,7 +78,7 @@ Currently (as of Jan/2020), there are only python applications available, which 
   ```
 * <b>3D image plots</b>. Plot a single image (`plot-image.py`) or an image sequence (`plot-image-sequence.py`) by interactively adjusting the camera extrinsics.
 
-  ![Image Sequence Example](https://github.com/snototter/vitocpp/blob/master/doc/example-render-img-sequence.png)
+  ![Image Sequence Example](https://github.com/snototter/vitocpp/raw/master/doc/example-render-img-sequence.png)
 * <b>Image abstraction:</b> cartoonification, pixelation, etc. can be experimented with via `cartoonify.py`.
 
 
