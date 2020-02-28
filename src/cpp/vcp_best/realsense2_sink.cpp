@@ -691,7 +691,6 @@ void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams 
     rs2::video_stream_profile depth_profile = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
     const rs2_intrinsics depth_intrinsics = depth_profile.get_intrinsics();
 
-    VCP_LOG_FAILURE("Krgb vs Kdepth: " << std::endl << Krgb << std::endl<<KFromIntrinsics(depth_intrinsics));
     const cv::Mat Kdepth = align_d2c ? Krgb : KFromIntrinsics(depth_intrinsics);
     const cv::Mat Ddepth = align_d2c ? Drgb : DFromIntrinsics(depth_intrinsics);
     const int depth_width = align_d2c ? rgb_width : depth_intrinsics.width;
@@ -711,8 +710,6 @@ void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams 
       const cv::Mat Tdepth2color = align_d2c ? cv::Mat::zeros(3, 1, CV_64FC1) : TFromExtrinsics(depth_extrinsics);
       fs << "R_depth2rgb" << Rdepth2color;
       fs << "t_depth2rgb" << Tdepth2color;
-
-      VCP_LOG_FAILURE("TODO R,t depth2rgb: " << std::endl << Rdepth2color << std::endl << Tdepth2color);
     }
   }
 
@@ -1250,9 +1247,18 @@ private:
     // Dump calibration (now that the stream profile should know the intrinsics and extrinsics ;-)
     if (rgbd_params_.write_calibration)
       DumpCalibration(profile, rgbd_params_, depth_scale); //FIXME store IR intrinsics!
-    //FIXME
-    std::vector<calibration::StreamIntrinsics> intrinsics = calibration::LoadIntrinsicsFromFile(rgbd_params_.calibration_file);
-    const auto intrinsics_rgb_ = intrinsics[0];
+    // Load calibration if needed
+    if (rgbd_params_.rectify)
+    {
+      std::vector<calibration::StreamIntrinsics> intrinsics = calibration::LoadIntrinsicsFromFile(rgbd_params_.calibration_file);
+      if (!MapIntrinsics(intrinsics))
+      {
+        VCP_LOG_FAILURE("Cannot load all intrinsics for RealSense '" << rgbd_params_.serial_number << "'");
+        return;
+      }
+      if (rgbd_params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for RealSense '" << rgbd_params_.serial_number << "'");
+    }
 
 #ifdef VCP_BEST_DEBUG_FRAMERATE
     std::chrono::high_resolution_clock::time_point previous_time_point_frameset = std::chrono::high_resolution_clock::now();
@@ -1384,9 +1390,8 @@ private:
           cv::Mat cvrgb;
           if (is_new_color && color_stream_enabled_)
           {
-            //FIXME cvrgb = FrameToMat(color, rgb_size);
             if (rgbd_params_.rectify)
-              cvrgb = intrinsics_rgb_.UndistortRectify(FrameToMat(color, rgb_size));
+              cvrgb = rgb_intrinsics_.UndistortRectify(FrameToMat(color, rgb_size));
             else
               cvrgb = FrameToMat(color, rgb_size);
             rgb_prev_fnr_ = color_fnr;
@@ -1396,22 +1401,37 @@ private:
           if (is_new_depth && depth_stream_enabled_)
           {
             if (rgbd_params_.depth_in_meters)
-              cvdepth = FrameToDepth(depth, depth_size, depth_scale);
+            {
+              if (rgbd_params_.rectify)
+                cvdepth = depth_intrinsics_.UndistortRectify(FrameToDepth(depth, depth_size, depth_scale));
+              else
+                cvdepth = FrameToDepth(depth, depth_size, depth_scale);
+            }
             else
-              cvdepth = FrameToMat(depth, depth_size);
-
+            {
+              if (rgbd_params_.rectify)
+                cvdepth = depth_intrinsics_.UndistortRectify(FrameToMat(depth, depth_size));
+              else
+                cvdepth = FrameToMat(depth, depth_size);
+            }
             depth_prev_fnr_ = depth_fnr;
           }
 
           cv::Mat cvir1, cvir2;
           if (is_new_ir1 && ir1_stream_enabled_)
           {
-            cvir1 = FrameToMat(ir1, ir_size);
+            if (rgbd_params_.rectify)
+              cvir1 = ir1_intrinsics_.UndistortRectify(FrameToMat(ir1, ir_size));
+            else
+              cvir1 = FrameToMat(ir1, ir_size);
             ir1_prev_fnr_ = ir1_fnr;
           }
           if (is_new_ir2 && ir2_stream_enabled_)
           {
-            cvir2 = FrameToMat(ir2, ir_size);
+            if (rgbd_params_.rectify)
+              cvir2 = ir2_intrinsics_.UndistortRectify(FrameToMat(ir2, ir_size));
+            else
+              cvir2 = FrameToMat(ir2, ir_size);
             ir2_prev_fnr_ = ir2_fnr;
           }
 
@@ -1465,6 +1485,57 @@ private:
       }
     }
     pipe.stop();
+  }
+
+  bool MapIntrinsicsHelper(const std::vector<calibration::StreamIntrinsics> &intrinsics,
+                           calibration::StreamIntrinsics &to_set, const std::string &expected_label)
+  {
+    for (const auto &calib : intrinsics)
+    {
+      if (expected_label.compare(calib.StreamLabel()) == 0)
+      {
+        to_set = calib;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool MapIntrinsics(const std::vector<calibration::StreamIntrinsics> &intrinsics)
+  {
+    if (rgbd_params_.IsColorStreamEnabled())
+    {
+      if (!MapIntrinsicsHelper(intrinsics, rgb_intrinsics_, "rgb"))
+      {
+        VCP_LOG_FAILURE("Color stream of RealSense '" << rgbd_params_.serial_number << "' is enabled but not calibrated.");
+        return false;
+      }
+    }
+    if (rgbd_params_.IsDepthStreamEnabled())
+    {
+      if (!MapIntrinsicsHelper(intrinsics, depth_intrinsics_, "depth"))
+      {
+        VCP_LOG_FAILURE("Depth stream of RealSense '" << rgbd_params_.serial_number << "' is enabled but not calibrated.");
+        return false;
+      }
+    }
+    if (rgbd_params_.IsInfrared1StreamEnabled())
+    {
+      if (!MapIntrinsicsHelper(intrinsics, ir1_intrinsics_, "ir_left"))
+      {
+        VCP_LOG_FAILURE("Infrared 1 (left) stream of RealSense '" << rgbd_params_.serial_number << "' is enabled but not calibrated.");
+        return false;
+      }
+    }
+    if (rgbd_params_.IsInfrared2StreamEnabled())
+    {
+      if (!MapIntrinsicsHelper(intrinsics, ir2_intrinsics_, "ir_right"))
+      {
+        VCP_LOG_FAILURE("Infrared 2 (right) stream of RealSense '" << rgbd_params_.serial_number << "' is enabled but not calibrated.");
+        return false;
+      }
+    }
+    return false;
   }
 };
 
