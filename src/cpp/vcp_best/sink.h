@@ -68,7 +68,10 @@ enum class SinkType
   WEBCAM
 };
 
+/** @brief Return string representation of SinkType. */
 std::string SinkTypeToString(const SinkType &s);
+
+/** @brief Overloaded output operator for SinkType. */
 std::ostream &operator<<(std::ostream &stream, const SinkType &s);
 
 
@@ -91,6 +94,9 @@ struct SinkParams
   /** @brief Path to the intrinsic calibration file. */
   std::string calibration_file;
 
+  /** @brief Whether the sink's streams should be undistorted & rectified or not. */
+  bool rectify;
+
   /** @brief Name of the configuration file parameter (where this sink was configured). */
   std::string configuration_key;
 
@@ -107,8 +113,9 @@ struct SinkParams
   SinkParams(const SinkParams &other)
     : sink_type(other.sink_type), frame_type(other.frame_type),
       sink_label(other.sink_label), calibration_file(other.calibration_file),
-      configuration_key(other.configuration_key), color_as_bgr(other.color_as_bgr),
-      verbose(other.verbose), transforms(other.transforms)
+      rectify(other.rectify), configuration_key(other.configuration_key),
+      color_as_bgr(other.color_as_bgr), verbose(other.verbose),
+      transforms(other.transforms)
   {}
 
   /** @brief Default c'tor. */
@@ -116,16 +123,22 @@ struct SinkParams
       const FrameType &ftype,
       const std::string &lbl,
       const std::string &calib_file=std::string(),
+      const bool rectify=false,
       const std::string &config_key=std::string(),
       const bool return_bgr=false, const bool verbose=false,
       const std::vector<imutils::ImgTransform> &transforms=std::vector<imutils::ImgTransform>())
-    : sink_type(stype), frame_type(ftype),
-      sink_label(lbl), calibration_file(calib_file),
+    : sink_type(stype),
+      frame_type(ftype),
+      sink_label(lbl),
+      calibration_file(calib_file),
+      rectify(rectify),
       configuration_key(config_key),
-      color_as_bgr(return_bgr), verbose(verbose),
+      color_as_bgr(return_bgr),
+      verbose(verbose),
       transforms(transforms)
   {}
 };
+
 
 /** @brief Abstract base class for all device sinks. */
 class StreamSink

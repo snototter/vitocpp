@@ -1,4 +1,5 @@
 #include "realsense2_sink.h"
+#include "calibration.h"
 
 #include <thread>
 #include <mutex>
@@ -81,9 +82,10 @@ std::string RSStreamTypeToString(const RSStreamType &s)
 
 RSStreamType RSStreamTypeFromString(const std::string &s)
 {
-  const std::string lower = vcp::utils::string::Replace(
-        vcp::utils::string::Replace(vcp::utils::string::Lower(s), "_", "-"),
-        "-", "");
+  const std::string lower = vcp::utils::string::Canonic(s, true);
+//      vcp::utils::string::Replace(
+//        vcp::utils::string::Replace(vcp::utils::string::Lower(s), "_", "-"),
+//        "-", "");
 
   if (lower.compare("rgbd") == 0
       || lower.compare("rgbdepth") == 0
@@ -523,7 +525,7 @@ bool SetOption(const rs2::sensor &sensor, rs2_option option, float value, const 
     else
     {
       if (verbose)
-        VCP_LOG_INFO_DEFAULT("'" << GetSensorName(sensor) << "' set '" << rs2_option_to_string(option) << "' = " << value);
+        VCP_LOG_INFO_DEFAULT("Sensor '" << GetSensorName(sensor) << "' set '" << rs2_option_to_string(option) << "' = " << value);
     }
     sensor.set_option(option, value);
     return true;
@@ -709,6 +711,8 @@ void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams 
       const cv::Mat Tdepth2color = align_d2c ? cv::Mat::zeros(3, 1, CV_64FC1) : TFromExtrinsics(depth_extrinsics);
       fs << "R_depth2rgb" << Rdepth2color;
       fs << "t_depth2rgb" << Tdepth2color;
+
+      VCP_LOG_FAILURE("TODO R,t depth2rgb: " << std::endl << Rdepth2color << std::endl << Tdepth2color);
     }
   }
 
@@ -1151,6 +1155,7 @@ public:
     return rgbd_params_;
   }
 
+  //TODO Intrinsics can only be queried, once device is available_ (!)
 
 private:
   std::atomic<bool> continue_capture_;
@@ -1172,6 +1177,10 @@ private:
   bool ir1_stream_enabled_;
   bool ir2_stream_enabled_;
   rs2::config config_;
+  calibration::StreamIntrinsics rgb_intrinsics_;
+  calibration::StreamIntrinsics depth_intrinsics_;
+  calibration::StreamIntrinsics ir1_intrinsics_;
+  calibration::StreamIntrinsics ir2_intrinsics_;
 
   void Receive()
   {
@@ -1241,6 +1250,9 @@ private:
     // Dump calibration (now that the stream profile should know the intrinsics and extrinsics ;-)
     if (rgbd_params_.write_calibration)
       DumpCalibration(profile, rgbd_params_, depth_scale); //FIXME store IR intrinsics!
+    //FIXME
+    std::vector<calibration::StreamIntrinsics> intrinsics = calibration::LoadIntrinsicsFromFile(rgbd_params_.calibration_file);
+    const auto intrinsics_rgb_ = intrinsics[0];
 
 #ifdef VCP_BEST_DEBUG_FRAMERATE
     std::chrono::high_resolution_clock::time_point previous_time_point_frameset = std::chrono::high_resolution_clock::now();
@@ -1372,7 +1384,11 @@ private:
           cv::Mat cvrgb;
           if (is_new_color && color_stream_enabled_)
           {
-            cvrgb = FrameToMat(color, rgb_size);
+            //FIXME cvrgb = FrameToMat(color, rgb_size);
+            if (rgbd_params_.rectify)
+              cvrgb = intrinsics_rgb_.UndistortRectify(FrameToMat(color, rgb_size));
+            else
+              cvrgb = FrameToMat(color, rgb_size);
             rgb_prev_fnr_ = color_fnr;
           }
 

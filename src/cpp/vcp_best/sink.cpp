@@ -55,8 +55,8 @@ std::string FrameTypeToString(const FrameType &s)
     break;
   }
 
-  vcp::utils::string::ToLower(rep);
-  return vcp::utils::string::Replace(rep, "_", "-");
+//  vcp::utils::string::ToLower(rep);
+  return vcp::utils::string::Canonic(rep, false);//vcp::utils::string::Replace(rep, "_", "-");
 }
 
 
@@ -138,7 +138,8 @@ std::string SinkTypeToString(const SinkType &s)
     break;
   }
 
-  return vcp::utils::string::Replace(vcp::utils::string::Lower(rep), "_", "-");
+  return vcp::utils::string::Canonic(rep);
+//  return vcp::utils::string::Replace(vcp::utils::string::Lower(rep), "_", "-");
 }
 
 #define MAKE_STRING_TO_SINKTYPE_IF(st, rep)  if (rep.compare(SinkTypeToString(SinkType::st)) == 0) return SinkType::st
@@ -267,6 +268,15 @@ std::string GetCalibrationFileFromConfig(const vcp::config::ConfigParams &config
 }
 
 
+bool GetRectifyFlagFromConfig(const vcp::config::ConfigParams &config,
+                              const std::string &cam_group,
+                              std::vector<std::string> &configured_keys)
+{
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "rectify"), configured_keys.end());
+  return GetOptionalBoolFromConfig(config, cam_group, "rectify", false);
+}
+
+
 bool GetColorAsBgrFromConfig(const vcp::config::ConfigParams &config,
                              const std::string &cam_group,
                              std::vector<std::string> &configured_keys)
@@ -358,17 +368,19 @@ void WarnOfUnusedParameters(const std::string &cam_group, const std::vector<std:
   }
 }
 
+
 SinkParams ParseBaseSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_group, std::vector<std::string> &configured_keys)
 {
   const SinkType sink_type = GetSinkTypeFromConfig(config, cam_group, &configured_keys);
   const FrameType frame_type = GetFrameTypeFromConfig(config, cam_group, configured_keys);
   const std::string sink_label = GetSinkLabelFromConfig(config, cam_group, configured_keys);
   const std::string calibration_file = GetCalibrationFileFromConfig(config, cam_group, configured_keys);
+  const bool rectify = GetRectifyFlagFromConfig(config, cam_group, configured_keys);
   const bool color_as_bgr = GetColorAsBgrFromConfig(config, cam_group, configured_keys);
   const bool verbose = GetVerbosityFlagFromConfig(config, cam_group, configured_keys);
   const std::vector<imutils::ImgTransform> transforms = GetImageTransformFromConfig(config, cam_group, configured_keys);
 
-  return SinkParams(sink_type, frame_type, sink_label, calibration_file, cam_group, color_as_bgr, verbose, transforms);
+  return SinkParams(sink_type, frame_type, sink_label, calibration_file, rectify, cam_group, color_as_bgr, verbose, transforms);
 }
 
 

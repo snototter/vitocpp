@@ -199,6 +199,17 @@ std::string ClipUrl(const std::string &url)
     return protocol + ObscureUrlAuthentication(clipped);
   return ObscureUrlAuthentication(clipped);
 }
+
+
+std::string Canonic(const std::string &s, bool strip_dashes)
+{
+  std::string canonic = Replace(
+        Replace(Lower(Trim(s)), " ", "-"),
+        "_", "-");
+  if (strip_dashes)
+    return Replace(canonic, "-", "");
+  return canonic;
+}
 } // namespace string
 } // namespace utils
 } // namespace vcp

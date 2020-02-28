@@ -64,20 +64,13 @@ std::string ImgTransformToString(const ImgTransform &t)
 //    break;
   }
 
-  vcp::utils::string::ToLower(rep);
-  return vcp::utils::string::Replace(rep, "_", "-");
+  return vcp::utils::string::Canonic(rep, false);
 }
 
 
 ImgTransform ImgTransformFromString(const std::string &s)
 {
-  // Convert to lowercase, remove dash and underscore.
-  const std::string lower = vcp::utils::string::Trim(
-        vcp::utils::string::Replace(
-          vcp::utils::string::Replace(
-              vcp::utils::string::Lower(s)
-              , "-", ""),
-          "_", ""));
+  const std::string lower = vcp::utils::string::Canonic(s, true);
 
   if (lower.empty() || lower.compare("none") == 0)
     return ImgTransform::NONE;

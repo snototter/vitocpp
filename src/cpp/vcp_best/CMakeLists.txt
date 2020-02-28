@@ -11,8 +11,7 @@ option(VCP_BEST_WITH_REALSENSE2 "Build Intel RealSense streaming module (require
 option(VCP_BEST_WITH_K4A "Build Kinect 4 Azure streaming module (requires libk4a)." OFF)
 option(VCP_BEST_WITH_K4A_MJPG "K4A sends color as MJPG if ON (slow), otherwise BGRA32 (high bandwidth)." OFF)
 option(VCP_BEST_WITH_ZED "Build ZED streaming module (requires StereoLabs ZED SDK)." OFF)
-option(VCP_BEST_DEBUG_FRAMERATE "If enabled, sinks debug their frame rate (Enable DEBUG level!)" ON)
-#TODO use library-wide flag instead option(VCP_BEST_DEBUG_FRAMERATE "Include timing + debug output to analyze streaming frame rates" OFF)
+option(VCP_BEST_DEBUG_FRAMERATE "If enabled, sinks debug their frame rate (rather verbose)" OFF)
 
 if(VCP_BEST_DEBUG_FRAMERATE)
     add_definitions(-DVCP_BEST_DEBUG_FRAMERATE)
@@ -99,7 +98,7 @@ set(PUBLIC_HEADERS
     file_sink.h
     webcam_sink.h
     capture.h
-#  rectifier.h
+    calibration.h
     liveview.h
 )
 set(PRIVATE_HEADERS)
@@ -110,7 +109,7 @@ set(SOURCES
     file_sink.cpp
     webcam_sink.cpp
     capture.cpp
-#  rectifier.cpp
+    calibration.cpp
     liveview.cpp
 )
 

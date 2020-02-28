@@ -3,6 +3,7 @@
 
 #include "sink.h"
 #include "sink_buffer.h"
+
 #include <librealsense2/rs.hpp>
 #include <vector>
 #include <string>
@@ -138,8 +139,10 @@ std::unique_ptr<StreamSink> CreateRealSense2Sink(const RealSense2SinkParams &par
           std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()));
 }
 
+
 /** @brief Returns a list of connected RealSense devices. */
 std::vector<RealSense2DeviceInfo> ListRealSense2Devices(bool warn_if_no_devices=true);
+
 
 /** @brief Checks if the configuration belongs to a RealSense2 device (using the configuration parameter "cameraX.type"). */
 bool IsRealSense2(const std::string &camera_type);

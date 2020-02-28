@@ -40,6 +40,10 @@
 // Generic/base macros, use only if you know what you are doing.
 // You're probably looking for VCP_LOG_INFO, VCP_LOG_WARNING,
 // or VCP_LOG_FAILURE!
+//
+// If you need/want to change the prefix colors, use ANSI colors.
+// Escape codes can be found, e.g. there:
+// http://www.lihaoyi.com/post/BuildyourownCommandLinewithANSIescapecodes.html
 
 // Default logging macro - write 'msg' to given 'stream'.
 // If prefix/filename/line-nr are given, they will be printed too.
@@ -71,6 +75,11 @@
 // Logs a FAILURE to stderr.
 #define VCP_LOG_FAILURE_LOCATION(msg)    VCP_LOG_STREAM(std::cerr, "\033[31;1mFAILURE\033[0m", __FILE__, __LINE__, msg)
 #define VCP_LOG_FAILURE_DEFAULT(msg)     VCP_LOG_STREAM(std::cerr, "\033[31;1mFAILURE\033[0m", nullptr, -1, msg)
+
+// Log a TODO/FIXME message for development:
+#define VCP_LOG_FIXME(msg) VCP_LOG_STREAM(std::cerr, "\033[33;1mTODO/FIXME\033[0m", __FILE__, __LINE__, msg)
+
+
 
 //----------------------------------------------------------------
 // Macro abstractions which prefix the proper log severity/level
