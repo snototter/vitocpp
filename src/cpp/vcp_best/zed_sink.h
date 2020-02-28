@@ -9,7 +9,7 @@ namespace vcp
 {
 namespace best
 {
-/** @brief TODO doc. */
+/** @brief ZED stereo camera streaming. */
 namespace zed
 {
 

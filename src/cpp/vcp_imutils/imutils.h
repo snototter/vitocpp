@@ -14,7 +14,7 @@
 
 namespace vcp
 {
-/** @brief TODO doc. */
+/** @brief Image (and more general matrix) manipulation/transformation utilities. */
 namespace imutils
 {
 

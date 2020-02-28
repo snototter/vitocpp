@@ -11,7 +11,7 @@ namespace vcp
 {
 namespace best
 {
-/** @brief TODO doc. */
+/** @brief Network (IP) camera streaming. */
 namespace ipcam
 {
 /** @brief Supported IP camera application layer protocols. */

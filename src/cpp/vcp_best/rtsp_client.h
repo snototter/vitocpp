@@ -14,7 +14,7 @@ namespace ipcam
 namespace rtsp
 {
 /**
- * @brief Wraps live555 environment setup, URL opening and event loop.
+ * @brief Wraps the live555 environment setup, URL opening and event loop.
  */
 class RtspClientEnvironment
 {

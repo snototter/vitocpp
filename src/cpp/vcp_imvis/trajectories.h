@@ -12,7 +12,7 @@ namespace vcp
 {
 namespace imvis
 {
-/** @brief TODO doc. */
+/** @brief Visualization utils for 2D paths and trajectories. */
 namespace trajectories
 {
 /** @brief Smoothes the given data points such that each point is the average over a

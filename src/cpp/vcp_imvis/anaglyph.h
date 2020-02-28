@@ -12,7 +12,7 @@ namespace vcp
 {
 namespace imvis
 {
-/** @brief TODO doc. */
+/** @brief Stereoscopic visualization. */
 namespace anaglyph
 {
 /** @brief Generates a red-cyan anaglyph.

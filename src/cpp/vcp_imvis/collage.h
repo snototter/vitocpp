@@ -14,7 +14,7 @@ namespace vcp
 {
 namespace imvis
 {
-/** @brief TODO doc. */
+/** @brief Create an image collage. */
 namespace collage
 {
 /**

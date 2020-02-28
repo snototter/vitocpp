@@ -6,6 +6,7 @@ C++/Python 3 utilities for common vision tasks, _e.g._ streaming, visualization 
 ```
 Current status:
 cloc --exclude-dir=.venv3,build,third-party,gen,doc --exclude-lang=make,XML .
+TODO exclude mappings before updating LOC count!
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------

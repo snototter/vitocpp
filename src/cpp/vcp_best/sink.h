@@ -202,6 +202,8 @@ public:
   virtual std::string StreamLabel(size_t stream_index) const = 0;
 
   virtual SinkParams SinkParamsAt(size_t stream_index) const = 0;
+
+  //TODO add Intrinsics(), etc.
 };
 
 

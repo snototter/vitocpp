@@ -7,7 +7,7 @@
 
 namespace vcp
 {
-/** @brief TODO doc. */
+/** @brief Handling (libconfig-style) configuration files. */
 namespace config
 {
 /**

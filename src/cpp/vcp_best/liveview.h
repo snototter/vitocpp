@@ -10,7 +10,7 @@ namespace vcp
 {
 namespace best
 {
-/** @brief TODO doc. */
+/** @brief Threaded live view to display streams. */
 namespace liveview
 {
 

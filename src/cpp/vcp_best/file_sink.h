@@ -10,7 +10,7 @@ namespace vcp
 {
 namespace best
 {
-/** @brief TODO doc. */
+/** @brief Media playback from disk, i.e. video & image sequence streaming. */
 namespace file
 {
 /** @brief Configuration parameters to "stream" from a video file. */

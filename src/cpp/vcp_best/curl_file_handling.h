@@ -7,7 +7,7 @@
 
 namespace vcp {
 namespace best {
-/** @brief TODO doc. */
+/** @brief Convenience wrappers to CURL for HTTP handling. */
 namespace curl {
 
 // Type of handle;

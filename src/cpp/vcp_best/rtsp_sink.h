@@ -11,7 +11,7 @@ namespace best
 {
 namespace ipcam
 {
-/** @brief TODO doc. */
+/** @brief RTSP video streaming. */
 namespace rtsp
 {
 /**

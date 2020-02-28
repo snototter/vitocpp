@@ -7,7 +7,7 @@ namespace vcp
 {
 namespace best
 {
-/** @brief TODO doc. */
+/** @brief Webcam streaming. */
 namespace webcam
 {
 /** @brief Configuration parameters to stream from a webcam. */

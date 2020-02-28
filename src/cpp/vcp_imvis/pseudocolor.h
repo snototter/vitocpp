@@ -14,7 +14,7 @@ namespace vcp
 {
 namespace imvis
 {
-/** @brief TODO doc. */
+/** @brief Colormaps and utilities for pseudo-coloring. */
 namespace pseudocolor
 {
 /**
