@@ -655,6 +655,9 @@ void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams 
   if (!fs.isOpened())
     VCP_ERROR("Cannot open '" << params.calibration_file << "' to store calibration!");
 
+  if (!params.serial_number.empty() && kEmptyRealSense2SerialNumber.compare(params.serial_number) != 0)
+    fs << "serial_number" << params.serial_number;
+
   cv::Mat Krgb, Drgb;
   int rgb_width, rgb_height;
 
@@ -1253,6 +1256,9 @@ private:
       std::vector<calibration::StreamIntrinsics> intrinsics = calibration::LoadIntrinsicsFromFile(rgbd_params_.calibration_file);
       if (!MapIntrinsics(intrinsics))
         VCP_ERROR("Cannot load all intrinsics for RealSense '" << rgbd_params_.serial_number << "'");
+
+      if (!intrinsics.empty() && !intrinsics[0].Identifier().empty() && intrinsics[0].Identifier().compare(rgbd_params_.serial_number) != 0)
+        VCP_ERROR("Calibration file provides intrinsics for RealSense '" << intrinsics[0].Identifier() << "', but this sensor is '" << rgbd_params_.serial_number << "'!");
 
       if (rgbd_params_.verbose)
         VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for RealSense '" << rgbd_params_.serial_number << "'");

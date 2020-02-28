@@ -67,6 +67,14 @@ public:
   /** @brief Returns the stream's image resolution. */
   cv::Size Resolution() const;
 
+  /** @brief Returns the device identifier (e.g. serial number) if available, or an empty string.
+   *
+   * You can use this to check whether you actually loaded the correct calibration file for your
+   * current device.
+   */
+  std::string Identifier() const;
+  void SetIdentifier(const std::string &id);
+
 private:
   bool skip_undistort_rectify_;  /**< If there's no distortion, we can skip undistortion & rectification (except for stereo setups). */
   std::string label_;            /**< Label assigned to this calibration (in case we need to match it to a replay/recorded video sequence). */
@@ -78,6 +86,7 @@ private:
   cv::Mat undistort_rectify_map1_; /**< Pixel map 1/2 for undistortion/rectifaction. */
   cv::Mat undistort_rectify_map2_; /**< Pixel map 2/2 for undistortion/rectifaction. */
   cv::Size resolution_;          /**< Image resolution. */
+  std::string identifier_;       /**< Some sinks store device identifiers (e.g. serial number), so you can ensure that you loaded the correct calibration file. */
 };
 
 /** @brief Overloaded output operator for StreamIntrinsics. */

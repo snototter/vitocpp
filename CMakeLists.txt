@@ -6,7 +6,7 @@ project(vcp)
 ##############################################################################
 set(VCP_VERSION "1.0.0")
 
-
+message("[vcp] Configuring C++/Python vision utitility library v${VCP_VERSION}.")
 ##############################################################################
 # Options
 ##############################################################################
@@ -56,7 +56,7 @@ set(CMAKE_INSTALL_RPATH "$ORIGIN")
 # Check build type
 ##############################################################################
 if(NOT CMAKE_BUILD_TYPE)
-    message(STATUS "[${PROJECT_NAME}] No build type configured, default to Release")
+    message("  * No build type configured, default to Release")
     set(CMAKE_BUILD_TYPE Release)
 endif()
 #TODO check if needed anymore
@@ -123,16 +123,16 @@ endif()
 # ... pick configured logging level
 if(${VCP_LOG_LEVEL} STREQUAL "debug")
     add_definitions(-DVCP_LOG_LEVEL_DEBUG)
-    message(STATUS "[${PROJECT_NAME}] Will log DEBUG, INFO, WARNING and FAILURE messages.")
+    message("  * vcp will log DEBUG, INFO, WARNING and FAILURE messages.")
 elseif(${VCP_LOG_LEVEL} STREQUAL "info")
     add_definitions(-DVCP_LOG_LEVEL_INFO)
-    message(STATUS "[${PROJECT_NAME}] Will log INFO, WARNING and FAILURE messages.")
+    message("  * vcp will log INFO, WARNING and FAILURE messages.")
 elseif(${VCP_LOG_LEVEL} STREQUAL "warning")
     add_definitions(-DVCP_LOG_LEVEL_WARNING)
-    message(STATUS "[${PROJECT_NAME}] Will only log WARNING and FAILURE messages.")
+    message("  * vcp will only log WARNING and FAILURE messages.")
 elseif(${VCP_LOG_LEVEL} STREQUAL "failure")
     add_definitions(-DVCP_LOG_LEVEL_FAILURE)
-    message(STATUS "[${PROJECT_NAME}] Will only log FAILURE messages.")
+    message("  * vcp will only log FAILURE messages.")
 else()
     message(FATAL_ERROR "[${PROJECT_NAME}] Invalid VCP_LOG_LEVEL value")
 endif()
@@ -237,7 +237,8 @@ if (DOXYGEN_FOUND)
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
         COMMENT "Generating API documentation with Doxygen"
         VERBATIM)
+    message("[${PROJECT_NAME}] Use 'make doc' to generate doxygen documentation.\n")
 else()
-  message("[${PROJECT_NAME}] Won't generate C++ documentation (doxygen is missing)")
+  message("[${PROJECT_NAME}] Won't generate C++ documentation (doxygen is missing)\n")
 endif()
 

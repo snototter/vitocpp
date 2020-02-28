@@ -54,7 +54,7 @@ set(VCP_RPATH_ "${CMAKE_INSTALL_PREFIX}/lib")
 #set(CMAKE_INSTALL_PREFIX ${CMAKE_SOURCE_DIR})
 #set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}:${VCP_RPATH_}")
 set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}:${VCP_RPATH_}")
-message(STATUS "[vcp-bindings] RPATH for python vcp libraries: ${VCP_RPATH_}")
+message("  [vcp-bindings] RPATH for python vcp libraries: ${VCP_RPATH_}")
 
 # OpenCV
 find_package(OpenCV REQUIRED)
@@ -63,7 +63,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 ##################################################################
 ## Common utils (file, etc.) module
-message(STATUS "[vcp-bindings] Configuring vcp.utils")
+message("  [vcp-bindings] Configuring vcp.utils")
 python_add_module(utils
     bindings/utils.cpp
 )
@@ -85,7 +85,7 @@ install(TARGETS
 
 ##################################################################
 ## Config module - needed for configuration of BESt
-message(STATUS "[vcp-bindings] Configuring vcp.config")
+message("  [vcp-bindings] Configuring vcp.config")
 python_add_module(config
     bindings/config.cpp
     bindings/config.h
@@ -109,7 +109,7 @@ install(TARGETS
 ##################################################################
 ## BESt - multicam streaming module
 if(VCP_BUILD_BEST)
-    message(STATUS "[vcp-bindings] Configuring vcp.best")
+    message("  [vcp-bindings] Configuring vcp.best")
     if(VCP_BEST_WITH_IPCAM)
         add_definitions(-DVCP_BEST_WITH_IPCAM -DVCP_BEST_WITH_IPCAM_HTTP -DVCP_BEST_WITH_IPCAM_RTSP)
     endif()
@@ -150,7 +150,7 @@ endif()
 ##################################################################
 ## BGM utilities module
 if(VCP_BUILD_BGM)
-    message(STATUS "[vcp-bindings] Configuring vcp.bgm")
+    message("  [vcp-bindings] Configuring vcp.bgm")
     python_add_module(bgm
         bindings/bgm.cpp
         bindings/conversion/np_cv_conversion.h
@@ -178,7 +178,7 @@ endif()
 ##################################################################
 ## Math 2D
 if(VCP_BUILD_MATH)
-    message(STATUS "[vcp-bindings] Configuring vcp.math2d")
+    message("  [vcp-bindings] Configuring vcp.math2d")
     python_add_module(math2d
         bindings/math2d.cpp
         bindings/conversion/vcp_conversion.h
@@ -206,7 +206,7 @@ endif()
 ##################################################################
 ## Math 3D
 if(VCP_BUILD_MATH)
-    message(STATUS "[vcp-bindings] Configuring vcp.math3d")
+    message("  [vcp-bindings] Configuring vcp.math3d")
     python_add_module(math3d
         bindings/math3d.cpp
         bindings/conversion/vcp_conversion.h
@@ -236,7 +236,7 @@ endif()
 ##################################################################
 ## Image manipulation (imutils)
 if (VCP_BUILD_IMUTILS)
-    message(STATUS "[vcp-bindings] Configuring vcp.imutils_cpp")
+    message("  [vcp-bindings] Configuring vcp.imutils_cpp")
     python_add_module(imutils_cpp
         bindings/imutils_cpp.cpp
         bindings/conversion/np_cv_conversion.h
@@ -264,7 +264,7 @@ endif()
 ##################################################################
 ## Visualization utils
 if(VCP_BUILD_IMVIS)
-    message(STATUS "[vcp-bindings] Configuring vcp.imvis_cpp")
+    message("  [vcp-bindings] Configuring vcp.imvis_cpp")
     python_add_module(imvis_cpp
         bindings/imvis_cpp.cpp
         bindings/conversion/vcp_conversion.h
@@ -294,7 +294,7 @@ endif()
 ##################################################################
 ## Simple UI inputs
 if(VCP_BUILD_UI)
-    message(STATUS "[vcp-bindings] Configuring vcp.ui")
+    message("  [vcp-bindings] Configuring vcp.ui")
     python_add_module(ui_basics
         bindings/ui_basics.cpp
         bindings/conversion/np_cv_conversion.h
@@ -321,7 +321,7 @@ endif()
 
 ##################################################################
 ## Python files
-message(STATUS "[vcp-bindings] Configuring install target for python files")
+message("  [vcp-bindings] Configuring install target for python files\n")
 install(DIRECTORY vcp/
     DESTINATION ${PYVCP_LIBRARY_DESTINATION}
     FILES_MATCHING PATTERN "*.py")

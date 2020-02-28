@@ -131,6 +131,16 @@ cv::Size StreamIntrinsics::Resolution() const
   return resolution_;
 }
 
+std::string StreamIntrinsics::Identifier() const
+{
+  return identifier_;
+}
+
+void StreamIntrinsics::SetIdentifier(const std::string &id)
+{
+  identifier_ = id;
+}
+
 
 std::ostream &operator<<(std::ostream &out, const StreamIntrinsics &si)
 {
@@ -236,6 +246,8 @@ std::vector<StreamIntrinsics> LoadGenericRGBDCalibration(const cv::FileStorage &
                                                          const std::vector<std::string> &calib_keys)
 {
   std::vector<StreamIntrinsics> intrinsics;
+  //TODO load serial_number (or device_identifier, ...)
+  //TODO add field to streamintrinsics and check within corresponding sink (upon loading)
 
   const StreamIntrinsics rgb = LoadGenericMonocularCalibration(fs, filename, "_rgb", calib_keys);
   if (!rgb.Empty())
@@ -262,6 +274,14 @@ std::vector<calibration::StreamIntrinsics> LoadRealSenseCalibration(const cv::Fi
   const StreamIntrinsics ir_right = LoadGenericMonocularCalibration(fs, filename, "_ir_right", calib_keys, "_ir_right2rgb");
   if (!ir_right.Empty())
     intrinsics.push_back(ir_right);
+
+  if (std::find(calib_keys.begin(), calib_keys.end(), "serial_number") != calib_keys.end())
+  {
+    std::string sn;
+    fs["serial_number"] >> sn;
+    for (auto &calib : intrinsics)
+      calib.SetIdentifier(sn);
+  }
 
   return intrinsics;
 }
