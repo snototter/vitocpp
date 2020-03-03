@@ -139,7 +139,7 @@ class SingleVideoStorage:
             image = imutils.flip_layers(image)
         self.queue.put(image)
 
-
+#FIXME doc currently only mp4 + h264
 class MultiVideoStorage:
     """Store multiple (color/grayscale) streams to video files."""
     def __init__(self, videos, verbose=False):
