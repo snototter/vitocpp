@@ -18,7 +18,10 @@ namespace best
 {
 namespace calibration
 {
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::best::calibration"
 
+/** @brief Returns all node names (which are children of root) within the given cv::FileStorage. */
 std::vector<std::string> ListFileStorageNodes(const cv::FileStorage &fs)
 {
   std::vector<std::string> keys;

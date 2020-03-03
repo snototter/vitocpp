@@ -34,12 +34,12 @@
 #include <vcp_utils/string_utils.h>
 #include <vcp_utils/timing_utils.h>
 
-//Calibration: https://github.com/microsoft/Azure_Kinect_ROS_Driver/search?q=K4ACalibrationTransformData&unscoped_q=K4ACalibrationTransformData
-/////FIXME k4a may need to wait upon opening multiple devices: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/issues/676 ==> start sequentially, use parallel
-//FIXME k4a https://github.com/microsoft/Azure-Kinect-Sensor-SDK/issues/803  <== aligning two kinects fails (inaccurate factory calib)
-//FIXME k4a check official calib doc: https://docs.microsoft.com/en-us/azure/kinect-dk/use-calibration-functions
-//////FIXME k4a calibration: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/calibration/main.cpp
-//FIXME k4a opencv transformation example: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/tree/develop/examples/opencv_compatibility
+// FIXME
+// Official k4a calibration doc:
+//  https://docs.microsoft.com/en-us/azure/kinect-dk/use-calibration-functions
+// Calib & transformation in ROS:
+//  https://github.com/microsoft/Azure_Kinect_ROS_Driver/blob/8c6964fcc30827b476d6c18076e291fc22daa702/src/k4a_calibration_transform_data.cpp
+//Check https://github.com/microsoft/Azure-Kinect-Sensor-SDK/issues/803  <== aligning two kinects fails (inaccurate factory calib)
 namespace vcp
 {
 namespace best
@@ -603,7 +603,7 @@ private:
       fs << "width_rgb" << width_rgb;
       fs << "height_rgb" << height_rgb;
 
-//      TODO if (params_.IsDepthStreamEnabled())
+//      if (params_.IsDepthStreamEnabled())
 //      {
 //        rs2::video_stream_profile depth_profile = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
 //        const rs2_extrinsics rgb_extrinsics = rgb_profile.get_extrinsics_to(depth_profile);
@@ -832,6 +832,7 @@ private:
           break;
       }
       cv::Mat cvrgb, cvdepth, cvir;
+      cv::Mat rrgb, rdepth, rir;
       k4a_image_t image = nullptr;
 
       // Probe for color image
@@ -861,6 +862,11 @@ private:
             cv::cvtColor(buf, cvrgb, CV_BGRA2BGR);
           else
             cv::cvtColor(buf, cvrgb, CV_BGRA2RGB);
+
+          if (params_.rectify)
+            rrgb = rgb_intrinsics_.UndistortRectify(cvrgb);
+          else
+            rrgb = cvrgb;
 #endif
           // Now it's safe to free the memory
           k4a_image_release(image);
@@ -877,22 +883,32 @@ private:
       {
         image = k4a_capture_get_depth_image(k4a_capture);
         cvdepth = Extract16U(image, transformation, true, cvrgb);
+
+        if (params_.rectify)
+          rdepth = depth_intrinsics_.UndistortRectify(cvdepth);
+        else
+          rdepth = cvdepth;
       }
 
-      // Probe for a IR16 image
+      // Probe for the IR16 image
       if (ir_stream_enabled_)
       {
         image = k4a_capture_get_ir_image(k4a_capture);
         cvir = Extract16U(image, transformation, false, cvrgb);
+
+        if (params_.rectify)
+          rir = ir_intrinsics_.UndistortRectify(cvir);
+        else
+          rir = cvir;
       }
 
       // Release capture
       k4a_capture_release(k4a_capture);
       k4a_capture = nullptr;
 
-      const cv::Mat trgb = imutils::ApplyImageTransformations(cvrgb, params_.transforms);
-      const cv::Mat tdepth = imutils::ApplyImageTransformations(cvdepth, params_.transforms);
-      const cv::Mat tir = imutils::ApplyImageTransformations(cvir, params_.transforms);
+      const cv::Mat trgb = imutils::ApplyImageTransformations(rrgb, params_.transforms);
+      const cv::Mat tdepth = imutils::ApplyImageTransformations(rdepth, params_.transforms);
+      const cv::Mat tir = imutils::ApplyImageTransformations(rir, params_.transforms);
 
       image_queue_mutex_.lock();
       if (rgb_stream_enabled_)
