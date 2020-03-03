@@ -5,6 +5,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <map>
 
 #include <vcp_config/config_params.h>
 #include "sink.h"
@@ -21,6 +22,37 @@ namespace vcp
  */
 namespace best
 {
+
+
+/** @brief Information on how the vcp::best::Capture user will store each stream.
+ *
+ * Within vcp::best, this struct is used to store a "replay configuration", i.e.
+ * a configuration file which you can use to replay a streaming "session".
+ * For this, we need to know whether you store(d) the streams as a video, image, or not at all.
+ */
+struct StreamStorageParams
+{
+  enum class Type : unsigned char
+  {
+    NONE, /**< The corresponding stream won't be stored at all. */
+    IMAGE_DIR, /**< The stream will be stored as an image sequence (usually for depth images). */
+    VIDEO /**< The stream will be stored as a video file. */
+  };
+
+  StreamStorageParams(const Type &type, const std::string &path)
+    : type(type), path(path)
+  {}
+
+  StreamStorageParams() : type(Type::NONE), path()
+  {}
+
+  Type type;
+  std::string path;
+};
+
+std::ostream& operator<<(std::ostream & os, const StreamStorageParams &ssp);
+
+
 /** @brief Provides access to image streams of (potentially) multiple,
  * (potentially) different sinks/sensors/devices. Use this, if:
  * - you want to stream from a single device.
@@ -174,11 +206,19 @@ public:
   /** @brief Look up the FrameType for a specific stream/frame, also refer to @see FrameTypes(). */
   virtual FrameType FrameTypeAt(size_t stream_index) const = 0;
 
-  /** @brief Stores the intrinsic calibration (if available) for each sink into the specified folder.
+
+  /** @brief Stores a configuration file (along with intrinsic calibrations if available) to "replay" the recorded streams.
    *
-   * Returns true, if all calibration files have been saved successfully.
+   * - Note that you have to record/store the streams yourself!
+   * - Provide the output folder as argument, the configuration will be stored as "<folder>/replay.cfg"
+   * - Intrinsic calibrations will be stored as "<folder>/calibration/calib-<stream_label>.xml"
+   * - "folder" will be created if it does not exist
+   * - Existing contents will be overwritten!
+   * - There must be exactly one storage_param for each configured stream, i.e. storage_param[i] belongs to stream/frame[i]
+   * - "folder" will be prepended to relative storage_params[i].path entries.
    */
-  virtual bool SaveIntrinsicCalibration(const std::string &folder) const = 0;
+  //virtual bool SaveReplayConfiguration(const std::string &folder, const std::vector<StreamStorageParams> &storage_params) const = 0;
+  virtual bool SaveReplayConfiguration(const std::string &folder, const std::map<std::string, StreamStorageParams> &storage_params) const = 0;
 
 
 protected:

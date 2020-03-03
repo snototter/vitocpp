@@ -119,6 +119,13 @@ std::string ClipUrl(const std::string &url);
 std::string ObscureUrlAuthentication(const std::string &url);
 
 
+/** @brief Returns a copy of 's' with all given characters removed. */
+std::string Remove(const std::string &s, std::initializer_list<char> chars);
+
+/** @brief Returns a copy of 's' where the given char is removed. */
+std::string Remove(const std::string &s, const char chars);
+
+
 /** @brief Returns a "canonic" representation of the string.
  *
  * The input will be converted to lower case, trimmed, spaces and underscores replaced

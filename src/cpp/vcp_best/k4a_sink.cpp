@@ -1,5 +1,4 @@
 #include "k4a_sink.h"
-#include "calibration.h"
 
 #include <thread>
 #include <mutex>

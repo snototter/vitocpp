@@ -1,13 +1,16 @@
 #ifndef __VCP_BEST_CALIBRATION_H__
 #define __VCP_BEST_CALIBRATION_H__
 
-#include <memory>
 #include <string>
 #include <vector>
 #include <iostream>
 
-#include "sink.h"
-
+#include <opencv2/core/version.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/core/core.hpp>
+#else
+    #include <opencv2/core.hpp>
+#endif
 
 namespace vcp
 {
@@ -58,7 +61,10 @@ public:
   /** @brief Returns a Nx1 matrix holding the distortion coefficients. */
   cv::Mat Distortion() const;
 
+  /** @brief Returns true if an extrinsic transformation (R, t) from the corresponding view to a "reference view" has been configured. */
   bool HasTransformationToReference() const;
+
+  /** @brief Sets the extrinsic transformation from the corresponding view to a "reference view". See also @see HasTransformationToReference(). */
   void TransformationToReference(cv::Mat &R, cv::Mat &t) const;
 
   /** @brief Returns the stream label assigned to this calibrated stream. */
@@ -73,6 +79,8 @@ public:
    * current device.
    */
   std::string Identifier() const;
+
+  /** @brief Setter. */
   void SetIdentifier(const std::string &id);
 
 private:

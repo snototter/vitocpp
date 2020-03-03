@@ -6,6 +6,7 @@ import os
 import sys
 import cv2
 import numpy as np
+import time
 from vito import pyutils
 # Add path to the vcp package
 sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'gen'))
@@ -21,21 +22,25 @@ def streaming_demo(cfg_file, folder):
     capture = best.Capture()
     capture.load_libconfig(os.path.join(folder, cfg_file), rel_path_base_dir=folder)
 
-    print('Starting to stream {} sinks from {} devices'.format(capture.num_streams(), capture.num_devices()))
+    print('\nStarting to stream {} sinks from {} devices'.format(capture.num_streams(), capture.num_devices()))
     print('The configured capture yields the following streams:')
     print('  Labels:             {}'.format(capture.frame_labels()))
     print('  Configuration keys: {}'.format(capture.configuration_keys()))
-    print('  Frame types:        {}'.format(capture.frame_types()))
+    print('  Frame types:        {}\n'.format(capture.frame_types()))
 
     if not capture.open():
         raise RuntimeError('Cannot open devices')
     if not capture.start():
         raise RuntimeError('Cannot start streams')
+    time.sleep(2)
     # Some cameras (especially our tested RGBD sensors) take quite long to provide the 
     # initial frameset, so it's recommended to wait a bit longer for the device to finish
     # initialization.
     if not capture.wait_for_frames(5000):
         raise RuntimeError("Didn't receive an initial frameset within 5 seconds")
+
+    storage_params = {capture.frame_label(i): best.StreamStorageParams(best.StreamStorageParams.Type.ImageSequence, 'some path') for i in range(capture.num_streams())}
+    capture.save_replay_config('output-dummy', storage_params)
 
     while capture.all_devices_available():
         if not capture.wait_for_frames(1000.0):

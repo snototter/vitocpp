@@ -8,6 +8,7 @@
 #include <vcp_utils/vcp_error.h>
 #include <vcp_imutils/imutils.h>
 #include "sink_buffer.h"
+#include "calibration.h"
 
 namespace vcp
 {
@@ -204,6 +205,11 @@ public:
   virtual SinkParams SinkParamsAt(size_t stream_index) const = 0;
 
   //TODO add Intrinsics(), etc.
+  virtual vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const
+  {
+    VCP_LOG_FAILURE("IntrinsicsAt(" << stream_index << ") is not yet implemented.");
+    return vcp::best::calibration::StreamIntrinsics();
+  }
 };
 
 

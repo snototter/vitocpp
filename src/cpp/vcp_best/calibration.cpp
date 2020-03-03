@@ -415,6 +415,9 @@ std::vector<StreamIntrinsics> LoadIntrinsicsFromFile(const std::string &calibrat
 
 bool HasLensDistortion(const cv::Mat &distortion)
 {
+  if (distortion.empty())
+    return false;
+
   if (distortion.cols != 1 || distortion.type() != CV_64FC1)
     VCP_ERROR("Distortion coefficients must be a Nx1 CV_64FC1 vector.");
 

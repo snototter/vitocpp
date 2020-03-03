@@ -1,5 +1,4 @@
 #include "realsense2_sink.h"
-#include "calibration.h"
 
 #include <thread>
 #include <mutex>

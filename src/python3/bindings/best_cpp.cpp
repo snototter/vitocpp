@@ -278,6 +278,11 @@ public:
     return capture_->FrameTypeAt(stream_index) == vcp::best::FrameType::INFRARED;
   }
 
+  bool SaveReplayConfig(const std::string &folder, const std::map<std::string, vcp::best::StreamStorageParams> &storage_params)
+  {
+    return capture_->SaveReplayConfiguration(folder, storage_params);
+  }
+
 private:
   std::unique_ptr<vcp::best::Capture> capture_;
 
@@ -978,7 +983,24 @@ PYBIND11_MODULE(best_cpp, m)
       .def("is_infrared", &pybest::CaptureWrapper::IsFrameInfrared,
            "Check if the frame at the given index is of type 'infrared',\n"
            "i.e. intensity measurements (16bit Kinect, 8bit RealSense).",
-           py::arg("stream_index"));
+           py::arg("stream_index"))
+// Saving
+      .def("save_replay_config", &pybest::CaptureWrapper::SaveReplayConfig,
+           "Store a configuration file plus required intrinsic calibrations\n"
+           "to the given output folder.\n\n"
+           "Note that you have to record/store the streams yourself!\n\n"
+           ":param folder: Output folder where to store the configuration\n"
+           "               and calibration to. Will be created if it does\n"
+           "               not exist. Existing files WILL BE OVERWRITTEN!\n"
+           "               The config will be stored to <folder>/replay.cfg,\n"
+           "               calibration files to <folder>/<calibration>/calib-<stream_label>.xml\n\n"
+           ""
+           ":param storage_params: A dict of frame_label: vcp.best.StreamStorageParams,\n"
+           "               one for each stream - specifying whether (and where\n"
+           "               the corresponding stream will be saved to).\n"
+           "               If a StreamStorageParams.path is relative, the 'folder' will be prepended.\n"
+           ":return: Boolean (True upon success).",
+           py::arg("folder"), py::arg("storage_params"));
 
 
   //      .def("get_camera_matrix", &pybest::CaptureWrapper::ReturnNone,
@@ -1041,6 +1063,17 @@ PYBIND11_MODULE(best_cpp, m)
            "Returns the frame rate of the incoming view requests, NOT the display frame rate!")
       .def("get_display_fps", &pybest::LiveViewWrapper::GetDisplayFrameRate,
            "Returns the current display frame rate.");
+
+  py::class_<vcp::best::StreamStorageParams> storage_params(m, "StreamStorageParams");
+  storage_params.def(py::init<const vcp::best::StreamStorageParams::Type &, const std::string &>())
+      .def(py::init<>())
+      .def_readwrite("type", &vcp::best::StreamStorageParams::type)
+      .def_readwrite("path", &vcp::best::StreamStorageParams::path);
+  py::enum_<vcp::best::StreamStorageParams::Type>(storage_params, "Type")
+      .value("Skip", vcp::best::StreamStorageParams::Type::NONE)
+      .value("ImageSequence", vcp::best::StreamStorageParams::Type::IMAGE_DIR)
+      .value("Video", vcp::best::StreamStorageParams::Type::VIDEO)
+      .export_values();
 
   m.def("list_k4a_devices", &pybest::ListK4ADevices,
         "Returns a list of connected Kinect Azure devices.", py::arg("warn_if_no_devices")=true);

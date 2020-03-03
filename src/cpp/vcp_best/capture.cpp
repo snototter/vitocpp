@@ -12,6 +12,7 @@
 #include <exception>
 #include <thread>
 #include <iomanip>
+#include <utility>
 
 #include "file_sink.h"
 #include "webcam_sink.h"
@@ -40,6 +41,29 @@ namespace best
 
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::best"
+
+
+std::ostream& operator<<(std::ostream & os, const StreamStorageParams &ssp)
+{
+  switch (ssp.type)
+  {
+    case StreamStorageParams::Type::NONE:
+      os << "Stream will not be saved";
+      break;
+
+    case StreamStorageParams::Type::IMAGE_DIR:
+      os << "Image sequence [" << ssp.path << "]";
+      break;
+
+    case StreamStorageParams::Type::VIDEO:
+      os << "Video [" << ssp.path << "]";
+      break;
+
+    default:
+      VCP_ERROR("StreamStorageParams " << static_cast<uchar>(ssp.type) << " is not yet supported.");
+  }
+  return os;
+}
 
 class MultiDeviceCapture : public Capture
 {
@@ -155,36 +179,6 @@ public:
     // Empty vector is gracefully handled by AddSink(nullptr)
     AddSink(ipcam::CreateIpCameraSink(ipcam_params));
 #endif
-#ifdef WITH_IPCAMERA
-    if (!ip_mono_params.empty())
-    {
-      if (!ip_stereo_params.empty())
-        PVT_LOG_FAILURE("Connecting to a mixture of monocular and stereo IP camera setups will not work (if you're streaming via RTSP). Expect empty/invalid frames!");
-
-      sinks_.push_back(pvt::icc::CreateMonoIpCamSink(ip_mono_params));
-      for (const auto &p : ip_mono_params)
-      {
-        AddLabel(p.label);
-        AddCalibrationFile(p.calibration_file);
-        AddStreamType(StreamType::MONO);
-        sink_types_.push_back(SinkType::IPCAM_MONOCULAR);
-      }
-      AddCorrespondingConfigKeys(cck_ip_mono);
-    }
-
-    if (!ip_stereo_params.empty())
-    {
-      sinks_.push_back(pvt::icc::CreateStereoIpCamSink(ip_stereo_params));
-      for (const auto &p : ip_stereo_params)
-      {
-        AddLabel(p.label);
-        AddCalibrationFile(p.calibration_file);
-        AddStreamType(StreamType::STEREO);
-        sink_types_.push_back(SinkType::IPCAM_STEREO);
-      }
-      AddCorrespondingConfigKeys(cck_ip_stereo);
-    }
-#endif // WITH_IPCAMERA
 
 #ifdef VCP_BEST_WITH_K4A
     AddK4ASinks(k4a_params);
@@ -193,15 +187,15 @@ public:
 #ifdef WITH_MATRIXVISION
     if (!mvbluefox_params.empty())
     {
-      for (const auto &p : mvbluefox_params)
-      {
-        sinks_.push_back(pvt::icc::CreateSink(p));
-        AddLabel(p.label);
-        AddCalibrationFile(p.calibration_file);
-        AddStreamType(p.stream_type);
-        sink_types_.push_back(SinkType::MVBLUEFOX3);
-      }
-      AddCorrespondingConfigKeys(cck_mvbluefox);
+//      for (const auto &p : mvbluefox_params)
+//      {
+//        sinks_.push_back(pvt::icc::CreateSink(p));
+//        AddLabel(p.label);
+//        AddCalibrationFile(p.calibration_file);
+//        AddStreamType(p.stream_type);
+//        sink_types_.push_back(SinkType::MVBLUEFOX3);
+//      }
+//      AddCorrespondingConfigKeys(cck_mvbluefox);
     }
 #endif // WITH_MATRIXVISION
 
@@ -226,11 +220,13 @@ public:
     if (sink == nullptr)
       return;
 
+    const size_t sink_idx = sinks_.size();
     for (size_t i = 0; i < sink->NumStreams(); ++i)
     {
       sink_params_.push_back(sink->SinkParamsAt(i));
       frame_types_.push_back(sink->FrameTypeAt(i));
       frame_labels_.push_back(sink->StreamLabel(i));
+      frame2sink_.push_back(std::make_pair(sink_idx, i));
     }
     sinks_.push_back(std::move(sink));
   }
@@ -491,8 +487,15 @@ public:
   }
 
 
-  bool SaveIntrinsicCalibration(const std::string &folder) const override
+  bool SaveReplayConfiguration(const std::string &folder, const std::map<std::string, StreamStorageParams> &storage_params) const override
   {
+    // Sanity checks.
+    if (storage_params.size() != frame_labels_.size())
+    {
+      VCP_LOG_FAILURE("Number of storage_params (" << storage_params.size() << ") and configured streams (" << frame_labels_.size() << ") differs.");
+      return false;
+    }
+    // Ensure that the output folder exists.
     if (!vcp::utils::file::Exists(folder))
     {
       if (!vcp::utils::file::CreatePath(folder))
@@ -507,26 +510,75 @@ public:
       return false;
     }
 
-    /*bool success = true;
-    for (const auto &sink : sinks_)
+    std::unique_ptr<vcp::config::ConfigParams> config = vcp::config::CreateEmptyConfigParamsCpp();
+    for (auto it = storage_params.begin(); it != storage_params.end(); ++it)
     {
-      const bool sc = sink->SaveIntrinsicCalibration(folder);
-      if (!sc)
-        VCP_LOG_FAILURE("Cannot save intrinsic calibration for sink '" << sink->ConfigurationKey() << "'");
-      success &= sc;
+      size_t fidx;
+      if (!FrameIndexByLabel(it->first, fidx))
+      {
+        VCP_LOG_FAILURE("Invalid frame label [" << it->first << "].");
+        return false;
+      }
+
+      const std::string cam_group = "camera-" + vcp::utils::string::ToStr(fidx);
+      const std::string path = (it->second.path.empty() || vcp::utils::file::IsAbsolute(it->second.path))
+          ? it->second.path
+          : vcp::utils::file::FullFile(folder, it->second.path);
+
+      switch(it->second.type)
+      {
+        case StreamStorageParams::Type::NONE:
+          VCP_LOG_INFO("Skipping configuration of stream '" << it->first << "' as it won't be saved.");
+          continue;
+
+        case StreamStorageParams::Type::IMAGE_DIR:
+          config->SetString(cam_group + ".sink_type", "imagedir");
+          config->SetString(cam_group + ".directory", path);
+          break;
+
+        case StreamStorageParams::Type::VIDEO:
+          config->SetString(cam_group + ".sink_type", "video");
+          config->SetString(cam_group + ".video", path);
+          break;
+
+        default:
+          VCP_ERROR("StreamStorageParams::Type " << static_cast<uchar>(it->second.type) << " is not yet supported.");
+      }
+
+      config->SetString(cam_group + ".label", it->first);
+      config->SetString(cam_group + ".label_canonic", vcp::utils::string::Canonic(it->first));
+      config->SetString(cam_group + ".frame_type", FrameTypeToString(frame_types_[fidx]));
+      config->SetBoolean(cam_group + ".color_as_bgr", false);
+
+      const auto &intrinsics = sinks_[frame2sink_[fidx].first]->IntrinsicsAt(frame2sink_[fidx].second);
+      if (intrinsics.Empty())
+        VCP_LOG_FIXME("Intrinsics for stream '" << it->first << "' (" << frame2sink_[fidx].first << ", " << frame2sink_[fidx].second << ") are not set.");
+      //TODO if K...
+      // Calibration file will be stored relative to the configuration file
+      const std::string rel_calib_file = vcp::utils::file::FullFile("calibration",
+                                        std::string("calib-") + vcp::utils::string::Canonic(it->first) + ".xml");
+      config->SetString(cam_group + ".calibration_file", rel_calib_file);
     }
+
+    VCP_LOG_FIXME("Save calibration files!!!!");
+
+    const std::string cfg_file = vcp::utils::file::FullFile(folder, "replay.cfg");
+    const bool success = config->SaveConfiguration(cfg_file);
+    if (success)
+      VCP_LOG_INFO("Replay-able configuration has been saved to '" << cfg_file << "'");
+    // Error message will be displayed within config->SaveConfiguration()
+
     return success;
-    */
-    VCP_LOG_FIXME("TBD");
-    return false;
   }
 
 private:
   std::vector<std::unique_ptr<StreamSink>> sinks_; // Potentially less than streams/frames
+  std::vector<std::pair<size_t, size_t>> frame2sink_; /**< Stores the index into sinks_ (along with the corresponding stream index) for each frame, e.g. if we iterate frame_types_, we can easily lookup the corresponding sink. */
   std::vector<FrameType> frame_types_;  // Note: they will be per stream/frame (i.e. possibly duplicated), not per device
   std::vector<SinkParams> sink_params_; // Note: they will be per stream/frame (i.e. possibly duplicated), not per device
   std::vector<std::string> frame_labels_;
   size_t num_devices_;
+  //TODO: add vector<size_t> frame2sink_lut
 
 #ifdef VCP_BEST_DEBUG_FRAMERATE
   std::chrono::high_resolution_clock::time_point prev_frame_timestamp_;
@@ -536,6 +588,19 @@ private:
 #ifdef VCP_BEST_WITH_REALSENSE2
   bool multiple_realsenses_;
 #endif // VCP_BEST_WITH_REALSENSE2
+
+  bool FrameIndexByLabel(const std::string &frame_label, size_t &idx) const
+  {
+    for (size_t i = 0; i < frame_labels_.size(); ++i)
+    {
+      if (frame_labels_[i].compare(frame_label) == 0)
+      {
+        idx = i;
+        return true;
+      }
+    }
+    return false;
+  }
 
   void SanityCheck()
   {

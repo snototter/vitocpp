@@ -1,5 +1,6 @@
 #include "string_utils.h"
 #include <algorithm>
+#include <iterator>
 #include <fstream>
 #include "vcp_logging.h"
 
@@ -201,13 +202,36 @@ std::string ClipUrl(const std::string &url)
 }
 
 
+std::string Remove(const std::string &s, const char c)
+{
+  std::string removed;
+  std::remove_copy(s.begin(), s.end(), std::back_inserter(removed), c);
+  return removed;
+}
+
+std::string Remove(const std::string &s, std::initializer_list<char> chars)
+{
+  std::string copy(s);
+  for (const auto c : chars)
+    copy = Remove(copy, c);
+  return copy;
+}
+
+
 std::string Canonic(const std::string &s, bool strip_dashes)
 {
-  std::string canonic = Replace(
-        Replace(Lower(Trim(s)), " ", "-"),
+  std::string canonic =
+      Replace(
+        Replace(
+          Replace(
+            Remove(
+              Lower(Trim(s)),
+              {'!', ':', '\'', '"', '%', '/', '\\'}),
+            "#", "nr"),
+          " ", "-"),
         "_", "-");
   if (strip_dashes)
-    return Replace(canonic, "-", "");
+    return Remove(canonic, '-');
   return canonic;
 }
 } // namespace string

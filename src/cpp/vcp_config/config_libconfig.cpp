@@ -817,7 +817,7 @@ public:
     }
     catch (const libconfig::FileIOException &e)
     {
-      VCP_ERROR("SaveConfiguration(): FileIOException while writing configuration file (" << filename << ")!");
+      VCP_LOG_FAILURE("SaveConfiguration(): FileIOException while writing configuration file (" << filename << ")!");
     }
     return false;
   }
