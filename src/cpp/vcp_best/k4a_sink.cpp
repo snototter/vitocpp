@@ -31,6 +31,7 @@
 #include <vcp_utils/vcp_error.h>
 #include <vcp_utils/vcp_logging.h>
 #include <vcp_utils/string_utils.h>
+#include <vcp_utils/file_utils.h>
 #include <vcp_utils/timing_utils.h>
 
 // FIXME
@@ -483,7 +484,7 @@ public:
   {
     std::vector<std::string> labels;
     if (rgb_stream_enabled_)
-      labels.push_back(params_.sink_label + "-rgb");
+      labels.push_back(params_.sink_label + "-color");
     if (depth_stream_enabled_)
       labels.push_back(params_.sink_label + "-depth");
     if (ir_stream_enabled_)
@@ -548,6 +549,26 @@ public:
     return num;
   }
 
+  //FIXME warn if !available
+  //FIXME always load & return intrinsics
+  vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const
+  {
+    if (!available_)
+    {
+      VCP_LOG_FAILURE("Intrinsics for k4a '" << params_.serial_number << "' cannot be queried before the sensor is available! Use IsDeviceAvailable() to check when the sensor is ready.");
+      return calibration::StreamIntrinsics();
+    }
+
+    std::vector<const calibration::StreamIntrinsics*> intrinsics;
+    if (rgb_stream_enabled_)
+      intrinsics.push_back(&rgb_intrinsics_);
+    if (depth_stream_enabled_)
+      intrinsics.push_back(&depth_intrinsics_);
+    if (ir_stream_enabled_)
+      intrinsics.push_back(&ir_intrinsics_);
+    return *(intrinsics[stream_index]);
+  }
+
 private:
   std::atomic<bool> continue_capture_;
   std::thread stream_thread_;
@@ -597,10 +618,10 @@ private:
       Drgb = DFromIntrinsics(ic);
       width_rgb = calib_color.resolution_width;
       height_rgb = calib_color.resolution_height;
-      fs << "K_rgb" << Krgb;
-      fs << "D_rgb" << Drgb;
-      fs << "width_rgb" << width_rgb;
-      fs << "height_rgb" << height_rgb;
+      fs << "M_color" << Krgb;
+      fs << "D_color" << Drgb;
+      fs << "width_color" << width_rgb;
+      fs << "height_color" << height_rgb;
 
 //      if (params_.IsDepthStreamEnabled())
 //      {
@@ -622,7 +643,7 @@ private:
       const int width_depth = align_d2c ? width_rgb : sensor_calibration.depth_camera_calibration.resolution_width;
       const int height_depth = align_d2c ? height_rgb : sensor_calibration.depth_camera_calibration.resolution_height;
 
-      fs << "K_depth" << Kdepth;
+      fs << "M_depth" << Kdepth;
       fs << "D_depth" << Ddepth;
       fs << "width_depth" << width_depth;
       fs << "height_depth" << height_depth;
@@ -644,8 +665,8 @@ private:
         else
           t_d2c = (cv::Mat_<double>(3, 1) << e.translation[0], e.translation[1], e.translation[2]);
 
-        fs << "R_depth2rgb" << R_d2c;
-        fs << "t_depth2rgb" << t_d2c;
+        fs << "R_depth2color" << R_d2c;
+        fs << "t_depth2color" << t_d2c;
       }
     }
 
@@ -670,8 +691,8 @@ private:
         k4a_calibration_extrinsics_t e = sensor_calibration.extrinsics[K4A_CALIBRATION_TYPE_DEPTH][K4A_CALIBRATION_TYPE_COLOR];
         cv::Mat R_i2c = (cv::Mat_<double>(3, 3) << e.rotation[0], e.rotation[1], e.rotation[2], e.rotation[3], e.rotation[4], e.rotation[5], e.rotation[6], e.rotation[7], e.rotation[8]);
         cv::Mat t_i2c = (cv::Mat_<double>(3, 1) << e.translation[0], e.translation[1], e.translation[2]);
-        fs << "R_ir2rgb" << R_i2c;
-        fs << "t_ir2rgb" << t_i2c;
+        fs << "R_ir2color" << R_i2c;
+        fs << "t_ir2color" << t_i2c;
       }
     }
 
@@ -683,7 +704,7 @@ private:
 
     if (params_.verbose)
       VCP_LOG_INFO("k4a calibration has been saved to '" << params_.calibration_file << "'."
-                   << std::endl << "Change the camera's 'calibration_file' parameter if you want to prevent overwriting it upon the next start.");
+                   << std::endl << "          Change the camera's 'calibration_file' parameter if you want to prevent overwriting it upon the next start.");
   }
 
   bool MapIntrinsicsHelper(const std::vector<calibration::StreamIntrinsics> &intrinsics,
@@ -704,7 +725,7 @@ private:
   {
     if (params_.IsColorStreamEnabled())
     {
-      if (!MapIntrinsicsHelper(intrinsics, rgb_intrinsics_, "rgb"))
+      if (!MapIntrinsicsHelper(intrinsics, rgb_intrinsics_, "color"))
       {
         VCP_LOG_FAILURE("Color stream of k4a '" << params_.serial_number << "' is enabled but not calibrated.");
         return false;
@@ -771,9 +792,13 @@ private:
     // Save calibration if requested.
     if (params_.write_calibration)
       DumpCalibration(sensor_calibration);
-    // Load calibration if needed
+
+    // Load calibration if needed // FIXME needs to be loaded everytime (maybe refactor DumpCalibration - to return StreamIntrinsics which can then be saved in an actual DumpCalibration() function (?))
     if (params_.rectify)
     {
+      if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))
+        VCP_ERROR("To undistort & rectify the k4a '" << params_.serial_number << "' streams, the calibration file '" << params_.calibration_file << "' must exist!");
+
       std::vector<calibration::StreamIntrinsics> intrinsics = calibration::LoadIntrinsicsFromFile(params_.calibration_file);
       if (!MapIntrinsics(intrinsics))
         VCP_ERROR("Cannot load all intrinsics for k4a '" << params_.serial_number << "'");

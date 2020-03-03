@@ -207,7 +207,7 @@ public:
   //TODO add Intrinsics(), etc.
   virtual vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const
   {
-    VCP_LOG_FAILURE("IntrinsicsAt(" << stream_index << ") is not yet implemented.");
+    VCP_LOG_FAILURE("IntrinsicsAt(" << stream_index << ") is not yet implemented for stream '" << StreamLabel(stream_index) << "'.");
     return vcp::best::calibration::StreamIntrinsics();
   }
 };

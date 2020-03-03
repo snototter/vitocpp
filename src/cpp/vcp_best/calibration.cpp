@@ -180,7 +180,7 @@ bool StreamIntrinsics::Save(const std::string &calibration_file, const bool rect
     fs << "M" << intrinsics_original_;
     fs << "D" << distortion_;
   }
-  fs << "recorded_rectified" << rectified;
+  fs << "M_is_rectified" << rectified;
 
   if (resolution_.width > 0)
     fs << "width" << resolution_.width;
@@ -318,14 +318,12 @@ std::vector<StreamIntrinsics> LoadGenericRGBDCalibration(const cv::FileStorage &
                                                          const std::vector<std::string> &calib_keys)
 {
   std::vector<StreamIntrinsics> intrinsics;
-  //TODO load serial_number (or device_identifier, ...)
-  //TODO add field to streamintrinsics and check within corresponding sink (upon loading)
 
-  const StreamIntrinsics rgb = LoadGenericMonocularCalibration(fs, filename, "_rgb", calib_keys);
+  const StreamIntrinsics rgb = LoadGenericMonocularCalibration(fs, filename, "_color", calib_keys);
   if (!rgb.Empty())
     intrinsics.push_back(rgb);
 
-  const StreamIntrinsics depth = LoadGenericMonocularCalibration(fs, filename, "_depth", calib_keys, "_depth2rgb");
+  const StreamIntrinsics depth = LoadGenericMonocularCalibration(fs, filename, "_depth", calib_keys, "_depth2color");
   if (!depth.Empty())
     intrinsics.push_back(depth);
 
@@ -339,11 +337,11 @@ std::vector<calibration::StreamIntrinsics> LoadRealSenseCalibration(const cv::Fi
   // Load standard RGB and depth stream calibration, as with every RGBD sensor.
   std::vector<calibration::StreamIntrinsics> intrinsics = LoadGenericRGBDCalibration(fs, filename, calib_keys);
 
-  const StreamIntrinsics ir_left = LoadGenericMonocularCalibration(fs, filename, "_ir_left", calib_keys, "_ir_left2rgb");
+  const StreamIntrinsics ir_left = LoadGenericMonocularCalibration(fs, filename, "_ir_left", calib_keys, "_ir_left2color");
   if (!ir_left.Empty())
     intrinsics.push_back(ir_left);
 
-  const StreamIntrinsics ir_right = LoadGenericMonocularCalibration(fs, filename, "_ir_right", calib_keys, "_ir_right2rgb");
+  const StreamIntrinsics ir_right = LoadGenericMonocularCalibration(fs, filename, "_ir_right", calib_keys, "_ir_right2color");
   if (!ir_right.Empty())
     intrinsics.push_back(ir_right);
 
@@ -366,7 +364,7 @@ std::vector<calibration::StreamIntrinsics> LoadK4ACalibration(const cv::FileStor
   // Load standard RGB and depth stream calibration, as with every RGBD sensor.
   std::vector<calibration::StreamIntrinsics> intrinsics = LoadGenericRGBDCalibration(fs, filename, calib_keys);
 
-  const StreamIntrinsics ir = LoadGenericMonocularCalibration(fs, filename, "_ir", calib_keys, "_ir2rgb");
+  const StreamIntrinsics ir = LoadGenericMonocularCalibration(fs, filename, "_ir", calib_keys, "_ir2color");
   if (!ir.Empty())
     intrinsics.push_back(ir);
 

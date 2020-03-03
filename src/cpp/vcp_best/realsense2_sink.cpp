@@ -12,6 +12,7 @@
 
 #include <vcp_utils/vcp_error.h>
 #include <vcp_utils/string_utils.h>
+#include <vcp_utils/file_utils.h>
 
 
 namespace vcp
@@ -639,12 +640,13 @@ void DumpIrCalib(rs2::pipeline_profile &profile, cv::FileStorage &fs, int ir_ind
     const rs2_extrinsics ir_extrinsics = ir_profile.get_extrinsics_to(rgb_profile);
     const cv::Mat Rir2color = RFromExtrinsics(ir_extrinsics);
     const cv::Mat Tir2color = TFromExtrinsics(ir_extrinsics);
-    const std::string key_r = "R_" + ir_name + "2rgb";
+    const std::string key_r = "R_" + ir_name + "2color";
     fs << key_r << Rir2color;
-    const std::string key_t = "t_" + ir_name + "2rgb";
+    const std::string key_t = "t_" + ir_name + "2color";
     fs << key_t << Tir2color;
   }
 }
+
 void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams &params, const float depth_scale)
 {
   if (params.calibration_file.empty())
@@ -672,10 +674,10 @@ void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams 
     rgb_width = rgb_intrinsics.width;
     rgb_height = rgb_intrinsics.height;
 
-    fs << "K_rgb" << Krgb;
-    fs << "D_rgb" << Drgb;
-    fs << "width_rgb" << rgb_width;
-    fs << "height_rgb" << rgb_height;
+    fs << "M_color" << Krgb;
+    fs << "D_color" << Drgb;
+    fs << "width_color" << rgb_width;
+    fs << "height_color" << rgb_height;
 
 //    if (params.IsDepthStreamEnabled())
 //    {
@@ -710,8 +712,8 @@ void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams 
       const rs2_extrinsics depth_extrinsics = depth_profile.get_extrinsics_to(rgb_profile);
       const cv::Mat Rdepth2color = align_d2c ? cv::Mat::eye(3, 3, CV_64FC1) : RFromExtrinsics(depth_extrinsics);
       const cv::Mat Tdepth2color = align_d2c ? cv::Mat::zeros(3, 1, CV_64FC1) : TFromExtrinsics(depth_extrinsics);
-      fs << "R_depth2rgb" << Rdepth2color;
-      fs << "t_depth2rgb" << Tdepth2color;
+      fs << "R_depth2color" << Rdepth2color;
+      fs << "t_depth2color" << Tdepth2color;
     }
   }
 
@@ -728,7 +730,7 @@ void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams 
 
   if (params.verbose)
     VCP_LOG_INFO("RealSense calibration has been saved to '" << params.calibration_file << "'."
-                 << std::endl << "Change the camera's 'calibration_file' parameter if you want to prevent overwriting it upon the next start.");
+                 << std::endl << "          Change the camera's 'calibration_file' parameter if you want to prevent overwriting it upon the next start.");
 }
 
 
@@ -1154,7 +1156,25 @@ public:
     return rgbd_params_;
   }
 
-  //TODO Intrinsics can only be queried, once device is available_ (!)
+  vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const
+  {
+    if (!available_)
+    {
+      VCP_LOG_FAILURE("Intrinsics for RealSense '" << rgbd_params_.serial_number << "' cannot be queried before the sensor is available! Use IsDeviceAvailable() to check when the sensor is ready.");
+      return calibration::StreamIntrinsics();
+    }
+
+    std::vector<const calibration::StreamIntrinsics*> intrinsics;
+    if (color_stream_enabled_)
+      intrinsics.push_back(&rgb_intrinsics_);
+    if (depth_stream_enabled_)
+      intrinsics.push_back(&depth_intrinsics_);
+    if (ir1_stream_enabled_)
+      intrinsics.push_back(&ir1_intrinsics_);
+    if (ir2_stream_enabled_)
+      intrinsics.push_back(&ir2_intrinsics_);
+    return *(intrinsics[stream_index]);
+  }
 
 private:
   std::atomic<bool> continue_capture_;
@@ -1252,6 +1272,9 @@ private:
     // Load calibration if needed
     if (rgbd_params_.rectify)
     {
+      if (rgbd_params_.calibration_file.empty() || !vcp::utils::file::Exists(rgbd_params_.calibration_file))
+        VCP_ERROR("To undistort & rectify the RealSense '" << rgbd_params_.serial_number << "' streams, the calibration file '" << rgbd_params_.calibration_file << "' must exist!");
+
       std::vector<calibration::StreamIntrinsics> intrinsics = calibration::LoadIntrinsicsFromFile(rgbd_params_.calibration_file);
       if (!MapIntrinsics(intrinsics))
         VCP_ERROR("Cannot load all intrinsics for RealSense '" << rgbd_params_.serial_number << "'");
@@ -1508,7 +1531,7 @@ private:
   {
     if (rgbd_params_.IsColorStreamEnabled())
     {
-      if (!MapIntrinsicsHelper(intrinsics, rgb_intrinsics_, "rgb"))
+      if (!MapIntrinsicsHelper(intrinsics, rgb_intrinsics_, "color"))
       {
         VCP_LOG_FAILURE("Color stream of RealSense '" << rgbd_params_.serial_number << "' is enabled but not calibrated.");
         return false;
