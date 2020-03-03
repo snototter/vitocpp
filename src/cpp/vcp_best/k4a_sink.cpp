@@ -117,20 +117,20 @@ std::string GetSerialNumber(k4a_device_t dev)
   // Query serial number length
   if (k4a_device_get_serialnum(dev, NULL, &serial_number_length) != K4A_BUFFER_RESULT_TOO_SMALL)
   {
-    VCP_LOG_FAILURE("Cannot query K4A serial number length");
+    VCP_LOG_FAILURE("Cannot query k4a serial number length");
     return std::string();
   }
 
   char *serial_number = new (std::nothrow) char[serial_number_length];
   if (!serial_number)
   {
-    VCP_LOG_FAILURE("Cannot allocate " << serial_number_length << " bytes for K4A serial number");
+    VCP_LOG_FAILURE("Cannot allocate " << serial_number_length << " bytes for k4a serial number");
     return sn;
   }
 
   if (k4a_device_get_serialnum(dev, serial_number, &serial_number_length) != K4A_BUFFER_RESULT_SUCCEEDED)
   {
-    VCP_LOG_FAILURE("Cannot retrieve K4A serial number length");
+    VCP_LOG_FAILURE("Cannot retrieve k4a serial number length");
   }
   else
   {
@@ -368,7 +368,7 @@ public:
     calibration_file_ = params_.write_calibration ? params_.calibration_file : "";
     if (params_.write_calibration && calibration_file_.empty())
     {
-      VCP_LOG_FAILURE("If you want to dump the K4A calibration, you must specify the filename as calibration_file parameter!");
+      VCP_LOG_FAILURE("If you want to dump the k4a calibration, you must specify the filename as calibration_file parameter!");
       return false;
     }
     return true;
@@ -392,7 +392,7 @@ public:
     VCP_LOG_DEBUG("K4ARGBDSink::StartStreaming()");
     if (continue_capture_)
     {
-      VCP_LOG_FAILURE("K4A stream already running - ignoring StartStreaming() call.");
+      VCP_LOG_FAILURE("k4a stream already running - ignoring StartStreaming() call.");
       return false;
     }
 
@@ -585,7 +585,7 @@ private:
 
     cv::FileStorage fs(params_.calibration_file, cv::FileStorage::WRITE);
     if (!fs.isOpened())
-      VCP_ERROR("Cannot open '" << params_.calibration_file << "' to store K4A calibration!");
+      VCP_ERROR("Cannot open '" << params_.calibration_file << "' to store k4a calibration!");
 
     if (!params_.serial_number.empty() && kEmptyK4ASerialNumber.compare(params_.serial_number) != 0)
       fs << "serial_number" << params_.serial_number;
@@ -683,7 +683,7 @@ private:
     fs.release();
 
     if (params_.verbose)
-      VCP_LOG_INFO("K4A calibration has been saved to '" << params_.calibration_file << "'."
+      VCP_LOG_INFO("k4a calibration has been saved to '" << params_.calibration_file << "'."
                    << std::endl << "Change the camera's 'calibration_file' parameter if you want to prevent overwriting it upon the next start.");
   }
 
@@ -707,7 +707,7 @@ private:
     {
       if (!MapIntrinsicsHelper(intrinsics, rgb_intrinsics_, "rgb"))
       {
-        VCP_LOG_FAILURE("Color stream of K4A '" << params_.serial_number << "' is enabled but not calibrated.");
+        VCP_LOG_FAILURE("Color stream of k4a '" << params_.serial_number << "' is enabled but not calibrated.");
         return false;
       }
     }
@@ -715,7 +715,7 @@ private:
     {
       if (!MapIntrinsicsHelper(intrinsics, depth_intrinsics_, "depth"))
       {
-        VCP_LOG_FAILURE("Depth stream of K4A '" << params_.serial_number << "' is enabled but not calibrated.");
+        VCP_LOG_FAILURE("Depth stream of k4a '" << params_.serial_number << "' is enabled but not calibrated.");
         return false;
       }
     }
@@ -723,7 +723,7 @@ private:
     {
       if (!MapIntrinsicsHelper(intrinsics, ir_intrinsics_, "ir"))
       {
-        VCP_LOG_FAILURE("Infrared stream of K4A '" << params_.serial_number << "' is enabled but not calibrated.");
+        VCP_LOG_FAILURE("Infrared stream of k4a '" << params_.serial_number << "' is enabled but not calibrated.");
         return false;
       }
     }
@@ -733,7 +733,7 @@ private:
   void Receive()
   {
     if (params_.verbose)
-      VCP_LOG_INFO_DEFAULT("Starting K4A stream from device '" << params_.serial_number << "'");
+      VCP_LOG_INFO_DEFAULT("Starting k4a stream from device '" << params_.serial_number << "'");
 
     k4a_device_configuration_t config = K4A_DEVICE_CONFIG_INIT_DISABLE_ALL;
     config.camera_fps = params_.camera_fps;
@@ -741,12 +741,12 @@ private:
     // Save bandwidth, but need to decode JPGs on-the-fly.
     config.color_format = K4A_IMAGE_FORMAT_COLOR_MJPG;
     if (params_.verbose && params_.IsColorStreamEnabled())
-      VCP_LOG_INFO_DEFAULT("Configuring K4A color stream as MJPG.");
+      VCP_LOG_INFO_DEFAULT("Configuring k4a color stream as MJPG.");
 #else // VCP_BEST_WITH_K4A_MJPG
     // Use already decoded image data.
     config.color_format = K4A_IMAGE_FORMAT_COLOR_BGRA32;
     if (params_.verbose && params_.IsColorStreamEnabled())
-      VCP_LOG_INFO_DEFAULT("Configuring K4A color stream as BGRA32.");
+      VCP_LOG_INFO_DEFAULT("Configuring k4a color stream as BGRA32.");
 #endif // VCP_BEST_WITH_K4A_MJPG
     config.color_resolution = params_.color_resolution;
     config.depth_delay_off_color_usec = params_.depth_delay_off_color_usec;
@@ -762,7 +762,7 @@ private:
     // Query device calibration
     k4a_calibration_t sensor_calibration;
     if (k4a_device_get_calibration(k4a_device_, config.depth_mode, config.color_resolution, &sensor_calibration) != K4A_RESULT_SUCCEEDED)
-      VCP_ERROR("Failed to retrieve sensor calibration for K4A '" << params_.serial_number << "'.");
+      VCP_ERROR("Failed to retrieve sensor calibration for k4a '" << params_.serial_number << "'.");
 
     // Prepare transformation for image alignment if needed.
     k4a_transformation_t transformation = nullptr;
@@ -777,13 +777,13 @@ private:
     {
       std::vector<calibration::StreamIntrinsics> intrinsics = calibration::LoadIntrinsicsFromFile(params_.calibration_file);
       if (!MapIntrinsics(intrinsics))
-        VCP_ERROR("Cannot load all intrinsics for K4A '" << params_.serial_number << "'");
+        VCP_ERROR("Cannot load all intrinsics for k4a '" << params_.serial_number << "'");
 
       if (!intrinsics.empty() && !intrinsics[0].Identifier().empty() && intrinsics[0].Identifier().compare(params_.serial_number) != 0)
-        VCP_ERROR("Calibration file '" << params_.calibration_file << "' provides intrinsics for K4A '" << intrinsics[0].Identifier() << "', but this sensor is '" << params_.serial_number << "'!");
+        VCP_ERROR("Calibration file '" << params_.calibration_file << "' provides intrinsics for k4a '" << intrinsics[0].Identifier() << "', but this sensor is '" << params_.serial_number << "'!");
 
       if (params_.verbose)
-        VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for K4A '" << params_.serial_number << "'");
+        VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for k4a '" << params_.serial_number << "'");
     }
 
     // Set color camera configuration:
@@ -794,7 +794,7 @@ private:
     {
       bool sync_in_connected, sync_out_connected;
       GetSyncJackStatus(k4a_device_, sync_in_connected, sync_out_connected);
-      VCP_LOG_INFO_DEFAULT("K4A sync jack status" << std::endl
+      VCP_LOG_INFO_DEFAULT("k4a sync jack status" << std::endl
                           << "  IN:  " << (sync_in_connected ? "connected" : "not connected") << std::endl
                           << "  OUT: " << (sync_out_connected ? "connected" : "not connected"));
     }
@@ -808,7 +808,7 @@ private:
         k4a_device_close(k4a_device_);
         k4a_device_ = NULL;
       }
-      VCP_ERROR("Failed to start k4a device with S/N '" << params_.serial_number << "'");
+      VCP_ERROR("Failed to start k4a device '" << params_.serial_number << "'");
     }
 
     // Now this sink is ready to publish images.
@@ -822,11 +822,11 @@ private:
       case K4A_WAIT_RESULT_SUCCEEDED:
           break;
       case K4A_WAIT_RESULT_TIMEOUT:
-          VCP_LOG_WARNING("Capture request to K4A S/N '" << params_.serial_number << "' timed out.");
+          VCP_LOG_WARNING("Capture request to k4a '" << params_.serial_number << "' timed out.");
           continue;
           break;
       case K4A_WAIT_RESULT_FAILED:
-          VCP_LOG_FAILURE("Failed to read a capture from K4A S/N '" << params_.serial_number << "', closing stream.");
+          VCP_LOG_FAILURE("Failed to read a capture from k4a '" << params_.serial_number << "', closing stream.");
           continue_capture_ = false;
           continue;
           break;
@@ -1017,12 +1017,12 @@ private:
     {
       if (k4a_device_set_color_control(k4a_device_, p.command, K4A_COLOR_CONTROL_MODE_AUTO, 0) != K4A_RESULT_SUCCEEDED)
       {
-        VCP_LOG_FAILURE("Cannot adjust K4A color control setting: " << p);
+        VCP_LOG_FAILURE("Cannot adjust k4a color control setting: " << p);
       }
       else
       {
         if (params_.verbose)
-          VCP_LOG_INFO_DEFAULT("Changed K4A color control: " << p);
+          VCP_LOG_INFO_DEFAULT("Changed k4a color control: " << p);
       }
     }
     // - second, all which should be set to MANUAL
@@ -1030,12 +1030,12 @@ private:
     {
       if (k4a_device_set_color_control(k4a_device_, p.command, K4A_COLOR_CONTROL_MODE_MANUAL, p.value) != K4A_RESULT_SUCCEEDED)
       {
-        VCP_LOG_FAILURE("Cannot adjust K4A color control setting: " << p);
+        VCP_LOG_FAILURE("Cannot adjust k4a color control setting: " << p);
       }
       else
       {
         if (params_.verbose)
-          VCP_LOG_INFO_DEFAULT("Changed K4A color control: " << p);
+          VCP_LOG_INFO_DEFAULT("Changed k4a color control: " << p);
       }
     }
 
@@ -1043,7 +1043,7 @@ private:
     if (params_.verbose)
     {
       for (const auto &p : GetCurrentColorControlSettings(k4a_device_))
-        VCP_LOG_INFO_DEFAULT("K4A current color control settings: " << p);
+        VCP_LOG_INFO_DEFAULT("k4a current color control settings: " << p);
     }
   }
 };
@@ -1113,7 +1113,7 @@ K4ASinkParams K4ASinkParamsFromConfig(const vcp::config::ConfigParams &config, c
   // Sanity check: if RGB stream is disabled, we cannot align depth to RGB, obviously:
   if (!params.IsColorStreamEnabled() && params.align_depth_to_color)
   {
-    VCP_LOG_FAILURE("Invalid K4A configuration: align_depth_to_color=true, but RGB stream is OFF - disabling alignment to continue.");
+    VCP_LOG_FAILURE("Invalid k4a configuration: align_depth_to_color=true, but RGB stream is OFF - disabling alignment to continue.");
     params.align_depth_to_color = false;
   }
 
@@ -1129,7 +1129,7 @@ K4ASinkParams K4ASinkParamsFromConfig(const vcp::config::ConfigParams &config, c
   // Sanity check - IR requires enabled depth:
   if (!params.IsInfraredStreamEnabled() && params.enable_infrared_stream)
   {
-    VCP_LOG_FAILURE("Invalid K4A configuration: enable_infrared_stream=true, but depth mode is 'K4A_DEPTH_MODE_OFF' - adjusting it to 'K4A_DEPTH_MODE_PASSIVE_IR' to continue.");
+    VCP_LOG_FAILURE("Invalid k4a configuration: enable_infrared_stream=true, but depth mode is 'K4A_DEPTH_MODE_OFF' - adjusting it to 'K4A_DEPTH_MODE_PASSIVE_IR' to continue.");
     params.depth_mode = K4A_DEPTH_MODE_PASSIVE_IR;
   }
 
