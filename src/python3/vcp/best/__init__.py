@@ -10,7 +10,7 @@ except ImportError as e:
 
 # from . import config
 # from . import configurator
-# from . import stream_storage
+from . import storage
 # from . import utils
 
 # Should be imported explicitly due to PyQt5 dependency, which is usually overkill
