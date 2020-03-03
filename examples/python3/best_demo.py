@@ -49,9 +49,13 @@ def streaming_demo(cfg_file, folder):
             continue
 
         # Colorize depth/infrared images for visualization
+        def _col_rgb(f):
+            return f #imutils.transform(f, 'histeq')
+
         def _col_depth(f):
             return imutils.transform(f, 'depth2surfnorm', 'surfnorm2rgb')
             #return imvis.pseudocolor(f, limits=[0, 5000], color_map=colormaps.colormap_turbo_rgb)
+
         def _col_ir(f):
             # RealSense infrared is provided (by default) in Y8 format
             if f.dtype == np.uint8:
@@ -63,11 +67,11 @@ def streaming_demo(cfg_file, folder):
                 if capture.is_depth(idx)
                 else (_col_ir(frames[idx])
                     if capture.is_infrared(idx)
-                    else frames[idx])
+                    else _col_rgb(frames[idx]))
             for idx in range(len(frames))]
         
         # Resize
-        # vis_frames = [imutils.fuzzy_resize(f, 0.75) for f in vis_frames]
+        vis_frames = [imutils.fuzzy_resize(f, 0.75) for f in vis_frames]
 
         # Overlay stream labels
         vis_frames = [
@@ -82,7 +86,7 @@ def streaming_demo(cfg_file, folder):
         # vis_frames.append((vis_frames[1].astype(np.float32) * 0.5 + vis_frames[2].astype(np.float32) * 0.5).astype(np.uint8))
 
         # Display the images (as a single image/collage)
-        collage = imvis.make_collage(vis_frames, num_images_per_row=max(len(vis_frames)//2, 3))
+        collage = imvis.make_collage(vis_frames, num_images_per_row=2)
         k = imvis.imshow(collage, title='streams', wait_ms=10)
         if k == 27 or k == ord('q'):
             break
@@ -112,7 +116,7 @@ def demo():
     # cfg_files = [file for file in os.listdir(folder) if file.endswith(".cfg")]
     cfg_files = ['realsense.cfg'] #, 'image_sequence.cfg', 'k4a.cfg', 'webcam.cfg']
     # cfg_files = ['zed.cfg', 'realsense.cfg']
-    cfg_files = ['k4a.cfg']
+    cfg_files = ['rgbds.cfg']
     
     for cf in cfg_files:
         try:
