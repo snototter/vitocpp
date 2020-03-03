@@ -1,4 +1,5 @@
 #include "calibration.h"
+#include "sink.h"
 #include <vcp_utils/vcp_error.h>
 
 #include <vcp_utils/string_utils.h>
@@ -144,6 +145,74 @@ void StreamIntrinsics::SetIdentifier(const std::string &id)
   identifier_ = id;
 }
 
+bool StreamIntrinsics::Save(const std::string &calibration_file, const bool rectified, const FrameType &frame_type) const
+{
+  if (Empty())
+  {
+    VCP_LOG_WARNING("Cannot save empty/invalid intrinsics for stream '" << identifier_ << "'.");
+    return false;
+  }
+
+  if (calibration_file.empty())
+  {
+    VCP_LOG_FAILURE("StreamIntrinsics::Save() called with empty file name for stream '" << identifier_ << "'.");
+    return false;
+  }
+
+  cv::FileStorage fs(calibration_file, cv::FileStorage::WRITE);
+  if (!fs.isOpened())
+  {
+    VCP_LOG_FAILURE("Cannot open '" << calibration_file << "' to store calibration for stream '" << identifier_ << "'.");
+    return false;
+  }
+
+  if (!identifier_.empty())
+    fs << "label" << identifier_;
+
+  if (rectified)
+  {
+    fs << "M" << intrinsics_rectified_;
+    fs << "M_distorted" << intrinsics_original_;
+    fs << "D_distorted" << distortion_;
+  }
+  else
+  {
+    fs << "M" << intrinsics_original_;
+    fs << "D" << distortion_;
+  }
+  fs << "recorded_rectified" << rectified;
+
+  if (resolution_.width > 0)
+    fs << "width" << resolution_.width;
+  if (resolution_.height > 0)
+    fs << "height" << resolution_.width;
+
+  if (HasTransformationToReference())
+  {
+    fs << "R" << R_to_ref_;
+    fs << "t" << t_to_ref_;
+  }
+
+  switch (frame_type)
+  {
+    case FrameType::DEPTH:
+    case FrameType::INFRARED:
+    case FrameType::MONOCULAR:
+      fs << "type" << "monocular";
+      break;
+    case FrameType::STEREO:
+      fs << "type" << "stereo";
+      break;
+    case FrameType::UNKNOWN:
+      VCP_LOG_WARNING("FrameType is 'unknown' for stream '" << identifier_ << "'. Assuming it to be monocular.");
+      break;
+    default:
+      VCP_ERROR("FrameType '" << static_cast<short>(frame_type) << "' is not yet supported.");
+  }
+
+  fs.release();
+  return true;
+}
 
 std::ostream &operator<<(std::ostream &out, const StreamIntrinsics &si)
 {

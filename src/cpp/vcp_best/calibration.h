@@ -16,6 +16,10 @@ namespace vcp
 {
 namespace best
 {
+
+// Forward declaration (defined in sink.h)
+enum class FrameType : short;
+
 /** @brief Functionality undistort & rectify images, load calibration files, etc. */
 namespace calibration
 {
@@ -32,10 +36,10 @@ public:
 
   /** @brief Class method to instantiate an object from a monocular calibration. */
   static StreamIntrinsics FromMonocular(const cv::Mat &intrinsics,
-                                            const cv::Mat &distortion,
-                                            const std::string &label,
-                                            const cv::Size &resolution,
-                                            const cv::Mat &R=cv::Mat(), const cv::Mat &t=cv::Mat());
+                                        const cv::Mat &distortion,
+                                        const std::string &label,
+                                        const cv::Size &resolution,
+                                        const cv::Mat &R=cv::Mat(), const cv::Mat &t=cv::Mat());
 
   /** @brief Destructor. */
   ~StreamIntrinsics();
@@ -82,6 +86,9 @@ public:
 
   /** @brief Setter. */
   void SetIdentifier(const std::string &id);
+
+  /** @brief Save the calibration to disk. */
+  bool Save(const std::string &calibration_file, const bool rectified, const FrameType &frame_type) const;
 
 private:
   bool skip_undistort_rectify_;  /**< If there's no distortion, we can skip undistortion & rectification (except for stereo setups). */

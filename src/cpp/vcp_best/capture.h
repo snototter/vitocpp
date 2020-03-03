@@ -32,7 +32,7 @@ namespace best
  */
 struct StreamStorageParams
 {
-  enum class Type : unsigned char
+  enum class Type : short
   {
     NONE, /**< The corresponding stream won't be stored at all. */
     IMAGE_DIR, /**< The stream will be stored as an image sequence (usually for depth images). */

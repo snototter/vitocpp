@@ -60,7 +60,7 @@ std::ostream& operator<<(std::ostream & os, const StreamStorageParams &ssp)
       break;
 
     default:
-      VCP_ERROR("StreamStorageParams " << static_cast<uchar>(ssp.type) << " is not yet supported.");
+      VCP_ERROR("StreamStorageParams " << static_cast<short>(ssp.type) << " is not yet supported.");
   }
   return os;
 }
@@ -500,7 +500,7 @@ public:
     {
       if (!vcp::utils::file::CreatePath(folder))
       {
-        VCP_LOG_FAILURE("Cannot create storage path '" << folder << "' for intrinsic calibration files.");
+        VCP_LOG_FAILURE("Cannot create path '" << folder << "' to store the 'replay' configuration.");
         return false;
       }
     }
@@ -551,16 +551,32 @@ public:
       config->SetBoolean(cam_group + ".color_as_bgr", false);
 
       const auto &intrinsics = sinks_[frame2sink_[fidx].first]->IntrinsicsAt(frame2sink_[fidx].second);
-      if (intrinsics.Empty())
+      if (!intrinsics.Empty())
+      {
+        // Calibration file will be stored relative to the configuration file.
+        // Thus, ensure that the "calibration" subfolder exists.
+        const std::string csf = vcp::utils::file::FullFile(folder, "calibration");
+        if (!vcp::utils::file::Exists(csf))
+        {
+          if (!vcp::utils::file::CreatePath(csf))
+          {
+            VCP_LOG_FAILURE("Cannot create calibration output folder '" << csf << "' for the intrinsic calibration files.");
+            return false;
+          }
+        }
+        const std::string rel_calib_file = vcp::utils::file::FullFile("calibration",
+                                          std::string("calib-") + vcp::utils::string::Canonic(it->first) + ".xml");
+        config->SetString(cam_group + ".calibration_file", rel_calib_file);
+        const std::string calib_file = vcp::utils::file::FullFile(folder, rel_calib_file);
+        if (!intrinsics.Save(calib_file, sink_params_[fidx].rectify, frame_types_[fidx]))
+        {
+          VCP_LOG_FAILURE("Couldn't save calibration file '" << calib_file << "' for stream '" << frame_labels_[fidx] << "'.");
+          return false;
+        }
+      }
+      else
         VCP_LOG_FIXME("Intrinsics for stream '" << it->first << "' (" << frame2sink_[fidx].first << ", " << frame2sink_[fidx].second << ") are not set.");
-      //TODO if K...
-      // Calibration file will be stored relative to the configuration file
-      const std::string rel_calib_file = vcp::utils::file::FullFile("calibration",
-                                        std::string("calib-") + vcp::utils::string::Canonic(it->first) + ".xml");
-      config->SetString(cam_group + ".calibration_file", rel_calib_file);
     }
-
-    VCP_LOG_FIXME("Save calibration files!!!!");
 
     const std::string cfg_file = vcp::utils::file::FullFile(folder, "replay.cfg");
     const bool success = config->SaveConfiguration(cfg_file);
@@ -576,9 +592,8 @@ private:
   std::vector<std::pair<size_t, size_t>> frame2sink_; /**< Stores the index into sinks_ (along with the corresponding stream index) for each frame, e.g. if we iterate frame_types_, we can easily lookup the corresponding sink. */
   std::vector<FrameType> frame_types_;  // Note: they will be per stream/frame (i.e. possibly duplicated), not per device
   std::vector<SinkParams> sink_params_; // Note: they will be per stream/frame (i.e. possibly duplicated), not per device
-  std::vector<std::string> frame_labels_;
+  std::vector<std::string> frame_labels_; /**< Unique label per stream (the user can provide per-sink labels, which will be post-fixed by the corresponding sensor sink). */
   size_t num_devices_;
-  //TODO: add vector<size_t> frame2sink_lut
 
 #ifdef VCP_BEST_DEBUG_FRAMERATE
   std::chrono::high_resolution_clock::time_point prev_frame_timestamp_;

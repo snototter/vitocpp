@@ -22,7 +22,7 @@ namespace best
  *   returns a 2*WxH image if you request the color stream; similarly, dual-optics Mobotix send
  *   images horizontally concatenated.
  */
-enum class FrameType
+enum class FrameType : short
 {
   UNKNOWN,     /**< The sink doesn't know (e.g. if you load a video file and don't configure the "frame_type" parameter). */
   MONOCULAR,   /**< Most often, we deal with monocular image streams. */
