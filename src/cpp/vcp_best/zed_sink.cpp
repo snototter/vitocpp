@@ -338,7 +338,7 @@ bool DumpCalibration(const ZedSinkParams &params, sl::CameraInformation &ci)
 
   if (params.verbose)
     VCP_LOG_INFO("ZED calibration has been saved to '" << params.calibration_file << "'."
-                 << std::endl << "Change the camera's 'calibration_file' parameter if you want to prevent overwriting it upon the next start.");
+                 << std::endl << "          Change the camera's 'calibration_file' parameter if you want to prevent overwriting it upon the next start.");
 
   return true;
 }
@@ -841,7 +841,8 @@ std::vector<ZedDeviceInfo> ListZedDevices(bool warn_if_no_devices, bool list_una
       info.serial_number = dp.serial_number;
       info.device_path = std::string(dp.path.c_str());
       info.model_name = ZedModelToString(dp.camera_model);
-      infos.push_back(info);
+      if (info.available || (!info.available && list_unavailable_devices))
+        infos.push_back(info);
     }
     if (infos.empty() && warn_if_no_devices)
       VCP_LOG_WARNING("All connected ZED cameras are already in use!");
