@@ -174,6 +174,12 @@ public:
   /** @brief Look up the FrameType for a specific stream/frame, also refer to @see FrameTypes(). */
   virtual FrameType FrameTypeAt(size_t stream_index) const = 0;
 
+  /** @brief Stores the intrinsic calibration (if available) for each sink into the specified folder.
+   *
+   * Returns true, if all calibration files have been saved successfully.
+   */
+  virtual bool SaveIntrinsicCalibration(const std::string &folder) const = 0;
+
 
 protected:
   Capture() {}

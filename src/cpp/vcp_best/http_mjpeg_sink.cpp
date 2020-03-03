@@ -189,7 +189,6 @@ public:
     return 1;
   }
 
-
 private:
   IpCameraSinkParams params_;
   curl::URL_FILE *mjpg_stream_;

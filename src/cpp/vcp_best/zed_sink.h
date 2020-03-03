@@ -42,8 +42,6 @@ struct ZedSinkParams : public SinkParams
   bool write_calibration;
 
   int gpu_id;
-  //TODO init by dev-id
-  //TODO init by serial-nr
   unsigned int serial_number;
   int device_id;
   std::string model_name;

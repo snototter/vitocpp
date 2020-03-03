@@ -196,7 +196,7 @@ std::string RealPath(const std::string &path)
   }
   else
   {
-    VCP_LOG_FAILURE("Cannot resolve '" << path << "' via realpath()");
+    VCP_LOG_WARNING("Cannot resolve '" << path << "' via realpath()");
     perror("realpath");
   }
 #else

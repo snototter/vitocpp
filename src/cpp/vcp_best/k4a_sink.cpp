@@ -1,4 +1,5 @@
 #include "k4a_sink.h"
+#include "calibration.h"
 
 #include <thread>
 #include <mutex>
@@ -247,114 +248,6 @@ void GetSyncJackStatus(k4a_device_t dev, bool &sync_in_connected, bool &sync_out
 }
 
 
-//cv::Mat KFromIntrinsics(const rs2_intrinsics &intrinsics)
-//{
-//  cv::Mat K = cv::Mat::eye(3, 3, CV_64FC1);
-//  K.at<double>(0,0) = static_cast<double>(intrinsics.fx);
-//  K.at<double>(1,1) = static_cast<double>(intrinsics.fy);
-//  K.at<double>(0,2) = static_cast<double>(intrinsics.ppx);
-//  K.at<double>(1,2) = static_cast<double>(intrinsics.ppy);
-//  return K;
-//}
-
-
-//cv::Mat DFromIntrinsics(const rs2_intrinsics &intrinsics)
-//{
-//  cv::Mat D = cv::Mat::zeros(5, 1, CV_64FC1);
-//  for (size_t i = 0; i < 5; ++i)
-//    D.at<double>(i) = static_cast<double>(intrinsics.coeffs[i]);
-//  return D;
-//}
-
-
-//cv::Mat RFromExtrinsics(const rs2_extrinsics &extrinsics)
-//{
-//  cv::Mat R(3, 3, CV_64FC1);
-//  // RealSense stores R in column-major order, so we need to fill R:
-//  // [0 3 6;
-//  //  1 4 7;
-//  //  2 5 8]
-//  int arr_idx = 0;
-//  for (int c = 0; c < 3; ++c)
-//  {
-//    for (int r = 0; r < 3; ++r)
-//    {
-//      R.at<double>(r, c) = static_cast<double>(extrinsics.rotation[arr_idx]);
-//      ++arr_idx;
-//    }
-//  }
-//  return R;
-//}
-
-
-//cv::Mat TFromExtrinsics(const rs2_extrinsics &extrinsics)
-//{
-//  cv::Mat T(3, 1, CV_64FC1);
-//  for (int i = 0; i < 3; ++i)
-//    T.at<double>(i) = static_cast<double>(extrinsics.translation[i]);
-//  return T;
-//}
-
-
-//void DumpCalibration(rs2::pipeline_profile &profile, const std::string &filename, const bool align_depth_to_color, const float depth_scale)
-//{
-//  if (filename.empty())
-//  {
-//    PVT_ABORT("DumpCalibration() called with empty file name!");
-//  }
-
-//  cv::FileStorage fs(filename, cv::FileStorage::WRITE);
-//  if (!fs.isOpened())
-//  {
-//    PVT_ABORT("Cannot open '" << filename << "' to store calibration!");
-//  }
-
-//  rs2::video_stream_profile depth_profile = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
-//  rs2::video_stream_profile rgb_profile = profile.get_stream(RS2_STREAM_COLOR).as<rs2::video_stream_profile>();
-
-//  const rs2_intrinsics depth_intrinsics = depth_profile.get_intrinsics();
-//  const rs2_extrinsics depth_extrinsics = depth_profile.get_extrinsics_to(rgb_profile);
-//  const rs2_intrinsics rgb_intrinsics = rgb_profile.get_intrinsics();
-//  const rs2_extrinsics rgb_extrinsics = rgb_profile.get_extrinsics_to(depth_profile);
-
-//  const cv::Mat Krgb = KFromIntrinsics(rgb_intrinsics);
-//  const cv::Mat Drgb = DFromIntrinsics(rgb_intrinsics);
-//  const int rgb_width = rgb_intrinsics.width;
-//  const int rgb_height = rgb_intrinsics.height;
-
-//  const cv::Mat Kdepth = align_depth_to_color ? Krgb : KFromIntrinsics(depth_intrinsics);
-//  const cv::Mat Ddepth = align_depth_to_color ? Drgb : DFromIntrinsics(depth_intrinsics);
-//  const int depth_width = align_depth_to_color ? rgb_width : depth_intrinsics.width;
-//  const int depth_height = align_depth_to_color ? rgb_height : depth_intrinsics.height;
-
-//  const cv::Mat Rdepth2color = align_depth_to_color ? cv::Mat::eye(3, 3, CV_64FC1) : RFromExtrinsics(depth_extrinsics);
-//  const cv::Mat Tdepth2color = align_depth_to_color ? cv::Mat::zeros(3, 1, CV_64FC1) : TFromExtrinsics(depth_extrinsics);
-//  const cv::Mat Rcolor2depth = align_depth_to_color ? cv::Mat::eye(3, 3, CV_64FC1) : RFromExtrinsics(rgb_extrinsics);
-//  const cv::Mat Tcolor2depth = align_depth_to_color ? cv::Mat::zeros(3, 1, CV_64FC1) : TFromExtrinsics(rgb_extrinsics);
-
-//  fs << "K_rgb" << Krgb;
-//  fs << "D_rgb" << Drgb;
-//  fs << "width_rgb" << rgb_width;
-//  fs << "height_rgb" << rgb_height;
-
-//  fs << "K_depth" << Kdepth;
-//  fs << "D_depth" << Ddepth;
-//  fs << "width_depth" << depth_width;
-//  fs << "height_depth" << depth_height;
-//  fs << "depth_scale" << depth_scale;
-
-//  fs << "R_depth2rgb" << Rdepth2color;
-//  fs << "t_depth2rgb" << Tdepth2color;
-//  fs << "R_rgb2depth" << Rcolor2depth;
-//  fs << "t_rgb2depth" << Tcolor2depth;
-
-//  fs << "type" << "rgbd";
-//  fs.release();
-
-//  PVT_LOG_INFO("RealSense calibration has been saved to '" << filename << "'. Change the camera configuration if you want to prevent overwriting this calibration during the next start.");
-//}
-
-
 std::vector<K4ADeviceInfo> ListK4ADevices(bool warn_if_no_devices)
 {
   uint32_t num_devices = k4a_device_get_installed_count();
@@ -397,6 +290,26 @@ std::vector<K4ADeviceInfo> ListK4ADevices(bool warn_if_no_devices)
   }
 
   return infos;
+}
+
+
+cv::Mat KFromIntrinsics(const k4a_calibration_intrinsic_parameters_t &intrinsics)
+{
+  cv::Mat K = (cv::Mat_<double>(3, 3)
+                       << intrinsics.param.fx, 0.0, intrinsics.param.cx,
+                       0.0, intrinsics.param.fy, intrinsics.param.cy,
+                       0.0, 0.0, 1.0);
+  return K;
+}
+
+cv::Mat DFromIntrinsics(const k4a_calibration_intrinsic_parameters_t &intrinsics)
+{
+  cv::Mat D = (cv::Mat_<double>(8, 1)
+               << intrinsics.param.k1, intrinsics.param.k2,
+               intrinsics.param.p1, intrinsics.param.p2,
+               intrinsics.param.k3, intrinsics.param.k4,
+               intrinsics.param.k5, intrinsics.param.k6);
+  return D;
 }
 
 
@@ -447,8 +360,8 @@ public:
     if (!GetDevice(k4a_device_, params_)) // This call already issues a warning if no device is available
       return false;
 
-    serial_number_ = GetSerialNumber(k4a_device_);
-    if (serial_number_.empty())
+    params_.serial_number = GetSerialNumber(k4a_device_);
+    if (params_.serial_number.empty())
       return false;
 
     // Check if we need to dump the calibration:
@@ -644,74 +557,195 @@ private:
   std::unique_ptr<SinkBuffer> depth_queue_;
   std::unique_ptr<SinkBuffer> ir_queue_;
   K4ASinkParams params_;
-  std::string serial_number_;
   std::string calibration_file_;
   std::atomic<int> available_;
   bool rgb_stream_enabled_;
   bool depth_stream_enabled_;
   bool ir_stream_enabled_;
+  calibration::StreamIntrinsics rgb_intrinsics_;
+  calibration::StreamIntrinsics depth_intrinsics_;
+  calibration::StreamIntrinsics ir_intrinsics_;
 
   k4a_device_t k4a_device_;
 
-  void GetCalibration(k4a_calibration_t sensor_calibration)
+  void DumpCalibration(k4a_calibration_t sensor_calibration)
   {
-    //FIXME if depth or color is disabled, this won't work
     if (sensor_calibration.color_camera_calibration.intrinsics.type != K4A_CALIBRATION_LENS_DISTORTION_MODEL_BROWN_CONRADY
         || sensor_calibration.depth_camera_calibration.intrinsics.type != K4A_CALIBRATION_LENS_DISTORTION_MODEL_BROWN_CONRADY)
       VCP_ERROR("Currently, we only support the Brown/Conrady lens distortion model.");
-// TODO see https://github.com/microsoft/Azure_Kinect_ROS_Driver/blob/8c6964fcc30827b476d6c18076e291fc22daa702/src/k4a_calibration_transform_data.cpp
-    //getDepthCameraInfo(sensor_msgs::CameraInfo& camera_info)
-    k4a_calibration_intrinsic_parameters_t ic = sensor_calibration.color_camera_calibration.intrinsics.parameters;
-    const cv::Mat K_c = (cv::Mat_<double>(3, 3)
-                   << ic.param.fx, 0.0, ic.param.cx,
-                   0.0, ic.param.fy, ic.param.cy,
-                   0.0, 0.0, 1.0);
-    const cv::Mat D_c = (cv::Mat_<double>(8, 1)
-                   << ic.param.k1, ic.param.k2, ic.param.p1, ic.param.p2, ic.param.k3, ic.param.k4, ic.param.k5, ic.param.k6);
 
-    k4a_calibration_intrinsic_parameters_t id = sensor_calibration.depth_camera_calibration.intrinsics.parameters;
-    const cv::Mat K_d = (cv::Mat_<double>(3, 3)
-                   << id.param.fx, 0.0, id.param.cx,
-                   0.0, id.param.fy, id.param.cy,
-                   0.0, 0.0, 1.0);
-    const cv::Mat D_d = (cv::Mat_<double>(8, 1)
-                   << id.param.k1, id.param.k2, id.param.p1, id.param.p2, id.param.k3, id.param.k4, id.param.k5, id.param.k6);
-    // To transform from a source to a target 3D coordinate system, use the parameters stored
-    // under extrinsics[source][target].
-    k4a_calibration_extrinsics_t e = sensor_calibration.extrinsics[K4A_CALIBRATION_TYPE_DEPTH][K4A_CALIBRATION_TYPE_COLOR];
-    cv::Mat R_d2c;
-    if (params_.align_depth_to_color)
-      R_d2c = (cv::Mat_<double>(3, 3) << e.rotation[0], e.rotation[1], e.rotation[2], e.rotation[3], e.rotation[4], e.rotation[5], e.rotation[6], e.rotation[7], e.rotation[8]);
-    else
-      R_d2c = cv::Mat::eye(3, 3, CV_64FC1);
+    const bool align_d2c = params_.IsColorStreamEnabled() && params_.IsDepthStreamEnabled() && params_.align_depth_to_color;
 
-    cv::Mat t_d2c;
-    if (params_.align_depth_to_color)
-      t_d2c = (cv::Mat_<double>(3, 1) << e.translation[0], e.translation[1], e.translation[2]);
-    else
-      t_d2c = cv::Mat::zeros(3, 1, CV_64FC1);
+    cv::Mat Krgb, Drgb;
+    int width_rgb, height_rgb;
 
-    VCP_LOG_FAILURE("TODO store calibration, test calibration:" << std::endl << "Rd2c: " << R_d2c << std::endl << "td2c: " << t_d2c);
+    // Write to file:
+    if (params_.calibration_file.empty())
+      VCP_ERROR("ration() called with empty file name!");
 
-    VCP_LOG_FAILURE("Distortion coefficients: " << std::endl << "C: " << D_c << std::endl << "D: " << D_d);
+    cv::FileStorage fs(params_.calibration_file, cv::FileStorage::WRITE);
+    if (!fs.isOpened())
+      VCP_ERROR("Cannot open '" << params_.calibration_file << "' to store K4A calibration!");
+
+    if (!params_.serial_number.empty() && kEmptyK4ASerialNumber.compare(params_.serial_number) != 0)
+      fs << "serial_number" << params_.serial_number;
+
+    if (params_.IsColorStreamEnabled())
+    {
+      const k4a_calibration_camera_t calib_color = sensor_calibration.color_camera_calibration;
+      const k4a_calibration_intrinsic_parameters_t ic = sensor_calibration.color_camera_calibration.intrinsics.parameters;
+      Krgb = KFromIntrinsics(ic);
+      Drgb = DFromIntrinsics(ic);
+      width_rgb = calib_color.resolution_width;
+      height_rgb = calib_color.resolution_height;
+      fs << "K_rgb" << Krgb;
+      fs << "D_rgb" << Drgb;
+      fs << "width_rgb" << width_rgb;
+      fs << "height_rgb" << height_rgb;
+
+//      TODO if (params_.IsDepthStreamEnabled())
+//      {
+//        rs2::video_stream_profile depth_profile = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
+//        const rs2_extrinsics rgb_extrinsics = rgb_profile.get_extrinsics_to(depth_profile);
+//        const cv::Mat Rcolor2depth = align_d2c ? cv::Mat::eye(3, 3, CV_64FC1) : RFromExtrinsics(rgb_extrinsics);
+//        const cv::Mat Tcolor2depth = align_d2c ? cv::Mat::zeros(3, 1, CV_64FC1) : TFromExtrinsics(rgb_extrinsics);
+//        fs << "R_rgb2depth" << Rcolor2depth;
+//        fs << "t_rgb2depth" << Tcolor2depth;
+//      }
+    }
+
+    if (params_.IsDepthStreamEnabled())
+    {
+      // Depth intrinsics
+      const k4a_calibration_intrinsic_parameters_t id = sensor_calibration.depth_camera_calibration.intrinsics.parameters;
+      const cv::Mat Kdepth = align_d2c ? Krgb : KFromIntrinsics(id);
+      const cv::Mat Ddepth = align_d2c ? Drgb : DFromIntrinsics(id);
+      const int width_depth = align_d2c ? width_rgb : sensor_calibration.depth_camera_calibration.resolution_width;
+      const int height_depth = align_d2c ? height_rgb : sensor_calibration.depth_camera_calibration.resolution_height;
+
+      fs << "K_depth" << Kdepth;
+      fs << "D_depth" << Ddepth;
+      fs << "width_depth" << width_depth;
+      fs << "height_depth" << height_depth;
+
+      if (params_.IsColorStreamEnabled())
+      {
+        // To transform from a source to a target 3D coordinate system, use the parameters stored
+        // at extrinsics[source][target].
+        k4a_calibration_extrinsics_t e = sensor_calibration.extrinsics[K4A_CALIBRATION_TYPE_DEPTH][K4A_CALIBRATION_TYPE_COLOR];
+        cv::Mat R_d2c;
+        if (params_.align_depth_to_color)
+          R_d2c = cv::Mat::eye(3, 3, CV_64FC1);
+        else
+          R_d2c = (cv::Mat_<double>(3, 3) << e.rotation[0], e.rotation[1], e.rotation[2], e.rotation[3], e.rotation[4], e.rotation[5], e.rotation[6], e.rotation[7], e.rotation[8]);
+
+        cv::Mat t_d2c;
+        if (params_.align_depth_to_color)
+          t_d2c = cv::Mat::zeros(3, 1, CV_64FC1);
+        else
+          t_d2c = (cv::Mat_<double>(3, 1) << e.translation[0], e.translation[1], e.translation[2]);
+
+        fs << "R_depth2rgb" << R_d2c;
+        fs << "t_depth2rgb" << t_d2c;
+      }
+    }
+
+    if (params_.IsInfraredStreamEnabled())
+    {
+      // IR stream has the depth intrinsics (but cannot be aligned to color camera, at least with k4a-v1.3)
+      const k4a_calibration_intrinsic_parameters_t id = sensor_calibration.depth_camera_calibration.intrinsics.parameters;
+      const cv::Mat Kir = KFromIntrinsics(id);
+      const cv::Mat Dir = DFromIntrinsics(id);
+      const int width_ir = sensor_calibration.depth_camera_calibration.resolution_width;
+      const int height_ir = sensor_calibration.depth_camera_calibration.resolution_height;
+
+      fs << "K_ir" << Kir;
+      fs << "D_ir" << Dir;
+      fs << "width_ir" << width_ir;
+      fs << "height_ir" << height_ir;
+
+      if (params_.IsColorStreamEnabled())
+      {
+        // To transform from a source to a target 3D coordinate system, use the parameters stored
+        // at extrinsics[source][target].
+        k4a_calibration_extrinsics_t e = sensor_calibration.extrinsics[K4A_CALIBRATION_TYPE_DEPTH][K4A_CALIBRATION_TYPE_COLOR];
+        cv::Mat R_i2c = (cv::Mat_<double>(3, 3) << e.rotation[0], e.rotation[1], e.rotation[2], e.rotation[3], e.rotation[4], e.rotation[5], e.rotation[6], e.rotation[7], e.rotation[8]);
+        cv::Mat t_i2c = (cv::Mat_<double>(3, 1) << e.translation[0], e.translation[1], e.translation[2]);
+        fs << "R_ir2rgb" << R_i2c;
+        fs << "t_ir2rgb" << t_i2c;
+      }
+    }
+
+    fs << "sink_type" << SinkTypeToString(params_.sink_type);
+    fs << "label" << params_.sink_label;
+
+    fs << "type" << "rgbd";
+    fs.release();
+
+    if (params_.verbose)
+      VCP_LOG_INFO("K4A calibration has been saved to '" << params_.calibration_file << "'."
+                   << std::endl << "Change the camera's 'calibration_file' parameter if you want to prevent overwriting it upon the next start.");
+  }
+
+  bool MapIntrinsicsHelper(const std::vector<calibration::StreamIntrinsics> &intrinsics,
+                           calibration::StreamIntrinsics &to_set, const std::string &expected_label)
+  {
+    for (const auto &calib : intrinsics)
+    {
+      if (expected_label.compare(calib.StreamLabel()) == 0)
+      {
+        to_set = calib;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool MapIntrinsics(const std::vector<calibration::StreamIntrinsics> &intrinsics)
+  {
+    if (params_.IsColorStreamEnabled())
+    {
+      if (!MapIntrinsicsHelper(intrinsics, rgb_intrinsics_, "rgb"))
+      {
+        VCP_LOG_FAILURE("Color stream of K4A '" << params_.serial_number << "' is enabled but not calibrated.");
+        return false;
+      }
+    }
+    if (params_.IsDepthStreamEnabled())
+    {
+      if (!MapIntrinsicsHelper(intrinsics, depth_intrinsics_, "depth"))
+      {
+        VCP_LOG_FAILURE("Depth stream of K4A '" << params_.serial_number << "' is enabled but not calibrated.");
+        return false;
+      }
+    }
+    if (params_.IsInfraredStreamEnabled())
+    {
+      if (!MapIntrinsicsHelper(intrinsics, ir_intrinsics_, "ir"))
+      {
+        VCP_LOG_FAILURE("Infrared stream of K4A '" << params_.serial_number << "' is enabled but not calibrated.");
+        return false;
+      }
+    }
+    return true;
   }
 
   void Receive()
   {
     if (params_.verbose)
-      VCP_LOG_INFO_DEFAULT("Starting K4A stream from device [" << serial_number_ << "]");
+      VCP_LOG_INFO_DEFAULT("Starting K4A stream from device '" << params_.serial_number << "'");
 
     k4a_device_configuration_t config = K4A_DEVICE_CONFIG_INIT_DISABLE_ALL;
     config.camera_fps = params_.camera_fps;
 #ifdef VCP_BEST_WITH_K4A_MJPG
     // Save bandwidth, but need to decode JPGs on-the-fly.
     config.color_format = K4A_IMAGE_FORMAT_COLOR_MJPG;
-    if (params_.verbose)
+    if (params_.verbose && params_.IsColorStreamEnabled())
       VCP_LOG_INFO_DEFAULT("Configuring K4A color stream as MJPG.");
 #else // VCP_BEST_WITH_K4A_MJPG
     // Use already decoded image data.
     config.color_format = K4A_IMAGE_FORMAT_COLOR_BGRA32;
-    if (params_.verbose)
+    if (params_.verbose && params_.IsColorStreamEnabled())
       VCP_LOG_INFO_DEFAULT("Configuring K4A color stream as BGRA32.");
 #endif // VCP_BEST_WITH_K4A_MJPG
     config.color_resolution = params_.color_resolution;
@@ -728,7 +762,7 @@ private:
     // Query device calibration
     k4a_calibration_t sensor_calibration;
     if (k4a_device_get_calibration(k4a_device_, config.depth_mode, config.color_resolution, &sensor_calibration) != K4A_RESULT_SUCCEEDED)
-      VCP_ERROR("Failed to retrieve sensor calibration!");
+      VCP_ERROR("Failed to retrieve sensor calibration for K4A '" << params_.serial_number << "'.");
 
     // Prepare transformation for image alignment if needed.
     k4a_transformation_t transformation = nullptr;
@@ -737,21 +771,25 @@ private:
 
     // Save calibration if requested.
     if (params_.write_calibration)
+      DumpCalibration(sensor_calibration);
+    // Load calibration if needed
+    if (params_.rectify)
     {
-      VCP_LOG_FAILURE("TODO FIXME: need to save calibration!");
-      GetCalibration(sensor_calibration);
-      //TODO look into:
-      // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/undistort/main.cpp
-      // or even better:
-      // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/green_screen/main.cpp
-      // calibration_to_color_camera_matrix
+      std::vector<calibration::StreamIntrinsics> intrinsics = calibration::LoadIntrinsicsFromFile(params_.calibration_file);
+      if (!MapIntrinsics(intrinsics))
+        VCP_ERROR("Cannot load all intrinsics for K4A '" << params_.serial_number << "'");
+
+      if (!intrinsics.empty() && !intrinsics[0].Identifier().empty() && intrinsics[0].Identifier().compare(params_.serial_number) != 0)
+        VCP_ERROR("Calibration file '" << params_.calibration_file << "' provides intrinsics for K4A '" << intrinsics[0].Identifier() << "', but this sensor is '" << params_.serial_number << "'!");
+
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for K4A '" << params_.serial_number << "'");
     }
 
     // Set color camera configuration:
     SetColorControl();
 
-    // Check synchronisation status
-    //TODO only relevant if we're in a multi-camera setup
+    // Check synchronisation status (only relevant if we're in a multi-camera setup)
     if (params_.verbose)
     {
       bool sync_in_connected, sync_out_connected;
@@ -770,7 +808,7 @@ private:
         k4a_device_close(k4a_device_);
         k4a_device_ = NULL;
       }
-      VCP_ERROR("Failed to start k4a device with S/N '" << serial_number_ << "'");
+      VCP_ERROR("Failed to start k4a device with S/N '" << params_.serial_number << "'");
     }
 
     // Now this sink is ready to publish images.
@@ -784,11 +822,11 @@ private:
       case K4A_WAIT_RESULT_SUCCEEDED:
           break;
       case K4A_WAIT_RESULT_TIMEOUT:
-          VCP_LOG_WARNING("Capture request to K4A S/N '" << serial_number_ << "' timed out.");
+          VCP_LOG_WARNING("Capture request to K4A S/N '" << params_.serial_number << "' timed out.");
           continue;
           break;
       case K4A_WAIT_RESULT_FAILED:
-          VCP_LOG_FAILURE("Failed to read a capture from K4A S/N '" << serial_number_ << "', closing stream.");
+          VCP_LOG_FAILURE("Failed to read a capture from K4A S/N '" << params_.serial_number << "', closing stream.");
           continue_capture_ = false;
           continue;
           break;
@@ -1002,12 +1040,15 @@ bool K4ASinkParams::IsColorStreamEnabled() const
 
 bool K4ASinkParams::IsDepthStreamEnabled() const
 {
-  return this->depth_mode != K4A_DEPTH_MODE_OFF;
+  return this->depth_mode != K4A_DEPTH_MODE_OFF && this->depth_mode != K4A_DEPTH_MODE_PASSIVE_IR;
+  //return this->depth_mode != K4A_DEPTH_MODE_OFF;
 }
 
 bool K4ASinkParams::IsInfraredStreamEnabled() const
 {
-  return this->enable_infrared_stream && IsDepthStreamEnabled();
+  return this->enable_infrared_stream &&
+      this->depth_mode != K4A_DEPTH_MODE_OFF;
+  //return this->enable_infrared_stream && IsDepthStreamEnabled();
 }
 
 bool K4ASinkParams::RequiresWiredSync() const
@@ -1070,10 +1111,10 @@ K4ASinkParams K4ASinkParamsFromConfig(const vcp::config::ConfigParams &config, c
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "enable_infrared_stream"), configured_keys.end());
   params.enable_infrared_stream = GetOptionalBoolFromConfig(config, cam_param, "enable_infrared_stream", false);
   // Sanity check - IR requires enabled depth:
-  if (!params.IsDepthStreamEnabled() && params.enable_infrared_stream)
+  if (!params.IsInfraredStreamEnabled() && params.enable_infrared_stream)
   {
-    VCP_LOG_FAILURE("Invalid K4A configuration: enable_infrared_stream=true, but depth stream is OFF - enabling depth stream to continue.");
-    params.depth_mode = K4A_DEPTH_MODE_NFOV_UNBINNED;
+    VCP_LOG_FAILURE("Invalid K4A configuration: enable_infrared_stream=true, but depth mode is 'K4A_DEPTH_MODE_OFF' - adjusting it to 'K4A_DEPTH_MODE_PASSIVE_IR' to continue.");
+    params.depth_mode = K4A_DEPTH_MODE_PASSIVE_IR;
   }
 
   // Target/desired frame rate

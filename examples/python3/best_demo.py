@@ -38,13 +38,15 @@ def streaming_demo(cfg_file, folder):
         raise RuntimeError("Didn't receive an initial frameset within 5 seconds")
 
     while capture.all_devices_available():
-        # wait_for_frames returns true, if frames for *all* streams are available.
-        # Thus, we don't have to check for None frames afterwards.
         if not capture.wait_for_frames(1000.0):
             print('[WARNING]: wait_for_frames timed out')
+            continue
 
         # Query the frames (since we know that all streams are available now)
         frames = capture.next()
+        if any([f is None for f in frames]):
+            print('[WARNING]: Skipping invalid frameset')
+            continue
 
         # Colorize depth/infrared images for visualization
         def _col_depth(f):
@@ -63,6 +65,9 @@ def streaming_demo(cfg_file, folder):
                     if capture.is_infrared(idx)
                     else frames[idx])
             for idx in range(len(frames))]
+        
+        # Resize
+        # vis_frames = [imutils.fuzzy_resize(f, 0.75) for f in vis_frames]
 
         # Overlay stream labels
         vis_frames = [
@@ -73,8 +78,11 @@ def streaming_demo(cfg_file, folder):
                 padding=5, fill_opacity=0.5)
             for idx in range(len(vis_frames))]
 
+        # TODO remove - overlay depth and IR
+        # vis_frames.append((vis_frames[1].astype(np.float32) * 0.5 + vis_frames[2].astype(np.float32) * 0.5).astype(np.uint8))
+
         # Display the images (as a single image/collage)
-        collage = imvis.make_collage(vis_frames, num_images_per_row=2)
+        collage = imvis.make_collage(vis_frames, num_images_per_row=max(len(vis_frames)//2, 3))
         k = imvis.imshow(collage, title='streams', wait_ms=10)
         if k == 27 or k == ord('q'):
             break
@@ -104,6 +112,7 @@ def demo():
     # cfg_files = [file for file in os.listdir(folder) if file.endswith(".cfg")]
     cfg_files = ['realsense.cfg'] #, 'image_sequence.cfg', 'k4a.cfg', 'webcam.cfg']
     # cfg_files = ['zed.cfg', 'realsense.cfg']
+    cfg_files = ['k4a.cfg']
     
     for cf in cfg_files:
         try:

@@ -211,7 +211,7 @@ StreamIntrinsics LoadGenericMonocularCalibration(const cv::FileStorage &fs,
     ReadMat(fs, km, calib_keys, K);
   else
   {
-    VCP_LOG_FAILURE("Calibration file '" << filename << "' doesn't contain intrinsics (neither K" << postfix << " nor M" << postfix << ").");
+    VCP_LOG_WARNING("Calibration file '" << filename << "' doesn't contain intrinsics (neither K" << postfix << " nor M" << postfix << ").");
     return intrinsics;
   }
 
@@ -286,6 +286,30 @@ std::vector<calibration::StreamIntrinsics> LoadRealSenseCalibration(const cv::Fi
   return intrinsics;
 }
 
+
+std::vector<calibration::StreamIntrinsics> LoadK4ACalibration(const cv::FileStorage &fs,
+                                                              const std::string &filename,
+                                                              const std::vector<std::string> &calib_keys)
+{
+  // Load standard RGB and depth stream calibration, as with every RGBD sensor.
+  std::vector<calibration::StreamIntrinsics> intrinsics = LoadGenericRGBDCalibration(fs, filename, calib_keys);
+
+  const StreamIntrinsics ir = LoadGenericMonocularCalibration(fs, filename, "_ir", calib_keys, "_ir2rgb");
+  if (!ir.Empty())
+    intrinsics.push_back(ir);
+
+  if (std::find(calib_keys.begin(), calib_keys.end(), "serial_number") != calib_keys.end())
+  {
+    std::string sn;
+    fs["serial_number"] >> sn;
+    for (auto &calib : intrinsics)
+      calib.SetIdentifier(sn);
+  }
+
+  return intrinsics;
+}
+
+
 std::vector<StreamIntrinsics> LoadIntrinsicsBySinkType(const cv::FileStorage &calibration_fs,
                                                        const std::string &filename,
                                                        const std::string &sink_type,
@@ -299,6 +323,8 @@ std::vector<StreamIntrinsics> LoadIntrinsicsBySinkType(const cv::FileStorage &ca
   }
   else if (t.compare("realsense") == 0)
     intrinsics = LoadRealSenseCalibration(calibration_fs, filename, calib_keys);
+  else if (t.compare("k4a") == 0)
+    intrinsics = LoadK4ACalibration(calibration_fs, filename, calib_keys);
 
 //    if (t.compare("rgbd") == 0)
 //      return false;

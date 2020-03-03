@@ -16,7 +16,6 @@
 #include "file_sink.h"
 #include "webcam_sink.h"
 
-//FIXME #include "rectifier.h"
 #ifdef VCP_BEST_WITH_IPCAM
   #include "ipcam_sink.h"
 #endif
@@ -489,6 +488,37 @@ public:
       frames.insert(frames.end(), captured.begin(), captured.end());
     }
     return frames;
+  }
+
+
+  bool SaveIntrinsicCalibration(const std::string &folder) const override
+  {
+    if (!vcp::utils::file::Exists(folder))
+    {
+      if (!vcp::utils::file::CreatePath(folder))
+      {
+        VCP_LOG_FAILURE("Cannot create storage path '" << folder << "' for intrinsic calibration files.");
+        return false;
+      }
+    }
+    if (!vcp::utils::file::IsDir(folder))
+    {
+      VCP_LOG_FAILURE("Path '" << folder << "' is not a directory.");
+      return false;
+    }
+
+    /*bool success = true;
+    for (const auto &sink : sinks_)
+    {
+      const bool sc = sink->SaveIntrinsicCalibration(folder);
+      if (!sc)
+        VCP_LOG_FAILURE("Cannot save intrinsic calibration for sink '" << sink->ConfigurationKey() << "'");
+      success &= sc;
+    }
+    return success;
+    */
+    VCP_LOG_FIXME("TBD");
+    return false;
   }
 
 private:

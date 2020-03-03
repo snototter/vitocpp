@@ -693,7 +693,6 @@ public:
     return 1;
   }
 
-
 private:
   ImageDirectorySinkParams params_;
   size_t frame_idx_;

@@ -267,6 +267,7 @@ cv::Mat GetTranslation(const sl::float3 &t)
 // Cannot pass sl::CameraInformation as const reference, because the internal getters aren't declared const!
 bool DumpCalibration(const ZedSinkParams &params, sl::CameraInformation &ci)
 {
+  // TODO Compare dumped calibration to factory pre-calibration: http://calib.stereolabs.com/?SN=12345
   if (params.calibration_file.empty())
   {
     VCP_LOG_FAILURE("If you want to dump the ZED calibration, you must specify the filename as calibration_file parameter!");

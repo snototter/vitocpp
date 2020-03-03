@@ -653,7 +653,7 @@ void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams 
 
   cv::FileStorage fs(params.calibration_file, cv::FileStorage::WRITE);
   if (!fs.isOpened())
-    VCP_ERROR("Cannot open '" << params.calibration_file << "' to store calibration!");
+    VCP_ERROR("Cannot open '" << params.calibration_file << "' to store RealSense calibration!");
 
   if (!params.serial_number.empty() && kEmptyRealSense2SerialNumber.compare(params.serial_number) != 0)
     fs << "serial_number" << params.serial_number;
@@ -678,15 +678,15 @@ void DumpCalibration(rs2::pipeline_profile &profile, const RealSense2SinkParams 
     fs << "width_rgb" << rgb_width;
     fs << "height_rgb" << rgb_height;
 
-    if (params.IsDepthStreamEnabled())
-    {
-      rs2::video_stream_profile depth_profile = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
-      const rs2_extrinsics rgb_extrinsics = rgb_profile.get_extrinsics_to(depth_profile);
-      const cv::Mat Rcolor2depth = align_d2c ? cv::Mat::eye(3, 3, CV_64FC1) : RFromExtrinsics(rgb_extrinsics);
-      const cv::Mat Tcolor2depth = align_d2c ? cv::Mat::zeros(3, 1, CV_64FC1) : TFromExtrinsics(rgb_extrinsics);
-      fs << "R_rgb2depth" << Rcolor2depth;
-      fs << "t_rgb2depth" << Tcolor2depth;
-    }
+//    if (params.IsDepthStreamEnabled())
+//    {
+//      rs2::video_stream_profile depth_profile = profile.get_stream(RS2_STREAM_DEPTH).as<rs2::video_stream_profile>();
+//      const rs2_extrinsics rgb_extrinsics = rgb_profile.get_extrinsics_to(depth_profile);
+//      const cv::Mat Rcolor2depth = align_d2c ? cv::Mat::eye(3, 3, CV_64FC1) : RFromExtrinsics(rgb_extrinsics);
+//      const cv::Mat Tcolor2depth = align_d2c ? cv::Mat::zeros(3, 1, CV_64FC1) : TFromExtrinsics(rgb_extrinsics);
+//      fs << "R_rgb2depth" << Rcolor2depth;
+//      fs << "t_rgb2depth" << Tcolor2depth;
+//    }
   }
 
   if (params.IsDepthStreamEnabled())
@@ -1249,7 +1249,7 @@ private:
 
     // Dump calibration (now that the stream profile should know the intrinsics and extrinsics ;-)
     if (rgbd_params_.write_calibration)
-      DumpCalibration(profile, rgbd_params_, depth_scale); //FIXME store IR intrinsics!
+      DumpCalibration(profile, rgbd_params_, depth_scale);
     // Load calibration if needed
     if (rgbd_params_.rectify)
     {
@@ -1258,7 +1258,7 @@ private:
         VCP_ERROR("Cannot load all intrinsics for RealSense '" << rgbd_params_.serial_number << "'");
 
       if (!intrinsics.empty() && !intrinsics[0].Identifier().empty() && intrinsics[0].Identifier().compare(rgbd_params_.serial_number) != 0)
-        VCP_ERROR("Calibration file provides intrinsics for RealSense '" << intrinsics[0].Identifier() << "', but this sensor is '" << rgbd_params_.serial_number << "'!");
+        VCP_ERROR("Calibration file '" << rgbd_params_.calibration_file << "' provides intrinsics for RealSense '" << intrinsics[0].Identifier() << "', but this sensor is '" << rgbd_params_.serial_number << "'!");
 
       if (rgbd_params_.verbose)
         VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for RealSense '" << rgbd_params_.serial_number << "'");
