@@ -57,7 +57,12 @@ ZedStreams ZedStreamsFromTokens(const std::vector<std::string> &tokens)
 
 ZedStreams ZedStreamsFromString(const std::string &s)
 {
-  return ZedStreamsFromTokens(vcp::utils::string::Split(s, '-'));
+  return ZedStreamsFromTokens(
+        vcp::utils::string::Split(
+          vcp::utils::string::Replace(
+            vcp::utils::string::Replace(s, ";", "-"),
+            ",", "-"),
+          '-'));
 }
 
 std::string ZedStreamsToString(const ZedStreams &s)
