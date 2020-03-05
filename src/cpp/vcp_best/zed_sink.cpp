@@ -25,6 +25,7 @@
 #include <vcp_utils/string_utils.h>
 #include <vcp_utils/file_utils.h>
 #include <vcp_imutils/opencv_compatibility.h>
+#include <vcp_imutils/matutils.h>
 
 namespace vcp
 {
@@ -297,14 +298,14 @@ bool DumpCalibration(const ZedSinkParams &params, sl::CameraInformation &ci)
 
     if (params.IsLeftStreamEnabled())
     {
-      fs << "K_left" << Kl;
+      fs << "M_left" << Kl;
       fs << "D_left" << Dl;
       fs << "width_left" << wl;
       fs << "height_left" << hl;
     }
     if (params.IsDepthStreamEnabled())
     {
-      fs << "K_depth" << Kl;
+      fs << "M_depth" << Kl;
       fs << "D_depth" << Dl;
       fs << "width_depth" << wl;
       fs << "height_depth" << hl;
@@ -318,7 +319,7 @@ bool DumpCalibration(const ZedSinkParams &params, sl::CameraInformation &ci)
     const int wr = calib.right_cam.image_size.width;
     const int hr = calib.right_cam.image_size.height;
 
-    fs << "K_right" << Kr;
+    fs << "M_right" << Kr;
     fs << "D_right" << Dr;
     fs << "width_right" << wr;
     fs << "height_right" << hr;
@@ -700,7 +701,11 @@ private:
         if (is_depth_enabled_)
         {
           zed_->retrieveMeasure(sl_depth, sl::MEASURE::DEPTH, sl::MEM::CPU);
-          cvd = ToCvMat(sl_depth);
+          if (params_.depth_in_meters)
+            cvd = ToCvMat(sl_depth);
+          else
+            ToCvMat(sl_depth).convertTo(cvd, CV_16U);
+          //TODO rectify & yield intrinsics
           tcvd = imutils::ApplyImageTransformations(cvd, params_.transforms);
         }
         else
