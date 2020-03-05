@@ -177,6 +177,10 @@ public:
   virtual std::string FrameLabelAt(size_t stream_index) const = 0;
 
 
+  /** @brief Look up a canonic version (special characters will be stripped/replaced) of the FrameLabel for a specific stream/frame, also refer to @see FrameLabels(). */
+  virtual std::string CanonicFrameLabelAt(size_t stream_index) const = 0;
+
+
   /** @brief Returns the configuration parameter name, i.e. "cameraX", for
    * each stream/frame.
    * See comments on @see FrameLabels() why this might be of interest

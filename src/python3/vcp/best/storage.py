@@ -7,6 +7,7 @@ import logging
 from vito import imutils
 
 
+
 def _store_snapshot(worker_id, queue, verbose, sigint_handler):
     """Worker process to store images retrieved from the 'queue' as still frames at the disk.
     Use this if you prefer high latency (filesystem overhead) and wasting disk space."""
@@ -20,15 +21,15 @@ def _store_snapshot(worker_id, queue, verbose, sigint_handler):
         image, filename = request
         imutils.imsave(filename, image, flip_channels=False)
         if verbose:
-            logging.getLogger().info('vcp.best.storage.SnapshotStorage worker [{:d} - {:d}] saved image #{:d}: {:s}'.format(worker_id, pid, num, filename))
+            mp.get_logger().info('vcp.best.storage.SnapshotStorage worker [{:d} - {:d}] saved image #{:d}: {:s}'.format(worker_id, pid, num, filename))
             num += 1
     if verbose:
-        logging.getLogger().info('vcp.best.storage.SnapshotStorage worker [{:d} - {:d}] terminating'.format(worker_id, pid))
+        mp.get_logger().info('vcp.best.storage.SnapshotStorage worker [{:d} - {:d}] terminating'.format(worker_id, pid))
     queue.put(None) # To notify others of end-of-stream, too
 
 
 def _append_video_frame(name, writer, queue, verbose, sigint_handler):
-    #TODO doc, use logging
+    """Worker process to append images to the given video writer."""
     signal.signal(signal.SIGINT, sigint_handler)
     num = 0
     try:
@@ -38,60 +39,65 @@ def _append_video_frame(name, writer, queue, verbose, sigint_handler):
                 break
             writer.writeFrame(image)
             if verbose:
-                print('[I] SingleVideoStorage worker appended frame #{:d} to {:s}'.format(num, name))
+                mp.get_logger().info('vcp.best.storage.SingleVideoStorage worker appended frame #{:d} to {:s}'.format(num, name))
                 num += 1
     except Exception as e:
-        print('[E] Error occured while appending video frame: {}'.format(e))
+        mp.get_logger().error('vcp.best.storage.SingleVideoStorage: Error occured while appending video frame: {}'.format(e))
     finally:
         if verbose:
-            print('[I] SingleVideoStorage finalizing video {:s}'.format(name))
+            mp.get_logger().info('vcp.best.storage.SingleVideoStorage finalizing video {:s}'.format(name))
         try:
             writer.close()
         except Exception as e:
-            print('[E] Error while closing the video: {}'.format(e))
+            mp.get_logger().error('vcp.best.storage.SingleVideoStorage: Error while closing the video: {}'.format(e))
 
 
-class SnapshotStorage:
-    #TODO doc, use logging
-    def __init__(self, num_workers=1, verbose=False):
+class ImageSequenceStorage:
+    def __init__(self, folder, file_extension='.png', flip_channels=False, verbose=False):
         self.queue = mp.Queue()
-        self.num_workers = num_workers
-        self.workers = list()
+        self.worker = None
+        self.frame_nr = 0
+        self.folder = folder
+        self.file_extension = file_extension
+        self.flip_channels = flip_channels
         self.verbose = verbose
         self.sigint_received = False
+        # Ensure the output path exists
+        if not os.path.exists(folder):
+            if verbose:
+                mp.get_logger().info('vcp.best.storage.ImageSequenceStorage creating output path: {:s}'.format(folder))
+            os.makedirs(folder)
         self.__start()
-    
+
     def __del__(self):
         self.__stop()
 
     def __start(self):
-        self.workers = [mp.Process(target=_store_snapshot, args=(i, self.queue, self.verbose, lambda signum, frame: self.__sigint_handler(i, signum, frame), )) for i in range(self.num_workers)]
-        for w in self.workers:
-            w.start()
-        
+        self.worker = mp.Process(target=_store_snapshot, args=(0, self.queue, self.verbose, lambda signum, frame: self.__sigint_handler(0, signum, frame), ))
+        self.worker.start()
+
     def __stop(self):
-        # if self.cleanup:
         self.queue.put(None)
-        for i in range(self.num_workers):
-            self.workers[i].join()
+        self.worker.join()
         self.queue.close()
 
     def __sigint_handler(self, terminated_worker, signum, frame):
         # Handle sigint as 'just a user intent' - i.e. "schedule" raising an Exception, so we don't screw up the worker process
-        print('[W] KeyboardInterrupt occured within SnapshotStorage #{:d}'.format(terminated_worker))
+        mp.get_logger().info('KeyboardInterrupt occured within vcp.best.storage.SnapshotStorage #{:d}'.format(terminated_worker))
         self.sigint_received = True
-        
 
-    def put_storage_request(self, image, filename):
+    def put_storage_request(self, image, filename=None):
+        """Save the given image to disk (to <folder>/frame_<framenr><file_extension>).
+        If you want to overwrite the automatically generated filename, pass a valid (string) filename.
+        """
         if self.sigint_received:
             raise KeyboardInterrupt
+        if self.flip_channels:
+            image = imutils.flip_layers(image)
+        if filename is None:
+            filename = os.path.join(self.folder, 'frame_{:06d}{:s}'.format(self.frame_nr, self.file_extension))
+            self.frame_nr += 1
         self.queue.put((image, filename))
-
-    def put_storage_requests(self, requests):
-        if self.sigint_received:
-            raise KeyboardInterrupt
-        for req in requests:
-            self.queue.put(req)
 
 
 class SingleVideoStorage:
@@ -102,10 +108,10 @@ class SingleVideoStorage:
         self.filename = filename
 
         # Ensure the output path exists
-        basename, fn = os.path.split(filename)
+        basename, _ = os.path.split(filename)
         if basename and not os.path.exists(basename):
             if verbose:
-                print('[I] SingleVideoStorage creating output path: {:s}'.format(basename))
+                mp.get_logger().info('vcp.best.storage.SingleVideoStorage creating output path: {:s}'.format(basename))
             os.makedirs(basename)
 
         #self.video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*fourcc), fps, resolution)
@@ -114,11 +120,10 @@ class SingleVideoStorage:
             inputdict = {'-r': str(fps), '-s':'{:d}x{:d}'.format(width, height)},
             outputdict = {'-r': str(fps), '-crf':'17', # crf 0: lossless, 17: "visually lossless", 51: "worst quality ever"
             '-c:v': 'libx264', '-preset':'ultrafast', '-tune': 'zerolatency'})
-            #TODO currently, there seems to be a bug with my installation (cannot call video_writer.close() due to skvideo exception, so no video is created)
         self.worker = mp.Process(target=_append_video_frame, args=(filename, self.video_writer, self.queue, verbose, self.__sigint_handler, ))
         self.sigint_received = False
         self.worker.start()
-    
+
     def __del__(self):
         self.__stop()
         
@@ -129,7 +134,7 @@ class SingleVideoStorage:
 
     def __sigint_handler(self, signum, frame):
         # Handle sigint as 'just a user intent' - i.e. "schedule" raising an Exception, so we don't screw up the worker process
-        print('[W] KeyboardInterrupt occured within SingleVideoStorage: {:s}'.format(self.filename))        
+        mp.get_logger().info('KeyboardInterrupt occured within vcp.best.storage.SingleVideoStorage: {:s}'.format(self.filename))
         self.sigint_received = True
 
     def put_storage_request(self, image):
@@ -139,9 +144,10 @@ class SingleVideoStorage:
             image = imutils.flip_layers(image)
         self.queue.put(image)
 
-#FIXME doc currently only mp4 + h264
+
 class MultiVideoStorage:
-    """Store multiple (color/grayscale) streams to video files."""
+    """Store multiple (color/grayscale) streams to video files. 
+    Currently, we only render h264 encoded streams in mp4 containers."""
     def __init__(self, videos, verbose=False):
         """
         Starts a separate process for each incoming stream.
@@ -159,7 +165,7 @@ class MultiVideoStorage:
             return SingleVideoStorage(vk['filename'], vk['fps'], vk['width'], vk['height'], vk['flip_channels'], verbose=verbose)
         self._video_stores = {k:_create_video_storage(k) for k in videos}
         if verbose:
-            logging.getLogger().info('vcp.best.storage.MultiVideoStorage initialized workers for frame labels: [{}]'.format(', '.join([k for k in videos])))
+            mp.get_logger().info('vcp.best.storage.MultiVideoStorage initialized workers for frame labels: [{}]'.format(', '.join([k for k in videos])))
 
     def put_storage_request(self, image_dict):
         """

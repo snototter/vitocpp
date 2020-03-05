@@ -216,6 +216,11 @@ public:
     return capture_->FrameLabelAt(stream_index);
   }
 
+  std::string CanonicFrameLabel(size_t stream_index) const
+  {
+    return capture_->CanonicFrameLabelAt(stream_index);
+  }
+
 
   /** @brief Returns the configuration parameter name, i.e. "cameraX", for
    * each stream/frame.
@@ -266,6 +271,11 @@ public:
   bool IsFrameStereo(size_t stream_index) const
   {
     return capture_->FrameTypeAt(stream_index) == vcp::best::FrameType::STEREO;
+  }
+
+  bool IsFrameImage(size_t stream_index) const
+  {
+    return IsFrameMonocular(stream_index) || IsFrameStereo(stream_index);
   }
 
   bool IsFrameDepth(size_t stream_index) const
@@ -941,6 +951,10 @@ PYBIND11_MODULE(best_cpp, m)
       .def("frame_label", &pybest::CaptureWrapper::FrameLabel,
            "Returns the (user-defined) frame label for frame/stream at the given stream_index.",
            py::arg("stream_index"))
+      .def("canonic_frame_label", &pybest::CaptureWrapper::CanonicFrameLabel,
+           "Returns a canonic version of the (user-defined) frame label, i.e. special characters\n"
+           "are stripped or replaced, so you'll get a label which can be used, e.g., as a file name.",
+           py::arg("stream_index"))
       .def("configuration_keys", &pybest::CaptureWrapper::ConfigurationKeys,
            "Returns the configuration parameter name, e.g. 'cameraX', for\n"
            "each stream/frame.\n"
@@ -975,6 +989,10 @@ PYBIND11_MODULE(best_cpp, m)
            "frame type, e.g. USB stereo cameras vs monocular cameras - there,\n"
            "it is the user's responsibility to properly set the 'frame_type'\n"
            "parameter wihtin the configuration.",
+           py::arg("stream_index"))
+      .def("is_image", &pybest::CaptureWrapper::IsFrameImage,
+           "Check if the frame at the given index is a grayscale or color\n"
+           "image (i.e. 'monocular' or 'stereo').",
            py::arg("stream_index"))
       .def("is_depth", &pybest::CaptureWrapper::IsFrameDepth,
            "Check if the frame at the given index is of type 'depth',\n"

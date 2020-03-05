@@ -300,6 +300,11 @@ public:
     return frame_labels_[stream_index];
   }
 
+  std::string CanonicFrameLabelAt(size_t stream_index) const override
+  {
+    return vcp::utils::string::Canonic(frame_labels_[stream_index]);
+  }
+
   std::vector<FrameType> FrameTypes() const override
   {
     return frame_types_;
@@ -394,15 +399,12 @@ public:
   bool WaitForFrames(double timeout_ms, bool verbose) const override
   {
     VCP_LOG_DEBUG("MultiDeviceCapture::WaitForFrames()");
+
     std::chrono::high_resolution_clock::time_point start = std::chrono::high_resolution_clock::now();
     double elapsed_ms = 0;
     while (elapsed_ms < timeout_ms)
     {
-      bool available = true;
-      for (size_t i = 0; i < sinks_.size(); ++i)
-        available = available && sinks_[i]->IsFrameAvailable();
-
-      if (available)
+      if (AreAllFramesAvailable())
         return true;
 
       if (verbose)
@@ -521,9 +523,6 @@ public:
       }
 
       const std::string cam_group = "camera-" + vcp::utils::string::ToStr(fidx);
-      const std::string path = (it->second.path.empty() || vcp::utils::file::IsAbsolute(it->second.path))
-          ? it->second.path
-          : vcp::utils::file::FullFile(folder, it->second.path);
 
       switch(it->second.type)
       {
@@ -533,12 +532,12 @@ public:
 
         case StreamStorageParams::Type::IMAGE_DIR:
           config->SetString(cam_group + ".sink_type", "imagedir");
-          config->SetString(cam_group + ".directory", path);
+          config->SetString(cam_group + ".directory", it->second.path);
           break;
 
         case StreamStorageParams::Type::VIDEO:
           config->SetString(cam_group + ".sink_type", "video");
-          config->SetString(cam_group + ".video", path);
+          config->SetString(cam_group + ".video", it->second.path);
           break;
 
         default:

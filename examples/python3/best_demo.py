@@ -5,6 +5,7 @@
 import os
 import sys
 import cv2
+import logging
 import numpy as np
 import time
 from vito import pyutils
@@ -16,8 +17,13 @@ from vcp import imutils
 from vcp import imvis
 from vcp import best
 
+import multiprocessing as mp
 
-def streaming_demo(cfg_file, folder):
+def streaming_demo(cfg_file, folder, output_folder=None, output_fps=15):
+    cfg_file = 'replay.cfg'
+    folder='replay-test'
+    output_folder=None
+    mp.log_to_stderr(logging.INFO)
     print('\n\n\nLoading streaming configuration: {}'.format(cfg_file)) # TODO ensure absolute paths!
     capture = best.Capture()
     capture.load_libconfig(os.path.join(folder, cfg_file), rel_path_base_dir=folder)
@@ -32,15 +38,52 @@ def streaming_demo(cfg_file, folder):
         raise RuntimeError('Cannot open devices')
     if not capture.start():
         raise RuntimeError('Cannot start streams')
-    time.sleep(2)
+
     # Some cameras (especially our tested RGBD sensors) take quite long to provide the 
     # initial frameset, so it's recommended to wait a bit longer for the device to finish
     # initialization.
     if not capture.wait_for_frames(5000):
         raise RuntimeError("Didn't receive an initial frameset within 5 seconds")
 
-    storage_params = {capture.frame_label(i): best.StreamStorageParams(best.StreamStorageParams.Type.ImageSequence, 'some path') for i in range(capture.num_streams())}
-    capture.save_replay_config('output-dummy', storage_params)
+    # Depending on your setup, some devices may return empty frames (e.g. not synchronized RealSense streams),
+    # so we'll wait for the first "complete" frameset.
+    while True:
+        if not capture.wait_for_frames(1000.0):
+            print('[WARNING]: wait_for_frames timed out')
+            continue
+        frames = capture.next()
+        if any([f is None for f in frames]):
+            print('[WARNING]: Skipping invalid frameset')
+        else:
+            break
+
+    # Set up the stream storage
+    if output_folder is None:
+        storage = None
+    else:
+        storage = dict()
+        storage_params = dict() # Used to save the replay config & calibration
+        for idx in range(capture.num_streams()):
+            lbl = capture.frame_label(idx)
+            if capture.is_image(idx):
+                # This stream can be stored as a video
+                h, w = frames[idx].shape[:2]
+                fn = capture.canonic_frame_label(idx) + '.mp4'
+                
+                storage_params[lbl] = best.StreamStorageParams(
+                        best.StreamStorageParams.Type.Video, fn)
+                storage[lbl] = best.SingleVideoStorage(
+                    os.path.join(output_folder, fn),
+                    output_fps, w, h, flip_channels=False, verbose=False)
+            else:
+                pn = capture.canonic_frame_label(idx)
+                storage_params[lbl] = best.StreamStorageParams(
+                        best.StreamStorageParams.Type.ImageSequence, pn)
+                storage[lbl] = best.ImageSequenceStorage(
+                    os.path.join(output_folder, pn),
+                    file_extension='.png', flip_channels=False, verbose=False)
+
+        capture.save_replay_config(output_folder, storage_params)
 
     while capture.all_devices_available():
         if not capture.wait_for_frames(1000.0):
@@ -67,6 +110,10 @@ def streaming_demo(cfg_file, folder):
                 return f
             return imvis.pseudocolor(f, limits=None, color_map=colormaps.colormap_turbo_rgb)
 
+        if storage is not None:
+            for idx in range(len(frames)):
+                storage[capture.frame_label(idx)].put_storage_request(frames[idx])
+
         vis_frames = [
             _col_depth(frames[idx])
                 if capture.is_depth(idx)
@@ -91,7 +138,7 @@ def streaming_demo(cfg_file, folder):
         # vis_frames.append((vis_frames[1].astype(np.float32) * 0.5 + vis_frames[2].astype(np.float32) * 0.5).astype(np.uint8))
 
         # Display the images (as a single image/collage)
-        collage = imvis.make_collage(vis_frames, num_images_per_row=2)
+        collage = imvis.make_collage(vis_frames, num_images_per_row=4)
         k = imvis.imshow(collage, title='streams', wait_ms=10)
         if k == 27 or k == ord('q'):
             break
@@ -122,10 +169,13 @@ def demo():
     cfg_files = ['realsense.cfg'] #, 'image_sequence.cfg', 'k4a.cfg', 'webcam.cfg']
     # cfg_files = ['zed.cfg', 'realsense.cfg']
     cfg_files = ['rgbds.cfg']
+    # cfg_files = ['depth.cfg']
+    output_folder = 'output-demo'
+    output_fps = 15
     
     for cf in cfg_files:
         try:
-            streaming_demo(cf, folder)
+            streaming_demo(cf, folder, output_folder, output_fps)
         except RuntimeError as e:
             print('[ERROR] while streaming: {}'.format(e))
 

@@ -437,7 +437,7 @@ public:
   int IsDeviceAvailable() const override
   {
     if (vcp::utils::file::Exists(params_.filename))
-      return 1;
+      return IsFrameAvailable();
     return 0;
   }
 
