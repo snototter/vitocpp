@@ -76,15 +76,10 @@ PYBIND11_MODULE(config, m)
            "Replace relative paths by \"<abs_base_path>/<relative_path>\".\n"
            "\n"
            ":params: list of strings, i.e. the parameter names which contain paths\n"
-           "         to check. If use_exact_keys is True, a key must fit the \n"
-           "         configuration name exactly, e.g. 'camera-17.subgroup.Some_Path'.\n"
-           "         Otherwise, the key 'pat' would also match against this parameter name.\n"
-           "\n"
-           ":use_exact_keys: Flag to toggle case-sensitive and exact search vs.\n"
-           "         ignore-case substring matching.\n"
-           "\n"
+           "         to check. For example, ['file_name'] would make the global\n"
+           "         parameter 'file_name' as well as the group parameter 'video1.file_name'\n"
+           "         absolute, BUT NOT 'some_file_name'.\n\n"
            ":verbose: if True, updated settings will be logged to console.",
            py::arg("params"), py::arg("abs_base_path"),
-           py::arg("use_exact_keys")=true,
            py::arg("verbose")=true);
 }

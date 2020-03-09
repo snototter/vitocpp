@@ -874,66 +874,104 @@ public:
   }
 
 
+  //FIXME adjust doc: parameter name is always exact
   void EnsureAbsolutePaths(const std::vector<std::string> &param_names,
                            const std::string &absolute_base_path,
-                           bool use_exact_keys, bool verbose) override
-    {
+                           bool verbose) override
+  {
     //FIXME handle file:// values (e.g. within custom_url)
-      if (use_exact_keys)
+    // Get a list of all parameter names.
+    const std::vector<std::string> configured_params = ListConfigParameters();
+    // We'll split the parameter names for matching (remove optional parameter "groups", i.e.
+    // for "cam1.param" we would match the given "param_names" against "param".
+    std::vector<std::string> configured_params_match_tokens;
+    for (const auto &cp : configured_params)
+    {
+      const auto tokens = vcp::utils::string::Split(cp, '.');
+      if (!tokens.empty())
       {
-        for (const auto &k : param_names)
-        {
-          if (SettingExists(k) && !vcp::utils::file::IsAbsolute(GetString(k)))
-          {
-            SetString(k,
-                      vcp::utils::file::RealPath(
-                        vcp::utils::file::FullFile(absolute_base_path, GetString(k))));
-            if (verbose)
-              VCP_LOG_INFO_DEFAULT("Updated config path '" << k << "' to '" << GetString(k) << "'");
-          }
-        }
+        configured_params_match_tokens.push_back(
+              vcp::utils::string::Lower(tokens[tokens.size()-1]));
       }
-      else
+    }
+
+    // Iterate all given parameter names which should be checked:
+    for (const auto &pn : param_names)
+    {
+      // We'll match lower case
+      const std::string pn_lower = vcp::utils::string::Lower(pn);
+
+      for (size_t i = 0; i < configured_params_match_tokens.size(); ++i)
       {
-        // Grab a list of all known/configured parameters.
-        const std::vector<std::string> configured_params = ListConfigParameters();
+        if (configured_params_match_tokens[i].compare(pn_lower) != 0)
+          continue;
 
-        // Convert these parameter names to lower case.
-        std::vector<std::string> configured_params_lower;
-        configured_params_lower.reserve(configured_params.size());
-        for (const auto &c : configured_params)
-        {
-          std::string lower(c);
-          vcp::utils::string::ToLower(lower);
-          configured_params_lower.push_back(lower);
-        }
+        const std::string k = configured_params[i];
+        if (vcp::utils::file::IsAbsolute(GetString(k)))
+          continue;
 
-        // Iterate all given parameter names, convert to
-        // lower case, and replace relative by absolute path
-        // if the parameter name ends with the given name.
-        for (const auto &pn : param_names)
-        {
-          const std::string lower = vcp::utils::string::Lower(pn);
+        SetString(k, vcp::utils::file::RealPath(
+                      vcp::utils::file::FullFile(absolute_base_path, GetString(k))));
+        if (verbose)
+          VCP_LOG_INFO("Updated config path '" << k << "' to '" << GetString(k) << "'");
+      }
+    }
+//      if (use_exact_keys)
+//      {
+//        for (const auto &k : param_names)
+//        {
+//          if (SettingExists(k) && !vcp::utils::file::IsAbsolute(GetString(k)))
+//          {
+//            SetString(k,
+//                      vcp::utils::file::RealPath(
+//                        vcp::utils::file::FullFile(absolute_base_path, GetString(k))));
+//            if (verbose)
+//              VCP_LOG_INFO_DEFAULT("Updated config path '" << k << "' to '" << GetString(k) << "'");
+//          }
+//        }
+//      }
+//      else
+//      {
+//        // Grab a list of all known/configured parameters.
+//        const std::vector<std::string> configured_params = ListConfigParameters();
+//        VCP_LOG_FIXME("TODO check config keys:\n" << configured_params << std::endl << std::endl << param_names);
 
-          for (size_t i = 0; i < configured_params_lower.size(); ++i)
-          {
-            if (!vcp::utils::string::EndsWith(configured_params_lower[i], lower))
-              continue;
-//            if (configured_params_lower[i].find(lower) == std::string::npos)
+//        // Convert these parameter names to lower case.
+//        std::vector<std::string> configured_params_lower;
+//        configured_params_lower.reserve(configured_params.size());
+//        for (const auto &c : configured_params)
+//        {
+//          std::string lower(c);
+//          vcp::utils::string::ToLower(lower);
+//          configured_params_lower.push_back(lower);
+//        }
+
+//        // Iterate all given parameter names, convert to
+//        // lower case, and replace relative by absolute path
+//        // if the parameter name ends with the given name.
+//        for (const auto &pn : param_names)
+//        {
+//          const std::string lower = vcp::utils::string::Lower(pn);
+
+//          for (size_t i = 0; i < configured_params_lower.size(); ++i)
+//          {
+//            if (!vcp::utils::string::EndsWith(configured_params_lower[i], lower))
+//              continue;
+////            if (configured_params_lower[i].find(lower) == std::string::npos)
+////              continue;
+
+//            const std::string k = configured_params[i];
+//            if (vcp::utils::file::IsAbsolute(GetString(k)))
 //              continue;
 
-            const std::string k = configured_params[i];
-            if (vcp::utils::file::IsAbsolute(GetString(k)))
-              continue;
-
-            SetString(k,
-                      vcp::utils::file::RealPath(
-                        vcp::utils::file::FullFile(absolute_base_path, GetString(k))));
-            if (verbose)
-              VCP_LOG_INFO("Updated config path '" << k << "' to '" << GetString(k) << "'");
-          }
-        }
-      }
+//            SetString(k,
+//                      vcp::utils::file::RealPath(
+//                        vcp::utils::file::FullFile(absolute_base_path, GetString(k))));
+//            if (verbose)
+//              VCP_LOG_INFO("Updated config path '" << k << "' to '" << GetString(k) << "'");
+//          }
+//        }
+//      }
     }
 
 

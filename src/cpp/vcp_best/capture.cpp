@@ -591,6 +591,8 @@ public:
             VCP_LOG_FAILURE("Couldn't save calibration file '" << calib_file << "' for stream '" << frame_labels_[fidx] << "'.");
             return false;
           }
+
+          config->SetBoolean(cam_group + ".rectify", true);
         }
         else
         {

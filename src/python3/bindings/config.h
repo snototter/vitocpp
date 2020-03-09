@@ -104,15 +104,9 @@ public:
   }
 
 
-  /** @brief If config[keys[i]] is a relative path, it will be replaced by "<abs-base-path>/config[keys[i]]".
-   * If use_exact_keys is true: case-sensitive matching and you must specify the correct group prefix, e.g.
-   * 'camera1.path' and 'camera2.path' would require two separate keys.
-   * Otherwise, a substring of the setting name must match the given key, e.g. key 'path' would match both
-   * 'camera1.path.driver' and 'camera2.path.driver'.
-   */
-  void EnsureAbsolutePaths(const std::vector<std::string> &param_names, const std::string &absolute_base_path, bool use_exact_keys, bool verbose)
+  void EnsureAbsolutePaths(const std::vector<std::string> &param_names, const std::string &absolute_base_path, bool verbose)
   {
-    params_->EnsureAbsolutePaths(param_names, absolute_base_path, use_exact_keys, verbose);
+    params_->EnsureAbsolutePaths(param_names, absolute_base_path, verbose);
   }
 
   //---------------------------------------------

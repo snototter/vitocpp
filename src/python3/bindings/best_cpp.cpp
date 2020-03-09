@@ -349,7 +349,7 @@ private:
       "video_file", "video", "file", "filename",  // VideoFileSink
       "directory"                                 // ImageDirectorySink
     };
-    params.EnsureAbsolutePaths(param_names, rel_path_base_dir, false, true);
+    params.EnsureAbsolutePaths(param_names, rel_path_base_dir, true);
   }
 };
 
