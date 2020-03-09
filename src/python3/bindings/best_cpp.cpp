@@ -293,6 +293,14 @@ public:
     return capture_->IsStreamRectified(stream_index);
   }
 
+  py::object CameraMatrix(size_t stream_index) const
+  {
+    const cv::Mat M = capture_->CameraMatrixAt(stream_index);
+    if (M.empty())
+      return py::none();
+    return vcp::python::conversion::MatToNDArray(M);
+  }
+
   bool SaveReplayConfig(const std::string &folder, const std::map<std::string, vcp::best::StreamStorageParams> &storage_params)
   {
     return capture_->SaveReplayConfiguration(folder, storage_params);
@@ -1009,6 +1017,10 @@ PYBIND11_MODULE(best_cpp, m)
            py::arg("stream_index"))
       .def("is_rectified", &pybest::CaptureWrapper::IsFrameRectified,
            "Returns True if the stream/frame at the given index is rectified.",
+           py::arg("stream_index"))
+// Calibration-related
+      .def("camera_matrix", &pybest::CaptureWrapper::CameraMatrix,
+           "Returns the 3x3 camera matrix holding the stream's intrinsics.",
            py::arg("stream_index"))
 // Saving
       .def("save_replay_config", &pybest::CaptureWrapper::SaveReplayConfig,

@@ -611,6 +611,17 @@ public:
     return success;
   }
 
+  cv::Mat CameraMatrixAt(size_t stream_index) const override
+  {
+    const auto &lookup = frame2sink_[stream_index];
+    const calibration::StreamIntrinsics intrinsics = sinks_[lookup.first]->IntrinsicsAt(lookup.second);
+    if (intrinsics.Empty())
+      return cv::Mat();
+    if (sink_params_[stream_index].rectify)
+      return intrinsics.IntrinsicsRectified();
+    return intrinsics.IntrinsicsOriginal();
+  }
+
 private:
   std::vector<std::unique_ptr<StreamSink>> sinks_; // Potentially less than streams/frames
   std::vector<std::pair<size_t, size_t>> frame2sink_; /**< Stores the index into sinks_ (along with the corresponding stream index) for each frame, e.g. if we iterate frame_types_, we can easily lookup the corresponding sink. */

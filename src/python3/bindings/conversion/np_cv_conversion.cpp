@@ -222,10 +222,11 @@ cv::Mat NDArrayToMat(const py::array &ndarray)
 
 py::array MatToNDArray(const cv::Mat &mat)
 {
-  // Might correctly be returned as None.
+  // Currently, py::none() returns a valid numpy.ndarray() which is empty and prints as 'None'
+  // However, it cannot be tested to be None. Thus, we prefer returning an explicitly empty array.
   if (mat.empty())
   {
-    return py::none();
+    return py::array();
   }
 
   // OpenCV Mat documentation: https://docs.opencv.org/2.4/modules/core/doc/basic_structures.html#mat

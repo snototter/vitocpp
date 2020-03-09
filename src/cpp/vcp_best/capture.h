@@ -228,6 +228,8 @@ public:
   //virtual bool SaveReplayConfiguration(const std::string &folder, const std::vector<StreamStorageParams> &storage_params) const = 0;
   virtual bool SaveReplayConfiguration(const std::string &folder, const std::map<std::string, StreamStorageParams> &storage_params) const = 0;
 
+  /** @brief Returns the 3x3 intrinsic camera matrix. */
+  virtual cv::Mat CameraMatrixAt(size_t stream_index) const = 0;
 
 protected:
   Capture() {}
