@@ -106,6 +106,26 @@ public:
       }
     }
 
+    if (params_.rectify)
+    {
+      if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))
+      {
+        VCP_LOG_FAILURE("To undistort & rectify the video '" << params_.filename << "', the calibration file '" << params_.calibration_file << "' must exist!");
+        return false;
+      }
+
+      std::vector<calibration::StreamIntrinsics> intrinsics = calibration::LoadIntrinsicsFromFile(params_.calibration_file);
+      if (intrinsics.size() != 1)
+      {
+        VCP_LOG_FAILURE("Calibration file '" << params_.calibration_file << "' provides intrinsics for " << intrinsics.size() << " streams, expected exactly 1.");
+        return false;
+      }
+      intrinsics_ = intrinsics[0];
+
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for video '" << params_.filename << "'");
+    }
+
     if (params_.verbose)
       VCP_LOG_INFO_DEFAULT("TimedVideoSink starting thread to play back '" << params_.filename << "'");
     eof_ = false;
@@ -195,7 +215,13 @@ public:
   {
     return 1;
   }
-//FIXME load calibration!
+
+  vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return intrinsics_;
+  }
+
 private:
   std::atomic<bool> continue_capture_;
   std::unique_ptr<cv::VideoCapture> capture_;
@@ -203,6 +229,7 @@ private:
 
   VideoFileSinkParams params_;
   bool eof_;
+  calibration::StreamIntrinsics intrinsics_;
 
   std::thread stream_thread_;
   mutable std::mutex image_queue_mutex_;
@@ -238,7 +265,8 @@ private:
         eof_ = true;
       }
 
-      const cv::Mat img = imutils::ApplyImageTransformations(frame, params_.transforms);
+      const cv::Mat rectified = params_.rectify ? intrinsics_.UndistortRectify(frame) : frame;
+      const cv::Mat img = imutils::ApplyImageTransformations(rectified, params_.transforms);
       // Push into queue
       image_queue_mutex_.lock();
       image_queue_->PushBack(img.clone());
