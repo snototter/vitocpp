@@ -1,4 +1,5 @@
 #include "file_sink.h"
+#include "calibration.h"
 
 #include <thread>
 #include <mutex>
@@ -194,7 +195,7 @@ public:
   {
     return 1;
   }
-
+//FIXME load calibration!
 private:
   std::atomic<bool> continue_capture_;
   std::unique_ptr<cv::VideoCapture> capture_;
@@ -310,6 +311,26 @@ public:
       VCP_LOG_FAILURE("Cannot jump to specified first frame ['" << params_.first_frame << "] of file '" << params_.filename << "'");
 
     eof_ = false;
+
+    if (params_.rectify)
+    {
+      if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))
+      {
+        VCP_LOG_FAILURE("To undistort & rectify the video '" << params_.filename << "', the calibration file '" << params_.calibration_file << "' must exist!");
+        return false;
+      }
+
+      std::vector<calibration::StreamIntrinsics> intrinsics = calibration::LoadIntrinsicsFromFile(params_.calibration_file);
+      if (intrinsics.size() != 1)
+      {
+        VCP_LOG_FAILURE("Calibration file '" << params_.calibration_file << "' provides intrinsics for " << intrinsics.size() << " streams, expected exactly 1.");
+        return false;
+      }
+      intrinsics_ = intrinsics[0];
+
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for video '" << params_.filename << "'");
+    }
     return true;
   }
 
@@ -352,7 +373,8 @@ public:
           else
             enqueue = loaded;
         }
-        const cv::Mat transformed = imutils::ApplyImageTransformations(enqueue, params_.transforms);
+        const cv::Mat rectified = params_.rectify ? intrinsics_.UndistortRectify(enqueue) : enqueue;
+        const cv::Mat transformed = imutils::ApplyImageTransformations(rectified, params_.transforms);
         frames.push_back(transformed);
       }
       else
@@ -484,10 +506,17 @@ public:
     return 1;
   }
 
+  vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return intrinsics_;
+  }
+
 private:
   std::unique_ptr<cv::VideoCapture> capture_;
   VideoFileSinkParams params_;
   bool eof_;
+  calibration::StreamIntrinsics intrinsics_;
 };
 
 
@@ -558,6 +587,26 @@ public:
   {
     VCP_LOG_DEBUG("StartStreaming()");
     frame_idx_ = params_.first_frame;
+
+    if (params_.rectify)
+    {
+      if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))
+      {
+        VCP_LOG_FAILURE("To undistort & rectify the image sequence '" << params_.directory << "', the calibration file '" << params_.calibration_file << "' must exist!");
+        return false;
+      }
+
+      std::vector<calibration::StreamIntrinsics> intrinsics = calibration::LoadIntrinsicsFromFile(params_.calibration_file);
+      if (intrinsics.size() != 1)
+      {
+        VCP_LOG_FAILURE("Calibration file '" << params_.calibration_file << "' provides intrinsics for " << intrinsics.size() << " streams, expected exactly 1.");
+        return false;
+      }
+      intrinsics_ = intrinsics[0];
+
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for image sequence '" << params_.directory << "'");
+    }
     return frame_idx_ < filenames_.size();
   }
 
@@ -595,6 +644,7 @@ public:
           else
             enqueue = loaded;
         }
+        const cv::Mat rectified = params_.rectify ? intrinsics_.UndistortRectify(enqueue) : enqueue;
         const cv::Mat transformed = imutils::ApplyImageTransformations(enqueue, params_.transforms);
         frames.push_back(transformed);
       }
@@ -693,11 +743,18 @@ public:
     return 1;
   }
 
+  vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return intrinsics_;
+  }
+
 private:
   ImageDirectorySinkParams params_;
   size_t frame_idx_;
   bool load_images_;                    /**< Whether we should load (and decode) images or raw/zipped cv::Mat files. */
   std::vector<std::string> filenames_;  /**< Stores the relative filenames. */
+  calibration::StreamIntrinsics intrinsics_;
 };
 
 

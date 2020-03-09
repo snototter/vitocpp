@@ -65,9 +65,15 @@ StreamIntrinsics StreamIntrinsics::FromMonocular(const cv::Mat &intrinsics,
   si.label_ = label;
   si.resolution_ = resolution;
 
-  si.intrinsics_rectified_ = cv::getOptimalNewCameraMatrix(intrinsics, distortion, resolution, 1.0, resolution, 0);
-  if (!si.skip_undistort_rectify_)
+  if (si.skip_undistort_rectify_)
+  {
+    si.intrinsics_rectified_ = si.intrinsics_original_.clone();
+  }
+  else
+  {
+    si.intrinsics_rectified_ = cv::getOptimalNewCameraMatrix(intrinsics, distortion, resolution, 1.0, resolution, 0);
     cv::initUndistortRectifyMap(intrinsics, distortion, cv::Mat(), si.intrinsics_rectified_, resolution, CV_16SC2, si.undistort_rectify_map1_, si.undistort_rectify_map2_);
+  }
 
   if (!R.empty())
     si.R_to_ref_ = R.clone();
