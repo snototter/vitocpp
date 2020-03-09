@@ -78,6 +78,7 @@ public:
 
   void LoadConfig(const vcp::config::ConfigParams &config)
   {
+    //FIXME: load extrinsics
     VCP_LOG_DEBUG("MultiDeviceCapture::LoadConfig()");
 
     std::vector<file::ImageDirectorySinkParams> imgdir_params;
