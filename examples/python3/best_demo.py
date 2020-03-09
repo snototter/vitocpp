@@ -19,6 +19,13 @@ from vcp import best
 
 import multiprocessing as mp
 
+#TODO provide util fx "stream" with frame callback, i.e. the util takes care of initializing and querying frames,
+# then passes the aquired frameset to the frame callback.
+# Also add a post-setup/pre-main-loop callback (e.g. to set up recorder, detectors, etc.)
+# callback_initialized(capture, initial_frameset)
+# callback_frameset(capture, frameset) - return True (continue), False (abort/terminate)
+# callback_terminated (?)
+
 def streaming_demo(cfg_file, folder, output_folder=None, output_fps=15):
     # cfg_file = 'replay.cfg'
     # folder='output-demo'
@@ -170,8 +177,7 @@ def demo():
     cfg_files = ['realsense.cfg'] #, 'image_sequence.cfg', 'k4a.cfg', 'webcam.cfg']
     # cfg_files = ['zed.cfg', 'realsense.cfg']
     cfg_files = ['rgbds.cfg']
-    cfg_files = ['depth.cfg']
-    cfg_files = ['zed.cfg']
+    cfg_files = ['kinects.cfg']
     output_folder = 'output-demo'
     output_fps = 15
     

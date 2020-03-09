@@ -169,7 +169,7 @@ bool GetDevice(k4a_device_t &device, const K4ASinkParams &params)
     {
       if (params.serial_number.compare(dev_infos[i].serial_number) == 0)
       {
-        if (K4A_RESULT_SUCCEEDED != k4a_device_open(i, &device))
+        if (K4A_RESULT_SUCCEEDED != k4a_device_open(dev_infos[i].device_number, &device))
         {
           VCP_LOG_FAILURE("Failed to open Kinect Azure device with serial number '" << params.serial_number << "'");
           return false;
@@ -257,37 +257,32 @@ std::vector<K4ADeviceInfo> ListK4ADevices(bool warn_if_no_devices)
   if (num_devices == 0)
   {
     if (warn_if_no_devices)
-    {
       VCP_LOG_WARNING("No Kinect Azure device connected!");
-    }
     return infos;
   }
 
   k4a_device_t dev = NULL;
   for (uint32_t i = 0; i < num_devices; ++i)
   {
-    K4ADeviceInfo info;
     if (k4a_device_open(i, &dev) != K4A_RESULT_SUCCEEDED)
     {
       VCP_LOG_WARNING("Cannot open Kinect Azure #" << i << " - device may be busy.");
-      info.name = "K4A - BUSY";
+      continue;
+    }
+    const std::string serial_number = GetSerialNumber(dev);
+    if (serial_number.empty())
+    {
+      VCP_LOG_FAILURE("Cannot query serial number for Kinect Azure #" << i);
     }
     else
     {
-      const std::string serial_number = GetSerialNumber(dev);
-      if (serial_number.empty())
-      {
-        VCP_LOG_FAILURE("Cannot query serial number for Kinect Azure #" << i);
-        info.name = "K4A - UNKNOWN";
-      }
-      else
-      {
-        info.serial_number = serial_number;
-        info.name = "Kinect #" + vcp::utils::string::ToStr(i) + ": " + serial_number;
-      }
-      k4a_device_close(dev);
+      K4ADeviceInfo info;
+      info.device_number = i;
+      info.serial_number = serial_number;
+      info.name = "Kinect #" + vcp::utils::string::ToStr(i) + ": " + serial_number;
+      infos.push_back(info);
     }
-    infos.push_back(info);
+    k4a_device_close(dev);
     dev = NULL;
   }
 
@@ -394,7 +389,7 @@ public:
     VCP_LOG_DEBUG("K4ARGBDSink::StartStreaming()");
     if (continue_capture_)
     {
-      VCP_LOG_FAILURE("k4a stream already running - ignoring StartStreaming() call.");
+      VCP_LOG_FAILURE("k4a '" << params_.serial_number << "' stream already running - ignoring StartStreaming() call.");
       return false;
     }
 
@@ -410,11 +405,11 @@ public:
     {
       VCP_LOG_DEBUG("K4ARGBDSink::StopStreaming()");
       if (params_.verbose)
-        VCP_LOG_INFO_DEFAULT("Closing k4a receiver thread.");
+        VCP_LOG_INFO_DEFAULT("Closing k4a '" << params_.serial_number << "' receiver thread.");
       continue_capture_ = false;
       stream_thread_.join();
       if (params_.verbose)
-        VCP_LOG_INFO_DEFAULT("k4a receiver thread has terminated.");
+        VCP_LOG_INFO_DEFAULT("k4a '" << params_.serial_number << "' receiver thread has terminated.");
     }
     return true;
   }
@@ -855,7 +850,6 @@ private:
           VCP_LOG_FAILURE("Failed to read a capture from k4a '" << params_.serial_number << "', closing stream.");
           continue_capture_ = false;
           continue;
-          break;
       }
       cv::Mat cvrgb, cvdepth, cvir;
       cv::Mat rrgb, rdepth, rir;

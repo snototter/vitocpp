@@ -120,8 +120,9 @@ struct K4ADeviceInfo
 {
   std::string serial_number;
   std::string name; // Human readable string
+  uint32_t device_number; // Device enumeration used by libk4a to open the device.
 
-  K4ADeviceInfo() : serial_number(kEmptyK4ASerialNumber), name("Unknown") {}
+  K4ADeviceInfo() : serial_number(kEmptyK4ASerialNumber), name("Unknown"), device_number(0) {}
 };
 
 

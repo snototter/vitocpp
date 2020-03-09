@@ -393,6 +393,18 @@ public:
         std::this_thread::sleep_for(std::chrono::milliseconds(1500)); // 1.5 sec worked okay-ish so far...
       }
 #endif // VCP_WITH_REALSENSE2
+#ifdef VCP_BEST_WITH_K4A
+      // Similar to RealSense, it is safer to wait between starting multiple Kinects.
+      // Otherwise, we experienced problems within the k4a_open_device calls, where one sensor
+      // wasn't properly initialized.
+      if ((i+1) < sinks_.size()
+          && sink_params_[i].sink_type == sink_params_[i+1].sink_type
+          && sink_params_[i].sink_type == SinkType::K4A)
+      {
+        VCP_LOG_INFO("Pausing capture initialization temporarily before starting the next K4A stream!");
+        std::this_thread::sleep_for(std::chrono::milliseconds(1500)); // 1.5 sec worked okay-ish so far...
+      }
+#endif // VCP_BEST_WITH_K4A
     }
 #ifdef VCP_BEST_DEBUG_FRAMERATE
   prev_frame_timestamp_ = std::chrono::high_resolution_clock::now();
