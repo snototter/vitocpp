@@ -266,26 +266,28 @@ std::vector<K4ADeviceInfo> ListK4ADevices(bool warn_if_no_devices)
   k4a_device_t dev = NULL;
   for (uint32_t i = 0; i < num_devices; ++i)
   {
+    K4ADeviceInfo info;
     if (k4a_device_open(i, &dev) != K4A_RESULT_SUCCEEDED)
     {
-      VCP_LOG_FAILURE("Cannot open Kinect Azure #" << i);
-      continue;
-    }
-
-    const std::string serial_number = GetSerialNumber(dev);
-    if (serial_number.empty())
-    {
-      VCP_LOG_FAILURE("Cannot query serial number for Kinect Azur #" << i);
+      VCP_LOG_WARNING("Cannot open Kinect Azure #" << i << " - device may be busy.");
+      info.name = "K4A - BUSY";
     }
     else
     {
-      K4ADeviceInfo info;
-      info.serial_number = serial_number;
-      info.name = "Kinect #" + vcp::utils::string::ToStr(i) + ": " + serial_number;
-      infos.push_back(info);
+      const std::string serial_number = GetSerialNumber(dev);
+      if (serial_number.empty())
+      {
+        VCP_LOG_FAILURE("Cannot query serial number for Kinect Azure #" << i);
+        info.name = "K4A - UNKNOWN";
+      }
+      else
+      {
+        info.serial_number = serial_number;
+        info.name = "Kinect #" + vcp::utils::string::ToStr(i) + ": " + serial_number;
+      }
+      k4a_device_close(dev);
     }
-
-    k4a_device_close(dev);
+    infos.push_back(info);
     dev = NULL;
   }
 
@@ -1041,12 +1043,12 @@ private:
     {
       if (k4a_device_set_color_control(k4a_device_, p.command, K4A_COLOR_CONTROL_MODE_AUTO, 0) != K4A_RESULT_SUCCEEDED)
       {
-        VCP_LOG_FAILURE("Cannot adjust k4a color control setting: " << p);
+        VCP_LOG_FAILURE("Cannot adjust k4a '" << params_.serial_number << "' color control setting: " << p);
       }
       else
       {
         if (params_.verbose)
-          VCP_LOG_INFO_DEFAULT("Changed k4a color control: " << p);
+          VCP_LOG_INFO_DEFAULT("Changed k4a '" << params_.serial_number << "' color control: " << p);
       }
     }
     // - second, all which should be set to MANUAL
@@ -1054,12 +1056,12 @@ private:
     {
       if (k4a_device_set_color_control(k4a_device_, p.command, K4A_COLOR_CONTROL_MODE_MANUAL, p.value) != K4A_RESULT_SUCCEEDED)
       {
-        VCP_LOG_FAILURE("Cannot adjust k4a color control setting: " << p);
+        VCP_LOG_FAILURE("Cannot adjust k4a '" << params_.serial_number << "' color control setting: " << p);
       }
       else
       {
         if (params_.verbose)
-          VCP_LOG_INFO_DEFAULT("Changed k4a color control: " << p);
+          VCP_LOG_INFO_DEFAULT("Changed k4a '" << params_.serial_number << "' color control: " << p);
       }
     }
 
