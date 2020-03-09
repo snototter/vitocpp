@@ -1156,7 +1156,7 @@ public:
     return rgbd_params_;
   }
 
-  vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const
+  vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
   {
     if (!available_)
     {

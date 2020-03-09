@@ -20,9 +20,9 @@ from vcp import best
 import multiprocessing as mp
 
 def streaming_demo(cfg_file, folder, output_folder=None, output_fps=15):
-    cfg_file = 'replay.cfg'
-    folder='replay-test'
-    output_folder=None
+    # cfg_file = 'replay.cfg'
+    # folder='output-demo'
+    # output_folder=None
     mp.log_to_stderr(logging.INFO)
     print('\n\n\nLoading streaming configuration: {}'.format(cfg_file)) # TODO ensure absolute paths!
     capture = best.Capture()
@@ -127,7 +127,8 @@ def streaming_demo(cfg_file, folder, output_folder=None, output_fps=15):
 
         # Overlay stream labels
         vis_frames = [
-            imvis.draw_text_box(vis_frames[idx], capture.frame_label(idx),
+            imvis.draw_text_box(vis_frames[idx], 
+                capture.frame_label(idx) + (' [Undist. & Rect.]' if capture.is_rectified(idx) else ''),
                 (vis_frames[idx].shape[1]//2, 10), 'north',
                 bg_color=(0, 0, 0), font_color=(-1, -1, -1),
                 font_scale=1.0, font_thickness=1,
@@ -169,7 +170,8 @@ def demo():
     cfg_files = ['realsense.cfg'] #, 'image_sequence.cfg', 'k4a.cfg', 'webcam.cfg']
     # cfg_files = ['zed.cfg', 'realsense.cfg']
     cfg_files = ['rgbds.cfg']
-    # cfg_files = ['depth.cfg']
+    cfg_files = ['depth.cfg']
+    cfg_files = ['zed.cfg']
     output_folder = 'output-demo'
     output_fps = 15
     

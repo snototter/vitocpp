@@ -288,6 +288,11 @@ public:
     return capture_->FrameTypeAt(stream_index) == vcp::best::FrameType::INFRARED;
   }
 
+  bool IsFrameRectified(size_t stream_index) const
+  {
+    return capture_->IsStreamRectified(stream_index);
+  }
+
   bool SaveReplayConfig(const std::string &folder, const std::map<std::string, vcp::best::StreamStorageParams> &storage_params)
   {
     return capture_->SaveReplayConfiguration(folder, storage_params);
@@ -1001,6 +1006,9 @@ PYBIND11_MODULE(best_cpp, m)
       .def("is_infrared", &pybest::CaptureWrapper::IsFrameInfrared,
            "Check if the frame at the given index is of type 'infrared',\n"
            "i.e. intensity measurements (16bit Kinect, 8bit RealSense).",
+           py::arg("stream_index"))
+      .def("is_rectified", &pybest::CaptureWrapper::IsFrameRectified,
+           "Returns True if the stream/frame at the given index is rectified.",
            py::arg("stream_index"))
 // Saving
       .def("save_replay_config", &pybest::CaptureWrapper::SaveReplayConfig,

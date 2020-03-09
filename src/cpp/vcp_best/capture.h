@@ -211,6 +211,10 @@ public:
   virtual FrameType FrameTypeAt(size_t stream_index) const = 0;
 
 
+  /** @brief Check if the given stream is rectified. */
+  virtual bool IsStreamRectified(size_t stream_index) const = 0;
+
+
   /** @brief Stores a configuration file (along with intrinsic calibrations if available) to "replay" the recorded streams.
    *
    * - Note that you have to record/store the streams yourself!

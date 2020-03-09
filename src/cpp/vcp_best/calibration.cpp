@@ -379,6 +379,37 @@ std::vector<calibration::StreamIntrinsics> LoadK4ACalibration(const cv::FileStor
   return intrinsics;
 }
 
+std::vector<StreamIntrinsics> LoadZedCalibration(const cv::FileStorage &fs,
+                                                 const std::string &filename,
+                                                 const std::vector<std::string> &calib_keys)
+{
+  std::vector<StreamIntrinsics> intrinsics;
+
+  const StreamIntrinsics left = LoadGenericMonocularCalibration(fs, filename, "_left", calib_keys);
+  if (!left.Empty())
+    intrinsics.push_back(left);
+
+  const StreamIntrinsics right = LoadGenericMonocularCalibration(fs, filename, "_right", calib_keys, "_right2left");
+  if (!right.Empty())
+    intrinsics.push_back(right);
+
+  // R,t is only stored for completeness (left is the reference view for depth computation)
+  const StreamIntrinsics depth = LoadGenericMonocularCalibration(fs, filename, "_depth", calib_keys, "_right2left");
+  if (!depth.Empty())
+    intrinsics.push_back(depth);
+
+  if (std::find(calib_keys.begin(), calib_keys.end(), "serial_number") != calib_keys.end())
+  {
+    int isn;
+    fs["serial_number"] >> isn;
+    const std::string sn = vcp::utils::string::ToStr(isn);
+    for (auto &calib : intrinsics)
+      calib.SetIdentifier(sn);
+  }
+
+  return intrinsics;
+}
+
 
 std::vector<StreamIntrinsics> LoadIntrinsicsBySinkType(const cv::FileStorage &calibration_fs,
                                                        const std::string &filename,
@@ -395,15 +426,15 @@ std::vector<StreamIntrinsics> LoadIntrinsicsBySinkType(const cv::FileStorage &ca
     intrinsics = LoadRealSenseCalibration(calibration_fs, filename, calib_keys);
   else if (t.compare("k4a") == 0)
     intrinsics = LoadK4ACalibration(calibration_fs, filename, calib_keys);
-
-//    if (t.compare("rgbd") == 0)
-//      return false;
+  else if (t.compare("zed") == 0)
+    intrinsics = LoadZedCalibration(calibration_fs, filename, calib_keys);
   else
   {
     VCP_LOG_FAILURE("Unsupported calibration sink_type '" << sink_type << "'");
   }
   return intrinsics;
 }
+
 
 std::vector<StreamIntrinsics> LoadIntrinsicsByGenericType(const cv::FileStorage &calibration_fs,
                                                           const std::string &filename,
@@ -444,7 +475,7 @@ std::vector<StreamIntrinsics> LoadIntrinsicsFromFile(const std::string &calibrat
   }
 
   const auto keys = ListFileStorageNodes(fs);
-  VCP_LOG_FIXME("Available calibration nodes in '" << calibration_file << "':"<< std::endl << keys);
+//  VCP_LOG_FIXME("Available calibration nodes in '" << calibration_file << "':"<< std::endl << keys);
 
   const auto sink_type = std::find(keys.begin(), keys.end(), "sink_type");
   if (sink_type != keys.end())

@@ -315,6 +315,11 @@ public:
     return frame_types_[stream_index];
   }
 
+  bool IsStreamRectified(size_t stream_index) const override
+  {
+    return sink_params_[stream_index].rectify;
+  }
+
   bool AreAllDevicesAvailable() const override
   {
     VCP_LOG_DEBUG("AreDevicesAvailable()");
@@ -549,32 +554,38 @@ public:
       config->SetString(cam_group + ".frame_type", FrameTypeToString(frame_types_[fidx]));
       config->SetBoolean(cam_group + ".color_as_bgr", false);
 
-      const auto &intrinsics = sinks_[frame2sink_[fidx].first]->IntrinsicsAt(frame2sink_[fidx].second);
-      if (!intrinsics.Empty())
+      if (sink_params_[fidx].rectify)
       {
-        // Calibration file will be stored relative to the configuration file.
-        // Thus, ensure that the "calibration" subfolder exists.
-        const std::string csf = vcp::utils::file::FullFile(folder, "calibration");
-        if (!vcp::utils::file::Exists(csf))
+        const auto &intrinsics = sinks_[frame2sink_[fidx].first]->IntrinsicsAt(frame2sink_[fidx].second);
+        if (!intrinsics.Empty())
         {
-          if (!vcp::utils::file::CreatePath(csf))
+          // Calibration file will be stored relative to the configuration file.
+          // Thus, ensure that the "calibration" subfolder exists.
+          const std::string csf = vcp::utils::file::FullFile(folder, "calibration");
+          if (!vcp::utils::file::Exists(csf))
           {
-            VCP_LOG_FAILURE("Cannot create calibration output folder '" << csf << "' for the intrinsic calibration files.");
+            if (!vcp::utils::file::CreatePath(csf))
+            {
+              VCP_LOG_FAILURE("Cannot create calibration output folder '" << csf << "' for the intrinsic calibration files.");
+              return false;
+            }
+          }
+          const std::string rel_calib_file = vcp::utils::file::FullFile("calibration",
+                                            std::string("calib-") + vcp::utils::string::Canonic(it->first) + ".xml");
+          config->SetString(cam_group + ".calibration_file", rel_calib_file);
+          const std::string calib_file = vcp::utils::file::FullFile(folder, rel_calib_file);
+          if (!intrinsics.Save(calib_file, sink_params_[fidx].rectify, frame_types_[fidx]))
+          {
+            VCP_LOG_FAILURE("Couldn't save calibration file '" << calib_file << "' for stream '" << frame_labels_[fidx] << "'.");
             return false;
           }
         }
-        const std::string rel_calib_file = vcp::utils::file::FullFile("calibration",
-                                          std::string("calib-") + vcp::utils::string::Canonic(it->first) + ".xml");
-        config->SetString(cam_group + ".calibration_file", rel_calib_file);
-        const std::string calib_file = vcp::utils::file::FullFile(folder, rel_calib_file);
-        if (!intrinsics.Save(calib_file, sink_params_[fidx].rectify, frame_types_[fidx]))
+        else
         {
-          VCP_LOG_FAILURE("Couldn't save calibration file '" << calib_file << "' for stream '" << frame_labels_[fidx] << "'.");
+          VCP_LOG_FAILURE("Stream '" << it->first << "' (" << frame2sink_[fidx].first << ", " << frame2sink_[fidx].second << ") should be rectified, but contains no intrinsics.");
           return false;
         }
       }
-      else
-        VCP_LOG_FIXME("Intrinsics for stream '" << it->first << "' (" << frame2sink_[fidx].first << ", " << frame2sink_[fidx].second << ") are not set.");
     }
 
     const std::string cfg_file = vcp::utils::file::FullFile(folder, "replay.cfg");

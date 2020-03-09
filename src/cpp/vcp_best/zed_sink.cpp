@@ -273,7 +273,7 @@ cv::Mat GetTranslation(const sl::float3 &t)
 // Cannot pass sl::CameraInformation as const reference, because the internal getters aren't declared const!
 bool DumpCalibration(const ZedSinkParams &params, sl::CameraInformation &ci)
 {
-  // TODO Compare dumped calibration to factory pre-calibration: http://calib.stereolabs.com/?SN=12345
+  // To get the factory pre-calibration, visit http://calib.stereolabs.com/?SN=12345
   if (params.calibration_file.empty())
   {
     VCP_LOG_FAILURE("If you want to dump the ZED calibration, you must specify the filename as calibration_file parameter!");
@@ -338,6 +338,7 @@ bool DumpCalibration(const ZedSinkParams &params, sl::CameraInformation &ci)
 
   fs << "sink_type" << SinkTypeToString(params.sink_type);
   fs << "label" << params.sink_label;
+  fs << "serial_number" << static_cast<int>(ci.serial_number);
 
   fs << "type" << "stereo";
   fs.release();
@@ -447,8 +448,37 @@ public:
                            << " @" << ci.camera_fps << " fps");
     }
 
+    // Store calibration if needed
     if (params_.write_calibration)
-      return DumpCalibration(params_, ci);
+    {
+      if (!DumpCalibration(params_, ci))
+        return false;
+    }
+    // Load calibration if needed
+    if (params_.rectify)
+    {
+      if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))
+      {
+        VCP_LOG_FAILURE("To undistort & rectify the ZED '" << params_.serial_number << "' streams, the calibration file '" << params_.calibration_file << "' must exist!");
+        return false;
+      }
+
+      std::vector<calibration::StreamIntrinsics> intrinsics = calibration::LoadIntrinsicsFromFile(params_.calibration_file);
+      if (!MapIntrinsics(intrinsics))
+      {
+        VCP_LOG_FAILURE("Cannot load all intrinsics for ZED '" << params_.serial_number << "'");
+        return false;
+      }
+
+      if (!intrinsics.empty() && !intrinsics[0].Identifier().empty() && intrinsics[0].Identifier().compare(vcp::utils::string::ToStr(params_.serial_number)) != 0)
+      {
+        VCP_LOG_FAILURE("Calibration file '" << params_.calibration_file << "' provides intrinsics for ZED '" << intrinsics[0].Identifier() << "', but this sensor is '" << params_.serial_number << "'!");
+        return false;
+      }
+
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for ZED '" << params_.serial_number << "'");
+    }
 
     return true;
   }
@@ -632,6 +662,18 @@ public:
     return 1;
   }
 
+  vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
+  {
+    std::vector<const calibration::StreamIntrinsics*> intrinsics;
+    if (is_left_enabled_)
+      intrinsics.push_back(&intrinsics_left_);
+    if (is_right_enabled_)
+      intrinsics.push_back(&intrinsics_right_);
+    if (is_depth_enabled_)
+      intrinsics.push_back(&intrinsics_depth_);
+    return *(intrinsics[stream_index]);
+  }
+
 private:
   std::atomic<bool> continue_capture_;
   std::unique_ptr<SinkBuffer> image_queue_left_;
@@ -642,6 +684,9 @@ private:
   bool is_left_enabled_;
   bool is_right_enabled_;
   bool is_depth_enabled_;
+  calibration::StreamIntrinsics intrinsics_left_;
+  calibration::StreamIntrinsics intrinsics_right_;
+  calibration::StreamIntrinsics intrinsics_depth_;
 
 #ifdef VCP_BEST_DEBUG_FRAMERATE
   std::chrono::high_resolution_clock::time_point previous_frame_timepoint_;
@@ -656,6 +701,8 @@ private:
   cv::Mat cvl, cvr, cvd;
   // Color-converted:
   cv::Mat cvtl, cvtr;
+  // Rectified & undistorted:
+  cv::Mat rul, rur, rud;
   // Transformed matrices (basic image transformations)
   cv::Mat tcvl, tcvr, tcvd;
 
@@ -674,26 +721,40 @@ private:
       {
         if (is_left_enabled_)
         {
-          zed_->retrieveImage(slimg_left, sl::VIEW::LEFT, sl::MEM::CPU);
+          // Grab image, convert to cv::Mat.
+          zed_->retrieveImage(slimg_left, params_.rectify ? sl::VIEW::LEFT : sl::VIEW::LEFT_UNRECTIFIED, sl::MEM::CPU);
           cvl = ToCvMat(slimg_left);
+          // Optional color conversion.
           if (params_.color_as_bgr)
             cvtl = cvl;
           else
             cv::cvtColor(cvl, cvtl, cvl.channels() == 3 ? cv::COLOR_BGR2RGB : cv::COLOR_BGRA2RGBA);
-          tcvl = imutils::ApplyImageTransformations(cvtl, params_.transforms);
+          // Optional rectification (usually, ZED reports all distortion coefficients to be empty).
+          if (params_.rectify)
+            rul = intrinsics_left_.UndistortRectify(cvtl);
+          else
+            rul = cvtl;
+          // Apply optional image transformations.
+          tcvl = imutils::ApplyImageTransformations(rul, params_.transforms);
         }
         else
           tcvl = cv::Mat();
 
         if (is_right_enabled_)
         {
-          zed_->retrieveImage(slimg_right, sl::VIEW::RIGHT, sl::MEM::CPU);
+          zed_->retrieveImage(slimg_right, params_.rectify ? sl::VIEW::RIGHT : sl::VIEW::RIGHT_UNRECTIFIED, sl::MEM::CPU);
           cvr = ToCvMat(slimg_right);
           if (params_.color_as_bgr)
             cvtr = cvr;
           else
             cv::cvtColor(cvr, cvtr, cvr.channels() == 3 ? cv::COLOR_BGR2RGB : cv::COLOR_BGRA2RGBA);
-          tcvr = imutils::ApplyImageTransformations(cvtr, params_.transforms);
+          // Optional rectification (usually, ZED reports all distortion coefficients to be empty).
+          if (params_.rectify)
+            rur = intrinsics_right_.UndistortRectify(cvtr);
+          else
+            rur = cvtr;
+          // Apply optional image transformations.
+          tcvr = imutils::ApplyImageTransformations(rur, params_.transforms);
         }
         else
           tcvr = cv::Mat();
@@ -705,8 +766,13 @@ private:
             cvd = ToCvMat(sl_depth);
           else
             ToCvMat(sl_depth).convertTo(cvd, CV_16U);
-          //TODO rectify & yield intrinsics
-          tcvd = imutils::ApplyImageTransformations(cvd, params_.transforms);
+          // Optional rectification (usually, ZED reports all distortion coefficients to be empty).
+          if (params_.rectify)
+            rud = intrinsics_depth_.UndistortRectify(cvd);
+          else
+            rud = cvd;
+          // Apply optional image transformations.
+          tcvd = imutils::ApplyImageTransformations(rud, params_.transforms);
         }
         else
           tcvd = cv::Mat();
@@ -742,6 +808,49 @@ private:
     }
     zed_->close();
     zed_.reset();
+  }
+
+  bool MapIntrinsicsHelper(const std::vector<calibration::StreamIntrinsics> &intrinsics,
+                           calibration::StreamIntrinsics &to_set, const std::string &expected_label)
+  {
+    for (const auto &calib : intrinsics)
+    {
+      if (expected_label.compare(calib.StreamLabel()) == 0)
+      {
+        to_set = calib;
+        return true;
+      }
+    }
+    return false;
+  }
+
+  bool MapIntrinsics(const std::vector<calibration::StreamIntrinsics> &intrinsics)
+  {
+    if (params_.IsLeftStreamEnabled())
+    {
+      if (!MapIntrinsicsHelper(intrinsics, intrinsics_left_, "left"))
+      {
+        VCP_LOG_FAILURE("Left stream of ZED '" << params_.serial_number << "' is enabled but not calibrated.");
+        return false;
+      }
+    }
+    if (params_.IsRightStreamEnabled())
+    {
+      if (!MapIntrinsicsHelper(intrinsics, intrinsics_right_, "right"))
+      {
+        VCP_LOG_FAILURE("Right stream of ZED '" << params_.serial_number << "' is enabled but not calibrated.");
+        return false;
+      }
+    }
+    if (params_.IsDepthStreamEnabled())
+    {
+      if (!MapIntrinsicsHelper(intrinsics, intrinsics_depth_, "depth"))
+      {
+        VCP_LOG_FAILURE("Depth stream of ZED '" << params_.serial_number << "' is enabled but not calibrated.");
+        return false;
+      }
+    }
+    return true;
   }
 };
 
