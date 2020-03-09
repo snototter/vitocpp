@@ -651,6 +651,7 @@ public:
     return labels[stream_index];
   }
 
+
   SinkParams SinkParamsAt(size_t stream_index) const override
   {
     VCP_UNUSED_VAR(stream_index);

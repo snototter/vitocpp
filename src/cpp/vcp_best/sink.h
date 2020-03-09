@@ -110,13 +110,19 @@ struct SinkParams
   /** @brief Basic transformations of input images. */
   std::vector<imutils::ImgTransform> transforms;
 
+  /** @brief For replays (i.e. previously captured streams), this is the original configuration file parameter.
+   *
+   * This becomes useful to find streams recorded from the same sensor (e.g. RGB corresponding to a sensor's depth measurements). */
+  std::string original_configuration_key;
+
   /** @brief Copy c'tor. */
   SinkParams(const SinkParams &other)
     : sink_type(other.sink_type), frame_type(other.frame_type),
       sink_label(other.sink_label), calibration_file(other.calibration_file),
       rectify(other.rectify), configuration_key(other.configuration_key),
       color_as_bgr(other.color_as_bgr), verbose(other.verbose),
-      transforms(other.transforms)
+      transforms(other.transforms),
+      original_configuration_key(other.original_configuration_key)
   {}
 
   /** @brief Default c'tor. */
@@ -127,7 +133,8 @@ struct SinkParams
       const bool rectify=false,
       const std::string &config_key=std::string(),
       const bool return_bgr=false, const bool verbose=false,
-      const std::vector<imutils::ImgTransform> &transforms=std::vector<imutils::ImgTransform>())
+      const std::vector<imutils::ImgTransform> &transforms=std::vector<imutils::ImgTransform>(),
+      const std::string &orig_config_key=std::string())
     : sink_type(stype),
       frame_type(ftype),
       sink_label(lbl),
@@ -136,7 +143,8 @@ struct SinkParams
       configuration_key(config_key),
       color_as_bgr(return_bgr),
       verbose(verbose),
-      transforms(transforms)
+      transforms(transforms),
+      original_configuration_key(orig_config_key)
   {}
 };
 

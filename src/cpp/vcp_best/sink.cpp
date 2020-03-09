@@ -380,7 +380,11 @@ SinkParams ParseBaseSinkParamsFromConfig(const vcp::config::ConfigParams &config
   const bool verbose = GetVerbosityFlagFromConfig(config, cam_group, configured_keys);
   const std::vector<imutils::ImgTransform> transforms = GetImageTransformFromConfig(config, cam_group, configured_keys);
 
-  return SinkParams(sink_type, frame_type, sink_label, calibration_file, rectify, cam_group, color_as_bgr, verbose, transforms);
+  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "original_config_key"), configured_keys.end());
+  const std::string original_config_key = GetOptionalStringFromConfig(config, cam_group, "original_config_key", std::string());
+
+  return SinkParams(sink_type, frame_type, sink_label, calibration_file, rectify,
+                    cam_group, color_as_bgr, verbose, transforms, original_config_key);
 }
 
 

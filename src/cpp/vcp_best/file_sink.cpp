@@ -529,6 +529,7 @@ public:
     return params_.sink_label;
   }
 
+
   size_t NumDevices() const override
   {
     return 1;

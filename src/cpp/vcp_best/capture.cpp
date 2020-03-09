@@ -563,42 +563,35 @@ public:
 
       config->SetString(cam_group + ".label", it->first);
       config->SetString(cam_group + ".label_canonic", vcp::utils::string::Canonic(it->first));
+      config->SetString(cam_group + ".original_config_key", ConfigurationKeyAt(fidx));
       config->SetString(cam_group + ".frame_type", FrameTypeToString(frame_types_[fidx]));
       config->SetBoolean(cam_group + ".color_as_bgr", false);
 
-      if (sink_params_[fidx].rectify)
+      const auto &intrinsics = sinks_[frame2sink_[fidx].first]->IntrinsicsAt(frame2sink_[fidx].second);
+      if (!intrinsics.Empty())
       {
-        const auto &intrinsics = sinks_[frame2sink_[fidx].first]->IntrinsicsAt(frame2sink_[fidx].second);
-        if (!intrinsics.Empty())
+        // Calibration file will be stored relative to the configuration file.
+        // Thus, ensure that the "calibration" subfolder exists.
+        const std::string csf = vcp::utils::file::FullFile(folder, "calibration");
+        if (!vcp::utils::file::Exists(csf))
         {
-          // Calibration file will be stored relative to the configuration file.
-          // Thus, ensure that the "calibration" subfolder exists.
-          const std::string csf = vcp::utils::file::FullFile(folder, "calibration");
-          if (!vcp::utils::file::Exists(csf))
+          if (!vcp::utils::file::CreatePath(csf))
           {
-            if (!vcp::utils::file::CreatePath(csf))
-            {
-              VCP_LOG_FAILURE("Cannot create calibration output folder '" << csf << "' for the intrinsic calibration files.");
-              return false;
-            }
-          }
-          const std::string rel_calib_file = vcp::utils::file::FullFile("calibration",
-                                            std::string("calib-") + vcp::utils::string::Canonic(it->first) + ".xml");
-          config->SetString(cam_group + ".calibration_file", rel_calib_file);
-          const std::string calib_file = vcp::utils::file::FullFile(folder, rel_calib_file);
-          if (!intrinsics.Save(calib_file, sink_params_[fidx].rectify, frame_types_[fidx]))
-          {
-            VCP_LOG_FAILURE("Couldn't save calibration file '" << calib_file << "' for stream '" << frame_labels_[fidx] << "'.");
+            VCP_LOG_FAILURE("Cannot create calibration output folder '" << csf << "' for the intrinsic calibration files.");
             return false;
           }
-
-          config->SetBoolean(cam_group + ".rectify", true);
         }
-        else
+        const std::string rel_calib_file = vcp::utils::file::FullFile("calibration",
+                                          std::string("calib-") + vcp::utils::string::Canonic(it->first) + ".xml");
+        config->SetString(cam_group + ".calibration_file", rel_calib_file);
+        const std::string calib_file = vcp::utils::file::FullFile(folder, rel_calib_file);
+        if (!intrinsics.Save(calib_file, sink_params_[fidx].rectify, frame_types_[fidx]))
         {
-          VCP_LOG_FAILURE("Stream '" << it->first << "' (" << frame2sink_[fidx].first << ", " << frame2sink_[fidx].second << ") should be rectified, but contains no intrinsics.");
+          VCP_LOG_FAILURE("Couldn't save calibration file '" << calib_file << "' for stream '" << frame_labels_[fidx] << "'.");
           return false;
         }
+
+        config->SetBoolean(cam_group + ".rectify", sink_params_[fidx].rectify);
       }
     }
 
@@ -620,6 +613,25 @@ public:
     if (sink_params_[stream_index].rectify)
       return intrinsics.IntrinsicsRectified();
     return intrinsics.IntrinsicsOriginal();
+  }
+
+  std::vector<size_t> StreamsFromSameSink(size_t stream_index, bool include_self) const
+  {
+    const bool use_current_config_key = sink_params_[stream_index].original_configuration_key.empty();
+    const std::string needle = use_current_config_key
+        ? sink_params_[stream_index].configuration_key
+        : sink_params_[stream_index].original_configuration_key;
+
+    std::vector<size_t> indices;
+    for (size_t i = 0; i < sink_params_.size(); ++i)
+    {
+      if (!include_self && i == stream_index)
+        continue;
+      if ((use_current_config_key && needle.compare(sink_params_[i].configuration_key) == 0)
+          || (!use_current_config_key && needle.compare(sink_params_[i].original_configuration_key) == 0))
+          indices.push_back(i);
+    }
+    return indices;
   }
 
 private:

@@ -293,6 +293,11 @@ public:
     return capture_->IsStreamRectified(stream_index);
   }
 
+  std::vector<size_t> StreamsFromSameSink(size_t stream_index, bool include_self) const
+  {
+    return capture_->StreamsFromSameSink(stream_index, include_self);
+  }
+
   py::object CameraMatrix(size_t stream_index) const
   {
     const cv::Mat M = capture_->CameraMatrixAt(stream_index);
@@ -1018,6 +1023,12 @@ PYBIND11_MODULE(best_cpp, m)
       .def("is_rectified", &pybest::CaptureWrapper::IsFrameRectified,
            "Returns True if the stream/frame at the given index is rectified.",
            py::arg("stream_index"))
+      .def("same_sink", &pybest::CaptureWrapper::StreamsFromSameSink,
+           "Returns a list of stream/frame indices which originate from the\n"
+           "same sink as the given frame index.\n"
+           ":param stream_index: Index (int >= 0) of the stream/frame of interest.\n"
+           ":param include_self: True, if stream_index should be included.",
+           py::arg("stream_index"), py::arg("include_self")=false)
 // Calibration-related
       .def("camera_matrix", &pybest::CaptureWrapper::CameraMatrix,
            "Returns the 3x3 camera matrix holding the stream's intrinsics.",

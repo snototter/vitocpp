@@ -231,6 +231,12 @@ public:
   /** @brief Returns the 3x3 intrinsic camera matrix. */
   virtual cv::Mat CameraMatrixAt(size_t stream_index) const = 0;
 
+  /** @brief Given a stream/frame index, this yields a list of frame indices which originate from the same sink (physical device/sensor).
+   * This also works for previously recorded streams, but only iff you used @see SaveReplayConfiguration() to create the
+   * configuration file.
+   */
+  virtual std::vector<size_t> StreamsFromSameSink(size_t stream_index, bool include_self) const = 0;
+
 protected:
   Capture() {}
 };
