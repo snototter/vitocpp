@@ -717,40 +717,38 @@ py::list ListK4ADevices(bool warn_if_no_devices)
 
 bool StoreExtrinsics(const std::string &filename, const std::vector<std::string> &labels, const py::list &extrinsics)
 {
-//  const int num_cameras = static_cast<int>(labels.size());
-//  cv::FileStorage fs(filename, cv::FileStorage::WRITE);
-//  if (!fs.isOpened())
-//  {
-//    PVT_LOG_FAILURE("Cannot open FileStorage '" << filename << "'");
-//    return false;
-//  }
+  const int num_cameras = static_cast<int>(labels.size());
+  cv::FileStorage fs(filename, cv::FileStorage::WRITE);
+  if (!fs.isOpened())
+  {
+    VCP_LOG_FAILURE("Cannot open FileStorage '" << filename << "'");
+    return false;
+  }
 
-//  fs << "num_cameras" << num_cameras;
-//  for (int i = 0; i < num_cameras; ++i)
-//  {
-//    const std::string label = labels[i];
-//    const py::tuple &rt = extrinsics[i].cast<py::tuple>();
-//    const cv::Mat R = pvt::python::conversion::NDArrayToMat(rt[0].cast<py::array>());
-//    const cv::Mat t = pvt::python::conversion::NDArrayToMat(rt[1].cast<py::array>());
-//    std::stringstream ss;
-//    ss << "label" << (i+1);
-//    fs << ss.str() << label;
+  fs << "num_cameras" << num_cameras;
+  for (int i = 0; i < num_cameras; ++i)
+  {
+    const std::string label = labels[i];
+    const py::tuple &rt = extrinsics[i].cast<py::tuple>();
+    const cv::Mat R = vcp::python::conversion::NDArrayToMat(rt[0].cast<py::array>());
+    const cv::Mat t = vcp::python::conversion::NDArrayToMat(rt[1].cast<py::array>());
+    std::stringstream ss;
+    ss << "label" << i;
+    fs << ss.str() << label;
 
-//    ss.str("");
-//    ss.clear();
-//    ss << "R" << (i+1);
-//    fs << ss.str() << R;
+    ss.str("");
+    ss.clear();
+    ss << "R" << i;
+    fs << ss.str() << R;
 
-//    ss.str("");
-//    ss.clear();
-//    ss << "t" << (i+1);
-//    fs << ss.str() << t;
-//  }
+    ss.str("");
+    ss.clear();
+    ss << "t" << i;
+    fs << ss.str() << t;
+  }
 
-//  fs.release();
-//  return true;
-  //FIXME
-  return false;
+  fs.release();
+  return true;
 }
 
 class LiveViewWrapper
