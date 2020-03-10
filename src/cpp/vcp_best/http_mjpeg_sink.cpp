@@ -189,6 +189,16 @@ public:
     return 1;
   }
 
+  void SetVerbose(bool verbose) override
+  {
+    params_.verbose = verbose;
+  }
+
+  SinkType GetSinkType() const override
+  {
+    return SinkType::IPCAM_MONOCULAR;
+  }
+
 private:
   IpCameraSinkParams params_;
   curl::URL_FILE *mjpg_stream_;

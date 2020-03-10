@@ -625,6 +625,17 @@ public:
     return frames;
   }
 
+  void SetVerbose(bool verbose) override
+  {
+    for (size_t i = 0; i < sinks_.size(); ++i)
+      sinks_[i]->SetVerbose(verbose);
+  }
+
+  SinkType GetSinkType() const override
+  {
+    return SinkType::IPCAM_MONOCULAR; //TODO FIXME, we should only support monocular ipcams
+  }
+
 
 private:
   std::vector<IpCameraSinkParams> params_http_;

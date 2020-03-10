@@ -72,11 +72,29 @@ public:
   {
     VCP_LOG_DEBUG("MultiDeviceCapture::MultiDeviceCapture()");
     num_devices_ = 0;
-    LoadConfig(config);
+    LoadSinkConfigs(config);
+    LoadGlobalConfig(config);
     SanityCheck();
   }
 
-  void LoadConfig(const vcp::config::ConfigParams &config)
+  void LoadGlobalConfig(const vcp::config::ConfigParams &config)
+  {
+    if (config.SettingExists("verbose"))
+    {
+      const bool verbose = config.GetBoolean("verbose");
+      VCP_LOG_INFO("Overriding sink verbosity (set to " << (verbose ? "true" : "false") << ").");
+      for (auto &sink : sinks_)
+        sink->SetVerbose(verbose);
+    }
+
+    if (config.SettingExists("extrinsic_calibration"))
+    {
+      const std::string ext_calib_file = config.GetString("extrinsic_calibration");
+      VCP_LOG_FIXME("Need to load extrinsic calibration from: " << ext_calib_file);
+    }
+  }
+
+  void LoadSinkConfigs(const vcp::config::ConfigParams &config)
   {
     //FIXME: load extrinsics
     VCP_LOG_DEBUG("MultiDeviceCapture::LoadConfig()");
@@ -224,7 +242,7 @@ public:
     const size_t sink_idx = sinks_.size();
     for (size_t i = 0; i < sink->NumStreams(); ++i)
     {
-      sink_params_.push_back(sink->SinkParamsAt(i));
+      //sink_params_.push_back(sink->SinkParamsAt(i));
       frame_types_.push_back(sink->FrameTypeAt(i));
       frame_labels_.push_back(sink->StreamLabel(i));
       frame2sink_.push_back(std::make_pair(sink_idx, i));
@@ -270,7 +288,7 @@ public:
 
   size_t NumStreams() const override
   {
-    return sink_params_.size();
+    return frame_types_.size();
   }
 
   size_t NumDevices() const override
@@ -281,14 +299,17 @@ public:
   std::vector<std::string> ConfigurationKeys() const override
   {
     std::vector<std::string> keys;
-    for (const auto &p : sink_params_)
-      keys.push_back(p.configuration_key);
+    for (size_t i = 0; i < NumStreams(); ++i)
+      keys.push_back(ConfigurationKeyAt(i));
+//    for (const auto &p : sink_params_)
+//      keys.push_back(p.configuration_key);
     return keys;
   }
 
   std::string ConfigurationKeyAt(size_t stream_index) const override
   {
-    return sink_params_[stream_index].configuration_key;
+    return SinkParamsAt(stream_index).configuration_key;
+    //return sink_params_[stream_index].configuration_key;
   }
 
   std::vector<std::string> FrameLabels() const override
@@ -318,7 +339,7 @@ public:
 
   bool IsStreamRectified(size_t stream_index) const override
   {
-    return sink_params_[stream_index].rectify;
+    return SinkParamsAt(stream_index).rectify;
   }
 
   bool AreAllDevicesAvailable() const override
@@ -387,8 +408,8 @@ public:
       // According to the RealSense white paper on multiple sensors, they
       // "found it useful to start the cameras sequentially in time with some delay".
       if (multiple_realsenses_ && (i+1) < sinks_.size()
-          && sink_params_[i].sink_type == sink_params_[i+1].sink_type
-          && sink_params_[i].sink_type == SinkType::REALSENSE)
+          && sinks_[i]->GetSinkType() == sinks_[i+1]->GetSinkType()
+          && sinks_[i]->GetSinkType() == SinkType::REALSENSE)
       {
         VCP_LOG_INFO("Pausing capture initialization temporarily before starting the next RealSense stream!");
         std::this_thread::sleep_for(std::chrono::milliseconds(1500)); // 1.5 sec worked okay-ish so far...
@@ -399,8 +420,8 @@ public:
       // Otherwise, we experienced problems within the k4a_open_device calls, where one sensor
       // wasn't properly initialized.
       if ((i+1) < sinks_.size()
-          && sink_params_[i].sink_type == sink_params_[i+1].sink_type
-          && sink_params_[i].sink_type == SinkType::K4A)
+          && sinks_[i]->GetSinkType() == sinks_[i+1]->GetSinkType()
+          && sinks_[i]->GetSinkType() == SinkType::K4A)
       {
         VCP_LOG_INFO("Pausing capture initialization temporarily before starting the next K4A stream!");
         std::this_thread::sleep_for(std::chrono::milliseconds(1500)); // 1.5 sec worked okay-ish so far...
@@ -586,13 +607,13 @@ public:
                                           std::string("calib-") + vcp::utils::string::Canonic(it->first) + ".xml");
         config->SetString(cam_group + ".calibration_file", rel_calib_file);
         const std::string calib_file = vcp::utils::file::FullFile(folder, rel_calib_file);
-        if (!intrinsics.Save(calib_file, sink_params_[fidx].rectify, frame_types_[fidx]))
+        if (!intrinsics.Save(calib_file, SinkParamsAt(fidx).rectify, frame_types_[fidx]))
         {
           VCP_LOG_FAILURE("Couldn't save calibration file '" << calib_file << "' for stream '" << frame_labels_[fidx] << "'.");
           return false;
         }
 
-        config->SetBoolean(cam_group + ".rectify", sink_params_[fidx].rectify);
+        config->SetBoolean(cam_group + ".rectify", SinkParamsAt(fidx).rectify);
       }
     }
 
@@ -611,25 +632,26 @@ public:
     const calibration::StreamIntrinsics intrinsics = sinks_[lookup.first]->IntrinsicsAt(lookup.second);
     if (intrinsics.Empty())
       return cv::Mat();
-    if (sink_params_[stream_index].rectify)
+    if (SinkParamsAt(stream_index).rectify)
       return intrinsics.IntrinsicsRectified();
     return intrinsics.IntrinsicsOriginal();
   }
 
   std::vector<size_t> StreamsFromSameSink(size_t stream_index, bool include_self) const
   {
-    const bool use_current_config_key = sink_params_[stream_index].original_configuration_key.empty();
+    const auto &sink_params = SinkParamsAt(stream_index);
+    const bool use_current_config_key = sink_params.original_configuration_key.empty();
     const std::string needle = use_current_config_key
-        ? sink_params_[stream_index].configuration_key
-        : sink_params_[stream_index].original_configuration_key;
+        ? sink_params.configuration_key
+        : sink_params.original_configuration_key;
 
     std::vector<size_t> indices;
-    for (size_t i = 0; i < sink_params_.size(); ++i)
+    for (size_t i = 0; i < NumStreams(); ++i)
     {
       if (!include_self && i == stream_index)
         continue;
-      if ((use_current_config_key && needle.compare(sink_params_[i].configuration_key) == 0)
-          || (!use_current_config_key && needle.compare(sink_params_[i].original_configuration_key) == 0))
+      if ((use_current_config_key && needle.compare(SinkParamsAt(i).configuration_key) == 0)
+          || (!use_current_config_key && needle.compare(SinkParamsAt(i).original_configuration_key) == 0))
           indices.push_back(i);
     }
     return indices;
@@ -639,7 +661,7 @@ private:
   std::vector<std::unique_ptr<StreamSink>> sinks_; // Potentially less than streams/frames
   std::vector<std::pair<size_t, size_t>> frame2sink_; /**< Stores the index into sinks_ (along with the corresponding stream index) for each frame, e.g. if we iterate frame_types_, we can easily lookup the corresponding sink. */
   std::vector<FrameType> frame_types_;  // Note: they will be per stream/frame (i.e. possibly duplicated), not per device
-  std::vector<SinkParams> sink_params_; // Note: they will be per stream/frame (i.e. possibly duplicated), not per device
+//  std::vector<SinkParams> sink_params_; // Note: they will be per stream/frame (i.e. possibly duplicated), not per device
   std::vector<std::string> frame_labels_; /**< Unique label per stream (the user can provide per-sink labels, which will be post-fixed by the corresponding sensor sink). */
   size_t num_devices_;
 
@@ -651,6 +673,13 @@ private:
 #ifdef VCP_BEST_WITH_REALSENSE2
   bool multiple_realsenses_;
 #endif // VCP_BEST_WITH_REALSENSE2
+
+  /** @brief Returns the SinkParams (parametrization PER SINK) for the given STREAM INDEX. */
+  SinkParams SinkParamsAt(size_t stream_index) const
+  {
+    const auto lookup = frame2sink_[stream_index];
+    return sinks_[lookup.first]->SinkParamsAt(lookup.second);
+  }
 
   bool FrameIndexByLabel(const std::string &frame_label, size_t &idx) const
   {

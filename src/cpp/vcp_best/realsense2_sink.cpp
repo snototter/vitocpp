@@ -1176,6 +1176,16 @@ public:
     return *(intrinsics[stream_index]);
   }
 
+  void SetVerbose(bool verbose) override
+  {
+    rgbd_params_.verbose = verbose;
+  }
+
+  SinkType GetSinkType() const override
+  {
+    return SinkType::REALSENSE;
+  }
+
 private:
   std::atomic<bool> continue_capture_;
   std::thread stream_thread_;
@@ -1403,8 +1413,7 @@ private:
               ms_between_ir2 = ms_ema_alpha * duration_ir2.count() + (1.0 - ms_ema_alpha) * ms_between_ir2;
           }
 
-          //TODO IR1 and IR2
-          DebugFramesetMetadata(rgbd_params_.serial_number, frameset);
+          //DebugFramesetMetadata(rgbd_params_.serial_number, frameset);
 #endif // VCP_BEST_DEBUG_FRAMERATE
 
           if (filter_spatially)

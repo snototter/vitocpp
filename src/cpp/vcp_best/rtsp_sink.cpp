@@ -232,6 +232,17 @@ public:
     data->ptr->EnqueueNextFrame(frame, data->sink_idx);
   }
 
+  void SetVerbose(bool verbose) override
+  {
+    for (size_t i = 0; i < params_.size(); ++i)
+      params_[i].verbose = verbose;
+  }
+
+  SinkType GetSinkType() const override
+  {
+    return SinkType::IPCAM_MONOCULAR; //TODO FIXME we should only support monocular ip cam streaming!
+  }
+
 
 protected:
   std::vector<std::unique_ptr<SinkBuffer>> image_queues_;

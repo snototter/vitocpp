@@ -248,6 +248,16 @@ public:
     return 1;
   }
 
+  void SetVerbose(bool verbose) override
+  {
+    params_.verbose = verbose;
+  }
+
+  SinkType GetSinkType() const override
+  {
+    return SinkType::WEBCAM;
+  }
+
 private:
   std::atomic<bool> continue_capture_;
   std::unique_ptr<SinkBuffer> image_queue_;

@@ -222,6 +222,16 @@ public:
     return intrinsics_;
   }
 
+  void SetVerbose(bool verbose) override
+  {
+    params_.verbose = verbose;
+  }
+
+  SinkType GetSinkType() const override
+  {
+    return SinkType::VIDEO_FILE;
+  }
+
 private:
   std::atomic<bool> continue_capture_;
   std::unique_ptr<cv::VideoCapture> capture_;
@@ -542,6 +552,16 @@ public:
     return intrinsics_;
   }
 
+  void SetVerbose(bool verbose) override
+  {
+    params_.verbose = verbose;
+  }
+
+  SinkType GetSinkType() const override
+  {
+    return SinkType::VIDEO_FILE;
+  }
+
 private:
   std::unique_ptr<cv::VideoCapture> capture_;
   VideoFileSinkParams params_;
@@ -780,6 +800,16 @@ public:
   {
     VCP_UNUSED_VAR(stream_index);
     return intrinsics_;
+  }
+
+  void SetVerbose(bool verbose) override
+  {
+    params_.verbose = verbose;
+  }
+
+  SinkType GetSinkType() const override
+  {
+    return SinkType::IMAGE_DIR;
   }
 
 private:

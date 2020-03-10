@@ -113,6 +113,8 @@ private:
 /** @brief Overloaded output operator for StreamIntrinsics. */
 std::ostream &operator<<(std::ostream &out, const StreamIntrinsics &si);
 
+// TODO StreamExtrinsics
+
 
 /** @brief Load an intrinsic calibration file using cv::FileStorage (thus, supporting XML and YAML).
  *

@@ -25,6 +25,11 @@
     #endif
 #endif
 
+#ifdef VCP_BEST_DEBUG_FRAMERATE
+    #include <chrono>
+    #include <iomanip>
+#endif // VCP_BEST_DEBUG_FRAMERATE
+
 #include <k4a/k4a.h>
 #include <k4a/k4a.hpp>
 
@@ -328,6 +333,10 @@ public:
   {
     VCP_LOG_DEBUG("K4ARGBDSink::K4ARGBDSink()");
     available_ = 0;
+#ifdef VCP_BEST_DEBUG_FRAMERATE
+    previous_frame_timepoint_ = std::chrono::high_resolution_clock::now();
+    ms_between_frames_ = -1.0;
+#endif // VCP_BEST_DEBUG_FRAMERATE
 
     // The user could configure the sensor such that
     // color/depth streams are disabled. In such cases, we
@@ -546,6 +555,16 @@ public:
     return num;
   }
 
+  void SetVerbose(bool verbose) override
+  {
+    params_.verbose = verbose;
+  }
+
+  SinkType GetSinkType() const override
+  {
+    return SinkType::K4A;
+  }
+
   //FIXME warn if !available
   //FIXME always load & return intrinsics
   vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
@@ -582,8 +601,11 @@ private:
   calibration::StreamIntrinsics rgb_intrinsics_;
   calibration::StreamIntrinsics depth_intrinsics_;
   calibration::StreamIntrinsics ir_intrinsics_;
-
   k4a_device_t k4a_device_;
+#ifdef VCP_BEST_DEBUG_FRAMERATE
+  std::chrono::high_resolution_clock::time_point previous_frame_timepoint_;
+  double ms_between_frames_;
+#endif // VCP_BEST_DEBUG_FRAMERATE
 
   void DumpCalibration(k4a_calibration_t sensor_calibration)
   {
@@ -941,6 +963,21 @@ private:
       if (ir_stream_enabled_)
         ir_queue_->PushBack(tir.clone());
       image_queue_mutex_.unlock();
+
+#ifdef VCP_BEST_DEBUG_FRAMERATE
+      const std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
+      const auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(now - previous_frame_timepoint_);
+      previous_frame_timepoint_ = now;
+      const double ms_ema_alpha = 0.1;
+
+      if (ms_between_frames_ < 0.0)
+        ms_between_frames_ = duration.count();
+      else
+        ms_between_frames_ = ms_ema_alpha * duration.count() + (1.0 - ms_ema_alpha) * ms_between_frames_;
+
+      VCP_LOG_DEBUG_DEFAULT("K4A '" << params_.serial_number << "' received frame after " << std::fixed << std::setw(5) << duration.count() << " ms, "
+                          << std::setw(5) << (1000.0 / ms_between_frames_) << " fps");
+#endif // VCP_BEST_DEBUG_FRAMERATE
     }
     // Clean up
     if (k4a_capture)
@@ -949,7 +986,8 @@ private:
     if (transformation)
       k4a_transformation_destroy(transformation);
 
-    k4a_device_stop_cameras(k4a_device_);
+    if (k4a_device_)
+      k4a_device_stop_cameras(k4a_device_);
   }
 
 

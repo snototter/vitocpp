@@ -675,6 +675,16 @@ public:
     return *(intrinsics[stream_index]);
   }
 
+  void SetVerbose(bool verbose) override
+  {
+    params_.verbose = verbose;
+  }
+
+  SinkType GetSinkType() const override
+  {
+    return SinkType::ZED;
+  }
+
 private:
   std::atomic<bool> continue_capture_;
   std::unique_ptr<SinkBuffer> image_queue_left_;
