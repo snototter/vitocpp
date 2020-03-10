@@ -37,7 +37,7 @@ public:
   /** @brief Class method to instantiate an object from a monocular calibration. */
   static StreamIntrinsics FromMonocular(const cv::Mat &intrinsics,
                                         const cv::Mat &distortion,
-                                        const std::string &label,
+                                        const std::string &label, const std::string &identifier,
                                         const cv::Size &resolution,
                                         const cv::Mat &R=cv::Mat(), const cv::Mat &t=cv::Mat());
 

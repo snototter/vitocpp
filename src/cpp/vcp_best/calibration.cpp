@@ -57,6 +57,7 @@ StreamIntrinsics::StreamIntrinsics(const StreamIntrinsics &other)
 StreamIntrinsics StreamIntrinsics::FromMonocular(const cv::Mat &intrinsics,
                                           const cv::Mat &distortion,
                                           const std::string &label,
+                                          const std::string &identifier,
                                           const cv::Size &resolution,
                                           const cv::Mat &R, const cv::Mat &t)
 {
@@ -65,6 +66,7 @@ StreamIntrinsics StreamIntrinsics::FromMonocular(const cv::Mat &intrinsics,
   si.distortion_ = distortion.clone();
   si.skip_undistort_rectify_ = !HasLensDistortion(distortion);
   si.label_ = label;
+  si.identifier_ = identifier;
   si.resolution_ = resolution;
 
   if (si.skip_undistort_rectify_)
@@ -73,6 +75,10 @@ StreamIntrinsics StreamIntrinsics::FromMonocular(const cv::Mat &intrinsics,
   }
   else
   {
+    // Abort if resolution is not set (otherwise, OpenCV initUndistortRectifyMap would crash)
+    if (!si.HasResolution())
+      VCP_ERROR("Stream '" << label << "/" << identifier << "' has no valid resolution - needed for rectification.");
+
     si.intrinsics_rectified_ = cv::getOptimalNewCameraMatrix(intrinsics, distortion, resolution, 1.0, resolution, 0);
     cv::initUndistortRectifyMap(intrinsics, distortion, cv::Mat(), si.intrinsics_rectified_, resolution, CV_16SC2, si.undistort_rectify_map1_, si.undistort_rectify_map2_);
   }
@@ -185,7 +191,11 @@ bool StreamIntrinsics::Save(const std::string &calibration_file, const bool rect
   }
 
   if (!identifier_.empty())
-    fs << "label" << identifier_;
+    fs << "identifier" << identifier_;
+
+  if (!label_.empty())
+    fs << "label" << label_;
+
 
   if (rectified)
   {
@@ -240,10 +250,13 @@ std::ostream &operator<<(std::ostream &out, const StreamIntrinsics &si)
   const double cx = K.at<double>(0, 2);
   const double cy = K.at<double>(1, 2);
 
-  out << "Intrinsics for stream '" << si.StreamLabel() << "', fl=("
+  out << "Intrinsics for stream '" << si.StreamLabel() << "'";
+  if (!si.Identifier().empty())
+    out << ", id='" << si.Identifier() << "'";
+  out << ", fl=("
       << fx << ", " << fy << "), pp=(" << cx << ", " << cy << ")";
   if (si.HasDistortion())
-    out << ", dc=" << si.Distortion();
+    out << ", dc=" << (si.Distortion().rows > si.Distortion().cols ? si.Distortion().t() : si.Distortion());
   if (si.HasResolution())
     out << ", res=" << si.Resolution();
   return out;
@@ -292,7 +305,7 @@ StreamIntrinsics LoadGenericMonocularCalibration(const cv::FileStorage &fs,
 
   cv::Mat K, D, R, t;
   int width, height;
-  std::string lbl;
+  std::string lbl, identifier;
 
   // Read intrinsics, either as "K" or "M".
   const std::string kk = "K" + postfix;
@@ -303,7 +316,7 @@ StreamIntrinsics LoadGenericMonocularCalibration(const cv::FileStorage &fs,
     ReadMat(fs, km, calib_keys, K);
   else
   {
-    VCP_LOG_WARNING("Calibration file '" << filename << "' doesn't contain intrinsics (neither K" << postfix << " nor M" << postfix << ").");
+    VCP_LOG_WARNING("Calibration file '" << filename << "' doesn't contain intrinsics (neither \"K" << postfix << "\" nor \"M" << postfix << "\").");
     return intrinsics;
   }
 
@@ -317,6 +330,8 @@ StreamIntrinsics LoadGenericMonocularCalibration(const cv::FileStorage &fs,
   const std::string def_lbl = postfix.empty() ? "unknown" : (postfix[0] == '_' ? postfix.substr(1) : postfix);
   ReadScalar(fs, "label" + postfix, calib_keys, lbl, def_lbl);
 
+  ReadScalar(fs, "identifier" + postfix, calib_keys, identifier, std::string());
+
   if (!postfix_ref_transform.empty())
   {
     ReadMat(fs, "R" + postfix_ref_transform, calib_keys, R);
@@ -328,7 +343,7 @@ StreamIntrinsics LoadGenericMonocularCalibration(const cv::FileStorage &fs,
     t = cv::Mat();
   }
 
-  return StreamIntrinsics::FromMonocular(K, D, lbl, cv::Size(width, height), R, t);
+  return StreamIntrinsics::FromMonocular(K, D, lbl, identifier, cv::Size(width, height), R, t);
 }
 
 
@@ -452,6 +467,8 @@ std::vector<StreamIntrinsics> LoadIntrinsicsBySinkType(const cv::FileStorage &ca
   {
     VCP_LOG_FAILURE("Unsupported calibration sink_type '" << sink_type << "'");
   }
+
+  VCP_LOG_INFO_DEFAULT("Loaded sensor-specific calibration from '" << filename << "':" << std::endl << intrinsics);
   return intrinsics;
 }
 
@@ -472,9 +489,11 @@ std::vector<StreamIntrinsics> LoadIntrinsicsByGenericType(const cv::FileStorage 
   else if (t.compare("rgbd") == 0)
     intrinsics = LoadGenericRGBDCalibration(calibration_fs, filename, calib_keys);
   else
+  {
     VCP_LOG_FAILURE("Unsupported intrinsic calibration type '" << type << "'");
+  }
 
-  VCP_LOG_FIXME("Loading generic calibration: " << intrinsics);
+  VCP_LOG_INFO_DEFAULT("Loaded generic calibration from '" << filename << "':" << std::endl << intrinsics);
 
   return intrinsics;
 }

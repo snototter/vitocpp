@@ -222,7 +222,7 @@ public:
 protected:
   inline void SetIntrinsicsResolution(calibration::StreamIntrinsics &intrinsics, const cv::Mat &frame)
   {
-    if (frame.empty() || (intrinsics.Resolution().width > 0 && intrinsics.Resolution().height > 0))
+    if (frame.empty() || intrinsics.HasResolution())
       return;
     intrinsics.SetResolution(frame.cols, frame.rows);
   }

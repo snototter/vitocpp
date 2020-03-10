@@ -99,6 +99,9 @@ class ImageSequenceStorage:
             self.frame_nr += 1
         self.queue.put((image, filename))
 
+    def __str__(self):
+        return "ImageSequenceStorage ({})".format(self.folder)
+
 
 class SingleVideoStorage:
     """Only stores mp4, x264"""
@@ -143,6 +146,9 @@ class SingleVideoStorage:
         if self.flip_channels:
             image = imutils.flip_layers(image)
         self.queue.put(image)
+
+    def __str__(self):
+        return "SingleVideoStorage ({})".format(self.filename)
 
 
 class MultiVideoStorage:
