@@ -731,6 +731,7 @@ private:
           else
             cv::cvtColor(cvl, cvtl, cvl.channels() == 3 ? cv::COLOR_BGR2RGB : cv::COLOR_BGRA2RGBA);
           // Optional rectification (usually, ZED reports all distortion coefficients to be empty).
+          SetIntrinsicsResolution(intrinsics_left_, cvtl);
           if (params_.rectify)
             rul = intrinsics_left_.UndistortRectify(cvtl);
           else
@@ -750,6 +751,7 @@ private:
           else
             cv::cvtColor(cvr, cvtr, cvr.channels() == 3 ? cv::COLOR_BGR2RGB : cv::COLOR_BGRA2RGBA);
           // Optional rectification (usually, ZED reports all distortion coefficients to be empty).
+          SetIntrinsicsResolution(intrinsics_right_, cvtr);
           if (params_.rectify)
             rur = intrinsics_right_.UndistortRectify(cvtr);
           else
@@ -768,6 +770,7 @@ private:
           else
             ToCvMat(sl_depth).convertTo(cvd, CV_16U);
           // Optional rectification (usually, ZED reports all distortion coefficients to be empty).
+          SetIntrinsicsResolution(intrinsics_depth_, cvd);
           if (params_.rectify)
             rud = intrinsics_depth_.UndistortRectify(cvd);
           else

@@ -77,6 +77,12 @@ public:
   /** @brief Returns the stream's image resolution. */
   cv::Size Resolution() const;
 
+  /** @brief Setter. */
+  void SetResolution(int width, int height);
+
+  /** @brief Returns true if @see Resolution() yields a valid size object. */
+  bool HasResolution() const;
+
   /** @brief Returns the device identifier (e.g. serial number) if available, or an empty string.
    *
    * You can use this to check whether you actually loaded the correct calibration file for your

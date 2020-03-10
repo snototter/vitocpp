@@ -106,7 +106,7 @@ public:
       }
     }
 
-    if (params_.rectify)
+    if (params_.rectify || vcp::utils::file::Exists(params_.calibration_file))
     {
       if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))
       {
@@ -264,7 +264,7 @@ private:
         frame = cv::Mat();
         eof_ = true;
       }
-
+      SetIntrinsicsResolution(intrinsics_, frame);
       const cv::Mat rectified = params_.rectify ? intrinsics_.UndistortRectify(frame) : frame;
       const cv::Mat img = imutils::ApplyImageTransformations(rectified, params_.transforms);
       // Push into queue
@@ -340,7 +340,7 @@ public:
 
     eof_ = false;
 
-    if (params_.rectify)
+    if (params_.rectify || vcp::utils::file::Exists(params_.calibration_file))
     {
       if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))
       {
@@ -401,6 +401,7 @@ public:
           else
             enqueue = loaded;
         }
+        SetIntrinsicsResolution(intrinsics_, enqueue);
         const cv::Mat rectified = params_.rectify ? intrinsics_.UndistortRectify(enqueue) : enqueue;
         const cv::Mat transformed = imutils::ApplyImageTransformations(rectified, params_.transforms);
         frames.push_back(transformed);
@@ -617,9 +618,9 @@ public:
     VCP_LOG_DEBUG("StartStreaming()");
     frame_idx_ = params_.first_frame;
 
-    if (params_.rectify)
+    if (params_.rectify || vcp::utils::file::Exists(params_.calibration_file))
     {
-      if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))
+      if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))//FIXME add to VideoSinks and RealSense, too!
       {
         VCP_LOG_FAILURE("To undistort & rectify the image sequence '" << params_.directory << "', the calibration file '" << params_.calibration_file << "' must exist!");
         return false;
@@ -673,14 +674,17 @@ public:
           else
             enqueue = loaded;
         }
+        SetIntrinsicsResolution(intrinsics_, enqueue);
         const cv::Mat rectified = params_.rectify ? intrinsics_.UndistortRectify(enqueue) : enqueue;
-        const cv::Mat transformed = imutils::ApplyImageTransformations(enqueue, params_.transforms);
+        const cv::Mat transformed = imutils::ApplyImageTransformations(rectified, params_.transforms);
         frames.push_back(transformed);
       }
       else
       {
         const cv::Mat lm = vcp::imutils::LoadMat(vcp::utils::file::FullFile(params_.directory, filenames_[frame_idx_]));
-        frames.push_back(imutils::ApplyImageTransformations(lm, params_.transforms));
+        SetIntrinsicsResolution(intrinsics_, lm);
+        const cv::Mat rectified = params_.rectify ? intrinsics_.UndistortRectify(lm) : lm;
+        frames.push_back(imutils::ApplyImageTransformations(rectified, params_.transforms));
       }
 
       ++frame_idx_;

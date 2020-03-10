@@ -791,7 +791,7 @@ private:
       DumpCalibration(sensor_calibration);
 
     // Load calibration if needed // FIXME needs to be loaded everytime (maybe refactor DumpCalibration - to return StreamIntrinsics which can then be saved in an actual DumpCalibration() function (?))
-    if (params_.rectify)
+    if (params_.rectify || vcp::utils::file::Exists(params_.calibration_file))
     {
       if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))
         VCP_ERROR("To undistort & rectify the k4a '" << params_.serial_number << "' streams, the calibration file '" << params_.calibration_file << "' must exist!");
@@ -882,12 +882,13 @@ private:
             cv::cvtColor(buf, cvrgb, CV_BGRA2BGR);
           else
             cv::cvtColor(buf, cvrgb, CV_BGRA2RGB);
-
+#endif
+          SetIntrinsicsResolution(rgb_intrinsics_, cvrgb);
           if (params_.rectify)
             rrgb = rgb_intrinsics_.UndistortRectify(cvrgb);
           else
             rrgb = cvrgb;
-#endif
+
           // Now it's safe to free the memory
           k4a_image_release(image);
           image = NULL;
@@ -904,6 +905,7 @@ private:
         image = k4a_capture_get_depth_image(k4a_capture);
         cvdepth = Extract16U(image, transformation, true, cvrgb);
 
+        SetIntrinsicsResolution(depth_intrinsics_, cvdepth);
         if (params_.rectify)
           rdepth = depth_intrinsics_.UndistortRectify(cvdepth);
         else
@@ -916,6 +918,7 @@ private:
         image = k4a_capture_get_ir_image(k4a_capture);
         cvir = Extract16U(image, transformation, false, cvrgb);
 
+        SetIntrinsicsResolution(ir_intrinsics_, cvir);
         if (params_.rectify)
           rir = ir_intrinsics_.UndistortRectify(cvir);
         else

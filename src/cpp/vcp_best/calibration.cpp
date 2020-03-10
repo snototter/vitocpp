@@ -42,6 +42,8 @@ StreamIntrinsics::StreamIntrinsics() : skip_undistort_rectify_(false)
 StreamIntrinsics::StreamIntrinsics(const StreamIntrinsics &other)
 {
   label_ = other.label_;
+  resolution_ = other.resolution_;
+  identifier_ = other.identifier_;
   skip_undistort_rectify_ = other.skip_undistort_rectify_;
   intrinsics_rectified_ = other.intrinsics_rectified_.clone();
   intrinsics_original_ = other.intrinsics_original_.clone();
@@ -115,6 +117,11 @@ bool StreamIntrinsics::HasDistortion() const
   return HasLensDistortion(distortion_);
 }
 
+bool StreamIntrinsics::HasResolution() const
+{
+  return resolution_.width > 0 && resolution_.height > 0;
+}
+
 cv::Mat StreamIntrinsics::Distortion() const
 {
   return distortion_;
@@ -139,6 +146,11 @@ std::string StreamIntrinsics::StreamLabel() const
 cv::Size StreamIntrinsics::Resolution() const
 {
   return resolution_;
+}
+
+void StreamIntrinsics::SetResolution(int width, int height)
+{
+  resolution_ = cv::Size(width, height);
 }
 
 std::string StreamIntrinsics::Identifier() const
@@ -191,7 +203,7 @@ bool StreamIntrinsics::Save(const std::string &calibration_file, const bool rect
   if (resolution_.width > 0)
     fs << "width" << resolution_.width;
   if (resolution_.height > 0)
-    fs << "height" << resolution_.width;
+    fs << "height" << resolution_.height;
 
   if (HasTransformationToReference())
   {
@@ -232,6 +244,8 @@ std::ostream &operator<<(std::ostream &out, const StreamIntrinsics &si)
       << fx << ", " << fy << "), pp=(" << cx << ", " << cy << ")";
   if (si.HasDistortion())
     out << ", dc=" << si.Distortion();
+  if (si.HasResolution())
+    out << ", res=" << si.Resolution();
   return out;
 }
 
@@ -459,6 +473,8 @@ std::vector<StreamIntrinsics> LoadIntrinsicsByGenericType(const cv::FileStorage 
     intrinsics = LoadGenericRGBDCalibration(calibration_fs, filename, calib_keys);
   else
     VCP_LOG_FAILURE("Unsupported intrinsic calibration type '" << type << "'");
+
+  VCP_LOG_FIXME("Loading generic calibration: " << intrinsics);
 
   return intrinsics;
 }

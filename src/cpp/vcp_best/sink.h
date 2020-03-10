@@ -218,6 +218,14 @@ public:
     VCP_LOG_FAILURE("IntrinsicsAt(" << stream_index << ") is not yet implemented for stream '" << StreamLabel(stream_index) << "'.");
     return vcp::best::calibration::StreamIntrinsics();
   }
+
+protected:
+  inline void SetIntrinsicsResolution(calibration::StreamIntrinsics &intrinsics, const cv::Mat &frame)
+  {
+    if (frame.empty() || (intrinsics.Resolution().width > 0 && intrinsics.Resolution().height > 0))
+      return;
+    intrinsics.SetResolution(frame.cols, frame.rows);
+  }
 };
 
 

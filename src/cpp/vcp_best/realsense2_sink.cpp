@@ -1420,6 +1420,7 @@ private:
               cvrgb = rgb_intrinsics_.UndistortRectify(FrameToMat(color, rgb_size));
             else
               cvrgb = FrameToMat(color, rgb_size);
+            SetIntrinsicsResolution(rgb_intrinsics_, cvrgb);
             rgb_prev_fnr_ = color_fnr;
           }
 
@@ -1440,6 +1441,7 @@ private:
               else
                 cvdepth = FrameToMat(depth, depth_size);
             }
+            SetIntrinsicsResolution(depth_intrinsics_, cvdepth);
             depth_prev_fnr_ = depth_fnr;
           }
 
@@ -1451,6 +1453,7 @@ private:
             else
               cvir1 = FrameToMat(ir1, ir_size);
             ir1_prev_fnr_ = ir1_fnr;
+            SetIntrinsicsResolution(ir1_intrinsics_, cvir1);
           }
           if (is_new_ir2 && ir2_stream_enabled_)
           {
@@ -1459,6 +1462,7 @@ private:
             else
               cvir2 = FrameToMat(ir2, ir_size);
             ir2_prev_fnr_ = ir2_fnr;
+            SetIntrinsicsResolution(ir2_intrinsics_, cvir2);
           }
 
           const cv::Mat trgb = imutils::ApplyImageTransformations(cvrgb, rgbd_params_.transforms);

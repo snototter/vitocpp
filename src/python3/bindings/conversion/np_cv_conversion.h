@@ -73,6 +73,7 @@ public:
 
   static handle cast(const cv::Mat&src, return_value_policy /* policy */, handle /* parent */)
   {
+    //FIXME replace array by py::object to return None for empty Mat(s)
     py::array arr = vcp::python::conversion::MatToNDArray(src);
     return arr.release();
   }
