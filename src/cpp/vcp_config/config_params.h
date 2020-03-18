@@ -145,8 +145,10 @@ public:
   /** @brief Replaces or creates a rectangle parameter (i.e. 4-element array). */
   virtual void SetRectangle(const std::string &param_name, int left, int top, int width, int height) = 0;
 
-  //TODO doc
+  /** @brief Replaces or creates a polygon with integer coordinates. */
   virtual void SetIntegerPolygon(const std::string &param_name, const std::vector<std::vector<int>> &values) = 0;
+
+  /** @brief Replaces or creates a list of polygons with integer coordinates. */
   virtual void SetIntegerPolygons(const std::string &param_name, const std::vector<std::vector<std::vector<int>>> &values) = 0;
 
   /** @brief Allows to build "something like" a python dictionary (required to configure some cameras more easily).

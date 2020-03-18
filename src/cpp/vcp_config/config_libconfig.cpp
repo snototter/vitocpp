@@ -874,12 +874,10 @@ public:
   }
 
 
-  //FIXME adjust doc: parameter name is always exact
   void EnsureAbsolutePaths(const std::vector<std::string> &param_names,
                            const std::string &absolute_base_path,
                            bool verbose) override
   {
-    //FIXME handle file:// values (e.g. within custom_url)
     // Get a list of all parameter names.
     const std::vector<std::string> configured_params = ListConfigParameters();
     // We'll split the parameter names for matching (remove optional parameter "groups", i.e.
@@ -907,72 +905,22 @@ public:
           continue;
 
         const std::string k = configured_params[i];
-        if (vcp::utils::file::IsAbsolute(GetString(k)))
+        const std::string path_orig = GetString(k);
+        const bool is_url = vcp::utils::string::StartsWith(path_orig, "file://");
+        const std::string path = is_url ? path_orig.substr(7) : path_orig;
+
+        if (vcp::utils::file::IsAbsolute(path))
           continue;
 
-        SetString(k, vcp::utils::file::RealPath(
-                      vcp::utils::file::FullFile(absolute_base_path, GetString(k))));
+        const std::string abs_path = vcp::utils::file::RealPath(
+              vcp::utils::file::FullFile(absolute_base_path, path));
+        SetString(k, is_url ? "file://" + abs_path : abs_path);
+
         if (verbose)
           VCP_LOG_INFO("Updated config path '" << k << "' to '" << GetString(k) << "'");
       }
     }
-//      if (use_exact_keys)
-//      {
-//        for (const auto &k : param_names)
-//        {
-//          if (SettingExists(k) && !vcp::utils::file::IsAbsolute(GetString(k)))
-//          {
-//            SetString(k,
-//                      vcp::utils::file::RealPath(
-//                        vcp::utils::file::FullFile(absolute_base_path, GetString(k))));
-//            if (verbose)
-//              VCP_LOG_INFO_DEFAULT("Updated config path '" << k << "' to '" << GetString(k) << "'");
-//          }
-//        }
-//      }
-//      else
-//      {
-//        // Grab a list of all known/configured parameters.
-//        const std::vector<std::string> configured_params = ListConfigParameters();
-//        VCP_LOG_FIXME("TODO check config keys:\n" << configured_params << std::endl << std::endl << param_names);
-
-//        // Convert these parameter names to lower case.
-//        std::vector<std::string> configured_params_lower;
-//        configured_params_lower.reserve(configured_params.size());
-//        for (const auto &c : configured_params)
-//        {
-//          std::string lower(c);
-//          vcp::utils::string::ToLower(lower);
-//          configured_params_lower.push_back(lower);
-//        }
-
-//        // Iterate all given parameter names, convert to
-//        // lower case, and replace relative by absolute path
-//        // if the parameter name ends with the given name.
-//        for (const auto &pn : param_names)
-//        {
-//          const std::string lower = vcp::utils::string::Lower(pn);
-
-//          for (size_t i = 0; i < configured_params_lower.size(); ++i)
-//          {
-//            if (!vcp::utils::string::EndsWith(configured_params_lower[i], lower))
-//              continue;
-////            if (configured_params_lower[i].find(lower) == std::string::npos)
-////              continue;
-
-//            const std::string k = configured_params[i];
-//            if (vcp::utils::file::IsAbsolute(GetString(k)))
-//              continue;
-
-//            SetString(k,
-//                      vcp::utils::file::RealPath(
-//                        vcp::utils::file::FullFile(absolute_base_path, GetString(k))));
-//            if (verbose)
-//              VCP_LOG_INFO("Updated config path '" << k << "' to '" << GetString(k) << "'");
-//          }
-//        }
-//      }
-    }
+  }
 
 
 private:
