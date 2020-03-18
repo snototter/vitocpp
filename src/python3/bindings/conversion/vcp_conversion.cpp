@@ -51,7 +51,7 @@ vcp::imvis::drawing::Box3d PyObjectToBox3d(const py::object &object)
   }
   else
   {
-    //TODO FIXME convert ndarray 3x8 to box3d!!!!
+    //TODO convert ndarray 3x8 to box3d!
     VCP_LOG_FAILURE("Cannot convert type '" << type << "' to Box3d");
   }
   return box;

@@ -41,10 +41,9 @@ cv::Mat NDArrayToMat(const py::array &ndarray);
 
 /** @brief Convert an OpenCV Mat to a numpy ndarray.
  * Only 1D and 2D matrices are supported (i.e. images with any number of channels)!
- * The matrix MUST NOT be empty (Otherwise, we would need to change the
- * signature and return a py::object referencing None).
+ * If mat is empty, py::none will be returned.
  */
-py::array MatToNDArray(const cv::Mat &mat);
+py::object MatToNDArray(const cv::Mat &mat);
 
 } // namespace conversion
 } // namespace python
@@ -59,7 +58,7 @@ namespace detail
 template <> struct type_caster<cv::Mat>
 {
 public:
-  PYBIND11_TYPE_CASTER(cv::Mat, _("Mat (i.e. np.array)"));
+  PYBIND11_TYPE_CASTER(cv::Mat, _("np.array"));
 
   bool load(handle src, bool)
   {
@@ -73,8 +72,7 @@ public:
 
   static handle cast(const cv::Mat&src, return_value_policy /* policy */, handle /* parent */)
   {
-    //FIXME replace array by py::object to return None for empty Mat(s)
-    py::array arr = vcp::python::conversion::MatToNDArray(src);
+    py::object arr = vcp::python::conversion::MatToNDArray(src);
     return arr.release();
   }
 }; // pybind11 type_caster for cv::Mat
