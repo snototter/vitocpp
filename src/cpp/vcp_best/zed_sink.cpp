@@ -739,7 +739,7 @@ private:
           if (params_.color_as_bgr)
             cvtl = cvl;
           else
-            cv::cvtColor(cvl, cvtl, cvl.channels() == 3 ? cv::COLOR_BGR2RGB : cv::COLOR_BGRA2RGBA);
+            cvtl = FlipChannels(cvl);
           // Optional rectification (usually, ZED reports all distortion coefficients to be empty).
           SetIntrinsicsResolution(intrinsics_left_, cvtl);
           if (params_.rectify)
@@ -759,7 +759,7 @@ private:
           if (params_.color_as_bgr)
             cvtr = cvr;
           else
-            cv::cvtColor(cvr, cvtr, cvr.channels() == 3 ? cv::COLOR_BGR2RGB : cv::COLOR_BGRA2RGBA);
+            cvtr = FlipChannels(cvr);
           // Optional rectification (usually, ZED reports all distortion coefficients to be empty).
           SetIntrinsicsResolution(intrinsics_right_, cvtr);
           if (params_.rectify)

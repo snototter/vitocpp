@@ -260,14 +260,7 @@ private:
         if (params_.color_as_bgr)
           frame = loaded;
         else
-        {
-          if (loaded.channels() == 3)
-            cv::cvtColor(loaded, frame, CV_BGR2RGB);
-          else if (loaded.channels() == 4)
-            cv::cvtColor(loaded, frame, CV_BGRA2RGBA);
-          else
-            frame = loaded;
-        }
+          frame = FlipChannels(frame);
       }
       else
       {
@@ -399,18 +392,9 @@ public:
         cv::Mat loaded, enqueue;
         capture_->retrieve(loaded);
         if (params_.color_as_bgr)
-        {
           enqueue = loaded;
-        }
         else
-        {
-          if (loaded.channels() == 3)
-            cv::cvtColor(loaded, enqueue, CV_BGR2RGB);
-          else if (loaded.channels() == 4)
-            cv::cvtColor(loaded, enqueue, CV_BGRA2RGBA);
-          else
-            enqueue = loaded;
-        }
+          enqueue = FlipChannels(loaded);
         SetIntrinsicsResolution(intrinsics_, enqueue);
         const cv::Mat rectified = params_.rectify ? intrinsics_.UndistortRectify(enqueue) : enqueue;
         const cv::Mat transformed = imutils::ApplyImageTransformations(rectified, params_.transforms);
@@ -687,12 +671,8 @@ public:
         }
         else
         {
-          if (loaded.channels() == 3)
-            cv::cvtColor(loaded, enqueue, CV_BGR2RGB);
-          else if (loaded.channels() == 4)
-            cv::cvtColor(loaded, enqueue, CV_BGRA2RGBA);
-          else
-            enqueue = loaded;
+          enqueue = FlipChannels(loaded);
+          //FIXME use flipchannels in every sink
         }
         SetIntrinsicsResolution(intrinsics_, enqueue);
         const cv::Mat rectified = params_.rectify ? intrinsics_.UndistortRectify(enqueue) : enqueue;
@@ -701,7 +681,8 @@ public:
       }
       else
       {
-        const cv::Mat lm = vcp::imutils::LoadMat(vcp::utils::file::FullFile(params_.directory, filenames_[frame_idx_]));
+        const cv::Mat loaded = vcp::imutils::LoadMat(vcp::utils::file::FullFile(params_.directory, filenames_[frame_idx_]));
+        const cv::Mat lm = params_.color_as_bgr ? loaded : FlipChannels(loaded);
         SetIntrinsicsResolution(intrinsics_, lm);
         const cv::Mat rectified = params_.rectify ? intrinsics_.UndistortRectify(lm) : lm;
         frames.push_back(imutils::ApplyImageTransformations(rectified, params_.transforms));

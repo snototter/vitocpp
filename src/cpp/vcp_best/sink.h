@@ -230,6 +230,23 @@ protected:
       return;
     intrinsics.SetResolution(frame.cols, frame.rows);
   }
+
+  /** @brief Changes the layer order (i.e. converts BGR->RGB or BGRA->RGB). */
+  inline cv::Mat FlipChannels(const cv::Mat &frame)
+  {
+    if (frame.empty())
+      return cv::Mat();
+    if (frame.channels() < 3 || frame.channels() > 4)
+      return frame;
+    std::vector<cv::Mat> layers;
+    cv::split(frame, layers);
+    std::vector<cv::Mat> tm = {layers[2], layers[1], layers[0]};
+//    if (layers.size() == 4)
+//      tm.push_back(layers[3]);
+    cv::Mat flipped;
+    cv::merge(tm, flipped);
+    return flipped;
+  }
 };
 
 

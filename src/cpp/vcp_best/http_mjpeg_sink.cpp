@@ -270,7 +270,7 @@ private:
       if (params_.color_as_bgr)
         frame = decoded;
       else
-        cv::cvtColor(decoded, frame, CV_BGR2RGB);
+        frame = FlipChannels(decoded);
 
       // Apply basic image transformations if needed.
       const cv::Mat img = imutils::ApplyImageTransformations(frame, params_.transforms);

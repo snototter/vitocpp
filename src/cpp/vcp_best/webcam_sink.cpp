@@ -285,7 +285,7 @@ private:
         if (params_.color_as_bgr || retrieved.empty())
           converted = retrieved;
         else
-          cv::cvtColor(retrieved, converted, CV_BGR2RGB);
+          converted = FlipChannels(retrieved);
 
         // Push into queue after applying configured transformations.
         const cv::Mat img = imutils::ApplyImageTransformations(converted, params_.transforms);
