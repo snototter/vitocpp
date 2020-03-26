@@ -149,11 +149,20 @@ std::string GetSerialNumber(k4a_device_t dev)
 
 bool GetDevice(k4a_device_t &device, const K4ASinkParams &params)
 {
+  const std::vector<K4ADeviceInfo> dev_infos = ListK4ADevices(false);
+  if (dev_infos.size() == 0)
+  {
+    VCP_LOG_FAILURE("No Kinect Azure connected!");
+    return false;
+  }
+  // If no serial number is provided, open the first available k4a
   if (params.serial_number.empty() || kEmptyK4ASerialNumber.compare(params.serial_number) == 0)
   {
-    if (K4A_RESULT_SUCCEEDED != k4a_device_open(K4A_DEVICE_DEFAULT, &device))
+    // K4A_DEVICE_DEFAULT would always try to open device #0 (which
+    // obviously works only once).
+    if (K4A_RESULT_SUCCEEDED != k4a_device_open(dev_infos[0].device_number, &device))
     {
-      VCP_LOG_FAILURE("Cannot open default/first Kinect Azure!");
+      VCP_LOG_FAILURE("Cannot open first available Kinect Azure (device number " << dev_infos[0].device_number << ")!");
       return false;
     }
     else
@@ -163,13 +172,6 @@ bool GetDevice(k4a_device_t &device, const K4ASinkParams &params)
   }
   else
   {
-    const std::vector<K4ADeviceInfo> dev_infos = ListK4ADevices(false);
-    if (dev_infos.size() == 0)
-    {
-      VCP_LOG_FAILURE("No Kinect Azure connected!");
-      return false;
-    }
-
     for (uint32_t i = 0; i < dev_infos.size(); ++i)
     {
       if (params.serial_number.compare(dev_infos[i].serial_number) == 0)
@@ -271,7 +273,7 @@ std::vector<K4ADeviceInfo> ListK4ADevices(bool warn_if_no_devices)
   {
     if (k4a_device_open(i, &dev) != K4A_RESULT_SUCCEEDED)
     {
-      VCP_LOG_WARNING("Cannot open Kinect Azure #" << i << " - device may be busy.");
+      VCP_LOG_WARNING("Kinect Azure #" << i << " is busy.");
       continue;
     }
     const std::string serial_number = GetSerialNumber(dev);
@@ -565,7 +567,6 @@ public:
     return SinkType::K4A;
   }
 
-  //FIXME warn if !available
   //FIXME always load & return intrinsics
   vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
   {
