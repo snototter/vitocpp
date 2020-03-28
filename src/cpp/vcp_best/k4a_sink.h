@@ -114,6 +114,9 @@ struct K4ASinkParams : SinkParams
   bool RequiresWiredSync() const;
 };
 
+/** @brief Print the configuration. */
+std::ostream &operator<<(std::ostream &stream, const K4ASinkParams &p);
+
 
 /** @brief Brief device info returned from \c ListK4ADevices(). */
 struct K4ADeviceInfo
@@ -130,11 +133,20 @@ struct K4ADeviceInfo
 K4ASinkParams K4ASinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
 
 
+/** @brief Split K4A parameters into single sinks (unsynchronized) and
+ * those synchronized (configured as master/subordinates).
+ *
+ * Afterwards create sinks via @see CreateK4ASink() and @see CreateK4ASynchronizedSink(). FIXME
+*/
+void GroupK4ASinkParams(const std::vector<K4ASinkParams> &configured, std::vector<K4ASinkParams> &params_single, std::vector<std::vector<K4ASinkParams>> &params_multi);
+
+
 /**
  * @brief Creates a StreamSink to capture from an Azure Kinect using libk4a.
  * @param sink_buffer A sink buffer which will be used as image queue.
  */
 std::unique_ptr<StreamSink> CreateBufferedK4ASink(const K4ASinkParams &params, std::unique_ptr<SinkBuffer> rgb_buffer, std::unique_ptr<SinkBuffer> depth_buffer, std::unique_ptr<SinkBuffer> ir_buffer);
+
 
 /**
  * @brief Creates a StreamSink to capture from an Azure Kinect device, specify size of the image queue as template parameter.
@@ -147,6 +159,28 @@ std::unique_ptr<StreamSink> CreateK4ASink(const K4ASinkParams &params)
                                std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()),
                                std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()));
 }
+
+
+/**
+ * @brief Creates a StreamSink to capture from multiple wire-synced Azure Kinect using libk4a.
+ * @param sink_buffers Three sink buffers per device (rgb, color, ir).
+ */
+std::unique_ptr<StreamSink> CreateBufferedK4ASyncedSink(const std::vector<K4ASinkParams> &params, std::vector<std::unique_ptr<SinkBuffer>> buffers);
+
+
+/**
+ * @brief Creates a StreamSink to capture from multiple wire-synced Azure Kinect devices, specify size of the image queue as template parameter.
+ */
+template <int BufferCapacity>
+std::unique_ptr<StreamSink> CreateK4ASyncedSink(const std::vector<K4ASinkParams> &params)
+{
+  // Create circular buffers for RGB, depth & infrared stream.
+  std::vector<std::unique_ptr<SinkBuffer>> buffers;
+  for (size_t i = 0; i < 3*params.size(); ++i)
+    buffers.push_back(CreateCircularStreamSinkBuffer<BufferCapacity>());
+  return CreateBufferedK4ASyncedSink(params, std::move(buffers));
+}
+
 
 /** @brief Returns a list of connected Azure Kinects. */
 std::vector<K4ADeviceInfo> ListK4ADevices(bool warn_if_no_devices=true);

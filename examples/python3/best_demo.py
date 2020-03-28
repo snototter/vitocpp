@@ -49,8 +49,8 @@ def streaming_demo(cfg_file, folder, output_folder=None, output_fps=15):
     # Some cameras (especially our tested RGBD sensors) take quite long to provide the 
     # initial frameset, so it's recommended to wait a bit longer for the device to finish
     # initialization.
-    if not capture.wait_for_frames(5000):
-        raise RuntimeError("Didn't receive an initial frameset within 5 seconds")
+    if not capture.wait_for_frames(10000):
+        raise RuntimeError("Didn't receive an initial frameset within 10 seconds")
 
     # Depending on your setup, some devices may return empty frames (e.g. not synchronized RealSense streams),
     # so we'll wait for the first "complete" frameset.
@@ -146,7 +146,7 @@ def streaming_demo(cfg_file, folder, output_folder=None, output_fps=15):
         # vis_frames.append((vis_frames[1].astype(np.float32) * 0.5 + vis_frames[2].astype(np.float32) * 0.5).astype(np.uint8))
 
         # Display the images (as a single image/collage)
-        collage = imvis.make_collage(vis_frames, num_images_per_row=4)
+        collage = imvis.make_collage(vis_frames, num_images_per_row=2)
         k = imvis.imshow(collage, title='streams', wait_ms=10)
         if k == 27 or k == ord('q'):
             break
@@ -178,7 +178,10 @@ def demo():
     # cfg_files = ['zed.cfg', 'realsense.cfg']
     cfg_files = ['rgbds.cfg']
     cfg_files = ['kinects.cfg']
-    output_folder = 'output-demo'
+    # cfg_files = ['kinects-old.cfg']
+    # print('FOOOOOOOOOO CHECK - OLD means not synced!')
+    # cfg_files = ['webcam.cfg']
+    output_folder = None #'output-demo'
     output_fps = 15
     
     for cf in cfg_files:

@@ -200,7 +200,13 @@ public:
 #endif
 
 #ifdef VCP_BEST_WITH_K4A
-    AddK4ASinks(k4a_params);
+    std::vector<k4a::K4ASinkParams> k4a_single;
+    std::vector<std::vector<k4a::K4ASinkParams>> k4a_multi;
+    k4a::GroupK4ASinkParams(k4a_params, k4a_single, k4a_multi);
+    for (const auto &p : k4a_single)
+      AddSink(k4a::CreateK4ASink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p));
+    for (const auto &ps : k4a_multi)
+      AddSink(k4a::CreateK4ASyncedSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(ps));
 #endif // VCP_BEST_WITH_K4A
 
 #ifdef WITH_MATRIXVISION
@@ -249,34 +255,6 @@ public:
     }
     sinks_.push_back(std::move(sink));
   }
-
-#ifdef VCP_BEST_WITH_K4A
-    void AddK4ASinks(const std::vector<k4a::K4ASinkParams> &k4a_params)
-    {
-      // Check if there are multiple sync'ed K4A devices or not.
-      if (k4a_params.empty())
-        return;
-      bool k4a_requires_sync = false;
-      if (k4a_params.size() > 1)
-      {
-        for (const auto &p : k4a_params)
-          k4a_requires_sync |= p.RequiresWiredSync();
-      }
-
-      if (k4a_requires_sync)
-      {
-        //TODO: we need a separate multi-k4a-capture/sink class :-/
-        // See best practices in green screen demo:
-        // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/green_screen/MultiDeviceCapturer.h
-        VCP_ERROR("Synchronization of multiple K4As is not yet supported!");
-      }
-      else
-      {
-        for (const auto &p : k4a_params)
-          AddSink(k4a::CreateK4ASink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p));
-      }
-    }
-#endif // VCP_BEST_WITH_K4A
 
   virtual ~MultiDeviceCapture()
   {

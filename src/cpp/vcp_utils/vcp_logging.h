@@ -250,6 +250,7 @@ NOINLINE_ATTRIBUTE {
   stream << std::endl;
   if (file)
     stream << "  In " << file << ":" << line << std::endl;
+  stream << std::flush;
 }
 
 template<typename List>
@@ -264,6 +265,7 @@ void LogTimed(std::ostream &stream, LogData<List>&& data)
   stream << "[" << buffer << "] ";
   output(stream, std::move(data.list));
   stream << std::endl;
+  stream << std::flush;
 }
 
 template<typename List>
@@ -279,6 +281,7 @@ void Log(std::ostream &stream, const char* severity, const char* component, cons
   stream << std::endl;
   if (file)
     stream << "  In " << file << ":" << line << std::endl;
+  stream << std::flush;
 }
 
 template<typename Begin, typename Value>

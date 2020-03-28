@@ -14,7 +14,6 @@ namespace vcp
 {
 namespace best
 {
-
 /** @brief Strongly typed enum to denote what kind of data a sink (i.e. device) returns.
  * Note that:
  * - some SINKs may add multiple STREAMS (e.g. 1 RGB-D sink ==> 2 streams: one color, one depth).
@@ -224,13 +223,6 @@ public:
   virtual void SetVerbose(bool verbose) = 0;
 
 protected:
-  inline void SetIntrinsicsResolution(calibration::StreamIntrinsics &intrinsics, const cv::Mat &frame)
-  {
-    if (frame.empty() || intrinsics.HasResolution())
-      return;
-    intrinsics.SetResolution(frame.cols, frame.rows);
-  }
-
   /** @brief Changes the layer order (i.e. converts BGR->RGB or BGRA->RGB). */
   inline cv::Mat FlipChannels(const cv::Mat &frame)
   {
@@ -248,6 +240,13 @@ protected:
     return flipped;
   }
 };
+
+inline void SetIntrinsicsResolution(calibration::StreamIntrinsics &intrinsics, const cv::Mat &frame)
+{
+  if (frame.empty() || intrinsics.HasResolution())
+    return;
+  intrinsics.SetResolution(frame.cols, frame.rows);
+}
 
 
 
