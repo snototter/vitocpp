@@ -1,5 +1,5 @@
 """
-Interactively adjust camera extrinsics to get a better intuition about perspective transformations.
+Simple GUI to extrinsically calibrate a stream
 """
 import os
 import sys
@@ -23,9 +23,12 @@ from vcp import imutils
 from vcp import best
 from vcp import colormaps
 
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+from calibration_utils import ExtrinsicsAprilTag
+
 
 class Streamer(QThread):
-    new_frameset = pyqtSignal(list)
+    newFrameset = pyqtSignal(list)
 
     def __init__(self, folder, cfg_file):
         super(Streamer, self).__init__()
@@ -33,29 +36,25 @@ class Streamer(QThread):
         self._folder = folder
         # self._frame_callback = None
         self._capture = None
-        self._streaming_thread = None
         self._keep_streaming = False
         self._timeout_dev_open = 10000
         self._timeout_frameset_wait = 1000
-        self._overlay_labels = True
-
-        self.setup_streams()
-        # self.start_stream()
+        self._setupStreams()
     
-    def num_streams(self):
+    def numStreams(self):
         return self._capture.num_streams()
     
-    def stream_labels(self):
+    def streamLabels(self):
         return self._capture.frame_labels()
     
-    def display_labels(self):
+    def displayLabels(self):
         return [self._capture.frame_label(idx) + (' [Undist. & Rect.]' if self._capture.is_rectified(idx) else '')
-            for idx in range(self.num_streams())]
+            for idx in range(self.numStreams())]
     
-    # def set_frame_callback(self, cfx):
-    #     self._frame_callback = cfx
+    def getCapture(self):
+        return self._capture
 
-    def setup_streams(self):
+    def _setupStreams(self):
         print('\n\n\nLoading streaming configuration: {}'.format(self._cfg_file))
         self._capture = best.Capture()
         self._capture.load_libconfig(os.path.join(self._folder, self._cfg_file), rel_path_base_dir=self._folder)
@@ -89,25 +88,22 @@ class Streamer(QThread):
             else:
                 break
     
-    def start_stream(self):
-        if self._streaming_thread:
-            print('[ERROR]: Streaming thread already exists!')
+    def startStream(self):
+        if self._keep_streaming:
+            print('[ERROR]: Streaming thread already running!')
             return
         self._keep_streaming = True
         self.start()
         # self._streaming_thread = threading.Thread(target=self._streaming_loop)
         # self._streaming_thread.start()
 
-    def stop_stream(self):
+    def stopStream(self):
         self._keep_streaming = False
         # if self._streaming_thread:
         #     self._streaming_thread.join()
         #     self._streaming_thread = None
     
     def run(self):
-        self._streaming_loop()
-
-    def _streaming_loop(self):
         while self._keep_streaming and self._capture.all_devices_available():
             if not self._capture.wait_for_frames(self._timeout_frameset_wait):
                 print('[WARNING]: wait_for_frames timed out')
@@ -156,10 +152,7 @@ class Streamer(QThread):
             #             padding=5, fill_opacity=0.5)
             #         for idx in range(len(vis_frames))]
 
-            # TODO remove - overlay depth and IR
-            # vis_frames.append((vis_frames[1].astype(np.float32) * 0.5 + vis_frames[2].astype(np.float32) * 0.5).astype(np.uint8))
-
-            self.new_frameset.emit(vis_frames)
+            self.newFrameset.emit(vis_frames)
             time.sleep(0.05)
 
         # Shut down gracefully (would be called upon desctruction anyways)
@@ -225,13 +218,14 @@ class CalibApplication(QMainWindow):
         # self._img_np = None
         # self._vis_np = None
         self._streamer = streamer
-        self._num_streams = streamer.num_streams()
-        self._stream_display_labels = streamer.display_labels()
+        self._num_streams = streamer.numStreams()
+        self._stream_display_labels = streamer.displayLabels()
         self._resize_viewers = True
-        #streamer.set_frame_callback(self.display_frameset)
+
+        self._extrinsics_estimator = ExtrinsicsAprilTag(streamer.getCapture(), grid_limits=None)
         self.__prepare_layout()
-        streamer.new_frameset.connect(self.display_frameset)
-        streamer.start_stream()
+        streamer.newFrameset.connect(self.displayFrameset)
+        streamer.startStream()
 
         # # self.show()
         # # streamer.start_stream()
@@ -308,7 +302,7 @@ class CalibApplication(QMainWindow):
     #     if filename is not None:
     #         imutils.imsave(filename, self._vis_np)
   
-    def display_frameset(self, frames):
+    def displayFrameset(self, frames):
         assert len(frames) == len(self._viewers)
         for i in range(len(frames)):
             if frames[i] is not None:
@@ -316,8 +310,8 @@ class CalibApplication(QMainWindow):
         self._resize_viewers = False
         # # self.update()
     
-    def app_about_to_quit(self):
-        self._streamer.stop_stream()
+    def appAboutToQuit(self):
+        self._streamer.stopStream()
         self._streamer.wait()
 
 
@@ -330,10 +324,13 @@ def gui():
 
     app = QApplication(['Calibrate Extrinsics'])
     main_widget = CalibApplication(streamer)
-    app.aboutToQuit.connect(main_widget.app_about_to_quit)
+    app.aboutToQuit.connect(main_widget.appAboutToQuit)
     main_widget.show()
     sys.exit(app.exec_())
 
 
 if __name__ == '__main__':
     gui()
+    #TODO params:
+    # april tag marker size, etc
+    # step through capture vs live stream!

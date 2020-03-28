@@ -763,6 +763,8 @@ PYBIND11_MODULE(best_cpp, m)
            py::arg("stream_index"))
       .def("intrinsics", &pybest::CaptureWrapper::CameraMatrix,
            "Alias for @see camera_matrix().")
+      //FIXME transformation (R,t) to reference view (or None)
+      //FIXME extrinsics
 // Saving
       .def("save_replay_config", &pybest::CaptureWrapper::SaveReplayConfig,
            "Store a configuration file plus required intrinsic calibrations\n"

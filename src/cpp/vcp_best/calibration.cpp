@@ -267,6 +267,12 @@ std::ostream &operator<<(std::ostream &out, const StreamIntrinsics &si)
     out << ", dc=" << (si.Distortion().rows > si.Distortion().cols ? si.Distortion().t() : si.Distortion());
   if (si.HasResolution())
     out << ", res=" << si.Resolution();
+  if (si.HasTransformationToReference())
+  {
+    cv::Mat R, t;
+    si.TransformationToReference(R, t);
+    out << ", transformation to sensor's reference view (R, t^T):" << std::endl << R << ", " << t.t();
+  }
   return out;
 }
 
