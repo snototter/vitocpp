@@ -48,6 +48,10 @@ class Streamer(QThread):
     def stream_labels(self):
         return self._capture.frame_labels()
     
+    def display_labels(self):
+        return [self._capture.frame_label(idx) + (' [Undist. & Rect.]' if self._capture.is_rectified(idx) else '')
+            for idx in range(self.num_streams())]
+    
     # def set_frame_callback(self, cfx):
     #     self._frame_callback = cfx
 
@@ -141,16 +145,16 @@ class Streamer(QThread):
             # # Resize
             # vis_frames = [imutils.fuzzy_resize(f, 0.75) for f in vis_frames]
 
-            # Overlay stream labels
-            if self._overlay_labels:
-                vis_frames = [
-                    imvis.draw_text_box(vis_frames[idx], 
-                        self._capture.frame_label(idx) + (' [Undist. & Rect.]' if self._capture.is_rectified(idx) else ''),
-                        (vis_frames[idx].shape[1]//2, 10), 'north',
-                        bg_color=(0, 0, 0), font_color=(-1, -1, -1),
-                        font_scale=1.0, font_thickness=1,
-                        padding=5, fill_opacity=0.5)
-                    for idx in range(len(vis_frames))]
+            # # Overlay stream labels
+            # if self._overlay_labels:
+            #     vis_frames = [
+            #         imvis.draw_text_box(vis_frames[idx], 
+            #             self._capture.frame_label(idx) + (' [Undist. & Rect.]' if self._capture.is_rectified(idx) else ''),
+            #             (vis_frames[idx].shape[1]//2, 10), 'north',
+            #             bg_color=(0, 0, 0), font_color=(-1, -1, -1),
+            #             font_scale=1.0, font_thickness=1,
+            #             padding=5, fill_opacity=0.5)
+            #         for idx in range(len(vis_frames))]
 
             # TODO remove - overlay depth and IR
             # vis_frames.append((vis_frames[1].astype(np.float32) * 0.5 + vis_frames[2].astype(np.float32) * 0.5).astype(np.uint8))
@@ -166,6 +170,54 @@ class Streamer(QThread):
 
 
 
+class StreamViewer(QWidget):
+    streamVisibilityToggled = pyqtSignal(bool)  # Emitted whenever the user enables/disables this viewer
+
+    def __init__(self, stream_label, parent=None):
+        super(StreamViewer, self).__init__(parent)
+        font = QFont('Helvetica', 12, QFont.Bold)
+        
+        self._stream_label = QLabel('' if stream_label is None else stream_label, self)
+        self._stream_label.setAlignment(Qt.AlignCenter)
+        self._stream_label.setStyleSheet("QLabel {background-color: blue;}")
+        self._stream_label.setFont(font)
+        self._stream_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+
+        self._checkbox_active = QCheckBox('Active')
+        self._checkbox_active.setChecked(True)
+        self._checkbox_active.toggled.connect(self.updateVisibility)
+
+        self._viewer = imgview.ImageViewer()
+
+        lbl_layout = QHBoxLayout()
+        lbl_layout.addWidget(self._stream_label)
+        lbl_layout.addWidget(self._checkbox_active)
+
+        layout = QVBoxLayout()
+        layout.addLayout(lbl_layout)
+        #TODO add calibration info label (rotation change, translation change, found tags, etc.)
+        layout.addWidget(self._viewer)
+        self.setLayout(layout)
+    
+    def updateVisibility(self):
+        show = self._checkbox_active.isChecked()
+        self._viewer.setVisible(show)
+        self.streamVisibilityToggled.emit(show)
+    
+    def setStreamLabel(self, label):
+        self._stream_label.setText(label)
+        self.update()
+        #TODO set calibration
+    
+    def showImage(self, img_np, reset_scale=True):
+        # Only show image if this stream is enabled
+        if self._checkbox_active.isChecked():
+            self._viewer.showImage(img_np, reset_scale=reset_scale)
+    
+    def scaleToFitWindow(self):
+        self._viewer.scaleToFitWindow()
+    
+    
 
 class CalibApplication(QMainWindow):
     def __init__(self, streamer):
@@ -174,6 +226,7 @@ class CalibApplication(QMainWindow):
         # self._vis_np = None
         self._streamer = streamer
         self._num_streams = streamer.num_streams()
+        self._stream_display_labels = streamer.display_labels()
         self._resize_viewers = True
         #streamer.set_frame_callback(self.display_frameset)
         self.__prepare_layout()
@@ -207,100 +260,35 @@ class CalibApplication(QMainWindow):
         input_layout = QHBoxLayout()
         # min_lbl_width = 165
 
-        btn = QPushButton('Original Size')
+        btn = QPushButton('Original Image Size')
         btn.clicked.connect(self.rescale_viewers)
         input_layout.addWidget(btn)
 
-        btn = QPushButton('Fit Viewers')
+        btn = QPushButton('Scale Images to Fit')
         btn.clicked.connect(self.fit_viewers)
         input_layout.addWidget(btn)
 
-        # self._angle_x = inputs.SliderSelectionWidget('Camera rotation x:', -180, 180, 180, 0,
-        #     value_format_fx=lambda v: inputs.format_int(v, 4) + '°',
-        #     min_label_width=min_lbl_width)
-        # self._angle_x.value_changed.connect(self.__changed)
-        # input_layout.addWidget(self._angle_x)
-        # self._angle_y = inputs.SliderSelectionWidget('Camera rotation y:', -180, 180, 180, 6,
-        #     value_format_fx=lambda v: inputs.format_int(v, 4) + '°',
-        #     min_label_width=min_lbl_width)
-        # self._angle_y.value_changed.connect(self.__changed)
-        # input_layout.addWidget(self._angle_y)
-        # self._angle_z = inputs.SliderSelectionWidget('Camera rotation z:', -180, 180, 180, 0,
-        #     value_format_fx=lambda v: inputs.format_int(v, 4) + '°',
-        #     min_label_width=min_lbl_width)
-        # self._angle_z.value_changed.connect(self.__changed)
-        # input_layout.addWidget(self._angle_z)
-
-        # self._tx = inputs.SliderSelectionWidget('Camera translation x:', -15, 15, 100, 0,
-        #     value_format_fx=lambda v: inputs.format_float(v, after_comma=1),
-        #     min_label_width=min_lbl_width)
-        # self._tx.value_changed.connect(self.__changed)
-        # input_layout.addWidget(self._tx)
-        # self._ty = inputs.SliderSelectionWidget('Camera translation y:', -15, 15, 100, 2,
-        #     value_format_fx=lambda v: inputs.format_float(v, after_comma=1),
-        #     min_label_width=min_lbl_width)
-        # self._ty.value_changed.connect(self.__changed)
-        # input_layout.addWidget(self._ty)
-        # self._tz = inputs.SliderSelectionWidget('Camera translation z:', 0, 15, 100, 0,
-        #     value_format_fx=lambda v: inputs.format_float(v, after_comma=1),
-        #     min_label_width=min_lbl_width)
-        # self._tz.value_changed.connect(self.__changed)
-        # input_layout.addWidget(self._tz)
-
-        # self._bgcb = inputs.CheckBoxWidget('Transparent background:', is_checked=True,
-        #     min_label_width=min_lbl_width)
-        # self._bgcb.value_changed.connect(self.__changed)
-        # input_layout.addWidget(self._bgcb)
-
-        # self._alpha_cb = inputs.CheckBoxWidget('Linear alpha interpolation:', is_checked=True,
-        #     min_label_width=min_lbl_width)
-        # self._alpha_cb.value_changed.connect(self.__changed)
-        # self._alpha_cb.setEnabled(self._bgcb.value())
-        # input_layout.addWidget(self._alpha_cb)
-
-        # self._adjust_prj_cb = inputs.CheckBoxWidget('Adjust camera matrix:', is_checked=True)
-        # self._adjust_prj_cb.value_changed.connect(self.__changed)
-        # input_layout.addWidget(self._adjust_prj_cb)
-
-        # self._viewer = imgview.ImageViewer()
-
-        # self._fileio = inspection_widgets.ToolbarFileIOWidget(vertical=True, icon_size=QSize(30, 30))
-        # self._fileio.fileOpenRequest.connect(self.__load_request)
-        # self._fileio.fileSaveRequest.connect(self.__save_request)
-
-        # ctrl_layout = QHBoxLayout()
-        # ctrl_layout.addWidget(self._fileio)
-        # ctrl_layout.addWidget(inputs.VLine())
-        # ctrl_layout.addLayout(input_layout)
+        #TODO options to overlay world coordinates, etc
 
         viewer_layout = QGridLayout()
-        viewer_layout.addLayout(input_layout, 0, 0, 1, num_columns)
-
         self._viewers = list()
         for i in range(self._num_streams):
-            row = i // num_columns + 1
+            row = i // num_columns
             col = i % num_columns
-            viewer = imgview.ImageViewer()
+            #viewer = imgview.ImageViewer()
+            viewer = StreamViewer(self._stream_display_labels[i])
             viewer_layout.addWidget(viewer, row, col)
             self._viewers.append(viewer)
+        #TODO add grid/scroll area (?) at the bottom which holds all inactive/"hidden" streams
+        # needed, because we want to activate them again sooner or later
 
         main_layout = QVBoxLayout()
+        main_layout.addLayout(input_layout)
         main_layout.addLayout(viewer_layout)
-        # main_layout.addLayout(ctrl_layout)
-        # main_layout.addWidget(inputs.HLine())
-        # main_layout.addWidget(self._viewer)
-
+        
         self._main_widget.setLayout(main_layout)
         self.setCentralWidget(self._main_widget)
         self.resize(QSize(1280, 720))
-
-        # self._img_docks = list()
-        # for i in range(4):
-        #     viewer = imgview.ImageViewer()
-        #     viewer.showImage(foobarimg)
-        #     dock = QDockWidget("Dockable {}".format(i), self)
-        #     dock.setWidget(viewer)
-        #     self._img_docks.append(dock)
 
     # def __load_request(self):
     #     filename, _ = QFileDialog.getOpenFileName(self, "Open image", "",
@@ -310,6 +298,7 @@ class CalibApplication(QMainWindow):
     #         img = imutils.imread(filename)
     #         self.displayImage(img)
 
+#TODO enable saving
     # def __save_request(self):
     #     if self._vis_np is None:
     #         return
@@ -318,7 +307,6 @@ class CalibApplication(QMainWindow):
     #         '', QFileDialog.DontUseNativeDialog)
     #     if filename is not None:
     #         imutils.imsave(filename, self._vis_np)
-
   
     def display_frameset(self, frames):
         assert len(frames) == len(self._viewers)
@@ -334,10 +322,10 @@ class CalibApplication(QMainWindow):
 
 
 def gui():
+    #TODO add argparse
     folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'data-best')
     cfg_file = 'webcam.cfg'#
-    # cfg_file = 'kinects.cfg'
-    cfg_file = 'kinects-old.cfg'
+    cfg_file = 'kinects.cfg'
     streamer = Streamer(folder, cfg_file)
 
     app = QApplication(['Calibrate Extrinsics'])

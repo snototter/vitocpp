@@ -63,6 +63,11 @@ def streaming_demo(cfg_file, folder, output_folder=None, output_fps=15):
             print('[WARNING]: Skipping invalid frameset')
         else:
             break
+    
+    # Query all intrinsics
+    print('\nStream intrinsics')
+    for i in range(capture.num_streams()):
+        print('Stream {}\n  {}\n'.format(capture.frame_label(i), capture.intrinsics(i)))
 
     # Set up the stream storage
     if output_folder is None:

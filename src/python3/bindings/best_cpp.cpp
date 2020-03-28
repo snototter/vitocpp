@@ -761,6 +761,8 @@ PYBIND11_MODULE(best_cpp, m)
       .def("camera_matrix", &pybest::CaptureWrapper::CameraMatrix,
            "Returns the 3x3 camera matrix holding the stream's intrinsics.",
            py::arg("stream_index"))
+      .def("intrinsics", &pybest::CaptureWrapper::CameraMatrix,
+           "Alias for @see camera_matrix().")
 // Saving
       .def("save_replay_config", &pybest::CaptureWrapper::SaveReplayConfig,
            "Store a configuration file plus required intrinsic calibrations\n"

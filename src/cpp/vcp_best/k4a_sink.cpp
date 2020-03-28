@@ -53,8 +53,19 @@ namespace k4a
 {
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::best::k4a"
+
+//TODO Nice-to-have would be either CMake options (spams the build system) or libconfig (way more complex - how do we introduce
+// parameters that belong to a multi-k4a sink without introducing another sink?). I'd prefer the CMake way.
 /** @brief Minimum time (in microseconds) between two subsequent depth image captures (in a multi-k4a setting). */
-#define TIME_BETWEEN_DEPTH_CAPTURES_USEC 160
+constexpr int32_t TIME_BETWEEN_DEPTH_CAPTURES_USEC = 160;
+
+/** @brief Maximum time (in milliseconds) to wait for a synchronized capture (in a multi-k4a setting). */
+constexpr int64_t WAIT_FOR_SYNCHRONIZED_CAPTURE_TIMEOUT = 60000;
+
+/** @brief Maximum tolerated difference between an image's expected timestamp and the time it actually occured. */
+constexpr std::chrono::microseconds MAX_ALLOWABLE_TIME_OFFSET_ERROR_FOR_IMAGE_TIMESTAMP(100);
+
+
 
 const std::string kEmptyK4ASerialNumber = "----";
 
@@ -489,7 +500,7 @@ cv::Mat Extract16U(const K4ASinkParams &params, k4a_image_t &image, k4a_transfor
     cv::Mat tmp;
 
     k4a_image_t aligned_depth_image = NULL;
-    if (is_depth && params.align_depth_to_color) // Alignment only works for depth imag (libk4a-1.3)
+    if (is_depth && params.align_depth_to_color) // Alignment only works for depth image (libk4a-1.3)
     {
       // Official warping example:
       // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/transformation/main.cpp
@@ -1030,9 +1041,9 @@ private:
       DumpCalibration(params_, sensor_calibration);
 
     // Load calibration if needed
-    // TODO nice to have would be to refactor DumpCalibration into something like
-    // ReadCalibration() which returns vector<StreamIntrinsics>. This can
-    // then be saved (if write_calibration is true) and used (if rectify is true).
+    // TODO A nice-to-have extension would be to refactor DumpCalibration into something like
+    // ReadCalibration() which returns vector<StreamIntrinsics>. This can then be saved
+    // (if write_calibration is true) and used (if rectify is true).
     // However, for now it's perfectly fine (i.e. way less effort) to throw an exception
     // and tell the user to adjust the configuration (set a valid calibration file path).
     if (params_.rectify || vcp::utils::file::Exists(params_.calibration_file))
@@ -1116,98 +1127,6 @@ private:
       k4a_capture_release(k4a_capture);
       k4a_capture = nullptr;
 
-//      //TODO refactor this into a util method!
-//      cv::Mat cvrgb, cvdepth, cvir;
-//      cv::Mat rrgb, rdepth, rir;
-//      k4a_image_t image = nullptr;
-
-//      // Probe for color image
-//      if (rgb_stream_enabled_)
-//      {
-//        image = k4a_capture_get_color_image(k4a_capture);
-//        if (image)
-//        {
-//          // Image conversion based on https://stackoverflow.com/a/57222191/400948
-//          // Get image buffer and size
-//          uint8_t* buffer = k4a_image_get_buffer(image);
-//          const int rows = k4a_image_get_height_pixels(image);
-//          const int cols = k4a_image_get_width_pixels(image);
-
-//          // Create OpenCV Mat header pointing to the buffer (no copy yet!)
-//          cv::Mat buf(rows, cols, CV_8UC4, static_cast<void*>(buffer), cv::Mat::AUTO_STEP);
-//#ifdef VCP_BEST_WITH_K4A_MJPG
-//          // Stream is JPG encoded.
-//          // Note that decoding a stream into a 3840x2160x3 image takes ~40 ms!
-//          cvrgb = cv::imdecode(buf, CV_LOAD_IMAGE_COLOR);
-//#else
-//          // Stream is BGRA32.
-//          // Converting a 3840x2160x4 image to 3-channels only takes ~2 ms.
-//          // We need to drop the alpha channel anyways, so use cvtColor to make
-//          // the deep buffer copy:
-//          if (params_.color_as_bgr)
-//            cv::cvtColor(buf, cvrgb, CV_BGRA2BGR);
-//          else
-//            cv::cvtColor(buf, cvrgb, CV_BGRA2RGB);
-//#endif
-//          SetIntrinsicsResolution(rgb_intrinsics_, cvrgb);
-//          if (params_.rectify)
-//            rrgb = rgb_intrinsics_.UndistortRectify(cvrgb);
-//          else
-//            rrgb = cvrgb;
-
-//          // Now it's safe to free the memory
-//          k4a_image_release(image);
-//          image = NULL;
-//        }
-//        else
-//        {
-//          VCP_LOG_WARNING("No color image received!");
-//        }
-//      }
-
-//      // Probe for a depth16 image
-//      if (depth_stream_enabled_)
-//      {
-//        image = k4a_capture_get_depth_image(k4a_capture);
-//        cvdepth = Extract16U(params_, image, transformation, true, cvrgb);
-
-//        SetIntrinsicsResolution(depth_intrinsics_, cvdepth);
-//        if (params_.rectify)
-//          rdepth = depth_intrinsics_.UndistortRectify(cvdepth);
-//        else
-//          rdepth = cvdepth;
-//      }
-
-//      // Probe for the IR16 image
-//      if (ir_stream_enabled_)
-//      {
-//        image = k4a_capture_get_ir_image(k4a_capture);
-//        cvir = Extract16U(image, transformation, false, cvrgb);
-
-//        SetIntrinsicsResolution(ir_intrinsics_, cvir);
-//        if (params_.rectify)
-//          rir = ir_intrinsics_.UndistortRectify(cvir);
-//        else
-//          rir = cvir;
-//      }
-
-//      // Release capture
-//      k4a_capture_release(k4a_capture);
-//      k4a_capture = nullptr;
-
-//      const cv::Mat trgb = imutils::ApplyImageTransformations(rrgb, params_.transforms);
-//      const cv::Mat tdepth = imutils::ApplyImageTransformations(rdepth, params_.transforms);
-//      const cv::Mat tir = imutils::ApplyImageTransformations(rir, params_.transforms);
-
-//      image_queue_mutex_.lock();
-//      if (rgb_stream_enabled_)
-//        rgb_queue_->PushBack(trgb.clone());
-//      if (depth_stream_enabled_)
-//        depth_queue_->PushBack(tdepth.clone());
-//      if (ir_stream_enabled_)
-//        ir_queue_->PushBack(tir.clone());
-//      image_queue_mutex_.unlock();
-
 #ifdef VCP_BEST_DEBUG_FRAMERATE
       const std::chrono::high_resolution_clock::time_point now = std::chrono::high_resolution_clock::now();
       const auto duration = std::chrono::duration_cast<std::chrono::duration<double, std::milli> >(now - previous_frame_timepoint_);
@@ -1248,7 +1167,6 @@ public:
               verbose_(false), // Will be set true if any param.verbose is true.
               capture_timeout_ms_(5000) // Will be replaced by the minimum param.capture_timeout_ms
   {
-    //FIXME add mapping (stream# to sink)
     VCP_LOG_DEBUG("K4ASyncedRGBDSink::K4ASyncedRGBDSink()");
     available_ = 0;
     SanityCheckConfiguration();
@@ -1479,17 +1397,9 @@ public:
       VCP_LOG_FAILURE("Intrinsics for K4ASyncedRGBDSink cannot be queried before the sensors are available! Use IsDeviceAvailable() to check when the sensors become ready.");
       return calibration::StreamIntrinsics();
     }
-    VCP_LOG_FIXME("MUST BE IMPLEMENTED!!!!");
-    return calibration::StreamIntrinsics();
-////FIXME
-//    std::vector<const calibration::StreamIntrinsics*> intrinsics;
-//    if (rgb_stream_enabled_)
-//      intrinsics.push_back(&rgb_intrinsics_);
-//    if (depth_stream_enabled_)
-//      intrinsics.push_back(&depth_intrinsics_);
-//    if (ir_stream_enabled_)
-//      intrinsics.push_back(&ir_intrinsics_);
-//    return *(intrinsics[stream_index]);
+    VCP_LOG_FIXME("Check intrinsics at stream #" << stream_index << " (lbl: " << this->StreamLabel(stream_index) << ")" << std::endl
+                  << *(intrinsics_ptrs_[stream_index]));
+    return *(intrinsics_ptrs_[stream_index]);
   }
 
 private:
@@ -1500,13 +1410,14 @@ private:
   std::vector<K4ASinkParams> params_;
   std::vector<bool> enabled_streams_;
   std::vector<FrameType> frame_types_;
-  std::vector<size_t> stream2device_; // Fixme
+  std::vector<size_t> stream2device_;
   bool verbose_;
   int32_t capture_timeout_ms_;
   std::atomic<int> available_;
   std::vector<calibration::StreamIntrinsics> rgb_intrinsics_;
   std::vector<calibration::StreamIntrinsics> depth_intrinsics_;
   std::vector<calibration::StreamIntrinsics> ir_intrinsics_;
+  std::vector<calibration::StreamIntrinsics*> intrinsics_ptrs_;
   //std::vector<size_t> frame2sink_;
   std::vector<k4a_device_t> k4a_devices_;
 #ifdef VCP_BEST_DEBUG_FRAMERATE
@@ -1522,7 +1433,11 @@ private:
 
     if (verbose_)
       VCP_LOG_INFO_DEFAULT("Starting K4ASyncedRGBDSink " << lbls << ".");
+    // Prepare sensor transformations (needed, because we mix up the indices since
+    // subordinates (k4a_devices_ indices 1+) must be set up before the master (index 0).
     std::vector<k4a_transformation_t> transformations;
+    for (size_t cnt = 0; cnt < k4a_devices_.size(); ++cnt)
+      transformations.push_back(nullptr);
 
     for (size_t cnt = 0; cnt < k4a_devices_.size(); ++cnt)
     {
@@ -1564,9 +1479,8 @@ private:
       // Prepare transformation for image alignment if needed.
 
       if (params_[idx].align_depth_to_color)
-        transformations.push_back(k4a_transformation_create(&sensor_calibration));
-      else
-        transformations.push_back(nullptr);
+        transformations[idx] = k4a_transformation_create(&sensor_calibration);
+
 
       // Save calibration if requested.
       if (params_[idx].write_calibration)
@@ -1593,7 +1507,7 @@ private:
                     << "', but this sensor is '" << params_[idx].serial_number << "'!");
 
         if (verbose_)
-          VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for K4A '"
+          VCP_LOG_INFO_DEFAULT("* Loaded intrinsic calibration for K4A '"
                                << params_[idx].serial_number << "', sink '" << params_[idx].sink_label << "'.");
       }
 
@@ -1619,7 +1533,7 @@ private:
     std::vector<k4a_capture_t> captures(k4a_devices_.size());
     while(continue_capture_)
     {
-      switch(GetSynchronizedCaptures(captures))
+      switch(GetSynchronizedCaptures(captures, false))
       {
         case K4A_WAIT_RESULT_SUCCEEDED:
           break;
@@ -1727,15 +1641,31 @@ private:
     return sorted;
   }
 
+  int32_t GetExposureTime(const K4ASinkParams &p)
+  {
+    for (const auto &ccm : p.color_control_manual)
+    {
+      if (ccm.command == K4A_COLOR_CONTROL_EXPOSURE_TIME_ABSOLUTE)
+        return ccm.value;
+    }
+    return -1;
+  }
+
   void SanityCheckConfiguration()
   {
     if (params_.empty())
       VCP_ERROR("You need to configure at least a single K4A sink in order to set up a K4ASyncedRGBDSink!");
 
-    // Compute the depth delay
-    //TODO make parameter?
-
+    // Compute the depth delay.
     int32_t depth_offset = -1 * static_cast<int32_t>((params_.size() - 1) * TIME_BETWEEN_DEPTH_CAPTURES_USEC / 2);
+
+    const int32_t master_exposure = GetExposureTime(params_[0]);
+
+    // Prepare empty intrinsics
+    rgb_intrinsics_.resize(params_.size());
+    depth_intrinsics_.resize(params_.size());
+    ir_intrinsics_.resize(params_.size()); //FUCKER
+
     for (size_t idx = 0; idx < params_.size(); ++idx)
     {
       auto &p = params_[idx];
@@ -1755,7 +1685,6 @@ private:
       if (idx == 0 && p.subordinate_delay_off_master_usec > 0)
         VCP_ERROR("The K4A master cannot have a subordinate_delay_off_master_usec setting > 0! Fix configuration of sink '"
                 << p.sink_label << "'!");
-      p.subordinate_delay_off_master_usec = 0;
 
       if (params_.size() > 1 && !p.synchronized_images_only)
         VCP_ERROR("Synchronized K4A sinks require synchronized_images_only to be true. Fix configuration of sink '"
@@ -1767,12 +1696,16 @@ private:
       // Keep shortest capture timeout configuration:
       capture_timeout_ms_ = std::min(capture_timeout_ms_, p.capture_timeout_ms);
 
-      // From the official docs (see K4A green_screen example):
-      // To synchronize a master and subordinate with different exposures the
-      // user should set `subordinate_delay_off_master_usec = ((subordinate exposure
-      // time) - (master exposure time))/2`.
-      //TODO make separate param for exposure time
-      p.subordinate_delay_off_master_usec = 0;
+      const int32_t dev_exposure = GetExposureTime(params_[idx]);
+      if (dev_exposure != master_exposure)
+      {
+        // According to the SDK's green_screen/main.cpp: To synchronize a master and
+        // subordinate with different exposures the user should set
+        // `subordinate_delay_off_master_usec = ((subordinate exposure time) - (master exposure time))/2`.
+        p.subordinate_delay_off_master_usec = static_cast<uint32_t>(std::abs(dev_exposure - master_exposure) / 2);
+      }
+      else
+        p.subordinate_delay_off_master_usec = 0;
 
       // Set depth delay
       p.depth_delay_off_color_usec = depth_offset;
@@ -1785,6 +1718,7 @@ private:
       {
         stream2device_.push_back(idx);
         frame_types_.push_back(FrameType::MONOCULAR);
+        intrinsics_ptrs_.push_back(&rgb_intrinsics_[idx]);
       }
 
       const bool is_depth = p.IsDepthStreamEnabled();
@@ -1793,6 +1727,7 @@ private:
       {
         stream2device_.push_back(idx);
         frame_types_.push_back(FrameType::DEPTH);
+        intrinsics_ptrs_.push_back(&depth_intrinsics_[idx]);
       }
 
       const bool is_ir = p.IsInfraredStreamEnabled();
@@ -1801,13 +1736,11 @@ private:
       {
         stream2device_.push_back(idx);
         frame_types_.push_back(FrameType::INFRARED);
+        intrinsics_ptrs_.push_back(&ir_intrinsics_[idx]);
       }
 
-      VCP_LOG_FIXME("Param changed: " << std::endl << p << std::endl << " VS " << std::endl << params_[idx]);
+      //VCP_LOG_FIXME("Check configuration #" << idx << ":" << std::endl << params_[idx] << std::endl);
     }
-    rgb_intrinsics_.resize(enabled_streams_.size());
-    depth_intrinsics_.resize(enabled_streams_.size());
-    ir_intrinsics_.resize(enabled_streams_.size());
   }
 
   void SanityCheckDevices()
@@ -1830,11 +1763,16 @@ private:
     }
   }
 
-  k4a_wait_result_t GetSynchronizedCaptures(std::vector<k4a_capture_t> &captures)
+  k4a_wait_result_t GetSynchronizedCaptures(std::vector<k4a_capture_t> &captures, const bool compare_sub_depth_instead_of_color)
   {
     // According to the official Azure-Kinect-Sensor-SDK, "dealing with the synchronized cameras is complex" ;-)
     // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/green_screen/MultiDeviceCapturer.h
     // This blocking call is based on their green screen example.
+
+    // Potential TODOs:
+    // * The SDK example uses K4A_WAIT_INFINITE upon k4a_device_get_capture. We prefer not to
+    //   wait forever.
+    // * Check known "Multiple Device Sync Issues": https://github.com/microsoft/Azure-Kinect-Sensor-SDK/issues/530
 
     // Get a frameset from each sink:
     k4a_wait_result_t res = K4A_WAIT_RESULT_SUCCEEDED;
@@ -1844,7 +1782,7 @@ private:
       {
         case K4A_WAIT_RESULT_SUCCEEDED:
           break;
-      case K4A_WAIT_RESULT_TIMEOUT:
+        case K4A_WAIT_RESULT_TIMEOUT:
           VCP_LOG_WARNING("Capture request to K4A '" << params_[idx].serial_number << "', sink '" << params_[idx].sink_label << "' timed out.");
           continue;
           break;
@@ -1873,7 +1811,104 @@ private:
     if (captures.size() < 2)
       return res;
 
-    //FIXME FUCK check https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/green_screen/MultiDeviceCapturer.h
+    bool have_synced_images = false;
+    std::chrono::system_clock::time_point start = std::chrono::system_clock::now();
+    while (!have_synced_images)
+    {
+      // Timeout if this is taking too long
+      int64_t duration_ms =
+          std::chrono::duration_cast<std::chrono::milliseconds>(std::chrono::system_clock::now() - start).count();
+      if (duration_ms > WAIT_FOR_SYNCHRONIZED_CAPTURE_TIMEOUT)
+      {
+        VCP_LOG_FAILURE("K4A wire-synced sink is taking too long to synchronize captures");
+        res = K4A_WAIT_RESULT_TIMEOUT;
+        break;
+      }
+
+      k4a_image_t master_color_image = k4a_capture_get_color_image(captures[0]);
+      const std::chrono::microseconds master_color_image_time(k4a_image_get_device_timestamp_usec(master_color_image)); // Function returns 0 for invalid image handles
+
+      for (size_t i = 1; i < captures.size(); ++i)
+      {
+        k4a_image_t sub_image = nullptr;
+        if (compare_sub_depth_instead_of_color)
+          sub_image = k4a_capture_get_depth_image(captures[i]);
+        else
+          sub_image = k4a_capture_get_color_image(captures[i]);
+
+        if (master_color_image && sub_image)
+        {
+          const std::chrono::microseconds sub_image_time(k4a_image_get_device_timestamp_usec(sub_image));
+          if (sub_image)
+            k4a_image_release(sub_image);
+          // The subordinate's color image timestamp, ideally, is the master's color image timestamp plus the
+          // delay we configured between the master device color camera and subordinate device color camera
+          std::chrono::microseconds expected_sub_image_time =
+            master_color_image_time +
+            std::chrono::microseconds{ params_[i].subordinate_delay_off_master_usec } +
+            std::chrono::microseconds{ params_[i].depth_delay_off_color_usec };
+          std::chrono::microseconds sub_image_time_error = sub_image_time - expected_sub_image_time;
+          // The time error's absolute value must be within the permissible range. So, for example, if
+          // MAX_ALLOWABLE_TIME_OFFSET_ERROR_FOR_IMAGE_TIMESTAMP is 2, offsets of -2, -1, 0, 1, and -2 are
+          // permitted
+          if (sub_image_time_error < -MAX_ALLOWABLE_TIME_OFFSET_ERROR_FOR_IMAGE_TIMESTAMP)
+          {
+            // Example, where MAX_ALLOWABLE_TIME_OFFSET_ERROR_FOR_IMAGE_TIMESTAMP is 1
+            // time                    t=1  t=2  t=3
+            // actual timestamp        x    .    .
+            // expected timestamp      .    .    x
+            // error: 1 - 3 = -2, which is less than the worst-case-allowable offset of -1
+            // the subordinate camera image timestamp was earlier than it is allowed to be. This means the
+            // subordinate is lagging and we need to update the subordinate to get the subordinate caught up
+            VCP_LOG_WARNING("Subordinate is lagging - master " << master_color_image_time.count() << " usec, sub "
+                            << sub_image_time.count() << " usec: diff = " << sub_image_time_error.count() << " usec.");
+            k4a_device_get_capture(k4a_devices_[i], &captures[i], capture_timeout_ms_);
+            break;
+          }
+          else if (sub_image_time_error > MAX_ALLOWABLE_TIME_OFFSET_ERROR_FOR_IMAGE_TIMESTAMP)
+          {
+            // Example, where MAX_ALLOWABLE_TIME_OFFSET_ERROR_FOR_IMAGE_TIMESTAMP is 1
+            // time                    t=1  t=2  t=3
+            // actual timestamp        .    .    x
+            // expected timestamp      x    .    .
+            // error: 3 - 1 = 2, which is more than the worst-case-allowable offset of 1
+            // the subordinate camera image timestamp was later than it is allowed to be. This means the
+            // subordinate is ahead and we need to update the master to get the master caught up
+            VCP_LOG_WARNING("Master device is lagging - master " << master_color_image_time.count() << " usec, sub "
+                            << sub_image_time.count() << " usec: diff = " << sub_image_time_error.count() << " usec.");
+            k4a_device_get_capture(k4a_devices_[0], &captures[0], capture_timeout_ms_);
+//              master_device.get_capture(&captures[0], std::chrono::milliseconds{ K4A_WAIT_INFINITE });
+            break;
+          }
+          else
+          {
+            // These captures are sufficiently synchronized. If we've gotten to the end, then all are
+            // synchronized.
+            if (i == captures.size() - 1)
+            {
+              VCP_LOG_DEBUG("Synchronized a capture - master " << master_color_image_time.count() << " usec, sub "
+                           << sub_image_time.count() << " usec: diff = " << sub_image_time_error.count() << " usec.");
+              have_synced_images = true; // now we'll finish the for loop and then exit the while loop
+            }
+          }
+        }
+        else if (!master_color_image)
+        {
+          k4a_image_release(sub_image);
+          VCP_LOG_WARNING("Received bad master image.");
+          k4a_device_get_capture(k4a_devices_[0], &captures[0], capture_timeout_ms_);
+          break;
+        }
+        else if (!sub_image)
+        {
+          VCP_LOG_WARNING("Received bad subordinate image.");
+          k4a_device_get_capture(k4a_devices_[i], &captures[i], capture_timeout_ms_);
+          break;
+        }
+      }
+      if (master_color_image)
+        k4a_image_release(master_color_image);
+    }
     return res;
   }
 };
