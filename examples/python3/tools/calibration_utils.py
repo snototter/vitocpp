@@ -299,6 +299,6 @@ class ExtrinsicsAprilTag(object):
             K = capture.intrinsics(i)
             self._intrinsics.append(K)
             if K is None:
-                raise RuntimeError('No intrinsics for sink "{}"'.format(capture.stream_label(i)))
+                print('NO INTRINSICS!!!!!!!!!!!')#FIXME raise RuntimeError('No intrinsics for sink "{}"'.format(capture.frame_label(i)))
             
     #TODO set up detectors, skip if depth, transformation (R,t) to reference frame
