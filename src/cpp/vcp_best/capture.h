@@ -239,6 +239,9 @@ public:
    */
   virtual std::vector<size_t> StreamsFromSameSink(size_t stream_index, bool include_self) const = 0;
 
+  /** @brief Returns the SinkParams (parametrization PER SINK) for the given STREAM INDEX. */
+  virtual SinkParams SinkParamsAt(size_t stream_index) const = 0;
+
 protected:
   Capture() {}
 };

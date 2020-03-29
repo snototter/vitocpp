@@ -147,7 +147,9 @@ class Streamer(QThread):
             # RealSense infrared is provided (by default) in Y8 format
             if f.dtype == np.uint8:
                 return f
-            return imvis.pseudocolor(f, limits=None, color_map=colormaps.colormap_turbo_rgb)
+            print('FIXME FIXME FIXME: convert to uint8!')
+            return f.astype(np.uint8)
+            # return imvis.pseudocolor(f, limits=None, color_map=colormaps.colormap_turbo_rgb)
 
         vis_frames = [
             _col_depth(frames[idx])
@@ -244,7 +246,13 @@ class CalibApplication(QMainWindow):
         self._resize_viewers = True
         self._args = args
 
-        self._extrinsics_estimator = ExtrinsicsAprilTag(streamer.getCapture(), args.tag_family, args.tag_size_mm, grid_limits=None)
+        self._extrinsics_estimator = ExtrinsicsAprilTag(streamer.getCapture(), 
+            args.tag_family, args.tag_size_mm, 
+            grid_limits=None,
+            pose_history_length=args.pose_history_length,
+            pose_threshold_rotation=args.pose_threshold_rotation,
+            pose_threshold_translation=args.pose_threshold_translation)
+
         self.prepareLayout()
         streamer.newFrameset.connect(self.displayFrameset)
         streamer.startStream()
@@ -361,6 +369,9 @@ class CalibApplication(QMainWindow):
             if frames[i] is not None:
                 self._viewers[i]['widget'].showImage(frames[i], reset_scale=self._resize_viewers)
         self._resize_viewers = False
+
+        # TODO enqueue??
+        self._extrinsics_estimator.process_frameset(frames)
     
     def streamVisibilityToggled(self, stream_index, active):
         if active:
@@ -427,13 +438,13 @@ def parseArguments():
         help='Size of the AprilTag in mm (the 8x8 square, not the 10x10)')
     parser.add_argument('--tag_family', action='store', help='AprilTag family', default='tag36h11')
 
-    # # Pose stability checks
-    # parser.add_argument('--pose-history-length', action='store', type=pyutils.check_positive_int, default=10,
-    #     help='How many previous tag poses should be used to reason about stability?')
-    # parser.add_argument('--pose-threshold-rotation', action='store', type=pyutils.check_positive_real, default=0.1,
-    #     help='Max. allowed angular deviation (in degrees) of a pose before considering a tag unstable.')
-    # parser.add_argument('--pose-threshold-translation', action='store', type=pyutils.check_positive_real, default=2.0,
-    #     help='Max. allowed translation change (in mm) of a pose before considering a tag unstable')
+    # Pose stability checks
+    parser.add_argument('--pose-history-length', action='store', type=pyutils.check_positive_int, default=10,
+        help='How many previous tag poses should be used to reason about stability?')
+    parser.add_argument('--pose-threshold-rotation', action='store', type=pyutils.check_positive_real, default=0.1,
+        help='Max. allowed angular deviation (in degrees) of a pose before considering a tag unstable.')
+    parser.add_argument('--pose-threshold-translation', action='store', type=pyutils.check_positive_real, default=2.0,
+        help='Max. allowed translation change (in mm) of a pose before considering a tag unstable')
 
     # # General visualization params
     # parser.add_argument('--overlay', action='store_true', dest='label_overlay',

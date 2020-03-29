@@ -3,6 +3,8 @@ Calibration utilities
 """
 import os
 import sys
+import cv2
+import logging
 import apriltag
 import numpy as np
 
@@ -168,15 +170,20 @@ class ExtrinsicsHistory:
         self.tag_transformations = TagTransformationGraph()
         self.threshold_rotation = 0.1 # degrees
         self.threshold_translation = 2 # mm
+        self.skip_camera = list()
         for cam_id in range(self.num_cameras):
+            print(len(camera_intrinsics), len(tag_detectors), cam_id, 'FOOOOOOOOOOOOOOOOOOOOOOOO' )
+            self.skip_camera.append(camera_intrinsics[cam_id] is None or tag_detectors[cam_id] is None)
             self.detection_history[cam_id] = collections.deque(maxlen=max_history_length)
             self.pose_history[cam_id] = collections.deque(maxlen=max_history_length)
             self.center_history[cam_id] = collections.deque(maxlen=max_history_length)
             self.reprojection_error_history[cam_id] = collections.deque(maxlen=max_history_length)
 
-
     def update_tags(self, cam_id, detections):
         """Get pose from tag, store center/reprojection error/transformation"""
+        if self.skip_camera[cam_id]:
+            logging.getLogger().warning('[ExtrinsicsHistory] update_tags() called with invalid (i.e. skipped) cam_id ({})'.format(cam_id))
+            return
         self.detection_history[cam_id].append(detections)
         poses = dict()
         centers = dict()
@@ -200,6 +207,8 @@ class ExtrinsicsHistory:
         # Iterate over all cameras, build inter-tag transformation if multiple tags were visible
         
         for cam_id in range(self.num_cameras):
+            if self.skip_camera[cam_id]:
+                continue
             latest_cam_poses = self.pose_history[cam_id]
             if not latest_cam_poses:
                 continue
@@ -300,28 +309,84 @@ class ExtrinsicsAprilTag(object):
             debug=False,
             quad_decimate=1.0,
             quad_contours=True,
-            grid_limits=None):
+            grid_limits=None,
+            pose_history_length=10,
+            pose_threshold_rotation=0.1,
+            pose_threshold_translation=2.0):
         self._num_streams = capture.num_streams()
         self._intrinsics = list()
         self._detectors = list()
         self._tag_family = tag_family
         self._tag_size_mm = tag_size_mm
+        self._pose_history_length = pose_history_length
+        self._pose_threshold_rotation = pose_threshold_rotation
+        self._pose_threshold_translation = pose_threshold_translation
+        self._frame_converter = list()
         for i in range(self._num_streams):
             K = capture.intrinsics(i)
             self._intrinsics.append(K)
             if K is None:
-                raise RuntimeError('No intrinsics for sink "{}"'.format(capture.frame_label(i)))
-            self._intrinsics.append(K)
-            fx = K[0,0]
-            fy = K[1,1]
-            cx = K[0,2]
-            cy = K[1,2]
-            opt = apriltag.DetectorOptions(families=tag_family,
-                refine_edges=refine_edges, refine_decode=refine_decode, refine_pose=refine_decode,
-                debug=debug, quad_decimate=quad_decimate, quad_contours=quad_contours)
-            opt.camera_params = (fx, fy, cx, cy)
-            opt.tag_size = tag_size_mm
-            detector = apriltag.Detector(opt)
-            self._detectors.append(detector)
+                logging.getLogger().error('[ExtrinsicsAprilTag] No intrinsics for stream "{}"'.format(capture.frame_label(i)))
+                self._detectors.append(None)
+                self._frame_converter.append(self._cvt_as_is)
+            else:
+                if capture.is_unknown_type(i) or capture.is_image(i) or capture.is_infrared(i):
+                    if capture.is_unknown_type(i):
+                        logging.getLogger().warning('[ExtrinsicsAprilTag] Stream "{}" has unknown frame type, assuming it to be monocular!'.format(capture.frame_label(i)))
+                    fx = K[0,0]
+                    fy = K[1,1]
+                    cx = K[0,2]
+                    cy = K[1,2]
+                    opt = apriltag.DetectorOptions(families=tag_family,
+                        refine_edges=refine_edges, refine_decode=refine_decode, refine_pose=refine_decode,
+                        debug=debug, quad_decimate=quad_decimate, quad_contours=quad_contours)
+                    opt.camera_params = (fx, fy, cx, cy)
+                    opt.tag_size = tag_size_mm
+                    detector = apriltag.Detector(opt)
+                    self._detectors.append(detector)
+                    if capture.is_infrared(i):
+                        self._frame_converter.append(self._cvt_as_is)
+                    elif capture.is_rgb(i):
+                        self._frame_converter.append(self._cvt_rgb2gray)
+                    else:
+                        self._frame_converter.append(self._cvt_rgb2gray)
+                else:
+                    logging.getLogger().info('[ExtrinsicsAprilTag] Skipping AprilTag detection for stream "{}".'.format(capture.frame_label(i)))
+                    self._detectors.append(None)
+                    self._frame_converter.append(self._cvt_as_is)
+        self._extrinsics_history = ExtrinsicsHistory(self._intrinsics, 
+            self._detectors, tag_size_mm, pose_history_length, pose_threshold_rotation, pose_threshold_translation)
+
+    
+    def process_frameset(self, frameset):
+        assert len(frameset) == len(self._detectors)
+        detections = list()
+        for i in range(len(frameset)):
+            # print('Stream i: ', i, frameset[i].dtype)
+            if self._detectors[i] is None:
+                detections.append(None)
+                continue
+            gray = self._frame_converter[i](frameset[i])
+            frame_detections = self._detectors[i].detect(gray)
+            detections.append(frame_detections)
+            self._extrinsics_history.update_tags(i, frame_detections)
+            if len(frame_detections) > 0:
+                print('Stream i: {} tag detections!'.format(len(frame_detections)))
+        # Update transformations between tags
+        self._extrinsics_history.update_coordinate_transformations()
+
+    def _cvt_as_is(self, frame):
+        return frame
+
+    def _cvt_rgb2gray(self, frame):
+        return self._color2gray(frame, cv2.COLOR_RGB2GRAY)
+
+    def _cvt_bgr2gray(self, frame):
+        return self._color2gray(frame, cv2.COLOR_BGR2GRAY)
+
+    def _color2gray(self, frame, mode):
+        if frame.ndim == 2 or frame.shape[2] == 1:
+            return frame
+        return cv2.cvtColor(frame, mode)
             
     #TODO set up detectors, skip if depth, transformation (R,t) to reference frame

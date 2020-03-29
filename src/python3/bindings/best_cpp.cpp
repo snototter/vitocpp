@@ -263,6 +263,11 @@ public:
     return vcp::best::FrameTypeToString(capture_->FrameTypeAt(stream_index));
   }
 
+  bool IsFrameTypeUnknown(size_t stream_index) const
+  {
+    return capture_->FrameTypeAt(stream_index) == vcp::best::FrameType::UNKNOWN;
+  }
+
   bool IsFrameMonocular(size_t stream_index) const
   {
     return capture_->FrameTypeAt(stream_index) == vcp::best::FrameType::MONOCULAR;
@@ -291,6 +296,11 @@ public:
   bool IsFrameRectified(size_t stream_index) const
   {
     return capture_->IsStreamRectified(stream_index);
+  }
+
+  bool IsFrameRGB(size_t stream_index) const
+  {
+    return IsFrameImage(stream_index) && capture_->SinkParamsAt(stream_index).color_as_bgr;
   }
 
   std::vector<size_t> StreamsFromSameSink(size_t stream_index, bool include_self) const
@@ -722,6 +732,11 @@ PYBIND11_MODULE(best_cpp, m)
       .def("frame_type", &pybest::CaptureWrapper::FrameTypeAt,
            "Returns the FrameType of the frame/stream at the given stream_index.",
            py::arg("stream_index"))
+      .def("is_unknown_type", &pybest::CaptureWrapper::IsFrameTypeUnknown,
+           "Returns true if the FrameType of the frame at the given stream_index\n"
+           "is 'unknown' (i.e. it hasn't been set or cannot be deduced from the\n"
+           "imaging sensor).",
+           py::arg("stream_index"))
       .def("is_monocular", &pybest::CaptureWrapper::IsFrameMonocular,
            "Check if the frame at the given index is of type 'monocular',\n"
            "i.e. grayscale or color. Note that for some streams, we cannot\n"
@@ -749,10 +764,13 @@ PYBIND11_MODULE(best_cpp, m)
            "i.e. intensity measurements (16bit Kinect, 8bit RealSense).",
            py::arg("stream_index"))
       .def("is_rectified", &pybest::CaptureWrapper::IsFrameRectified,
-           "Returns True if the stream/frame at the given index is rectified.",
+           "Returns True if the frame at the given index is rectified.",
+           py::arg("stream_index"))
+      .def("is_rgb", &pybest::CaptureWrapper::IsFrameRGB,
+           "Returns True if the frame at the given index is RGB.",
            py::arg("stream_index"))
       .def("same_sink", &pybest::CaptureWrapper::StreamsFromSameSink,
-           "Returns a list of stream/frame indices which originate from the\n"
+           "Returns a list of frame indices which originate from the\n"
            "same sink as the given frame index.\n"
            ":param stream_index: Index (int >= 0) of the stream/frame of interest.\n"
            ":param include_self: True, if stream_index should be included.",

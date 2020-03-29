@@ -635,6 +635,12 @@ public:
     return indices;
   }
 
+  SinkParams SinkParamsAt(size_t stream_index) const override
+  {
+    const auto lookup = frame2sink_[stream_index];
+    return sinks_[lookup.first]->SinkParamsAt(lookup.second);
+  }
+
 private:
   std::vector<std::unique_ptr<StreamSink>> sinks_; // Potentially less than streams/frames
   std::vector<std::pair<size_t, size_t>> frame2sink_; /**< Stores the index into sinks_ (along with the corresponding stream index) for each frame, e.g. if we iterate frame_types_, we can easily lookup the corresponding sink. */
@@ -651,13 +657,6 @@ private:
 #ifdef VCP_BEST_WITH_REALSENSE2
   bool multiple_realsenses_;
 #endif // VCP_BEST_WITH_REALSENSE2
-
-  /** @brief Returns the SinkParams (parametrization PER SINK) for the given STREAM INDEX. */
-  SinkParams SinkParamsAt(size_t stream_index) const
-  {
-    const auto lookup = frame2sink_[stream_index];
-    return sinks_[lookup.first]->SinkParamsAt(lookup.second);
-  }
 
   bool FrameIndexByLabel(const std::string &frame_label, size_t &idx) const
   {
