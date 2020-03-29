@@ -172,7 +172,6 @@ class ExtrinsicsHistory:
         self.threshold_translation = 2 # mm
         self.skip_camera = list()
         for cam_id in range(self.num_cameras):
-            print(len(camera_intrinsics), len(tag_detectors), cam_id, 'FOOOOOOOOOOOOOOOOOOOOOOOO' )
             self.skip_camera.append(camera_intrinsics[cam_id] is None or tag_detectors[cam_id] is None)
             self.detection_history[cam_id] = collections.deque(maxlen=max_history_length)
             self.pose_history[cam_id] = collections.deque(maxlen=max_history_length)
@@ -227,6 +226,7 @@ class ExtrinsicsHistory:
         
     
     def get_pose_changes(self, cam_id):
+        #TODO skip_camera!
         pose_history = self.pose_history[cam_id]
         center_history = self.center_history[cam_id]
         rotation_changes = dict()
@@ -371,7 +371,7 @@ class ExtrinsicsAprilTag(object):
             detections.append(frame_detections)
             self._extrinsics_history.update_tags(i, frame_detections)
             if len(frame_detections) > 0:
-                print('Stream i: {} tag detections!'.format(len(frame_detections)))
+                print('Stream i: {} has {} tag detections!'.format(i, len(frame_detections)))
         # Update transformations between tags
         self._extrinsics_history.update_coordinate_transformations()
 

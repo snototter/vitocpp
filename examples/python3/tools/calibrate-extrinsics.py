@@ -135,45 +135,30 @@ class Streamer(QThread):
             print('[WARNING]: Skipping invalid frameset')
             return None
 
-        # Colorize depth/infrared images for visualization
-        def _col_rgb(f):
+        # Post-process images
+        def _prepare_rgb(f):
             return f #imutils.transform(f, 'histeq')
 
-        def _col_depth(f):
+        def _prepare_depth(f):
             return imutils.transform(f, 'depth2surfnorm', 'surfnorm2rgb')
             #return imvis.pseudocolor(f, limits=[0, 5000], color_map=colormaps.colormap_turbo_rgb)
 
-        def _col_ir(f):
-            # RealSense infrared is provided (by default) in Y8 format
-            if f.dtype == np.uint8:
-                return f
-            print('FIXME FIXME FIXME: convert to uint8!')
-            return f.astype(np.uint8)
+        def _prepare_ir(f):
+            # FIXME
+            # Convert to uint8
+            if f.dtype != np.uint8:
+                f = (f.astype(np.float32) / np.max(f) * 255).astype(np.uint8)
+            return imutils.transform(f, 'histeq')
             # return imvis.pseudocolor(f, limits=None, color_map=colormaps.colormap_turbo_rgb)
 
-        vis_frames = [
-            _col_depth(frames[idx])
+        processed_frames = [
+            _prepare_depth(frames[idx])
                 if self._capture.is_depth(idx)
-                else (_col_ir(frames[idx])
+                else (_prepare_ir(frames[idx])
                     if self._capture.is_infrared(idx)
-                    else _col_rgb(frames[idx]))
+                    else _prepare_rgb(frames[idx]))
             for idx in range(len(frames))]
-        # vis_frames = [frames[0] for i in range(len(frames))]
-        
-        # # Resize
-        # vis_frames = [imutils.fuzzy_resize(f, 0.75) for f in vis_frames]
-
-        # # Overlay stream labels
-        # if self._overlay_labels:
-        #     vis_frames = [
-        #         imvis.draw_text_box(vis_frames[idx], 
-        #             self._capture.frame_label(idx) + (' [Undist. & Rect.]' if self._capture.is_rectified(idx) else ''),
-        #             (vis_frames[idx].shape[1]//2, 10), 'north',
-        #             bg_color=(0, 0, 0), font_color=(-1, -1, -1),
-        #             font_scale=1.0, font_thickness=1,
-        #             padding=5, fill_opacity=0.5)
-        #         for idx in range(len(vis_frames))]
-        return vis_frames
+        return processed_frames
 
 
 class StreamViewer(QWidget):
@@ -254,6 +239,7 @@ class CalibApplication(QMainWindow):
             pose_threshold_translation=args.pose_threshold_translation)
 
         self.prepareLayout()
+        self.prepareShortcuts()
         streamer.newFrameset.connect(self.displayFrameset)
         streamer.startStream()
 
@@ -344,6 +330,12 @@ class CalibApplication(QMainWindow):
         self._main_widget.setLayout(main_layout)
         self.setCentralWidget(self._main_widget)
         self.resize(QSize(1280, 720))
+
+    def prepareShortcuts(self):
+        sc = QShortcut(QKeySequence('Ctrl+F'), self)
+        sc.activated.connect(self.fitViewers)
+        sc = QShortcut(QKeySequence('Ctrl+1'), self)
+        sc.activated.connect(self.rescaleViewers)
 
     # def __load_request(self):
     #     filename, _ = QFileDialog.getOpenFileName(self, "Open image", "",
