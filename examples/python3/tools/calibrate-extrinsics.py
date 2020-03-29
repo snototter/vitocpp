@@ -357,13 +357,14 @@ class CalibApplication(QMainWindow):
   
     def displayFrameset(self, frames):
         assert len(frames) == len(self._viewers)
+        #TODO if the framerate is too fast, we have to forward this to a separate computing thread (which has a queue/only processes the most recent frameset!!!!)
+        self._extrinsics_estimator.process_frameset(frames)
+        #TODO FIXME visualize poses
+        # Visualize the streams
         for i in range(len(frames)):
             if frames[i] is not None:
                 self._viewers[i]['widget'].showImage(frames[i], reset_scale=self._resize_viewers)
         self._resize_viewers = False
-
-        # TODO enqueue??
-        self._extrinsics_estimator.process_frameset(frames)
     
     def streamVisibilityToggled(self, stream_index, active):
         if active:

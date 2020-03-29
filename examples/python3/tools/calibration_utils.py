@@ -390,3 +390,5 @@ class ExtrinsicsAprilTag(object):
         return cv2.cvtColor(frame, mode)
             
     #TODO set up detectors, skip if depth, transformation (R,t) to reference frame
+    #TODO expose estimated poses and deviations
+    #TODO visualize
