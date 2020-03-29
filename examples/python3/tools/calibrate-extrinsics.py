@@ -162,12 +162,12 @@ class Streamer(QThread):
             raise RuntimeError('Cannot close devices')
 
 
-
 class StreamViewer(QWidget):
-    streamVisibilityToggled = pyqtSignal(bool)  # Emitted whenever the user enables/disables this viewer
+    streamVisibilityToggled = pyqtSignal(int, bool)  # Emitted whenever the user enables/disables this viewer
 
-    def __init__(self, stream_label, parent=None):
+    def __init__(self, stream_idx, stream_label, parent=None):
         super(StreamViewer, self).__init__(parent)
+        self._stream_idx = stream_idx
         font = QFont('Helvetica', 12, QFont.Bold)
         
         self._stream_label = QLabel('' if stream_label is None else stream_label, self)
@@ -195,12 +195,21 @@ class StreamViewer(QWidget):
     def updateVisibility(self):
         show = self._checkbox_active.isChecked()
         self._viewer.setVisible(show)
-        self.streamVisibilityToggled.emit(show)
+        self.streamVisibilityToggled.emit(self._stream_idx, show)
+    
+    def isActive(self):
+        return self._checkbox_active.isChecked()
+
+    def streamIndex(self):
+        return self._stream_idx
     
     def setStreamLabel(self, label):
         self._stream_label.setText(label)
         self.update()
         #TODO set calibration
+
+    def streamLabel(self):
+        return self._stream_label.text()
     
     def showImage(self, img_np, reset_scale=True):
         # Only show image if this stream is enabled
@@ -244,11 +253,11 @@ class CalibApplication(QMainWindow):
 
     def fit_viewers(self):
         for v in self._viewers:
-            v.scaleToFitWindow()
+            v['widget'].scaleToFitWindow()
 
     def __prepare_layout(self):
-        num_rows = 2 if self._num_streams < 9 else 3 # FIXME hardcoded :-(
-        num_columns = math.ceil(self._num_streams / num_rows)
+        self._num_viewer_rows = 2 if self._num_streams < 9 else 3 # FIXME hardcoded :-(
+        self._num_viewer_columns = math.ceil(self._num_streams / self._num_viewer_rows)
         
         self._main_widget = QWidget()
         input_layout = QHBoxLayout()
@@ -264,21 +273,33 @@ class CalibApplication(QMainWindow):
 
         #TODO options to overlay world coordinates, etc
 
-        viewer_layout = QGridLayout()
+        self._viewer_layout = QGridLayout()
         self._viewers = list()
         for i in range(self._num_streams):
-            row = i // num_columns
-            col = i % num_columns
-            #viewer = imgview.ImageViewer()
-            viewer = StreamViewer(self._stream_display_labels[i])
-            viewer_layout.addWidget(viewer, row, col)
-            self._viewers.append(viewer)
+            row = i // self._num_viewer_columns
+            col = i % self._num_viewer_columns
+            viewer = StreamViewer(i, self._stream_display_labels[i])
+            viewer.streamVisibilityToggled.connect(self.streamVisibilityToggled)
+            self._viewer_layout.addWidget(viewer, row, col)
+            self._viewers.append({'widget': viewer, 'on-active': True})
         #TODO add grid/scroll area (?) at the bottom which holds all inactive/"hidden" streams
         # needed, because we want to activate them again sooner or later
+        # Scroll area for inactive widgets
+        # * layout
+        self._inactive_scroll_layout = QHBoxLayout()
+        # * widget (scroll area content)
+        self._inactive_scroll_widget = QWidget()
+        self._inactive_scroll_widget.setLayout(self._inactive_scroll_layout)
+        # * scroll area
+        self._inactive_scroll_area = QScrollArea()
+        self._inactive_scroll_area.setWidgetResizable(True)
+        self._inactive_scroll_area.setWidget(self._inactive_scroll_widget)
+        self._inactive_scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
         main_layout = QVBoxLayout()
         main_layout.addLayout(input_layout)
-        main_layout.addLayout(viewer_layout)
+        main_layout.addLayout(self._viewer_layout)
+        main_layout.addWidget(self._inactive_scroll_area)
         
         self._main_widget.setLayout(main_layout)
         self.setCentralWidget(self._main_widget)
@@ -306,9 +327,45 @@ class CalibApplication(QMainWindow):
         assert len(frames) == len(self._viewers)
         for i in range(len(frames)):
             if frames[i] is not None:
-                self._viewers[i].showImage(frames[i], reset_scale=self._resize_viewers)
+                self._viewers[i]['widget'].showImage(frames[i], reset_scale=self._resize_viewers)
         self._resize_viewers = False
-        # # self.update()
+    
+    def streamVisibilityToggled(self, stream_index, active):
+        if active:
+            print("Stream '{}' becomes active".format(self._viewers[stream_index]['widget'].streamLabel()))
+            idx_layout_from = self._inactive_scroll_layout.indexOf(self._viewers[stream_index]['widget'])
+            self._inactive_scroll_layout.takeAt(idx_layout_from)
+            self._viewer_layout.addWidget(self._viewers[stream_index]['widget'])
+            self._viewers[stream_index]['on-active'] = active
+        else:
+            print("Stream '{}' becomes inactive".format(self._viewers[stream_index]['widget'].streamLabel()))
+            layout_from = self._viewer_layout
+            idx_layout_from = layout_from.indexOf(self._viewers[stream_index]['widget'])
+            # Swap viewers (move the toggled stream "at the end" of the layout)
+            swap_idx = idx_layout_from + 1
+            while swap_idx < layout_from.count():
+                print('TODO swapping ', swap_idx, idx_layout_from)
+                self._swapViewerWidgetsOnGrid(self._viewers[stream_index]['widget'], layout_from.itemAt(swap_idx).widget())
+                idx_layout_from = swap_idx
+                swap_idx += 1
+            # Remove from grid
+            layout_from.takeAt(idx_layout_from)
+            # Add to inactive "list"
+            self._inactive_scroll_layout.addWidget(self._viewers[stream_index]['widget'])
+            self._viewers[stream_index]['on-active'] = active
+    
+    def _swapViewerWidgetsOnGrid(self, widget1, widget2):
+        # Remember current position
+        idx1 = self._viewer_layout.indexOf(widget1)
+        row1, col1, row_span1, col_span1 = self._viewer_layout.getItemPosition(idx1)
+        idx2 = self._viewer_layout.indexOf(widget2)
+        row2, col2, row_span2, col_span2 = self._viewer_layout.getItemPosition(idx2)
+        # Remove widgets from layout
+        self._viewer_layout.takeAt(idx1)
+        self._viewer_layout.takeAt(idx2)
+        # Add them to the layout at the correct places
+        self._viewer_layout.addWidget(widget2, row1, col1, row_span1, col_span1)
+        self._viewer_layout.addWidget(widget1, row2, col2, row_span2, col_span2)
     
     def appAboutToQuit(self):
         self._streamer.stopStream()
@@ -320,6 +377,7 @@ def gui():
     folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'data-best')
     cfg_file = 'webcam.cfg'#
     cfg_file = 'kinects.cfg'
+    cfg_file = 'k4a.cfg'
     streamer = Streamer(folder, cfg_file)
 
     app = QApplication(['Calibrate Extrinsics'])
