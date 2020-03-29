@@ -291,14 +291,37 @@ class ExtrinsicsHistory:
 
 #TODO add class which works with vito's capture (check if is depth, etc
 class ExtrinsicsAprilTag(object):
-    def __init__(self, capture, grid_limits=None):
+    def __init__(self, 
+            capture, 
+            tag_family, tag_size_mm,
+            refine_edges=True,
+            refine_decode=True,
+            refine_pose=True,
+            debug=False,
+            quad_decimate=1.0,
+            quad_contours=True,
+            grid_limits=None):
         self._num_streams = capture.num_streams()
         self._intrinsics = list()
         self._detectors = list()
+        self._tag_family = tag_family
+        self._tag_size_mm = tag_size_mm
         for i in range(self._num_streams):
             K = capture.intrinsics(i)
             self._intrinsics.append(K)
             if K is None:
-                print('NO INTRINSICS!!!!!!!!!!!')#FIXME raise RuntimeError('No intrinsics for sink "{}"'.format(capture.frame_label(i)))
+                raise RuntimeError('No intrinsics for sink "{}"'.format(capture.frame_label(i)))
+            self._intrinsics.append(K)
+            fx = K[0,0]
+            fy = K[1,1]
+            cx = K[0,2]
+            cy = K[1,2]
+            opt = apriltag.DetectorOptions(families=tag_family,
+                refine_edges=refine_edges, refine_decode=refine_decode, refine_pose=refine_decode,
+                debug=debug, quad_decimate=quad_decimate, quad_contours=quad_contours)
+            opt.camera_params = (fx, fy, cx, cy)
+            opt.tag_size = tag_size_mm
+            detector = apriltag.Detector(opt)
+            self._detectors.append(detector)
             
     #TODO set up detectors, skip if depth, transformation (R,t) to reference frame

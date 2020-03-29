@@ -1,13 +1,14 @@
 """
 Simple GUI to extrinsically calibrate a stream
 """
+import argparse
 import os
 import sys
 import math
 import threading
 import numpy as np
 import time
-from vito import imutils
+from vito import imutils, pyutils
 from iminspect import inputs, imgview, inspection_widgets
 # from PyQt5.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QHBoxLayout, \
 #     QFileDialog, QShortcut, QDockWidget, QGridLayout
@@ -183,7 +184,7 @@ class StreamViewer(QWidget):
         
         self._stream_label = QLabel('' if stream_label is None else stream_label, self)
         self._stream_label.setAlignment(Qt.AlignCenter)
-        self._stream_label.setStyleSheet("QLabel {background-color: blue;}")
+        # self._stream_label.setStyleSheet("QLabel {background-color: blue;}")
         self._stream_label.setFont(font)
         self._stream_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
@@ -233,7 +234,7 @@ class StreamViewer(QWidget):
     
 
 class CalibApplication(QMainWindow):
-    def __init__(self, streamer):
+    def __init__(self, streamer, args):
         super(CalibApplication, self).__init__()
         # self._img_np = None
         # self._vis_np = None
@@ -241,8 +242,9 @@ class CalibApplication(QMainWindow):
         self._num_streams = streamer.numStreams()
         self._stream_display_labels = streamer.displayLabels()
         self._resize_viewers = True
+        self._args = args
 
-        self._extrinsics_estimator = ExtrinsicsAprilTag(streamer.getCapture(), grid_limits=None)
+        self._extrinsics_estimator = ExtrinsicsAprilTag(streamer.getCapture(), args.tag_family, args.tag_size_mm, grid_limits=None)
         self.prepareLayout()
         streamer.newFrameset.connect(self.displayFrameset)
         streamer.startStream()
@@ -415,21 +417,75 @@ class CalibApplication(QMainWindow):
         self._streamer.wait()
 
 
-def gui():
-    #TODO add argparse
+def parseArguments():
+    parser = argparse.ArgumentParser()
+    # parser.add_argument('config_file', action='store',
+    #     help='Path to the stream configuration file (json or libconfig)')
+
+    # AprilTag parameters
+    parser.add_argument('tag_size_mm', action='store', type=pyutils.check_positive_real, #default=225.0,
+        help='Size of the AprilTag in mm (the 8x8 square, not the 10x10)')
+    parser.add_argument('--tag_family', action='store', help='AprilTag family', default='tag36h11')
+
+    # # Pose stability checks
+    # parser.add_argument('--pose-history-length', action='store', type=pyutils.check_positive_int, default=10,
+    #     help='How many previous tag poses should be used to reason about stability?')
+    # parser.add_argument('--pose-threshold-rotation', action='store', type=pyutils.check_positive_real, default=0.1,
+    #     help='Max. allowed angular deviation (in degrees) of a pose before considering a tag unstable.')
+    # parser.add_argument('--pose-threshold-translation', action='store', type=pyutils.check_positive_real, default=2.0,
+    #     help='Max. allowed translation change (in mm) of a pose before considering a tag unstable')
+
+    # # General visualization params
+    # parser.add_argument('--overlay', action='store_true', dest='label_overlay',
+    #     help='Enable camera label overlay')
+    # parser.add_argument('--no-overlay', action='store_false', dest='label_overlay',
+    #     help='Disable camera label overlay')
+    # parser.set_defaults(label_overlay=True)
+    # parser.add_argument('--paused', action='store_true', dest='start_paused',
+    #     help='Wait for user interaction after each frame')
+    # parser.add_argument('--no-paused', action='store_false', dest='start_paused',
+    #     help="Don't wait for user interaction after each frame")
+    # parser.set_defaults(start_paused=True)
+
+    # # Params to visualize the world coordinate system
+    # parser.add_argument('--world', action='store_true', dest='world_coords',
+    #     help='Visualize world coordinate system after detecting markers.')
+    # parser.add_argument('--no-world', action='store_false', dest='world_coords',
+    #     help="Don't visualize the world coordinate system.")
+    # parser.set_defaults(world_coords=True)
+    # parser.add_argument('--axis-length', action='store', type=pyutils.check_positive_real, default=1000.0,
+    #     help="Length of each axes (arrows in [mm]), when running with --world")
+    # parser.add_argument('--grid-spacing', action='store', type=pyutils.check_positive_real, default=500.0,
+    #     help="Size of each grid cell (in [mm]) when running with --world")
+    # parser.add_argument('--grid-limits', action='store', nargs=4, type=float, default=[-1e4, -1e4, 1e4, 1e4],
+    #     help="Limit the ground plane grid visualization to the region given by [x_min, y_min, x_max, y_max]")
+
+    parser.add_argument('--step-through', action='store_true', dest='step_through',
+        help="Step through recording manually (instead of live streaming)")
+    parser.set_defaults(step_through=False)
+
+    args = parser.parse_args()
+    #FIXME remove:
     folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'data-best')
     cfg_file = 'webcam.cfg'#
     cfg_file = 'kinects.cfg'
     cfg_file = 'k4a.cfg'
-    cfg_file = 'image_sequence.cfg'
+    # cfg_file = 'image_sequence.cfg'
+    args.config_file = os.path.join(folder, cfg_file)
+    return args
 
-    step_through = False
 
-    streamer = Streamer(folder, cfg_file, step_through)
+def gui():
+    args = parseArguments()
+
+    abs_cfg = os.path.abspath(args.config_file)
+    folder = os.path.dirname(abs_cfg)
+    cfg_file = os.path.basename(args.config_file)
+    streamer = Streamer(folder, cfg_file, args.step_through)
     # intrinsics = [streamer.getCapture().intrinsics(i) for i in range(streamer.getCapture().numStreams())]
 
     app = QApplication(['Calibrate Extrinsics'])
-    main_widget = CalibApplication(streamer)
+    main_widget = CalibApplication(streamer, args)
     app.aboutToQuit.connect(main_widget.appAboutToQuit)
     main_widget.show()
     sys.exit(app.exec_())
@@ -439,4 +495,5 @@ if __name__ == '__main__':
     gui()
     #TODO params:
     # april tag marker size, etc
+    
     # step through capture vs live stream!
