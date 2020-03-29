@@ -161,35 +161,65 @@ class Streamer(QThread):
         return processed_frames
 
 
-class StreamViewer(QWidget):
+class StreamViewer(QFrame):
     streamVisibilityToggled = pyqtSignal(int, bool)  # Emitted whenever the user enables/disables this viewer
 
     def __init__(self, stream_idx, stream_label, parent=None):
         super(StreamViewer, self).__init__(parent)
         self._stream_idx = stream_idx
-        font = QFont('Helvetica', 12, QFont.Bold)
+        font_stream_label = QFont('Helvetica', 10, QFont.Bold)
+        font_error_label = QFont('Monospace', 10)
+        font_error_label.setStyleHint(QFont.TypeWriter)
         
+        # Show the stream's label
         self._stream_label = QLabel('' if stream_label is None else stream_label, self)
         self._stream_label.setAlignment(Qt.AlignCenter)
         # self._stream_label.setStyleSheet("QLabel {background-color: blue;}")
-        self._stream_label.setFont(font)
+        self._stream_label.setFont(font_stream_label)
         self._stream_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
+        # A checkbox to toggle the display of this stream
         self._checkbox_active = QCheckBox('Active')
         self._checkbox_active.setChecked(True)
         self._checkbox_active.toggled.connect(self.updateVisibility)
 
+        stream_lbl_layout = QHBoxLayout()
+        stream_lbl_layout.addWidget(self._stream_label)
+        stream_lbl_layout.addWidget(self._checkbox_active)
+
+        # Custom "two-column" display
+        self._tag_error_label_left = QLabel('No tag detected')
+        self._tag_error_label_left.setAlignment(Qt.AlignLeft)
+        self._tag_error_label_left.setFont(font_error_label)
+        self._tag_error_label_right = QLabel('')
+        self._tag_error_label_right.setAlignment(Qt.AlignLeft)
+        self._tag_error_label_right.setFont(font_error_label)
+
+        self._tag_error_divider = inputs.VLine()
+        self._tag_error_divider.setVisible(False)
+
+        error_lbl_layout = QHBoxLayout()
+        error_lbl_layout.addWidget(self._tag_error_label_left)
+        error_lbl_layout.addWidget(self._tag_error_divider)
+        error_lbl_layout.addWidget(self._tag_error_label_right)
+
+        # Two rows of text above the actual image content
+        lbl_layout = QVBoxLayout()
+        lbl_layout.addLayout(stream_lbl_layout)
+        lbl_layout.addLayout(error_lbl_layout)
+
+        # Actual image viewer
         self._viewer = imgview.ImageViewer()
 
-        lbl_layout = QHBoxLayout()
-        lbl_layout.addWidget(self._stream_label)
-        lbl_layout.addWidget(self._checkbox_active)
-
+        # This widget's "main" layout
         layout = QVBoxLayout()
         layout.addLayout(lbl_layout)
         #TODO add calibration info label (rotation change, translation change, found tags, etc.)
         layout.addWidget(self._viewer)
         self.setLayout(layout)
+
+        # Add a border to this widget
+        self.setFrameShape(QFrame.Panel)
     
     def updateVisibility(self):
         show = self._checkbox_active.isChecked()
@@ -205,7 +235,28 @@ class StreamViewer(QWidget):
     def setStreamLabel(self, label):
         self._stream_label.setText(label)
         self.update()
-        #TODO set calibration
+    
+    def setTagErrorStrings(self, error_strings):
+        if len(error_strings) == 0:
+            self._tag_error_label_left.setText('No tag detected')
+            self._tag_error_label_right.setText('')
+        else:
+            # # Alternate between two columns
+            # el = error_strings[::2]
+            # er = error_strings[1::2]
+            # First half left, second half right
+            les = len(error_strings)
+            pivot = les // 2 + (les % 2)
+            el = error_strings[:pivot]
+            er = error_strings[pivot:]
+            self._tag_error_label_left.setText('\n'.join(el))
+            if len(er) > 0:
+                self._tag_error_divider.setVisible(True)
+                self._tag_error_label_right.setText('\n'.join(er))
+            else:
+                self._tag_error_divider.setVisible(False)
+                self._tag_error_label_right.setText('')
+    #TODO if pose is stable, change title/tag font color to (dark)green
 
     def streamLabel(self):
         return self._stream_label.text()
@@ -233,7 +284,6 @@ class CalibApplication(QMainWindow):
 
         self._extrinsics_estimator = ExtrinsicsAprilTag(streamer.getCapture(), 
             args.tag_family, args.tag_size_mm, 
-            grid_limits=None,
             pose_history_length=args.pose_history_length,
             pose_threshold_rotation=args.pose_threshold_rotation,
             pose_threshold_translation=args.pose_threshold_translation)
@@ -264,7 +314,7 @@ class CalibApplication(QMainWindow):
 
     def fitViewers(self):
         for v in self._viewers:
-            v['widget'].scaleToFitWindow()
+            v.scaleToFitWindow()
     
     def loadNextFrameset(self):
         frames = self._streamer.getNextFrameset()
@@ -275,7 +325,12 @@ class CalibApplication(QMainWindow):
             self.displayFrameset(frames)
 
     def prepareLayout(self):
-        self._num_viewer_rows = 2 if self._num_streams < 9 else 3 # FIXME hardcoded :-(
+        # TODO (overkill) we could derive the number of rows/cols from the aspect ratio (but how to handle
+        # captures with streams that have different aspect ratios).
+        # Currently, keep it simple and straightforward:
+        self._num_viewer_rows = 1 if self._num_streams < 3 else \
+            (2 if self._num_streams < 9 else\
+                (3 if self._num_streams < 12 else 4))
         self._num_viewer_columns = math.ceil(self._num_streams / self._num_viewer_rows)
         
         self._main_widget = QWidget()
@@ -305,7 +360,7 @@ class CalibApplication(QMainWindow):
             viewer = StreamViewer(i, self._stream_display_labels[i], parent=self)
             viewer.streamVisibilityToggled.connect(self.streamVisibilityToggled)
             self._active_viewer_layout.addWidget(viewer, row, col, 1, 1)
-            self._viewers.append({'widget': viewer, 'on-active': True})
+            self._viewers.append(viewer)
         #TODO add grid/scroll area (?) at the bottom which holds all inactive/"hidden" streams
         # needed, because we want to activate them again sooner or later
         self._active_viewer_widget = QWidget()
@@ -321,11 +376,17 @@ class CalibApplication(QMainWindow):
         self._inactive_scroll_area.setWidgetResizable(True)
         self._inactive_scroll_area.setWidget(self._inactive_scroll_widget)
         self._inactive_scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        # * group them all inside a groupbox
+        self._inactive_groupbox = QGroupBox('Hidden Streams')
+        group_layout = QVBoxLayout()
+        group_layout.addWidget(self._inactive_scroll_area)
+        self._inactive_groupbox.setLayout(group_layout)
 
         main_layout = QVBoxLayout()
         main_layout.addLayout(input_layout)
         main_layout.addWidget(self._active_viewer_widget)
-        main_layout.addWidget(self._inactive_scroll_area)
+        main_layout.addWidget(self._inactive_groupbox)
+        # main_layout.addWidget(self._inactive_scroll_area)
         
         self._main_widget.setLayout(main_layout)
         self.setCentralWidget(self._main_widget)
@@ -358,63 +419,43 @@ class CalibApplication(QMainWindow):
     def displayFrameset(self, frames):
         assert len(frames) == len(self._viewers)
         #TODO if the framerate is too fast, we have to forward this to a separate computing thread (which has a queue/only processes the most recent frameset!!!!)
-        self._extrinsics_estimator.process_frameset(frames)
-        #TODO FIXME visualize poses
-        # Visualize the streams
-        for i in range(len(frames)):
-            if frames[i] is not None:
-                self._viewers[i]['widget'].showImage(frames[i], reset_scale=self._resize_viewers)
+        # Estimate the camera poses
+        extrinsics = self._extrinsics_estimator.process_frameset(frames)
+        # We will update the error display labels with current estimation deltas
+        delta_strings = self._extrinsics_estimator.get_change_strings()
+        # Visualize the poses
+        vis_frames = self._extrinsics_estimator.visualize_frameset(frames, extrinsics,
+            draw_world_coords=self._args.world_coords, axis_length=self._args.axis_length,
+            grid_spacing=self._args.grid_spacing, grid_limits=self._args.grid_limits)
+        # Update the GUI
+        for i in range(len(vis_frames)):
+            self._viewers[i].setTagErrorStrings(delta_strings[i])
+            self._viewers[i].showImage(vis_frames[i], reset_scale=self._resize_viewers)
         self._resize_viewers = False
     
     def streamVisibilityToggled(self, stream_index, active):
         if active:
-            print("Stream '{}' becomes active".format(self._viewers[stream_index]['widget'].streamLabel()))
+            print("Stream '{}' becomes active".format(self._viewers[stream_index].streamLabel()))
             # Remove viewer widget from inactive list
-            idx_layout_from = self._inactive_scroll_layout.indexOf(self._viewers[stream_index]['widget'])
+            idx_layout_from = self._inactive_scroll_layout.indexOf(self._viewers[stream_index])
             self._inactive_scroll_layout.takeAt(idx_layout_from)
 
         # Remove all viewer widgets from grid
         for widx in range(self._active_viewer_layout.count()-1, -1, -1):
             self._active_viewer_layout.takeAt(widx)
         # Re-insert only active viewers
-        active_stream_indices = [idx for idx in range(self._num_streams) if self._viewers[idx]['widget'].isActive()]
+        active_stream_indices = [idx for idx in range(self._num_streams) if self._viewers[idx].isActive()]
         grid_idx = 0
         for sidx in active_stream_indices:
             row = grid_idx // self._num_viewer_columns
             col = grid_idx % self._num_viewer_columns
-            self._active_viewer_layout.addWidget(self._viewers[sidx]['widget'], row, col, 1, 1)
+            self._active_viewer_layout.addWidget(self._viewers[sidx], row, col, 1, 1)
             grid_idx += 1
-
-        # Update status so we know, where it is placed currently:
-        self._viewers[stream_index]['on-active'] = active
 
         # Add toggled viewer to "list" of inactive viewers (if it became inactive)
         if not active:
-            print("Stream '{}' becomes inactive".format(self._viewers[stream_index]['widget'].streamLabel()))
-            self._inactive_scroll_layout.addWidget(self._viewers[stream_index]['widget'])
-
-        # if active:
-        #     # Compute new position
-        #     row = self._active_viewer_layout.count() // self._num_viewer_columns
-        #     col = self._active_viewer_layout.count() % self._num_viewer_columns
-        #     # Append to grid layout
-        #     self._active_viewer_layout.addWidget(self._viewers[stream_index]['widget'], row, col, 1, 1)
-        
-            
-    
-    # def _swapViewerWidgetsOnGrid(self, widget1, widget2):
-    #     print('FIXME: swapping {} with {}'.format(widget1.streamLabel(), widget2.streamLabel()))
-    #     # Remember current position
-    #     idx1 = self._viewer_layout.indexOf(widget1)
-    #     row1, col1, row_span1, col_span1 = self._viewer_layout.getItemPosition(idx1)
-    #     idx2 = self._viewer_layout.indexOf(widget2)
-    #     row2, col2, row_span2, col_span2 = self._viewer_layout.getItemPosition(idx2)
-    #     # Remove widgets from layout
-    #     self._viewer_layout.takeAt(idx1)
-    #     self._viewer_layout.takeAt(idx2)
-    #     # Add them to the layout at the correct places
-    #     self._viewer_layout.addWidget(widget2, row1, col1, row_span1, col_span1)
-    #     self._viewer_layout.addWidget(widget1, row2, col2, row_span2, col_span2)
+            print("Stream '{}' becomes inactive".format(self._viewers[stream_index].streamLabel()))
+            self._inactive_scroll_layout.addWidget(self._viewers[stream_index])
     
     def appAboutToQuit(self):
         self._streamer.stopStream()
@@ -451,24 +492,27 @@ def parseArguments():
     #     help="Don't wait for user interaction after each frame")
     # parser.set_defaults(start_paused=True)
 
-    # # Params to visualize the world coordinate system
-    # parser.add_argument('--world', action='store_true', dest='world_coords',
-    #     help='Visualize world coordinate system after detecting markers.')
-    # parser.add_argument('--no-world', action='store_false', dest='world_coords',
-    #     help="Don't visualize the world coordinate system.")
-    # parser.set_defaults(world_coords=True)
-    # parser.add_argument('--axis-length', action='store', type=pyutils.check_positive_real, default=1000.0,
-    #     help="Length of each axes (arrows in [mm]), when running with --world")
-    # parser.add_argument('--grid-spacing', action='store', type=pyutils.check_positive_real, default=500.0,
-    #     help="Size of each grid cell (in [mm]) when running with --world")
-    # parser.add_argument('--grid-limits', action='store', nargs=4, type=float, default=[-1e4, -1e4, 1e4, 1e4],
-    #     help="Limit the ground plane grid visualization to the region given by [x_min, y_min, x_max, y_max]")
+    # Params to visualize the world coordinate system
+    parser.add_argument('--world', action='store_true', dest='world_coords',
+        help='Visualize world coordinate system after detecting markers.')
+    parser.add_argument('--no-world', action='store_false', dest='world_coords',
+        help="Don't visualize the world coordinate system.")
+    parser.set_defaults(world_coords=True)
+    parser.add_argument('--axis-length', action='store', type=pyutils.check_positive_real, default=1000.0,
+        help="Length of each axes (arrows in [mm]), when running with --world")
+    parser.add_argument('--grid-spacing', action='store', type=pyutils.check_positive_real, default=500.0,
+        help="Size of each grid cell (in [mm]) when running with --world")
+    parser.add_argument('--grid-limits', action='store', nargs=4, type=float, default=[-1e4, -1e4, 1e4, 1e4],
+        help="Limit the ground plane grid visualization to the region given by [x_min, y_min, x_max, y_max]")
 
     parser.add_argument('--step-through', action='store_true', dest='step_through',
         help="Step through recording manually (instead of live streaming)")
     parser.set_defaults(step_through=False)
 
     args = parser.parse_args()
+    # Convert grid limits to rectangle:
+    args.grid_limits = [args.grid_limits[0], args.grid_limits[1], args.grid_limits[2]-args.grid_limits[0], args.grid_limits[3]-args.grid_limits[1]]
+
     #FIXME remove:
     folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'data-best')
     cfg_file = 'webcam.cfg'#

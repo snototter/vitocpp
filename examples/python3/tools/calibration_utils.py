@@ -10,6 +10,11 @@ import numpy as np
 
 from vito import cam_projections as prjutils
 
+sys.path.append(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', '..', 'gen'))
+from vcp import imvis
+from vcp import imutils
+
+
 ################################################################################
 # Pose estimation
 ################################################################################
@@ -194,11 +199,9 @@ class ExtrinsicsHistory:
             centers[detection.tag_id] = detection.center
             errors[detection.tag_id] = err
             self.seen_tag_ids.add(detection.tag_id)
-
         self.center_history[cam_id].append(centers)
         self.pose_history[cam_id].append(poses)
         self.reprojection_error_history[cam_id].append(errors)
-
 
     def update_coordinate_transformations(self):
         # Clear previous transformations
@@ -264,16 +267,21 @@ class ExtrinsicsHistory:
 
     def get_change_strings(self, cam_id):
         changes = self.get_pose_changes(cam_id)
-        return ['Tag {:2d}: {:.2f} deg, {:.1f} mm, {:.2f} px'.format(tag_id, changes[tag_id][0], changes[tag_id][1], changes[tag_id][2]) for tag_id in changes]
+        return ['Tag {:2d}: {:5.2f} deg, {:4.1f} mm, {:5.2f} px'.format(tag_id, changes[tag_id][0], changes[tag_id][1], changes[tag_id][2]) for tag_id in changes]
 
 
     def get_tag_extrinsics(self, cam_id):
         """Return the extrinsics w.r.t. each detected tag."""
         # TODO maybe robustify temporally
-        return self.pose_history[cam_id][-1]
+        ph = self.pose_history[cam_id]
+        if len(ph) > 0:
+            return ph[-1]
+        return None
 
 
     def get_world_extrinsics(self, cam_id):        
+        if self.skip_camera[cam_id]:
+            return None
         # Check if we have pose estimates available
         pose = self.pose_history[cam_id][-1]
         if pose is None:
@@ -298,7 +306,6 @@ class ExtrinsicsHistory:
                     return transform
             return None
 
-#TODO add class which works with vito's capture (check if is depth, etc
 class ExtrinsicsAprilTag(object):
     def __init__(self, 
             capture, 
@@ -309,10 +316,11 @@ class ExtrinsicsAprilTag(object):
             debug=False,
             quad_decimate=1.0,
             quad_contours=True,
-            grid_limits=None,
             pose_history_length=10,
             pose_threshold_rotation=0.1,
             pose_threshold_translation=2.0):
+            #TODO check if there's a transformation2reference_view
+            #If so, store it and use it to lookup/compute the world transformation
         self._num_streams = capture.num_streams()
         self._intrinsics = list()
         self._detectors = list()
@@ -370,10 +378,69 @@ class ExtrinsicsAprilTag(object):
             frame_detections = self._detectors[i].detect(gray)
             detections.append(frame_detections)
             self._extrinsics_history.update_tags(i, frame_detections)
-            if len(frame_detections) > 0:
-                print('Stream i: {} has {} tag detections!'.format(i, len(frame_detections)))
         # Update transformations between tags
         self._extrinsics_history.update_coordinate_transformations()
+        return [self._extrinsics_history.get_world_extrinsics(i) for i in range(len(frameset))]
+    
+    def get_change_strings(self):
+        return [self._extrinsics_history.get_change_strings(i) for i in range(self._num_streams)]
+    
+    def visualize_frameset(self, frameset, extrinsics,
+            draw_world_coords=True,
+            axis_length=1000,
+            grid_spacing=500,
+            grid_limits=[-1e4, -1e4, 1e4, 1e4]):
+        assert len(extrinsics) == self._num_streams
+        assert len(frameset) == self._num_streams
+
+        # Ensure that the image to draw on has 3 channels
+        def _ensure_rgb(f):
+            if f.ndim == 3:
+                if f.shape[2] == 3 or f.shape[3] == 4:
+                    return f
+                elif f.shape[2] == 1:
+                    return cv2.cvtColor(f, cv2.COLOR_GRAY2RGB)
+            elif f.ndim == 2:
+                return np.dstack((f, f, f))
+            raise RuntimeError('Invalid image dimensionality or number of channels')
+            
+        vis_frames = [_ensure_rgb(f) for f in frameset]
+        for idx in range(self._num_streams):
+            K = self._intrinsics[idx]
+            if draw_world_coords and extrinsics[idx] is not None:
+                R, t = split_pose(extrinsics[idx])
+                #TODO
+                # Draw a ground plane grid
+                vis_frames[idx] = imvis.draw_groundplane_grid(
+                    vis_frames[idx], K, R, t,
+                    grid_spacing=grid_spacing, grid_limits=grid_limits,
+                    grid_origin=(0, 0), scale_image_points=1.0, 
+                    point_radius=10, point_thickness=-1,
+                    line_thickness=3, opacity=0.7,
+                    output_rgb=True)
+
+                # Draw coordinate system axes
+                vis_frames[idx] = imvis.draw_xyz_axes(vis_frames[idx], K, R, t,
+                    origin=(0, 0, 0), scale_axes=axis_length, scale_image_points=1,
+                    line_width=3, dash_length=-1, image_is_rgb=True)
+
+                # Draw world horizon line
+                vis_frames[idx] = imvis.draw_horizon(vis_frames[idx], K, R, t,
+                    color=(255,0,255), scale_image_points=1.0, line_width=3,
+                    warn_if_not_visible=False)
+
+            # Always visualize detected tag poses
+            tag_extrinsics = self._extrinsics_history.get_tag_extrinsics(idx)
+            if tag_extrinsics is None:
+                continue
+            for tag_id in tag_extrinsics:
+                R, t = split_pose(tag_extrinsics[tag_id])
+                vis_frames[idx] = imvis.draw_xyz_axes(vis_frames[idx], K, R, t,
+                    scale_axes=self._tag_size_mm/2.0, scale_image_points=1.0,
+                    line_width=2, dash_length=-1, image_is_rgb=True)
+        return vis_frames
+
+
 
     def _cvt_as_is(self, frame):
         return frame
@@ -388,7 +455,7 @@ class ExtrinsicsAprilTag(object):
         if frame.ndim == 2 or frame.shape[2] == 1:
             return frame
         return cv2.cvtColor(frame, mode)
-            
+           
     #TODO set up detectors, skip if depth, transformation (R,t) to reference frame
     #TODO expose estimated poses and deviations
     #TODO visualize
