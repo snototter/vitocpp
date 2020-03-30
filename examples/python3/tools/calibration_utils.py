@@ -46,6 +46,8 @@ def pose_from_apriltag(detection, detector, K, tag_size_mm, return_reprojection_
 
 
 def split_pose(M):
+    if M is None:
+        return None, None
     R = M[:3,:3]
     t = M[:3,3]
     return R, t.reshape((3,1))
@@ -384,7 +386,7 @@ class ExtrinsicsAprilTag(object):
         self._extrinsics_history.update_coordinate_transformations()
         # TODO collect poses (transformation 2 reference view)
         return [{
-            'ext_world': self._extrinsics_history.get_world_extrinsics(i),
+            'ext_world': split_pose(self._extrinsics_history.get_world_extrinsics(i)),
             'ext_tag': self._extrinsics_history.get_tag_extrinsics(i),
             'delta': self._extrinsics_history.get_pose_changes(i),
             'stable': self._extrinsics_history.is_pose_stable(i)
@@ -396,6 +398,7 @@ class ExtrinsicsAprilTag(object):
             draw_horizon=True,
             draw_tags=True,
             axis_length=1000,
+            arrow_head=0.1,
             grid_spacing=500,
             grid_limits=[-1e4, -1e4, 1e4, 1e4],
             line_width=3):
@@ -417,8 +420,9 @@ class ExtrinsicsAprilTag(object):
         for idx in range(self._num_streams):
             K = self._intrinsics[idx]
             if estimation_result[idx]['ext_world'] is not None and \
+                    not any([rt is None for rt in estimation_result[idx]['ext_world']]) and \
                     (draw_world_xyz or draw_groundplane or draw_horizon):
-                R, t = split_pose(estimation_result[idx]['ext_world'])
+                R, t = estimation_result[idx]['ext_world']
                 # Draw a ground plane grid
                 if draw_groundplane:
                     vis_frames[idx] = imvis.draw_groundplane_grid(
@@ -433,7 +437,7 @@ class ExtrinsicsAprilTag(object):
                 if draw_world_xyz:
                     vis_frames[idx] = imvis.draw_xyz_axes(vis_frames[idx], K, R, t,
                         origin=(0, 0, 0), scale_axes=axis_length, scale_image_points=1,
-                        line_width=line_width, dash_length=-1, image_is_rgb=True)
+                        line_width=line_width, dash_length=-1, tip_length=arrow_head, image_is_rgb=True)
 
                 # Draw world horizon line
                 if draw_horizon:
