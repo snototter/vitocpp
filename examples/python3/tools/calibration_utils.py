@@ -382,6 +382,7 @@ class ExtrinsicsAprilTag(object):
             self._extrinsics_history.update_tags(i, frame_detections)
         # Update transformations between tags
         self._extrinsics_history.update_coordinate_transformations()
+        # TODO collect poses (transformation 2 reference view)
         return [{
             'ext_world': self._extrinsics_history.get_world_extrinsics(i),
             'ext_tag': self._extrinsics_history.get_tag_extrinsics(i),
@@ -390,10 +391,14 @@ class ExtrinsicsAprilTag(object):
             } for i in range(len(frameset))]
         
     def visualize_frameset(self, frameset, estimation_result,
-            draw_world_coords=True,
+            draw_world_xyz=True,
+            draw_groundplane=True,
+            draw_horizon=True,
+            draw_tags=True,
             axis_length=1000,
             grid_spacing=500,
-            grid_limits=[-1e4, -1e4, 1e4, 1e4]):
+            grid_limits=[-1e4, -1e4, 1e4, 1e4],
+            line_width=3):
         assert len(estimation_result) == self._num_streams
         assert len(frameset) == self._num_streams
 
@@ -411,36 +416,41 @@ class ExtrinsicsAprilTag(object):
         vis_frames = [_ensure_rgb(f) for f in frameset]
         for idx in range(self._num_streams):
             K = self._intrinsics[idx]
-            if draw_world_coords and estimation_result[idx]['ext_world'] is not None:
+            if estimation_result[idx]['ext_world'] is not None and \
+                    (draw_world_xyz or draw_groundplane or draw_horizon):
                 R, t = split_pose(estimation_result[idx]['ext_world'])
                 # Draw a ground plane grid
-                vis_frames[idx] = imvis.draw_groundplane_grid(
-                    vis_frames[idx], K, R, t,
-                    grid_spacing=grid_spacing, grid_limits=grid_limits,
-                    grid_origin=(0, 0), scale_image_points=1.0, 
-                    point_radius=10, point_thickness=-1,
-                    line_thickness=3, opacity=0.7,
-                    output_rgb=True)
+                if draw_groundplane:
+                    vis_frames[idx] = imvis.draw_groundplane_grid(
+                        vis_frames[idx], K, R, t,
+                        grid_spacing=grid_spacing, grid_limits=grid_limits,
+                        grid_origin=(0, 0), scale_image_points=1.0, 
+                        point_radius=10, point_thickness=-1,
+                        line_thickness=line_width, opacity=0.7,
+                        output_rgb=True)
 
                 # Draw coordinate system axes
-                vis_frames[idx] = imvis.draw_xyz_axes(vis_frames[idx], K, R, t,
-                    origin=(0, 0, 0), scale_axes=axis_length, scale_image_points=1,
-                    line_width=3, dash_length=-1, image_is_rgb=True)
+                if draw_world_xyz:
+                    vis_frames[idx] = imvis.draw_xyz_axes(vis_frames[idx], K, R, t,
+                        origin=(0, 0, 0), scale_axes=axis_length, scale_image_points=1,
+                        line_width=line_width, dash_length=-1, image_is_rgb=True)
 
                 # Draw world horizon line
-                vis_frames[idx] = imvis.draw_horizon(vis_frames[idx], K, R, t,
-                    color=(255,0,255), scale_image_points=1.0, line_width=3,
-                    warn_if_not_visible=False)
+                if draw_horizon:
+                    vis_frames[idx] = imvis.draw_horizon(vis_frames[idx], K, R, t,
+                        color=(255,0,255), scale_image_points=1.0, line_width=line_width,
+                        warn_if_not_visible=False)
 
             # Always visualize detected tag poses
-            tag_ext = estimation_result[idx]['ext_tag']
-            if tag_ext is None:
-                continue
-            for tag_id in tag_ext:
-                R, t = split_pose(tag_ext[tag_id])
-                vis_frames[idx] = imvis.draw_xyz_axes(vis_frames[idx], K, R, t,
-                    scale_axes=self._tag_size_mm/2.0, scale_image_points=1.0,
-                    line_width=2, dash_length=-1, image_is_rgb=True)
+            if draw_tags:
+                tag_ext = estimation_result[idx]['ext_tag']
+                if tag_ext is None:
+                    continue
+                for tag_id in tag_ext:
+                    R, t = split_pose(tag_ext[tag_id])
+                    vis_frames[idx] = imvis.draw_xyz_axes(vis_frames[idx], K, R, t,
+                        scale_axes=self._tag_size_mm/2.0, scale_image_points=1.0,
+                        line_width=line_width, dash_length=-1, image_is_rgb=True)
         return vis_frames
 
 

@@ -140,8 +140,8 @@ class Streamer(QThread):
             return f #imutils.transform(f, 'histeq')
 
         def _prepare_depth(f):
-            return imutils.transform(f, 'depth2surfnorm', 'surfnorm2rgb')
-            #return imvis.pseudocolor(f, limits=[0, 5000], color_map=colormaps.colormap_turbo_rgb)
+            #return imutils.transform(f, 'depth2surfnorm', 'surfnorm2rgb')
+            return imvis.pseudocolor(f, limits=[0, 5000], color_map=colormaps.colormap_turbo_rgb)
 
         def _prepare_ir(f):
             # Convert to uint8
@@ -277,8 +277,19 @@ class CameraPoseEstimator(QThread):
 
     def __init__(self, streamer, args):
         super(CameraPoseEstimator, self).__init__()
-        self._args = args
         self._streamer = streamer
+
+        # Visualization parameters
+        self._draw_world_xyz = args.world_coords
+        self._draw_groundplane = self._draw_world_xyz
+        self._draw_horizon = self._draw_world_xyz
+        self._draw_tags = self._draw_world_xyz
+        self._axis_length = args.axis_length
+        self._grid_spacing = args.grid_spacing
+        self._grid_limits = args.grid_limits
+        self._line_width = 3
+
+        # Thread/lock parameters
         self._process_lock = threading.Lock()
         self._frameset_to_process = None
         self._continue_processing = False
@@ -290,6 +301,17 @@ class CameraPoseEstimator(QThread):
             pose_history_length=args.pose_history_length,
             pose_threshold_rotation=args.pose_threshold_rotation,
             pose_threshold_translation=args.pose_threshold_translation)
+    
+    def setVisualizationParameters(self, draw_world_xyz, draw_groundplane, draw_horizon,
+            draw_tags, axis_length, grid_spacing, grid_limits, line_width):
+        self._draw_world_xyz = draw_world_xyz
+        self._draw_groundplane = draw_groundplane
+        self._draw_horizon = draw_horizon
+        self._draw_tags = draw_tags
+        self._axis_length = axis_length
+        self._grid_spacing = grid_spacing
+        self._grid_limits = grid_limits
+        self._line_width = int(line_width)
 
     def startProcessing(self):
         self._continue_processing = True
@@ -331,8 +353,14 @@ class CameraPoseEstimator(QThread):
             # delta_strings = self._extrinsics_estimator.get_change_strings() #TODO get deltas instead of strings! also get stability, etc
             # Visualize the poses
             vis_frames = self._extrinsics_estimator.visualize_frameset(frames, estimation_result,
-                draw_world_coords=self._args.world_coords, axis_length=self._args.axis_length,
-                grid_spacing=self._args.grid_spacing, grid_limits=self._args.grid_limits)
+                draw_world_xyz=self._draw_world_xyz,
+                draw_groundplane=self._draw_groundplane,
+                draw_horizon=self._draw_horizon,
+                draw_tags=self._draw_tags,
+                axis_length=self._axis_length,
+                grid_spacing=self._grid_spacing,
+                grid_limits=self._grid_limits,
+                line_width=self._line_width)
             self.processingDone.emit(vis_frames, estimation_result)
             # # # # [DEV] Dummy signal, just forwarding frames and adding some delay:
             # # # self.processingDone.emit(frames, list(), [list() for f in frames])
@@ -356,6 +384,7 @@ class CalibApplication(QMainWindow):
         self._stream_display_labels = streamer.displayLabels()
         self._resize_viewers = True
         self._args = args
+        self._filename_save = None
         # self._process_lock = threading.Lock()
         # self._pose_estimation_in_progress = False
 
@@ -412,25 +441,101 @@ class CalibApplication(QMainWindow):
             (2 if self._num_streams < 9 else\
                 (3 if self._num_streams < 12 else 4))
         self._num_viewer_columns = math.ceil(self._num_streams / self._num_viewer_rows)
+
+        min_lbl_width = 120 # Minimum width of an input's label
         
         self._main_widget = QWidget()
-        input_layout = QHBoxLayout()
-        # min_lbl_width = 165
+        ctrl_layout = QHBoxLayout()
 
-        btn = QPushButton('Original Image Size')
-        btn.clicked.connect(self.rescaleViewers)
-        input_layout.addWidget(btn)
+        self._filename_widget = inputs.SelectDirEntryWidget('Select file to save extrinsics:',
+                inputs.SelectDirEntryType.FILENAME_SAVE,
+                filters="XML (*.xml)", min_label_width=min_lbl_width)
+        self._filename_widget.value_changed.connect(self.filenameSaveSelected)
+        ctrl_layout.addWidget(self._filename_widget)
 
-        btn = QPushButton('Scale Images to Fit')
-        btn.clicked.connect(self.fitViewers)
-        input_layout.addWidget(btn)
+        self._btn_save_ext = QPushButton('Save Extrinsics')
+        self._btn_save_ext.clicked.connect(self.saveExtrinsics)
+        self._btn_save_ext.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+        self._btn_save_ext.setEnabled(False)
+        ctrl_layout.addWidget(self._btn_save_ext)
 
         if self._streamer.isStepThrough():
             self._btn_next = QPushButton('Next Frameset')
             self._btn_next.clicked.connect(self.loadNextFrameset)
-            input_layout.addWidget(self._btn_next)
+            self._btn_next.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
+            ctrl_layout.addWidget(self._btn_next)
+        
+        # Controls to manipulate viewers and step through the stream
+        btn_zoom_original = QPushButton('Original Image Size')
+        btn_zoom_original.clicked.connect(self.rescaleViewers)
 
-        #TODO options to overlay world coordinates, etc
+        btn_zoom_fit = QPushButton('Scale Images to Fit')
+        btn_zoom_fit.clicked.connect(self.fitViewers)
+
+        # Controls to modify visualization parameters
+        self._draw_groundplane_cb = inputs.CheckBoxWidget('Draw groundplane:', is_checked=self._args.world_coords, min_label_width=min_lbl_width)
+        self._draw_groundplane_cb.value_changed.connect(self.updateVisualizationOptions)
+
+        self._grid_limits_widget = inputs.RoiSelectWidget('Groundplane ROI:', roi=[int(v) for v in self._args.grid_limits], min_label_width=min_lbl_width,
+            box_labels=['X min:', 'Y min:', 'Width:', 'Height:'], support_image_selection=False)
+        self._grid_limits_widget.value_changed.connect(self.updateVisualizationOptions)
+
+        self._grid_spacing_widget = inputs.SliderSelectionWidget('Grid spacing:', 500, 5000, 18,
+            value_format_fx=lambda v: '{:s} m'.format(inputs.format_float(v/1000, 5, 2)), min_label_width=min_lbl_width)
+        self._grid_spacing_widget.value_changed.connect(self.updateVisualizationOptions)
+        
+
+        self._draw_xyz_cb = inputs.CheckBoxWidget('Draw world axis:', is_checked=self._args.world_coords, min_label_width=min_lbl_width)
+        self._draw_xyz_cb.value_changed.connect(self.updateVisualizationOptions)
+
+        self._axis_length_widget = inputs.SliderSelectionWidget('Axis length:', 500, 10000, 19,
+            value_format_fx=lambda v: '{:s} m'.format(inputs.format_float(v/1000, 5, 2)), min_label_width=min_lbl_width)
+        self._axis_length_widget.value_changed.connect(self.updateVisualizationOptions)
+
+        self._line_width_widget = inputs.SliderSelectionWidget('Line thickness:', 1, 21, 10, initial_value=3,
+            value_format_fx=lambda v: '{:s} px'.format(inputs.format_int(v, 2)), min_label_width=min_lbl_width)
+        self._line_width_widget.value_changed.connect(self.updateVisualizationOptions)
+
+        self._draw_horizon_cb = inputs.CheckBoxWidget('Draw horizon:', is_checked=self._args.world_coords, min_label_width=min_lbl_width)
+        self._draw_horizon_cb.value_changed.connect(self.updateVisualizationOptions)
+
+        self._draw_tags_cb = inputs.CheckBoxWidget('Draw tags:', is_checked=True, min_label_width=min_lbl_width)
+        self._draw_tags_cb.value_changed.connect(self.updateVisualizationOptions)
+
+        vis_option_layout = QGridLayout()
+        vis_option_layout.addWidget(btn_zoom_original, 0, 0, 1, 5)
+        vis_option_layout.addWidget(btn_zoom_fit, 0, 5, 1, 5)
+        # vis_option_layout.addLayout(layout)
+
+        # layout = QHBoxLayout()
+        # layout.addWidget(self._draw_groundplane_cb)
+        # layout.addWidget(self._grid_limits_widget)
+        # layout.addWidget(self._grid_spacing_widget)
+        # vis_option_layout.addLayout(layout)
+        vis_option_layout.addWidget(self._draw_groundplane_cb, 1, 0, 1, 2)
+        vis_option_layout.addWidget(self._grid_limits_widget, 1, 2, 1, 4)
+        vis_option_layout.addWidget(self._grid_spacing_widget, 1, 6, 1, 4)
+
+        # layout = QHBoxLayout()
+        # layout.addWidget(self._draw_horizon_cb)
+        # layout.addWidget(self._draw_xyz_cb)
+        # layout.addWidget(self._axis_length_widget)
+        # vis_option_layout.addLayout(layout)
+        vis_option_layout.addWidget(self._draw_horizon_cb, 2, 0, 1, 2)
+        vis_option_layout.addWidget(self._draw_xyz_cb, 2, 2, 1, 2)
+        vis_option_layout.addWidget(self._axis_length_widget, 2, 4, 1, 6)
+
+        # layout = QHBoxLayout()
+        # layout.addWidget(self._draw_tags_cb)
+        # layout.addWidget(self._line_width_widget)
+        # vis_option_layout.addLayout(layout)
+        vis_option_layout.addWidget(self._draw_tags_cb, 3, 0, 1, 4)
+        vis_option_layout.addWidget(self._line_width_widget, 3, 4, 1, 6)
+
+
+        
+        vis_option_widget = QGroupBox('Visualization')
+        vis_option_widget.setLayout(vis_option_layout)
 
         self._active_viewer_layout = QGridLayout()
         self._viewers = list()
@@ -443,7 +548,7 @@ class CalibApplication(QMainWindow):
             self._viewers.append(viewer)
         #TODO add grid/scroll area (?) at the bottom which holds all inactive/"hidden" streams
         # needed, because we want to activate them again sooner or later
-        self._active_viewer_widget = QWidget()
+        self._active_viewer_widget = QGroupBox('Active Streams')
         self._active_viewer_widget.setLayout(self._active_viewer_layout)
         # Scroll area for inactive widgets
         # * layout
@@ -457,13 +562,14 @@ class CalibApplication(QMainWindow):
         self._inactive_scroll_area.setWidget(self._inactive_scroll_widget)
         self._inactive_scroll_area.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
         # * group them all inside a groupbox
-        self._inactive_groupbox = QGroupBox('Hidden Streams')
+        self._inactive_groupbox = QGroupBox('Inactive Streams')
         group_layout = QVBoxLayout()
         group_layout.addWidget(self._inactive_scroll_area)
         self._inactive_groupbox.setLayout(group_layout)
 
         main_layout = QVBoxLayout()
-        main_layout.addLayout(input_layout)
+        main_layout.addLayout(ctrl_layout)
+        main_layout.addWidget(vis_option_widget)
         main_layout.addWidget(self._active_viewer_widget)
         main_layout.addWidget(self._inactive_groupbox)
         # main_layout.addWidget(self._inactive_scroll_area)
@@ -472,11 +578,17 @@ class CalibApplication(QMainWindow):
         self.setCentralWidget(self._main_widget)
         self.resize(QSize(1280, 720))
 
+        self.updateVisualizationOptions(None)
+
     def prepareShortcuts(self):
         sc = QShortcut(QKeySequence('Ctrl+F'), self)
         sc.activated.connect(self.fitViewers)
         sc = QShortcut(QKeySequence('Ctrl+1'), self)
         sc.activated.connect(self.rescaleViewers)
+        sc = QShortcut(QKeySequence('Ctrl+S'), self)
+        sc.activated.connect(self.saveExtrinsics)
+        sc = QShortcut(QKeySequence('Ctrl+Shift+S'), self)
+        sc.activated.connect(self.saveExtrinsicsAs)
 
     # def __load_request(self):
     #     filename, _ = QFileDialog.getOpenFileName(self, "Open image", "",
@@ -503,6 +615,29 @@ class CalibApplication(QMainWindow):
             self._viewers[i].showImage(frames[i], reset_scale=self._resize_viewers)
         self._resize_viewers = False
     
+    def updateVisualizationOptions(self, value):
+        self._processing_thread.setVisualizationParameters(
+            self._draw_xyz_cb.value(), self._draw_groundplane_cb.value(),
+            self._draw_horizon_cb.value(), self._draw_tags_cb.value(),
+            self._axis_length_widget.value(), self._grid_spacing_widget.value(), self._grid_limits_widget.value(),
+            self._line_width_widget.value())
+    
+    def filenameSaveSelected(self, filename):
+        if filename is not None:
+            self._filename_save = filename
+        self._btn_save_ext.setEnabled(self._filename_save is not None)
+    
+    def saveExtrinsicsAs(self):
+        self._filename_widget.open_dialog()
+        self.saveExtrinsics()
+
+    def saveExtrinsics(self):
+        fn = self._filename_save
+        if fn is None:
+            print('Cannot save extrinsics - You must select a filename first!')
+            return
+        print('FIXME need to save the extrinsics to ', self._filename_save)
+
     # def enqueueFrameset(self, frames):
     #     self._process_lock.acquire()
     #     skip_frameset = self._pose_estimation_in_progress
@@ -617,8 +752,8 @@ def parseArguments():
     #FIXME remove:
     folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'data-best')
     cfg_file = 'webcam.cfg'#
-    cfg_file = 'kinects.cfg'
-    # cfg_file = 'k4a.cfg'
+    # cfg_file = 'kinects.cfg'
+    cfg_file = 'k4a.cfg'
     # cfg_file = 'image_sequence.cfg'
     args.config_file = os.path.join(folder, cfg_file)
     return args

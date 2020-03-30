@@ -422,6 +422,7 @@ py::list ListZedDevices(bool warn_if_no_devices, bool include_unavailable)
 
 #else
   (void)warn_if_no_devices;
+  (void)include_unavailable;
   VCP_ERROR("You didn't enable VCP_BEST_WITH_ZED.");
 #endif
   return list;

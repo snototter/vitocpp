@@ -1366,9 +1366,28 @@ void DrawXYZAxes(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::M
 
   // Project origin and the axis end points:
   const cv::Mat projection_matrix = vcp::math::geo3d::ProjectionMatrixFromKRt(K, R, t);
-  const cv::Vec3d x = origin + cv::Vec3d(scale_axes, 0.0, 0.0);
-  const cv::Vec3d y = origin + cv::Vec3d(0.0, scale_axes, 0.0);
-  const cv::Vec3d z = origin + cv::Vec3d(0.0, 0.0, scale_axes);
+  cv::Vec3d x = origin + cv::Vec3d(scale_axes, 0.0, 0.0);
+  cv::Vec3d y = origin + cv::Vec3d(0.0, scale_axes, 0.0);
+  cv::Vec3d z = origin + cv::Vec3d(0.0, 0.0, scale_axes);
+
+  // Check if axis end points lie in front of the image plane:
+  for (const auto &p : {std::make_pair('x', &x), std::make_pair('y', &y), std::make_pair('z', &z)})
+  {
+    if (!vcp::math::geo3d::IsPointInFrontOfPlane(*p.second, image_plane))
+    {
+      VCP_LOG_WARNING("End point of " << p.first << "-axis would project behind the image plane. Adjusting it automatically...");
+      const auto axis = vcp::math::geo3d::Line3d(origin, *p.second);
+      cv::Vec3d intersection;
+      if (vcp::math::geo3d::IntersectionLineSegmentPlane(axis, image_plane, &intersection))
+      {
+        // Replace the invalid end point by the midpoint from origin to the image plane
+        const auto visible_axis = vcp::math::geo3d::Line3d(origin, intersection);
+        *p.second = visible_axis.MidPoint();
+      }
+      else
+        VCP_LOG_FAILURE("Couldn't compute a valid intersection point between " << p.second << "-axis and image plane (maybe numerical issue?)");
+    }
+  }
 
   std::vector<cv::Point> pts;
   pts.reserve(4);
