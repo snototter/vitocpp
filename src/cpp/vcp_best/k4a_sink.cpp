@@ -952,6 +952,70 @@ public:
     params_.verbose = verbose;
   }
 
+  void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
+  {
+    const auto ft = FrameTypeAt(stream_index);
+    if (ft == FrameType::MONOCULAR)
+    {
+      R = rgb_extrinsics_.first;
+      t = rgb_extrinsics_.second;
+    }
+    else if (ft == FrameType::DEPTH)
+    {
+      R = depth_extrinsics_.first;
+      t = depth_extrinsics_.second;
+    }
+    else if (ft == FrameType::INFRARED)
+    {
+      R = ir_extrinsics_.first;
+      t = ir_extrinsics_.second;
+    }
+    else
+      VCP_ERROR("Invalid frame type " << ft << " while querying extrinsics.");
+  }
+
+  void SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
+  {
+    const auto ft = FrameTypeAt(stream_index);
+    if (ft == FrameType::MONOCULAR)
+    {
+      // The reference view - if valid R & t, forward to other sensor streams, too
+      VCP_LOG_FIXME("Setting R, t (valid: " << (!R.empty()) << "); need to forward to depth & ir");
+      rgb_extrinsics_.first = R;
+      rgb_extrinsics_.second = t;
+    }
+    else if (ft == FrameType::DEPTH)
+    {
+      if ((R.empty() || t.empty()) && depth_intrinsics_.HasTransformationToReference())
+      {
+        VCP_LOG_FIXME("Depth R, t invalid! - need to take from color stream");
+        VCP_LOG_FAILURE("Dummy approach - taking depth extrinsics as is!");
+        depth_extrinsics_.first = rgb_extrinsics_.first;
+        depth_extrinsics_.second = rgb_extrinsics_.second;
+        // check if depth intrinsics have a transformation to the reference view
+        //FIXME should we return true if extrinsics have been set to valid matrices?
+      }
+      else
+      {
+        depth_extrinsics_.first = R;
+        depth_extrinsics_.second = t;
+      }
+    }
+    else if (ft == FrameType::INFRARED)
+    {
+      if ((R.empty() || t.empty()) && ir_intrinsics_.HasTransformationToReference())
+      {
+        VCP_LOG_FIXME("INFRARED R, t invalid! - need to take from color stream");
+        // check if depth intrinsics have a transformation to the reference view
+      }
+      else
+      {
+        ir_extrinsics_.first = R;
+        ir_extrinsics_.second = t;
+      }
+    }
+  }
+
   SinkType GetSinkType() const override
   {
     return SinkType::K4A;
@@ -991,6 +1055,9 @@ private:
   calibration::StreamIntrinsics rgb_intrinsics_;
   calibration::StreamIntrinsics depth_intrinsics_;
   calibration::StreamIntrinsics ir_intrinsics_;
+  std::pair<cv::Mat, cv::Mat> rgb_extrinsics_;
+  std::pair<cv::Mat, cv::Mat> depth_extrinsics_;
+  std::pair<cv::Mat, cv::Mat> ir_extrinsics_;
   k4a_device_t k4a_device_;
 #ifdef VCP_BEST_DEBUG_FRAMERATE
   std::chrono::high_resolution_clock::time_point previous_frame_timepoint_;

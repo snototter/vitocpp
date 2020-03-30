@@ -249,7 +249,7 @@ void DrawEllipse(cv::Mat &image, const cv::RotatedRect &rect, const cv::Scalar &
  * * If dash length > 0, the arrows will be drawn dashed.
  */
 void DrawXYZAxes(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::Mat &t, const cv::Vec3d &origin=cv::Vec3d(0.0, 0.0, 0.0),
-              double scale_axes=1.0, double scale_image_points=1.0, int line_width=2, int dash_length=-1, bool image_is_rgb=false);
+              double scale_axes=1.0, double scale_image_points=1.0, int line_width=2, int dash_length=-1, bool image_is_rgb=false, double tip_length=0.1);
 
 
 /** @brief Draws the horizon line onto the image.

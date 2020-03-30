@@ -222,6 +222,26 @@ public:
 
   virtual void SetVerbose(bool verbose) = 0;
 
+  /** @brief Use this to "inject" extrinsics into the sinks.
+   *
+   * Required for example by examples/python3/tools/calibrate-extrinsics.py, a multi-stream sink (e.g. a
+   * depth sensor) has to/will take care of adjusting the extrinsics for sensors where R & t are empty (cannot be
+   * estimated visually, e.g. the depth stream). For such streams, the underlying sink is expected to have a
+   * (probably factory-calibrated) transformation between the stream and a reference view (e.g. the sensor's
+   * left and/or color view) which will be used to compute its extrinsics from R & t of the reference view.
+   */
+  virtual void SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) // = 0;
+  { //TODO make purely virtual once implemented in all sinks!
+    VCP_ERROR("Not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
+  }
+
+  /** @brief Sets the extrinsics for the given stream if known. Otherwise, R & t will be empty matrices. */
+  virtual void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const // = 0;
+  {
+    //TODO make purely virtual...
+    VCP_ERROR("Not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
+  }
+
 protected:
   /** @brief Changes the layer order (i.e. converts BGR->RGB or BGRA->RGB). */
   inline cv::Mat FlipChannels(const cv::Mat &frame)

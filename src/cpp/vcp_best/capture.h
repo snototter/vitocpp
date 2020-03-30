@@ -231,7 +231,8 @@ public:
   /** @brief Returns the 3x3 intrinsic camera matrix. */
   virtual cv::Mat CameraMatrixAt(size_t stream_index) const = 0;
 
-  //FIXME ExtrinsicsAt(size_t stream_index) const = 0;
+  /** @brief Sets the extrinsics (3x3 rotation R, 3x1 translation t) if available. Otherwise, they'll be set to empty matrices. */
+  virtual void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const = 0;
 
   /** @brief Given a stream/frame index, this yields a list of frame indices which originate from the same sink (physical device/sensor).
    * This also works for previously recorded streams, but only iff you used @see SaveReplayConfiguration() to create the
@@ -241,6 +242,16 @@ public:
 
   /** @brief Returns the SinkParams (parametrization PER SINK) for the given STREAM INDEX. */
   virtual SinkParams SinkParamsAt(size_t stream_index) const = 0;
+
+  /** @brief Use this to "inject" extrinsics into the sinks.
+   *
+   * Required for example by examples/python3/tools/calibrate-extrinsics.py, a multi-stream sink (e.g. a
+   * depth sensor) has to/will take care of adjusting the extrinsics for sensors where R & t are empty (cannot be
+   * estimated visually, e.g. the depth stream). For such streams, the underlying sink is expected to have a
+   * (probably factory-calibrated) transformation between the stream and a reference view (e.g. the sensor's
+   * left and/or color view) which will be used to compute its extrinsics from R & t of the reference view.
+   */
+  virtual void SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) = 0;
 
 protected:
   Capture() {}

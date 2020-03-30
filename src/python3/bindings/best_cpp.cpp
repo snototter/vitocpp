@@ -316,6 +316,19 @@ public:
     return vcp::python::conversion::MatToNDArray(M);
   }
 
+  py::tuple Extrinsics(size_t stream_index) const
+  {
+    cv::Mat R, t;
+    capture_->ExtrinsicsAt(stream_index, R, t);
+    return py::make_tuple(vcp::python::conversion::MatToNDArray(R),
+                          vcp::python::conversion::MatToNDArray(t));
+  }
+
+  void SetExtrinsics(size_t stream_index, const cv::Mat &R, const cv::Mat &t)
+  {
+    capture_->SetExtrinsicsAt(stream_index, R, t);
+  }
+
   bool SaveReplayConfig(const std::string &folder, const std::map<std::string, vcp::best::StreamStorageParams> &storage_params)
   {
     return capture_->SaveReplayConfiguration(folder, storage_params);
@@ -782,8 +795,21 @@ PYBIND11_MODULE(best_cpp, m)
            py::arg("stream_index"))
       .def("intrinsics", &pybest::CaptureWrapper::CameraMatrix,
            "Alias for @see camera_matrix().")
+      .def("extrinsics", &pybest::CaptureWrapper::Extrinsics,
+           "Returns the extrinsic camera pose for the given stream\n"
+           "as tuple (R,t), where R is 3x3 and t is 3x1.",
+           py::arg("stream_index"))
+      .def("set_extrinsics", &pybest::CaptureWrapper::SetExtrinsics,
+           "Sets the extrinsics (R, t) for the given stream. If they\n"
+           "are invalid (None), the corresponding sensor/sink will try\n"
+           "to derive the transformation from the corresponding reference\n"
+           "view (e.g. a stereo camera's left view or an RGBD sensor's color\n"
+           "stream).\n\n"
+           ":param stream_index: Which stream to set the extrinsics for.\n"
+           ":param R: Rotation matrix as 3x3 numpy ndarray.\n"
+           ":param t: Translation vector as 3x1 numpy ndarray.",
+           py::arg("stream_index"), py::arg("R"), py::arg("t"))
       //FIXME transformation (R,t) to reference view (or None)
-      //FIXME extrinsics
 // Saving
       .def("save_replay_config", &pybest::CaptureWrapper::SaveReplayConfig,
            "Store a configuration file plus required intrinsic calibrations\n"

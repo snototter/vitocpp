@@ -615,7 +615,13 @@ public:
     return intrinsics.IntrinsicsOriginal();
   }
 
-  std::vector<size_t> StreamsFromSameSink(size_t stream_index, bool include_self) const
+  void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
+  {
+    const auto &lookup = frame2sink_[stream_index];
+    sinks_[lookup.first]->ExtrinsicsAt(lookup.second, R, t);
+  }
+
+  std::vector<size_t> StreamsFromSameSink(size_t stream_index, bool include_self) const override
   {
     const auto &sink_params = SinkParamsAt(stream_index);
     const bool use_current_config_key = sink_params.original_configuration_key.empty();
@@ -637,8 +643,14 @@ public:
 
   SinkParams SinkParamsAt(size_t stream_index) const override
   {
-    const auto lookup = frame2sink_[stream_index];
+    const auto &lookup = frame2sink_[stream_index];
     return sinks_[lookup.first]->SinkParamsAt(lookup.second);
+  }
+
+  void SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
+  {
+    const auto &lookup = frame2sink_[stream_index];
+    sinks_[lookup.first]->SetExtrinsicsAt(lookup.second, R, t);
   }
 
 private:

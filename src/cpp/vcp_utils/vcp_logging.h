@@ -212,6 +212,13 @@ std::ostream& operator<<(std::ostream& stream, const std::vector<T>& values)
   return stream;
 }
 
+template<class A, class B>
+std::ostream& operator<<(std::ostream& stream, const std::pair<A, B>& value)
+{
+  stream << "pair(" << value.first << ", " << value.second << ")";
+  return stream;
+}
+
 ///** @brief Templated operator overload to print vectors. */
 //template<class T, typename List>
 //LogData<List>& operator<<(LogData<List>& stream, const std::vector<T>& values)

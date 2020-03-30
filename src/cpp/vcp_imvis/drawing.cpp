@@ -1354,15 +1354,13 @@ void DrawCircles(cv::Mat &image, const std::vector<cv::Point> &centers,
 
 
 void DrawXYZAxes(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::Mat &t, const cv::Vec3d &origin,
-              double scale_axes, double scale_image_points, int line_width, int dash_length, bool image_is_rgb)
+              double scale_axes, double scale_image_points, int line_width, int dash_length, bool image_is_rgb,
+              double tip_length)
 {
   VCP_LOG_DEBUG("DrawXYZAxes()");
   // Check if origin is visible.
   // ... it must be in front of the image plane:
   const cv::Vec4d image_plane = vcp::math::geo3d::ImagePlaneInWorldCoordinateSystem(R, t);
-  const bool is_origin_in_front = vcp::math::geo3d::IsPointInFrontOfPlane(origin, image_plane);
-  if (!is_origin_in_front)
-    VCP_LOG_WARNING("DrawXYZAxes(): origin is behind the image plane.");
 
   // Project origin and the axis end points:
   const cv::Mat projection_matrix = vcp::math::geo3d::ProjectionMatrixFromKRt(K, R, t);
@@ -1370,22 +1368,30 @@ void DrawXYZAxes(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::M
   cv::Vec3d y = origin + cv::Vec3d(0.0, scale_axes, 0.0);
   cv::Vec3d z = origin + cv::Vec3d(0.0, 0.0, scale_axes);
 
-  // Check if axis end points lie in front of the image plane:
-  for (const auto &p : {std::make_pair('x', &x), std::make_pair('y', &y), std::make_pair('z', &z)})
+  const bool is_origin_in_front = vcp::math::geo3d::IsPointInFrontOfPlane(origin, image_plane);
+  if (!is_origin_in_front)
   {
-    if (!vcp::math::geo3d::IsPointInFrontOfPlane(*p.second, image_plane))
+    VCP_LOG_WARNING("DrawXYZAxes(): origin is behind the image plane.");
+  }
+  else
+  {
+    // Check if axis end points lie in front of the image plane:
+    for (const auto &p : {std::make_pair('x', &x), std::make_pair('y', &y), std::make_pair('z', &z)})
     {
-      VCP_LOG_WARNING("End point of " << p.first << "-axis would project behind the image plane. Adjusting it automatically...");
-      const auto axis = vcp::math::geo3d::Line3d(origin, *p.second);
-      cv::Vec3d intersection;
-      if (vcp::math::geo3d::IntersectionLineSegmentPlane(axis, image_plane, &intersection))
+      if (!vcp::math::geo3d::IsPointInFrontOfPlane(*p.second, image_plane))
       {
-        // Replace the invalid end point by the midpoint from origin to the image plane
-        const auto visible_axis = vcp::math::geo3d::Line3d(origin, intersection);
-        *p.second = visible_axis.MidPoint();
+        VCP_LOG_WARNING("End point of " << p.first << "-axis would project behind the image plane. Adjusting it automatically...");
+        const auto axis = vcp::math::geo3d::Line3d(origin, *p.second);
+        cv::Vec3d intersection;
+        if (vcp::math::geo3d::IntersectionLineSegmentPlane(axis, image_plane, &intersection))
+        {
+          // Replace the invalid end point by the midpoint from origin to the image plane
+          const auto visible_axis = vcp::math::geo3d::Line3d(origin, intersection);
+          *p.second = visible_axis.MidPoint();
+        }
+        else
+          VCP_LOG_FAILURE("Couldn't compute a valid intersection point between " << p.second << "-axis and image plane (maybe numerical issue?)");
       }
-      else
-        VCP_LOG_FAILURE("Couldn't compute a valid intersection point between " << p.second << "-axis and image plane (maybe numerical issue?)");
     }
   }
 
@@ -1408,7 +1414,7 @@ void DrawXYZAxes(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::M
   const cv::Scalar *colors = image_is_rgb ? kAxisColorsRGB : kAxisColorsBGR;
 
   for (size_t i = 1; i < 4; ++i)
-    DrawArrow(pts[0], pts[i], colors[i-1], image, line_width, 0.1, dash_length);
+    DrawArrow(pts[0], pts[i], colors[i-1], image, line_width, tip_length, dash_length);
 }
 
 
