@@ -255,19 +255,21 @@ class ExtrinsicsHistory:
                     center_changes[tag_id].append(translation_change(np.array(cc), np.array(cp)))
         def mean(x):
             return sum(x)/len(x)
-        return {tag_id: (mean(rotation_changes[tag_id]), mean(translation_changes[tag_id]), mean(center_changes[tag_id])) for tag_id in rotation_changes}
+        return {tag_id: {'r_deg': mean(rotation_changes[tag_id]),
+            't_mm': mean(translation_changes[tag_id]), 
+            't_px': mean(center_changes[tag_id])} for tag_id in rotation_changes}
     
 
     def is_pose_stable(self, cam_id):
         changes = self.get_pose_changes(cam_id)
         if len(changes) == 0:
             return False
-        return all([changes[tag_id][0] < self.threshold_rotation and changes[tag_id][1] < self.threshold_translation for tag_id in changes])
+        return all([changes[tag_id]['r_deg'] < self.threshold_rotation and changes[tag_id]['t_mm'] < self.threshold_translation for tag_id in changes])
         
 
     def get_change_strings(self, cam_id):
         changes = self.get_pose_changes(cam_id)
-        return ['Tag {:2d}: {:5.2f} deg, {:4.1f} mm, {:5.2f} px'.format(tag_id, changes[tag_id][0], changes[tag_id][1], changes[tag_id][2]) for tag_id in changes]
+        return ['Tag {:2d}: {:5.2f} deg, {:4.1f} mm, {:5.2f} px'.format(tag_id, changes[tag_id]['r_deg'], changes[tag_id]['t_mm'], changes[tag_id]['t_px']) for tag_id in changes]
 
 
     def get_tag_extrinsics(self, cam_id):
@@ -296,7 +298,7 @@ class ExtrinsicsHistory:
         else:
             pose_changes = self.get_pose_changes(cam_id)
             # Sort the visible tags by their rotation change and return the best world to camera transformation (i.e. the most stable one)
-            for tag_id, rotation_delta in sorted(pose_changes.items(), key=lambda kv: kv[1][0]):
+            for tag_id, rotation_delta in sorted(pose_changes.items(), key=lambda kv: kv[1]['r_deg']):
             ### Deprecated (using reprojection error, which might be low for blurred - i.e. moving - tags)
             ### for tag_id, reprj_err in sorted(self.reprojection_error_history[cam_id][-1].items(), key=lambda kv: kv[1]):
                 transform = self.tag_transformations.get_transformation(cam_id, tag_id, tag_id_origin)
@@ -380,17 +382,19 @@ class ExtrinsicsAprilTag(object):
             self._extrinsics_history.update_tags(i, frame_detections)
         # Update transformations between tags
         self._extrinsics_history.update_coordinate_transformations()
-        return [self._extrinsics_history.get_world_extrinsics(i) for i in range(len(frameset))]
-    
-    def get_change_strings(self):
-        return [self._extrinsics_history.get_change_strings(i) for i in range(self._num_streams)]
-    
-    def visualize_frameset(self, frameset, extrinsics,
+        return [{
+            'ext_world': self._extrinsics_history.get_world_extrinsics(i),
+            'ext_tag': self._extrinsics_history.get_tag_extrinsics(i),
+            'delta': self._extrinsics_history.get_pose_changes(i),
+            'stable': self._extrinsics_history.is_pose_stable(i)
+            } for i in range(len(frameset))]
+        
+    def visualize_frameset(self, frameset, estimation_result,
             draw_world_coords=True,
             axis_length=1000,
             grid_spacing=500,
             grid_limits=[-1e4, -1e4, 1e4, 1e4]):
-        assert len(extrinsics) == self._num_streams
+        assert len(estimation_result) == self._num_streams
         assert len(frameset) == self._num_streams
 
         # Ensure that the image to draw on has 3 channels
@@ -403,13 +407,12 @@ class ExtrinsicsAprilTag(object):
             elif f.ndim == 2:
                 return np.dstack((f, f, f))
             raise RuntimeError('Invalid image dimensionality or number of channels')
-            
+        
         vis_frames = [_ensure_rgb(f) for f in frameset]
         for idx in range(self._num_streams):
             K = self._intrinsics[idx]
-            if draw_world_coords and extrinsics[idx] is not None:
-                R, t = split_pose(extrinsics[idx])
-                #TODO
+            if draw_world_coords and estimation_result[idx]['ext_world'] is not None:
+                R, t = split_pose(estimation_result[idx]['ext_world'])
                 # Draw a ground plane grid
                 vis_frames[idx] = imvis.draw_groundplane_grid(
                     vis_frames[idx], K, R, t,
@@ -430,11 +433,11 @@ class ExtrinsicsAprilTag(object):
                     warn_if_not_visible=False)
 
             # Always visualize detected tag poses
-            tag_extrinsics = self._extrinsics_history.get_tag_extrinsics(idx)
-            if tag_extrinsics is None:
+            tag_ext = estimation_result[idx]['ext_tag']
+            if tag_ext is None:
                 continue
-            for tag_id in tag_extrinsics:
-                R, t = split_pose(tag_extrinsics[tag_id])
+            for tag_id in tag_ext:
+                R, t = split_pose(tag_ext[tag_id])
                 vis_frames[idx] = imvis.draw_xyz_axes(vis_frames[idx], K, R, t,
                     scale_axes=self._tag_size_mm/2.0, scale_image_points=1.0,
                     line_width=2, dash_length=-1, image_is_rgb=True)
@@ -455,7 +458,5 @@ class ExtrinsicsAprilTag(object):
         if frame.ndim == 2 or frame.shape[2] == 1:
             return frame
         return cv2.cvtColor(frame, mode)
-           
+
     #TODO set up detectors, skip if depth, transformation (R,t) to reference frame
-    #TODO expose estimated poses and deviations
-    #TODO visualize

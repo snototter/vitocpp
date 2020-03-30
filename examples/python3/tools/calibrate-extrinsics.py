@@ -144,7 +144,6 @@ class Streamer(QThread):
             #return imvis.pseudocolor(f, limits=[0, 5000], color_map=colormaps.colormap_turbo_rgb)
 
         def _prepare_ir(f):
-            # FIXME
             # Convert to uint8
             if f.dtype != np.uint8:
                 f = (f.astype(np.float32) / np.max(f) * 255).astype(np.uint8)
@@ -236,11 +235,11 @@ class StreamViewer(QFrame):
         self._stream_label.setText(label)
         self.update()
     
-    def setTagErrorStrings(self, error_strings):
-        if len(error_strings) == 0:
-            self._tag_error_label_left.setText('No tag detected')
-            self._tag_error_label_right.setText('')
-        else:
+    def setTagErrors(self, errors, is_stable):
+        if len(errors) > 0:
+            error_strings = ['Tag {:2d}: {:5.2f} deg, {:4.1f} mm, {:5.2f} px'.format(
+                tag_id, errors[tag_id]['r_deg'], errors[tag_id]['t_mm'], errors[tag_id]['t_px'])
+                for tag_id in errors]
             # # Alternate between two columns
             # el = error_strings[::2]
             # er = error_strings[1::2]
@@ -256,7 +255,11 @@ class StreamViewer(QFrame):
             else:
                 self._tag_error_divider.setVisible(False)
                 self._tag_error_label_right.setText('')
-    #TODO if pose is stable, change title/tag font color to (dark)green
+        else:
+            self._tag_error_label_left.setText('No tag detected')
+            self._tag_error_label_right.setText('')
+            self._tag_error_divider.setVisible(False)
+        self._stream_label.setStyleSheet("QLabel {color: " + ('green' if is_stable else 'red') + ";}")
 
     def streamLabel(self):
         return self._stream_label.text()
@@ -269,7 +272,79 @@ class StreamViewer(QFrame):
     def scaleToFitWindow(self):
         self._viewer.scaleToFitWindow()
     
-    
+class CameraPoseEstimator(QThread):
+    processingDone = pyqtSignal(list, list)
+
+    def __init__(self, streamer, args):
+        super(CameraPoseEstimator, self).__init__()
+        self._args = args
+        self._streamer = streamer
+        self._process_lock = threading.Lock()
+        self._frameset_to_process = None
+        self._continue_processing = False
+        self._cv_frameset_available = QWaitCondition()
+        self._mutex = QMutex()
+
+        self._extrinsics_estimator = ExtrinsicsAprilTag(streamer.getCapture(), 
+            args.tag_family, args.tag_size_mm, 
+            pose_history_length=args.pose_history_length,
+            pose_threshold_rotation=args.pose_threshold_rotation,
+            pose_threshold_translation=args.pose_threshold_translation)
+
+    def startProcessing(self):
+        self._continue_processing = True
+        self.start()
+
+    def stopProcessing(self):
+        self._mutex.lock()
+        self._continue_processing = False
+        self._cv_frameset_available.wakeAll()
+        self._mutex.unlock()
+
+    def enqueueFrameset(self, frames):
+        # We only keep one frameset in the queue"
+        self._mutex.lock()
+        if self._frameset_to_process is None:
+            self._frameset_to_process = frames
+            self._cv_frameset_available.wakeAll()
+        # else:
+        #     print('Skipping frameset as pose estimator is busy!')
+        self._mutex.unlock()
+
+    def run(self):
+        while self._continue_processing:
+            self._mutex.lock()
+            if self._frameset_to_process is None:
+                self._cv_frameset_available.wait(self._mutex)
+            frames = self._frameset_to_process
+            #TODO If pose estimation doesn't take too long (unless you have many high resolution streams),
+            # we could clear the frameset here already (so the next incoming frameset would be "enqueued").
+            # self._frameset_to_process = None
+            self._mutex.unlock()
+
+            if frames is None:
+                continue
+
+            # Estimate the camera poses
+            estimation_result = self._extrinsics_estimator.process_frameset(frames)
+            # # We will update the error display labels with current estimation deltas
+            # delta_strings = self._extrinsics_estimator.get_change_strings() #TODO get deltas instead of strings! also get stability, etc
+            # Visualize the poses
+            vis_frames = self._extrinsics_estimator.visualize_frameset(frames, estimation_result,
+                draw_world_coords=self._args.world_coords, axis_length=self._args.axis_length,
+                grid_spacing=self._args.grid_spacing, grid_limits=self._args.grid_limits)
+            self.processingDone.emit(vis_frames, estimation_result)
+            # # # # [DEV] Dummy signal, just forwarding frames and adding some delay:
+            # # # self.processingDone.emit(frames, list(), [list() for f in frames])
+            # # # self.msleep(100)
+
+            # Clear the processed frameset, so we can accept new incoming framesets
+            self._mutex.lock()
+            self._frameset_to_process = None
+            self._mutex.unlock()
+
+
+        
 
 class CalibApplication(QMainWindow):
     def __init__(self, streamer, args):
@@ -281,16 +356,21 @@ class CalibApplication(QMainWindow):
         self._stream_display_labels = streamer.displayLabels()
         self._resize_viewers = True
         self._args = args
+        # self._process_lock = threading.Lock()
+        # self._pose_estimation_in_progress = False
 
-        self._extrinsics_estimator = ExtrinsicsAprilTag(streamer.getCapture(), 
-            args.tag_family, args.tag_size_mm, 
-            pose_history_length=args.pose_history_length,
-            pose_threshold_rotation=args.pose_threshold_rotation,
-            pose_threshold_translation=args.pose_threshold_translation)
+        # self._extrinsics_estimator = ExtrinsicsAprilTag(streamer.getCapture(), 
+        #     args.tag_family, args.tag_size_mm, 
+        #     pose_history_length=args.pose_history_length,
+        #     pose_threshold_rotation=args.pose_threshold_rotation,
+        #     pose_threshold_translation=args.pose_threshold_translation)
+        self._processing_thread = CameraPoseEstimator(streamer, args)
+        self._processing_thread.processingDone.connect(self.displayPoseEstimates)
+        self._processing_thread.startProcessing()
 
         self.prepareLayout()
         self.prepareShortcuts()
-        streamer.newFrameset.connect(self.displayFrameset)
+        streamer.newFrameset.connect(self._processing_thread.enqueueFrameset)
         streamer.startStream()
 
         # If the stream should be stepped through, load the first frameset now:
@@ -416,22 +496,41 @@ class CalibApplication(QMainWindow):
     #     if filename is not None:
     #         imutils.imsave(filename, self._vis_np)
   
-    def displayFrameset(self, frames):
-        assert len(frames) == len(self._viewers)
-        #TODO if the framerate is too fast, we have to forward this to a separate computing thread (which has a queue/only processes the most recent frameset!!!!)
-        # Estimate the camera poses
-        extrinsics = self._extrinsics_estimator.process_frameset(frames)
-        # We will update the error display labels with current estimation deltas
-        delta_strings = self._extrinsics_estimator.get_change_strings()
-        # Visualize the poses
-        vis_frames = self._extrinsics_estimator.visualize_frameset(frames, extrinsics,
-            draw_world_coords=self._args.world_coords, axis_length=self._args.axis_length,
-            grid_spacing=self._args.grid_spacing, grid_limits=self._args.grid_limits)
+    def displayPoseEstimates(self, frames, estimation_result):
         # Update the GUI
-        for i in range(len(vis_frames)):
-            self._viewers[i].setTagErrorStrings(delta_strings[i])
-            self._viewers[i].showImage(vis_frames[i], reset_scale=self._resize_viewers)
+        for i in range(len(frames)):
+            self._viewers[i].setTagErrors(estimation_result[i]['delta'], estimation_result[i]['stable'])
+            self._viewers[i].showImage(frames[i], reset_scale=self._resize_viewers)
         self._resize_viewers = False
+    
+    # def enqueueFrameset(self, frames):
+    #     self._process_lock.acquire()
+    #     skip_frameset = self._pose_estimation_in_progress
+    #     if not skip_frameset:
+    #         self._pose_estimation_in_progress = True
+    #     self._process_lock.release()
+
+    #     if skip_frameset:
+    #         print('Skipping frameset - pose estimation in progress')
+    #         return
+    #     print('Processing frameset')
+    #     # Estimate the camera poses
+    #     extrinsics = self._extrinsics_estimator.process_frameset(frames)
+    #     # We will update the error display labels with current estimation deltas
+    #     delta_strings = self._extrinsics_estimator.get_change_strings()
+    #     # Visualize the poses
+    #     vis_frames = self._extrinsics_estimator.visualize_frameset(frames, extrinsics,
+    #         draw_world_coords=self._args.world_coords, axis_length=self._args.axis_length,
+    #         grid_spacing=self._args.grid_spacing, grid_limits=self._args.grid_limits)
+    #     # Update the GUI
+    #     for i in range(len(vis_frames)):
+    #         self._viewers[i].setTagErrorStrings(delta_strings[i])
+    #         self._viewers[i].showImage(vis_frames[i], reset_scale=self._resize_viewers)
+    #     self._resize_viewers = False
+
+    #     self._process_lock.acquire()
+    #     self._pose_estimation_in_progress = False
+    #     self._process_lock.release()
     
     def streamVisibilityToggled(self, stream_index, active):
         if active:
@@ -460,6 +559,8 @@ class CalibApplication(QMainWindow):
     def appAboutToQuit(self):
         self._streamer.stopStream()
         self._streamer.wait()
+        self._processing_thread.stopProcessing()
+        self._processing_thread.wait()
 
 
 def parseArguments():
@@ -517,7 +618,7 @@ def parseArguments():
     folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'data-best')
     cfg_file = 'webcam.cfg'#
     cfg_file = 'kinects.cfg'
-    cfg_file = 'k4a.cfg'
+    # cfg_file = 'k4a.cfg'
     # cfg_file = 'image_sequence.cfg'
     args.config_file = os.path.join(folder, cfg_file)
     return args
