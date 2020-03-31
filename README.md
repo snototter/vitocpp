@@ -159,21 +159,16 @@ Especially for the "best effort streaming" module, tests become quite difficult 
 
 ## TODOs
 * [ ] BESt module
-  * [ ] Load intrinsics
-    * [ ] Mono
-    * [ ] Stereo
-    * [ ] RGB+D K4A
-    * [x] RGB+D RealSense
   * [ ] Load extrinsics
   * [ ] Rectify streams
-    * [ ] Mono
+    * [x] Mono
     * [ ] Stereo
-    * [ ] RGB+D K4A
+    * [x] RGB+D K4A
     * [x] RGB+D RealSense
-  * [ ] Azure Kinect
+  * [x] Azure Kinect
     * [x] Stream raw data
     * [x] Align RGB+D
-    * [ ] Query intrinsics
+    * [x] Query intrinsics
   * [ ] mvBlueFox
   * [ ] Mobotix, etc.
 * [ ] Increase unit test coverage
@@ -182,5 +177,7 @@ Especially for the "best effort streaming" module, tests become quite difficult 
   * [ ] Qt Viewer
   * [ ] Capturing tool
 * [ ] Camera calibration (nice-to-have)
+  * [ ] Intrinsic calibration
+  * [x] Extrinsic calibration
 * [ ] Tracking module
 
