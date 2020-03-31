@@ -5,7 +5,7 @@ C++/Python 3 utilities for common vision tasks, _e.g._ streaming, visualization 
 
 ```
 Current status:
-cloc --exclude-dir=.venv3,build,third-party,gen,doc,generated --exclude-lang=make,XML .
+cloc --exclude-dir=.venv3,build,cmake,third-party,gen,doc,generated --exclude-lang=make,XML .
 TODO exclude mappings before updating LOC count!
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
@@ -13,11 +13,11 @@ Language                     files          blank        comment           code
 C++                             61           4137           2295          22253
 C/C++ Header                    53           1559           1783           4216
 Python                          21            722            932           2608
-CMake                           21            383            449           1741
-Markdown                         3             53              0            259
+CMake                           12            269            243           1167
+Markdown                         3             53              0            256
 Bourne Shell                     3             37             70            224
 -------------------------------------------------------------------------------
-SUM:                           162           6891           5529          31301
+SUM:                           153           6777           5323          30724
 -------------------------------------------------------------------------------
 ```
 
@@ -78,7 +78,7 @@ Currently (as of Jan/2020), there are only python applications available, which 
   $ cd tools
   ```
 * <b>Extrinsic multi-camera calibration</b>. For partially overlapping multi-camera setups, you can use the `calibrate-extrinsics.py` UI to estimate the camera poses using [AprilTags](https://april.eecs.umich.edu/software/apriltag).<br/>
-  For example, calibrating two Azure Kinects via `python tools/calibrate-extrinsics.py ../data/data-best/kinects.cfg 225 --max-depth 10000 --max-ir 255` looks like this:
+  For example, calibrating two Azure Kinects via `python tools/calibrate-extrinsics.py ../data/data-best/kinects.cfg 225 --max-depth 10000 --max-ir 255` looks like this (depth measurements are visualized as surface normals, reflectivity of the infrared stream is shown as heatmap, TODO explain (?)):
 
   ![Camera Extrinsics Example](https://github.com/snototter/vitocpp/raw/master/doc/example-calib-extrinsics.jpg)
 * <b>3D image plots</b>. Plot a single image (`plot-image.py`) or an image sequence (`plot-image-sequence.py`) by interactively adjusting the camera extrinsics.
