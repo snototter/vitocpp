@@ -27,9 +27,18 @@ from vcp import colormaps
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from calibration_utils import ExtrinsicsAprilTag, split_pose
 
-
 class Streamer(QThread):
     newFrameset = pyqtSignal(list)
+
+    VIS_DEPTH_OPTIONS = [
+        'Surface normals', 'Pseudocolor (Parula)', 'Pseudocolor (Turbo)',
+        'Pseudocolor (Viridis)', 'Grayscale']
+    VIS_DEPTH_SURFNORM_OPTION = 0
+
+    VIS_IR_OPTIONS = [
+        'Histogram Equalization', 'Pseudocolor (Parula)', 'Pseudocolor (Turbo)',
+        'Pseudocolor (Viridis)', 'Grayscale']
+    VIS_IR_HISTEQ_OPTION = 0
 
     def __init__(self, folder, cfg_file, step_through):
         super(Streamer, self).__init__()
@@ -41,6 +50,10 @@ class Streamer(QThread):
         self._keep_streaming = False
         self._timeout_dev_open = 10000
         self._timeout_frameset_wait = 1000
+        self._depth_range_vis = [0, 5000]
+        self._ir_range_vis = [0, 255]
+        self._prepare_depth_fx = self._vis_depth_surfnorm
+        self._prepare_ir_fx = self._vis_ir_histeq
         self._setupStreams()
     
     def numStreams(self):
@@ -122,7 +135,7 @@ class Streamer(QThread):
             raise RuntimeError('Cannot stop streams')
         if not self._capture.close():
             raise RuntimeError('Cannot close devices')
-    
+
     def getNextFrameset(self):
         if not self._capture.all_devices_available():
             return None
@@ -136,28 +149,64 @@ class Streamer(QThread):
             return None
 
         # Post-process images
-        def _prepare_rgb(f):
-            return f #imutils.transform(f, 'histeq')
-
-        def _prepare_depth(f):
-            #return imutils.transform(f, 'depth2surfnorm', 'surfnorm2rgb')
-            return imvis.pseudocolor(f, limits=[0, 5000], color_map=colormaps.colormap_turbo_rgb)
-
-        def _prepare_ir(f):
-            # Convert to uint8
-            if f.dtype != np.uint8:
-                f = (f.astype(np.float32) / np.max(f) * 255).astype(np.uint8)
-            return imutils.transform(f, 'histeq')
-            # return imvis.pseudocolor(f, limits=None, color_map=colormaps.colormap_turbo_rgb)
-
         processed_frames = [
-            _prepare_depth(frames[idx])
+            self._prepare_depth_fx(frames[idx])
                 if self._capture.is_depth(idx)
-                else (_prepare_ir(frames[idx])
+                else (self._prepare_ir_fx(frames[idx])
                     if self._capture.is_infrared(idx)
-                    else _prepare_rgb(frames[idx]))
+                    else self._prepare_rgb(frames[idx]))
             for idx in range(len(frames))]
         return processed_frames
+
+    def setDepthVisualization(self, depth_vis_option, depth_range):
+        if depth_vis_option == 'Surface normals':
+            self._prepare_depth_fx = self._vis_depth_surfnorm
+        elif depth_vis_option == 'Pseudocolor (Parula)':
+            self._prepare_depth_fx = lambda f: self._vis_depth_colormap(f, colormaps.colormap_parula_rgb)
+        elif depth_vis_option == 'Pseudocolor (Turbo)':
+            self._prepare_depth_fx = lambda f: self._vis_depth_colormap(f, colormaps.colormap_turbo_rgb)
+        elif depth_vis_option == 'Pseudocolor (Viridis)':
+            self._prepare_depth_fx = lambda f: self._vis_depth_colormap(f, colormaps.colormap_viridis_rgb)
+        elif depth_vis_option == 'Grayscale':
+            self._prepare_depth_fx = lambda f: self._vis_depth_colormap(f, colormaps.colormap_gray)
+        else:
+            raise ValueError('Unknown depth visualization option: "{}"'.format(depth_vis_option))
+        self._depth_range_vis = depth_range
+    
+    def setInfraredVisualization(self, ir_vis_option, ir_range):
+        if ir_vis_option == 'Histogram Equalization':
+            self._prepare_ir_fx = self._vis_ir_histeq
+        elif ir_vis_option == 'Pseudocolor (Parula)':
+            self._prepare_ir_fx = lambda f: self._vis_ir_colormap(f, colormaps.colormap_parula_rgb)
+        elif ir_vis_option == 'Pseudocolor (Turbo)':
+            self._prepare_ir_fx = lambda f: self._vis_ir_colormap(f, colormaps.colormap_turbo_rgb)
+        elif ir_vis_option == 'Pseudocolor (Viridis)':
+            self._prepare_ir_fx = lambda f: self._vis_ir_colormap(f, colormaps.colormap_viridis_rgb)
+        elif ir_vis_option == 'Grayscale':
+            self._prepare_ir_fx = lambda f: self._vis_ir_colormap(f, colormaps.colormap_gray)
+        else:
+            raise ValueError('Unknown infrared visualization option: "{}"'.format(ir_vis_option))
+        self._ir_range_vis = ir_range
+    
+    def _prepare_rgb(self, f):
+        # return imutils.transform(f, 'histeq')
+        return f
+
+    def _vis_ir_histeq(self, f):
+        # Convert to uint8
+        if f.dtype != np.uint8:
+            f = (f.astype(np.float32) / np.max(f) * 255).astype(np.uint8)
+        return imutils.transform(f, 'histeq')
+
+    def _vis_ir_colormap(self, f, cm):
+        return imvis.pseudocolor(f, limits=self._ir_range_vis, color_map=cm)
+
+    def _vis_depth_surfnorm(self, f):
+        return imutils.transform(f, 'depth2surfnorm', 'surfnorm2rgb')
+
+    def _vis_depth_colormap(self, f, cm):
+        return imvis.pseudocolor(f, limits=self._depth_range_vis, color_map=cm)
+
 
 
 class StreamViewer(QFrame):
@@ -173,7 +222,6 @@ class StreamViewer(QFrame):
         # Show the stream's label
         self._stream_label = QLabel('' if stream_label is None else stream_label, self)
         self._stream_label.setAlignment(Qt.AlignCenter)
-        # self._stream_label.setStyleSheet("QLabel {background-color: blue;}")
         self._stream_label.setFont(font_stream_label)
         self._stream_label.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Fixed)
 
@@ -186,8 +234,8 @@ class StreamViewer(QFrame):
         stream_lbl_layout.addWidget(self._stream_label)
         stream_lbl_layout.addWidget(self._checkbox_active)
 
-        # Custom "two-column" display
-        self._tag_error_label_left = QLabel('No tag detected')
+        # Custom "two-column" label layout to display tag estimation errors
+        self._tag_error_label_left = QLabel('<font color="red">No tag detected</font>')
         self._tag_error_label_left.setAlignment(Qt.AlignLeft)
         self._tag_error_label_left.setFont(font_error_label)
         self._tag_error_label_right = QLabel('')
@@ -213,7 +261,6 @@ class StreamViewer(QFrame):
         # This widget's "main" layout
         layout = QVBoxLayout()
         layout.addLayout(lbl_layout)
-        #TODO add calibration info label (rotation change, translation change, found tags, etc.)
         layout.addWidget(self._viewer)
         self.setLayout(layout)
 
@@ -237,8 +284,12 @@ class StreamViewer(QFrame):
     
     def setTagErrors(self, errors, is_stable):
         if len(errors) > 0:
-            error_strings = ['Tag {:2d}: {:5.2f} deg, {:4.1f} mm, {:5.2f} px'.format(
-                tag_id, errors[tag_id]['r_deg'], errors[tag_id]['t_mm'], errors[tag_id]['t_px'])
+            error_strings = ['Tag <font weight="bold">{:2d}</font>: <font color="{:s}">{:5.2f} deg</font>, <font color="{:s}">{:4.1f} mm</font>, {:5.2f} px'.format(
+                tag_id, 
+                'green' if errors[tag_id]['r_deg_stable'] else 'red',
+                errors[tag_id]['r_deg'], 
+                'green' if errors[tag_id]['t_mm_stable'] else 'red',
+                errors[tag_id]['t_mm'], errors[tag_id]['t_px'])
                 for tag_id in errors]
             # # Alternate between two columns
             # el = error_strings[::2]
@@ -256,7 +307,7 @@ class StreamViewer(QFrame):
                 self._tag_error_divider.setVisible(False)
                 self._tag_error_label_right.setText('')
         else:
-            self._tag_error_label_left.setText('No tag detected')
+            self._tag_error_label_left.setText('<font color="red">No tag detected</font>')
             self._tag_error_label_right.setText('')
             self._tag_error_divider.setVisible(False)
         self._stream_label.setStyleSheet("QLabel {color: " + ('green' if is_stable else 'red') + ";}")
@@ -362,9 +413,7 @@ class CameraPoseEstimator(QThread):
                 R, t = self._streamer.getCapture().extrinsics(idx)
                 estimation_result[idx]['ext_world'] = (R, t)
 
-            # # We will update the error display labels with current estimation deltas
-            # delta_strings = self._extrinsics_estimator.get_change_strings() #TODO get deltas instead of strings! also get stability, etc
-            # Visualize the poses
+            # Visualize the tag poses, world reference coordinate system, etc.
             vis_frames = self._extrinsics_estimator.visualize_frameset(frames, estimation_result,
                 draw_world_xyz=self._draw_world_xyz,
                 draw_groundplane=self._draw_groundplane,
@@ -411,6 +460,12 @@ class CalibApplication(QMainWindow):
         self._processing_thread.processingDone.connect(self.displayPoseEstimates)
         self._processing_thread.startProcessing()
 
+        # Make an initial guess on how to nicely align the streams:
+        num_viewer_rows = 1 if self._num_streams < 3 else \
+            (2 if self._num_streams < 9 else\
+                (3 if self._num_streams < 12 else 4))
+        self._num_viewer_columns = math.ceil(self._num_streams / num_viewer_rows)
+
         self.prepareLayout()
         self.prepareShortcuts()
         streamer.newFrameset.connect(self._processing_thread.enqueueFrameset)
@@ -448,15 +503,7 @@ class CalibApplication(QMainWindow):
             self.displayFrameset(frames)
 
     def prepareLayout(self):
-        # TODO (overkill) we could derive the number of rows/cols from the aspect ratio (but how to handle
-        # captures with streams that have different aspect ratios).
-        # Currently, keep it simple and straightforward:
-        self._num_viewer_rows = 1 if self._num_streams < 3 else \
-            (2 if self._num_streams < 9 else\
-                (3 if self._num_streams < 12 else 4))
-        self._num_viewer_columns = math.ceil(self._num_streams / self._num_viewer_rows)
-
-        min_lbl_width = 120 # Minimum width of an input's label
+        min_lbl_width = 90 # Minimum width of an input's label
         
         self._main_widget = QWidget()
         ctrl_layout = QHBoxLayout()
@@ -486,18 +533,41 @@ class CalibApplication(QMainWindow):
         btn_zoom_fit = QPushButton('Scale Images to Fit')
         btn_zoom_fit.clicked.connect(self.fitViewers)
 
+        slider_viewer_columns = inputs.SliderSelectionWidget('Layout:', 1, self._num_streams, self._num_streams-1,
+            initial_value=self._num_viewer_columns, value_format_fx=lambda v: '{:s} streams/row'.format(inputs.format_int(v, 2)), min_label_width=min_lbl_width)
+        slider_viewer_columns.value_changed.connect(self.updateViewerLayout)
+
+        self._depth_visualization_dropdown = inputs.DropDownSelectionWidget('Depth visualization:',
+                [(i, Streamer.VIS_DEPTH_OPTIONS[i]) for i in range(len(Streamer.VIS_DEPTH_OPTIONS))],
+                min_label_width=min_lbl_width)
+        self._depth_visualization_dropdown.value_changed.connect(self.changeDepthVisualization)
+
+        self._depth_range_widget = inputs.RangeSliderSelectionWidget('Depth range:', 0, self._args.max_depth,
+            value_format_fx=lambda v: inputs.format_int(v, 5), min_label_width=min_lbl_width)
+        self._depth_range_widget.value_changed.connect(self.changeDepthVisualization)
+
+        self._ir_visualization_dropdown = inputs.DropDownSelectionWidget('Infrared visualization:',
+                [(i, Streamer.VIS_IR_OPTIONS[i]) for i in range(len(Streamer.VIS_IR_OPTIONS))],
+                min_label_width=min_lbl_width)
+        self._ir_visualization_dropdown.value_changed.connect(self.changeInfraredVisualization)
+
+        self._ir_range_widget = inputs.RangeSliderSelectionWidget('Infrared range:', 0, self._args.max_ir,
+            value_format_fx=lambda v: inputs.format_int(v, 5), min_label_width=min_lbl_width)
+        self._ir_range_widget.value_changed.connect(self.changeInfraredVisualization)
+
+        
+
         # Controls to modify visualization parameters
         self._draw_groundplane_cb = inputs.CheckBoxWidget('Draw groundplane:', is_checked=False, min_label_width=min_lbl_width)
         self._draw_groundplane_cb.value_changed.connect(self.updateVisualizationOptions)
 
-        self._grid_limits_widget = inputs.RoiSelectWidget('Groundplane ROI:', roi=[int(v) for v in [-1e4, -1e4, 2e4, 2e4]], min_label_width=min_lbl_width,
+        self._grid_limits_widget = inputs.RoiSelectWidget('Groundplane:', roi=[int(v) for v in [-1e4, -1e4, 2e4, 2e4]], min_label_width=min_lbl_width,
             box_labels=['X min:', 'Y min:', 'Width:', 'Height:'], support_image_selection=False)
         self._grid_limits_widget.value_changed.connect(self.updateVisualizationOptions)
 
         self._grid_spacing_widget = inputs.SliderSelectionWidget('Grid spacing:', 500, 5000, 18, initial_value=1000,
             value_format_fx=lambda v: '{:s} m'.format(inputs.format_float(v/1000, 5, 2)), min_label_width=min_lbl_width)
         self._grid_spacing_widget.value_changed.connect(self.updateVisualizationOptions)
-        
 
         self._draw_xyz_cb = inputs.CheckBoxWidget('Draw world axis:', is_checked=True, min_label_width=min_lbl_width)
         self._draw_xyz_cb.value_changed.connect(self.updateVisualizationOptions)
@@ -524,20 +594,30 @@ class CalibApplication(QMainWindow):
         layout = QHBoxLayout()
         layout.addWidget(btn_zoom_original)
         layout.addWidget(btn_zoom_fit)
+        layout.addWidget(slider_viewer_columns)
         vis_option_layout.addLayout(layout, 0, 0, 1, 9)
+
+        layout = QHBoxLayout()
+        layout.addWidget(self._depth_visualization_dropdown)
+        layout.addWidget(self._depth_range_widget)
+        layout.addWidget(self._ir_visualization_dropdown)
+        layout.addWidget(self._ir_range_widget)
+        vis_option_layout.addLayout(layout, 1, 0, 1, 9)
+        # vis_option_layout.addWidget(slider_viewer_columns, 1, 0, 1, 5)
+        # vis_option_layout.addWidget(dropdown_visualize_depth, 1, 5, 1, 4)
 
         layout = QHBoxLayout()
         layout.addWidget(self._draw_tags_cb)
         layout.addWidget(self._draw_xyz_cb)
         layout.addWidget(self._draw_groundplane_cb)
         layout.addWidget(self._draw_horizon_cb)
-        vis_option_layout.addLayout(layout, 1, 0, 1, 9)
+        vis_option_layout.addLayout(layout, 2, 0, 1, 9)
 
-        vis_option_layout.addWidget(self._grid_limits_widget,  2, 0, 1, 5)
-        vis_option_layout.addWidget(self._grid_spacing_widget, 2, 5, 1, 4)
-        vis_option_layout.addWidget(self._axis_length_widget,  3, 0, 1, 3)
-        vis_option_layout.addWidget(self._axis_tip_widget,     3, 3, 1, 3)
-        vis_option_layout.addWidget(self._line_width_widget,   3, 6, 1, 3)
+        vis_option_layout.addWidget(self._grid_limits_widget,  3, 0, 1, 5)
+        vis_option_layout.addWidget(self._grid_spacing_widget, 3, 5, 1, 4)
+        vis_option_layout.addWidget(self._axis_length_widget,  4, 0, 1, 3)
+        vis_option_layout.addWidget(self._axis_tip_widget,     4, 3, 1, 3)
+        vis_option_layout.addWidget(self._line_width_widget,   4, 6, 1, 3)
   
         vis_option_widget = QGroupBox('Visualization')
         vis_option_widget.setLayout(vis_option_layout)
@@ -584,6 +664,8 @@ class CalibApplication(QMainWindow):
 
         # Ensure the processing thread has the same parametrization as the UI inputs:
         self.updateVisualizationOptions(None)
+        self.changeDepthVisualization(None)
+        self.changeInfraredVisualization(None)
 
     def prepareShortcuts(self):
         sc = QShortcut(QKeySequence('Ctrl+F'), self)
@@ -602,16 +684,6 @@ class CalibApplication(QMainWindow):
     #     if filename is not None:
     #         img = imutils.imread(filename)
     #         self.displayImage(img)
-
-#TODO enable saving
-    # def __save_request(self):
-    #     if self._vis_np is None:
-    #         return
-    #     filename, _ = QFileDialog.getSaveFileName(self, "Save as...", "",
-    #         'Images (*.bmp *.jpg *.jpeg *.png *.ppm);;All Files (*.*)',
-    #         '', QFileDialog.DontUseNativeDialog)
-    #     if filename is not None:
-    #         imutils.imsave(filename, self._vis_np)
   
     def displayPoseEstimates(self, frames, estimation_result):
         # Update the GUI
@@ -650,15 +722,22 @@ class CalibApplication(QMainWindow):
         if fn is None:
             print('Cannot save extrinsics - You must select a filename first!')
             return
-        print('FIXME need to save the extrinsics to ', self._filename_save)
+        print('FIXME need to save the world extrinsics to ', self._filename_save)
+    
+    def changeDepthVisualization(self, changed_value):
+        rv = self._depth_range_widget.value()
+        vo = self._depth_visualization_dropdown.value()
+        self._depth_range_widget.setEnabled(vo[0] != Streamer.VIS_DEPTH_SURFNORM_OPTION)
+        self._streamer.setDepthVisualization(Streamer.VIS_DEPTH_OPTIONS[vo[0]], rv)
 
-    def streamVisibilityToggled(self, stream_index, active):
-        if active:
-            print("Stream '{}' becomes active".format(self._viewers[stream_index].streamLabel()))
-            # Remove viewer widget from inactive list
-            idx_layout_from = self._inactive_scroll_layout.indexOf(self._viewers[stream_index])
-            self._inactive_scroll_layout.takeAt(idx_layout_from)
+    def changeInfraredVisualization(self, changed_value):
+        rv = self._ir_range_widget.value()
+        vo = self._ir_visualization_dropdown.value()
+        self._ir_range_widget.setEnabled(vo[0] != Streamer.VIS_IR_HISTEQ_OPTION)
+        self._streamer.setInfraredVisualization(Streamer.VIS_IR_OPTIONS[vo[0]], rv)
 
+    def updateViewerLayout(self, num_columns):
+        self._num_viewer_columns = int(num_columns)
         # Remove all viewer widgets from grid
         for widx in range(self._active_viewer_layout.count()-1, -1, -1):
             self._active_viewer_layout.takeAt(widx)
@@ -670,6 +749,16 @@ class CalibApplication(QMainWindow):
             col = grid_idx % self._num_viewer_columns
             self._active_viewer_layout.addWidget(self._viewers[sidx], row, col, 1, 1)
             grid_idx += 1
+
+    def streamVisibilityToggled(self, stream_index, active):
+        if active:
+            print("Stream '{}' becomes active".format(self._viewers[stream_index].streamLabel()))
+            # Remove viewer widget from inactive list
+            idx_layout_from = self._inactive_scroll_layout.indexOf(self._viewers[stream_index])
+            self._inactive_scroll_layout.takeAt(idx_layout_from)
+
+        # Call helper to update the grid layout
+        self.updateViewerLayout(self._num_viewer_columns)
 
         # Add toggled viewer to "list" of inactive viewers (if it became inactive)
         if not active:
@@ -685,8 +774,8 @@ class CalibApplication(QMainWindow):
 
 def parseArguments():
     parser = argparse.ArgumentParser()
-    # parser.add_argument('config_file', action='store',
-    #     help='Path to the stream configuration file (json or libconfig)')
+    parser.add_argument('config_file', action='store',
+        help='Path to the stream configuration file (json or libconfig)')
 
     # AprilTag parameters
     parser.add_argument('tag_size_mm', action='store', type=pyutils.check_positive_real, #default=225.0,
@@ -712,6 +801,11 @@ def parseArguments():
     # parser.add_argument('--no-paused', action='store_false', dest='start_paused',
     #     help="Don't wait for user interaction after each frame")
     # parser.set_defaults(start_paused=True)
+    parser.add_argument('--max-depth', action='store', type=pyutils.check_positive_int, default=5000,
+        help="Expected maximum depth value (typically in Millimeters) to cut off visualization.")
+    
+    parser.add_argument('--max-ir', action='store', type=pyutils.check_positive_int, default=255,
+        help="Expected maximum infrared value (reflectance) to cut off visualization.")
 
     # # Params to visualize the world coordinate system
     # parser.add_argument('--world', action='store_true', dest='world_coords',
@@ -734,13 +828,6 @@ def parseArguments():
     # Convert grid limits to rectangle:
     # args.grid_limits = [args.grid_limits[0], args.grid_limits[1], args.grid_limits[2]-args.grid_limits[0], args.grid_limits[3]-args.grid_limits[1]]
 
-    #FIXME remove:
-    folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', '..', 'data', 'data-best')
-    cfg_file = 'webcam.cfg'#
-    # cfg_file = 'kinects.cfg'
-    cfg_file = 'k4a.cfg'
-    # cfg_file = 'image_sequence.cfg'
-    args.config_file = os.path.join(folder, cfg_file)
     return args
 
 
@@ -751,7 +838,6 @@ def gui():
     folder = os.path.dirname(abs_cfg)
     cfg_file = os.path.basename(args.config_file)
     streamer = Streamer(folder, cfg_file, args.step_through)
-    # intrinsics = [streamer.getCapture().intrinsics(i) for i in range(streamer.getCapture().numStreams())]
 
     app = QApplication(['Calibrate Extrinsics'])
     main_widget = CalibApplication(streamer, args)
@@ -762,7 +848,3 @@ def gui():
 
 if __name__ == '__main__':
     gui()
-    #TODO params:
-    # april tag marker size, etc
-    
-    # step through capture vs live stream!

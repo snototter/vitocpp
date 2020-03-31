@@ -954,66 +954,40 @@ public:
 
   void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
   {
-    const auto ft = FrameTypeAt(stream_index);
-    if (ft == FrameType::MONOCULAR)
-    {
-      R = rgb_extrinsics_.first;
-      t = rgb_extrinsics_.second;
-    }
-    else if (ft == FrameType::DEPTH)
-    {
-      R = depth_extrinsics_.first;
-      t = depth_extrinsics_.second;
-    }
-    else if (ft == FrameType::INFRARED)
-    {
-      R = ir_extrinsics_.first;
-      t = ir_extrinsics_.second;
-    }
-    else
-      VCP_ERROR("Invalid frame type " << ft << " while querying extrinsics.");
+    std::vector<const calibration::StreamExtrinsics*> extrinsics;
+    if (rgb_stream_enabled_)
+      extrinsics.push_back(&rgb_extrinsics_);
+    if (depth_stream_enabled_)
+      extrinsics.push_back(&depth_extrinsics_);
+    if (ir_stream_enabled_)
+      extrinsics.push_back(&ir_extrinsics_);
+
+    R = extrinsics[stream_index]->R().clone();
+    t = extrinsics[stream_index]->t().clone();
   }
 
-  void SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
+  bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
   {
-    const auto ft = FrameTypeAt(stream_index);
-    if (ft == FrameType::MONOCULAR)
+    calibration::StreamExtrinsics* ext = ExtrinsicsPtrAt(stream_index);
+
+    if (rgb_stream_enabled_)
     {
-      // The reference view - if valid R & t, forward to other sensor streams, too
-      VCP_LOG_FIXME("Setting R, t (valid: " << (!R.empty()) << "); need to forward to depth & ir");
-      rgb_extrinsics_.first = R;
-      rgb_extrinsics_.second = t;
+      const auto &intr = IntrinsicsAt(stream_index);
+      const bool retval = ext->SetExtrinsics(R, t, intr, rgb_extrinsics_.R(), rgb_extrinsics_.t());
+      if (retval && stream_index == 0)
+      {
+        // If RGB is enabled AND we just set the extrinsics of the color stream successfully,
+        // then we can adjust the remaining extrinsics too (via the known view-to-reference
+        // transformations).
+        for (size_t idx = 1; idx < NumStreams(); ++idx)
+        {
+          if (ExtrinsicsPtrAt(idx)->Empty())
+            SetExtrinsicsAt(idx, cv::Mat(), cv::Mat());
+        }
+      }
+      return retval;
     }
-    else if (ft == FrameType::DEPTH)
-    {
-      if ((R.empty() || t.empty()) && depth_intrinsics_.HasTransformationToReference())
-      {
-        VCP_LOG_FIXME("Depth R, t invalid! - need to take from color stream");
-        VCP_LOG_FAILURE("Dummy approach - taking depth extrinsics as is!");
-        depth_extrinsics_.first = rgb_extrinsics_.first;
-        depth_extrinsics_.second = rgb_extrinsics_.second;
-        // check if depth intrinsics have a transformation to the reference view
-        //FIXME should we return true if extrinsics have been set to valid matrices?
-      }
-      else
-      {
-        depth_extrinsics_.first = R;
-        depth_extrinsics_.second = t;
-      }
-    }
-    else if (ft == FrameType::INFRARED)
-    {
-      if ((R.empty() || t.empty()) && ir_intrinsics_.HasTransformationToReference())
-      {
-        VCP_LOG_FIXME("INFRARED R, t invalid! - need to take from color stream");
-        // check if depth intrinsics have a transformation to the reference view
-      }
-      else
-      {
-        ir_extrinsics_.first = R;
-        ir_extrinsics_.second = t;
-      }
-    }
+    return ext->SetExtrinsics(R, t);
   }
 
   SinkType GetSinkType() const override
@@ -1055,9 +1029,9 @@ private:
   calibration::StreamIntrinsics rgb_intrinsics_;
   calibration::StreamIntrinsics depth_intrinsics_;
   calibration::StreamIntrinsics ir_intrinsics_;
-  std::pair<cv::Mat, cv::Mat> rgb_extrinsics_;
-  std::pair<cv::Mat, cv::Mat> depth_extrinsics_;
-  std::pair<cv::Mat, cv::Mat> ir_extrinsics_;
+  calibration::StreamExtrinsics rgb_extrinsics_;
+  calibration::StreamExtrinsics depth_extrinsics_;
+  calibration::StreamExtrinsics ir_extrinsics_;
   k4a_device_t k4a_device_;
 #ifdef VCP_BEST_DEBUG_FRAMERATE
   std::chrono::high_resolution_clock::time_point previous_frame_timepoint_;
@@ -1219,8 +1193,21 @@ private:
     if (k4a_device_)
       k4a_device_stop_cameras(k4a_device_);
   }
+
+  calibration::StreamExtrinsics* ExtrinsicsPtrAt(size_t stream_index)
+  {
+    const auto ft = FrameTypeAt(stream_index);
+    if (ft == FrameType::MONOCULAR)
+      return &rgb_extrinsics_;
+    else if (ft == FrameType::DEPTH)
+      return &depth_extrinsics_;
+    else if (ft == FrameType::INFRARED)
+      return &ir_extrinsics_;
+    VCP_ERROR("Invalid frame type '" << ft << "' at K4A stream index " << stream_index << ".");
+  }
 };
 
+//FIXME extrinsics for synced sink!
 
 /** @brief Streams from multiple wire-synced Azure Kinects. */
 class K4ASyncedRGBDSink : public StreamSink
@@ -1464,9 +1451,52 @@ public:
       VCP_LOG_FAILURE("Intrinsics for K4ASyncedRGBDSink cannot be queried before the sensors are available! Use IsDeviceAvailable() to check when the sensors become ready.");
       return calibration::StreamIntrinsics();
     }
-    VCP_LOG_FIXME("Check intrinsics at stream #" << stream_index << " (lbl: " << this->StreamLabel(stream_index) << ")" << std::endl
-                  << *(intrinsics_ptrs_[stream_index]));
     return *(intrinsics_ptrs_[stream_index]);
+  }
+
+  void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
+  {
+    R = extrinsics_ptrs_[stream_index]->R().clone();
+    t = extrinsics_ptrs_[stream_index]->t().clone();
+  }
+
+  bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
+  {
+    // Extrinsics of this stream.
+    calibration::StreamExtrinsics* ext = extrinsics_ptrs_[stream_index];
+    // Which sensor/sink/device this stream belongs to.
+    const auto dev_lookup = stream2device_[stream_index];
+    // Configuration of this stream (device, actually).
+    const auto &sink_params = params_[dev_lookup];
+    if (sink_params.IsColorStreamEnabled())
+    {
+      const auto &intr = IntrinsicsAt(stream_index);
+      const bool retval = ext->SetExtrinsics(R, t, intr, rgb_extrinsics_[dev_lookup].R(), rgb_extrinsics_[dev_lookup].t());
+      if (retval && FrameTypeAt(stream_index) == FrameType::MONOCULAR)
+      {
+        // If RGB is enabled AND we just set the extrinsics of the color stream successfully,
+        // then we can adjust the remaining extrinsics too (via the known view-to-reference
+        // transformations).
+        if (depth_extrinsics_[dev_lookup].Empty())
+        {
+          depth_extrinsics_[dev_lookup].SetExtrinsics(cv::Mat(), cv::Mat(),
+                                                      intr,
+                                                      rgb_extrinsics_[dev_lookup].R(),
+                                                      rgb_extrinsics_[dev_lookup].t());
+        }
+
+        if (ir_extrinsics_[dev_lookup].Empty())
+        {
+          ir_extrinsics_[dev_lookup].SetExtrinsics(cv::Mat(), cv::Mat(),
+                                                   intr,
+                                                   rgb_extrinsics_[dev_lookup].R(),
+                                                   rgb_extrinsics_[dev_lookup].t());
+        }
+      }
+      return retval;
+    }
+    else
+      return ext->SetExtrinsics(R, t);
   }
 
 private:
@@ -1485,6 +1515,10 @@ private:
   std::vector<calibration::StreamIntrinsics> depth_intrinsics_;
   std::vector<calibration::StreamIntrinsics> ir_intrinsics_;
   std::vector<calibration::StreamIntrinsics*> intrinsics_ptrs_;
+  std::vector<calibration::StreamExtrinsics> rgb_extrinsics_;
+  std::vector<calibration::StreamExtrinsics> depth_extrinsics_;
+  std::vector<calibration::StreamExtrinsics> ir_extrinsics_;
+  std::vector<calibration::StreamExtrinsics*> extrinsics_ptrs_;
   //std::vector<size_t> frame2sink_;
   std::vector<k4a_device_t> k4a_devices_;
 #ifdef VCP_BEST_DEBUG_FRAMERATE
@@ -1731,7 +1765,11 @@ private:
     // Prepare empty intrinsics
     rgb_intrinsics_.resize(params_.size());
     depth_intrinsics_.resize(params_.size());
-    ir_intrinsics_.resize(params_.size()); //FUCKER
+    ir_intrinsics_.resize(params_.size());
+
+    rgb_extrinsics_.resize(params_.size());
+    depth_extrinsics_.resize(params_.size());
+    ir_extrinsics_.resize(params_.size());
 
     for (size_t idx = 0; idx < params_.size(); ++idx)
     {
@@ -1786,6 +1824,7 @@ private:
         stream2device_.push_back(idx);
         frame_types_.push_back(FrameType::MONOCULAR);
         intrinsics_ptrs_.push_back(&rgb_intrinsics_[idx]);
+        extrinsics_ptrs_.push_back(&rgb_extrinsics_[idx]);
       }
 
       const bool is_depth = p.IsDepthStreamEnabled();
@@ -1795,6 +1834,7 @@ private:
         stream2device_.push_back(idx);
         frame_types_.push_back(FrameType::DEPTH);
         intrinsics_ptrs_.push_back(&depth_intrinsics_[idx]);
+        extrinsics_ptrs_.push_back(&depth_extrinsics_[idx]);
       }
 
       const bool is_ir = p.IsInfraredStreamEnabled();
@@ -1804,9 +1844,8 @@ private:
         stream2device_.push_back(idx);
         frame_types_.push_back(FrameType::INFRARED);
         intrinsics_ptrs_.push_back(&ir_intrinsics_[idx]);
+        extrinsics_ptrs_.push_back(&ir_extrinsics_[idx]);
       }
-
-      //VCP_LOG_FIXME("Check configuration #" << idx << ":" << std::endl << params_[idx] << std::endl);
     }
   }
 

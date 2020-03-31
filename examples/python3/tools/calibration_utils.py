@@ -175,8 +175,8 @@ class ExtrinsicsHistory:
         self.center_history = dict()
         self.seen_tag_ids = set() # Stores which tag IDs have been seen (by any camera!)
         self.tag_transformations = TagTransformationGraph()
-        self.threshold_rotation = 0.1 # degrees
-        self.threshold_translation = 2 # mm
+        self.threshold_rotation = threshold_rotation # degrees
+        self.threshold_translation = threshold_translation # mm
         self.skip_camera = list()
         for cam_id in range(self.num_cameras):
             self.skip_camera.append(camera_intrinsics[cam_id] is None or tag_detectors[cam_id] is None)
@@ -231,7 +231,7 @@ class ExtrinsicsHistory:
         
     
     def get_pose_changes(self, cam_id):
-        #TODO skip_camera!
+        #TODO skip_camera (likely not needed)
         pose_history = self.pose_history[cam_id]
         center_history = self.center_history[cam_id]
         rotation_changes = dict()
@@ -257,9 +257,13 @@ class ExtrinsicsHistory:
                     center_changes[tag_id].append(translation_change(np.array(cc), np.array(cp)))
         def mean(x):
             return sum(x)/len(x)
-        return {tag_id: {'r_deg': mean(rotation_changes[tag_id]),
+        res = {tag_id: {'r_deg': mean(rotation_changes[tag_id]),
             't_mm': mean(translation_changes[tag_id]), 
             't_px': mean(center_changes[tag_id])} for tag_id in rotation_changes}
+        for tag_id in res:
+            res[tag_id]['r_deg_stable'] = res[tag_id]['r_deg'] < self.threshold_rotation
+            res[tag_id]['t_mm_stable'] = res[tag_id]['t_mm'] < self.threshold_translation
+        return res
     
 
     def is_pose_stable(self, cam_id):
@@ -323,8 +327,6 @@ class ExtrinsicsAprilTag(object):
             pose_history_length=10,
             pose_threshold_rotation=0.1,
             pose_threshold_translation=2.0):
-            #TODO check if there's a transformation2reference_view
-            #If so, store it and use it to lookup/compute the world transformation
         self._num_streams = capture.num_streams()
         self._intrinsics = list()
         self._detectors = list()
@@ -356,20 +358,17 @@ class ExtrinsicsAprilTag(object):
                     opt.tag_size = tag_size_mm
                     detector = apriltag.Detector(opt)
                     self._detectors.append(detector)
-                    if capture.is_infrared(i):
-                        self._frame_converter.append(self._cvt_as_is)
-                    elif capture.is_rgb(i):
+                    if capture.is_infrared(i) or capture.is_rgb(i):
                         self._frame_converter.append(self._cvt_rgb2gray)
                     else:
-                        self._frame_converter.append(self._cvt_rgb2gray)
+                        self._frame_converter.append(self._cvt_bgr2gray)
                 else:
                     logging.getLogger().info('[ExtrinsicsAprilTag] Skipping AprilTag detection for stream "{}".'.format(capture.frame_label(i)))
                     self._detectors.append(None)
                     self._frame_converter.append(self._cvt_as_is)
         self._extrinsics_history = ExtrinsicsHistory(self._intrinsics, 
             self._detectors, tag_size_mm, pose_history_length, pose_threshold_rotation, pose_threshold_translation)
-
-    
+        
     def process_frameset(self, frameset):
         assert len(frameset) == len(self._detectors)
         detections = list()
@@ -384,7 +383,6 @@ class ExtrinsicsAprilTag(object):
             self._extrinsics_history.update_tags(i, frame_detections)
         # Update transformations between tags
         self._extrinsics_history.update_coordinate_transformations()
-        # TODO collect poses (transformation 2 reference view)
         return [{
             'ext_world': split_pose(self._extrinsics_history.get_world_extrinsics(i)),
             'ext_tag': self._extrinsics_history.get_tag_extrinsics(i),
@@ -457,8 +455,6 @@ class ExtrinsicsAprilTag(object):
                         line_width=line_width, dash_length=-1, image_is_rgb=True)
         return vis_frames
 
-
-
     def _cvt_as_is(self, frame):
         return frame
 
@@ -472,5 +468,3 @@ class ExtrinsicsAprilTag(object):
         if frame.ndim == 2 or frame.shape[2] == 1:
             return frame
         return cv2.cvtColor(frame, mode)
-
-    #TODO set up detectors, skip if depth, transformation (R,t) to reference frame

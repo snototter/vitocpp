@@ -230,7 +230,7 @@ public:
    * (probably factory-calibrated) transformation between the stream and a reference view (e.g. the sensor's
    * left and/or color view) which will be used to compute its extrinsics from R & t of the reference view.
    */
-  virtual void SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) // = 0;
+  virtual bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) // = 0;
   { //TODO make purely virtual once implemented in all sinks!
     VCP_ERROR("Not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
   }

@@ -77,6 +77,10 @@ Currently (as of Jan/2020), there are only python applications available, which 
   $ source .venv3/bin/activate
   $ cd tools
   ```
+* <b>Extrinsic multi-camera calibration</b>. For partially overlapping multi-camera setups, you can use the `calibrate-extrinsics.py` UI to estimate the camera poses using [AprilTags](https://april.eecs.umich.edu/software/apriltag).<br/>
+  For example, calibrating two Azure Kinects via `python tools/calibrate-extrinsics.py ../data/data-best/kinects.cfg 225 --max-depth 10000 --max-ir 255` looks like this:
+
+  ![Camera Extrinsics Example](https://github.com/snototter/vitocpp/raw/master/doc/example-calib-extrinsics.jpg)
 * <b>3D image plots</b>. Plot a single image (`plot-image.py`) or an image sequence (`plot-image-sequence.py`) by interactively adjusting the camera extrinsics.
 
   ![Image Sequence Example](https://github.com/snototter/vitocpp/raw/master/doc/example-render-img-sequence.png)

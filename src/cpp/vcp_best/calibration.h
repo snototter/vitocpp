@@ -113,7 +113,52 @@ private:
 /** @brief Overloaded output operator for StreamIntrinsics. */
 std::ostream &operator<<(std::ostream &out, const StreamIntrinsics &si);
 
-// TODO StreamExtrinsics
+
+/** @brief Encapsulates a stream's extrinsic transformation. */
+class StreamExtrinsics
+{
+public:
+  /** @brief C'tor. */
+  StreamExtrinsics();
+
+  /** @brief Copy constructor. */
+  StreamExtrinsics(const StreamExtrinsics &other);
+
+  /** @brief Destructor. */
+  ~StreamExtrinsics();
+
+  /** @brief True if the transformation has not been set or is invalid. */
+  bool Empty() const;
+
+  bool SetExtrinsics(const cv::Mat &R, const cv::Mat &t,
+                     const StreamIntrinsics &intrinsics=StreamIntrinsics(),
+                     const cv::Mat &R_reference=cv::Mat(), const cv::Mat &t_reference=cv::Mat());
+
+  /** @brief Returns the stream label assigned to this calibrated stream. */
+//  std::string StreamLabel() const;
+
+  cv::Mat R() const;
+  cv::Mat t() const;
+
+//  /** @brief Returns the device identifier (e.g. serial number) if available, or an empty string.
+//   *
+//   * You can use this to check whether you actually loaded the correct calibration file for your
+//   * current device.
+//   */
+//  std::string Identifier() const;
+
+//  /** @brief Setter. */
+//  void SetIdentifier(const std::string &id);
+
+//  /** @brief Save the calibration to disk. */
+//  bool Save(const std::string &calibration_file, const bool rectified, const FrameType &frame_type) const;
+
+private:
+  cv::Mat R_;             /**< Rotation as 3x3 matrix (or empty). */
+  cv::Mat t_;             /**< Translation as 3x1 vector (or empty). */
+//  std::string identifier_;       /**< Some sinks store device identifiers (e.g. serial number), so you can ensure that you loaded the correct calibration file. */
+};
+
 
 
 /** @brief Load an intrinsic calibration file using cv::FileStorage (thus, supporting XML and YAML).

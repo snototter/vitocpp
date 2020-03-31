@@ -9,13 +9,12 @@
 // Allow a buffer of 16 KB to zip/unzip a cv::Mat
 #define ZIP_MAT_BUFFER_SIZE 16384
 
-#undef VCP_LOGGING_COMPONENT
-#define VCP_LOGGING_COMPONENT "vcp::imutils"
-
 namespace vcp
 {
 namespace imutils
 {
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::imutils"
 namespace
 {
 char IsBigEndian()
@@ -147,6 +146,13 @@ std::string CVMatDepthToString(int depth, int channels)
     str << "C" << channels;
   return str.str();
 }
+
+
+std::string CVMatTypeToString(const cv::Mat &mat)
+{
+  return CVMatDepthToString(mat.depth(), mat.channels());
+}
+
 
 bool DumpZippedMat(const cv::Mat &mat, const std::string &filename)
 {

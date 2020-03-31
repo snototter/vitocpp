@@ -1484,7 +1484,7 @@ void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, con
         towards_bottom_edge *= -1.0;
     }
     towards_bottom_edge = vcp::math::geo2d::Normalize(towards_bottom_edge);
-
+//FIXME - constrains too much - intersect image border with horizon
     // Horizon maps to the plane at infinity, so take a reference point somewhere below
     image_corners_on_gp.push_back(utils::TransformVecWithScale(H_img2gp, horizon.From() + 2.0 * towards_bottom_edge, 1.0));
     image_corners_on_gp.push_back(utils::TransformVecWithScale(H_img2gp, horizon.To() + 2.0 * towards_bottom_edge, 1.0));
@@ -1495,6 +1495,7 @@ void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, con
     image_corners_on_gp.push_back(utils::TransformVecWithScale(H_img2gp, cv::Vec2d(0.0, 0.0)));
     image_corners_on_gp.push_back(utils::TransformVecWithScale(H_img2gp, cv::Vec2d(original_width-1.0, 0.0)));
   }
+//FIXME maybe change that now...
   // Always take the bottom corners (yes, we deliberately do not support a 180 degree rotated camera)
   image_corners_on_gp.push_back(utils::TransformVecWithScale(H_img2gp, cv::Vec2d(original_width-1.0, original_height-1.0)));
   image_corners_on_gp.push_back(utils::TransformVecWithScale(H_img2gp, cv::Vec2d(0.0, original_height-1.0)));
@@ -1567,9 +1568,19 @@ void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, con
     x += grid_spacing;
   }
 
-
+//FIXME WIP - needs complete overhaul!
   // Draw grid lines - first all y, then all x
   const cv::Vec4d image_plane = vcp::math::geo3d::ImagePlaneInWorldCoordinateSystem(R, t);
+  const cv::Vec4d clip_plane = vcp::math::geo3d::ImagePlaneInWorldCoordinateSystem(R, t);
+//  //FIXME slightly move the image plane in front of the actual image plane to prevent numerical issues when projecting the lines
+//  const cv::Vec3d unit_vec_z(0.0, 0.0, 1.0);
+//  const double distance = vcp::math::geo3d::DistancePointPlane(vcp::convert::ToVec3d(t), vcp::math::geo3d::MakePlane(unit_vec_z, -4));
+//  // Rotate plane normal to express it in the world reference frame:
+//  const cv::Mat Rinv = R.t();
+//  const cv::Vec3d plane_normal = vcp::math::geo3d::Apply3x3(Rinv, unit_vec_z); // In world reference
+//  const cv::Vec4d clip_plane = vcp::math::geo3d::MakePlane(plane_normal, distance);
+
+  // End-of-FIXME
   const cv::Scalar &color_x_axis = flip_color_channels ? kAxisColorsRGB[0] : kAxisColorsBGR[0];
   const cv::Scalar &color_y_axis = flip_color_channels ? kAxisColorsRGB[1] : kAxisColorsBGR[1];
   x = cnt_x_from * grid_spacing;
@@ -1577,11 +1588,14 @@ void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, con
   {
     const cv::Vec2d from(x, y_min), to(x, y_max);
     const vcp::math::geo3d::Line3d clipped = vcp::math::geo3d::ClipLineSegmentByPlane(
-          vcp::math::geo3d::Line3d(cv::Vec3d(from[0], from[1], 0.0), cv::Vec3d(to[0], to[1], 0.0)), image_plane);
+          vcp::math::geo3d::Line3d(cv::Vec3d(from[0], from[1], 0.0), cv::Vec3d(to[0], to[1], 0.0)), clip_plane);
+
+//    if (!clipped.empty() && vcp::math::geo3d::IsPointInFrontOfPlane(clipped.From(), image_plane)
+//        && vcp::math::geo3d::IsPointInFrontOfPlane(clipped.To(), image_plane))
     if (!clipped.empty())
     {
-      const cv::Vec3d from3 = clipped.From();
-      const cv::Vec3d to3 = clipped.To();
+      const cv::Vec3d from3 = clipped.From();// + clipped.UnitDirection() * 0.1;
+      const cv::Vec3d to3 = clipped.To();// - clipped.UnitDirection() * 0.1;
       const cv::Vec2d axis_from = utils::TransformVecWithScale(H_gp2img, cv::Vec2d(from3[0], from3[1]), scale_image_points);
       const cv::Vec2d axis_to = utils::TransformVecWithScale(H_gp2img, cv::Vec2d(to3[0], to3[1]), scale_image_points);
       cv::line(image, vcp::convert::ToPoint(axis_from), vcp::convert::ToPoint(axis_to), color_y_axis, line_thickness);
@@ -1593,11 +1607,15 @@ void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, con
   {
     const cv::Vec2d from(x_min, y), to(x_max, y);
     const vcp::math::geo3d::Line3d clipped = vcp::math::geo3d::ClipLineSegmentByPlane(
-          vcp::math::geo3d::Line3d(cv::Vec3d(from[0], from[1], 0.0), cv::Vec3d(to[0], to[1], 0.0)), image_plane);
+          vcp::math::geo3d::Line3d(cv::Vec3d(from[0], from[1], 0.0), cv::Vec3d(to[0], to[1], 0.0)), clip_plane);
+    //FIXME clip by image! vcp::math::geo2d::ClipLineByRectangle()
+
+//    if (!clipped.empty() && vcp::math::geo3d::IsPointInFrontOfPlane(clipped.From(), image_plane)
+//        && vcp::math::geo3d::IsPointInFrontOfPlane(clipped.To(), image_plane))
     if (!clipped.empty())
     {
-      const cv::Vec3d from3 = clipped.From();
-      const cv::Vec3d to3 = clipped.To();
+      const cv::Vec3d from3 = clipped.From();// + clipped.UnitDirection() * 0.1;
+      const cv::Vec3d to3 = clipped.To();// - clipped.UnitDirection() * 0.1;
       const cv::Vec2d axis_from = utils::TransformVecWithScale(H_gp2img, cv::Vec2d(from3[0], from3[1]), scale_image_points);
       const cv::Vec2d axis_to = utils::TransformVecWithScale(H_gp2img, cv::Vec2d(to3[0], to3[1]), scale_image_points);
       cv::line(image, vcp::convert::ToPoint(axis_from), vcp::convert::ToPoint(axis_to), color_x_axis, line_thickness);

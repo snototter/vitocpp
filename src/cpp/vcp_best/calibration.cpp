@@ -5,6 +5,7 @@
 #include <vcp_utils/string_utils.h>
 #include <vcp_utils/file_utils.h>
 #include <vcp_math/common.h>
+#include <vcp_imutils/matutils.h>
 
 #include <opencv2/calib3d/calib3d.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
@@ -276,6 +277,80 @@ std::ostream &operator<<(std::ostream &out, const StreamIntrinsics &si)
   return out;
 }
 
+StreamExtrinsics::StreamExtrinsics()
+{
+}
+
+StreamExtrinsics::StreamExtrinsics(const StreamExtrinsics &other)
+  : R_(other.R_.clone()), t_(other.t_.clone())
+{
+}
+
+StreamExtrinsics::~StreamExtrinsics()
+{
+}
+
+bool StreamExtrinsics::Empty() const
+{
+  return R_.empty() || t_.empty();
+}
+
+bool StreamExtrinsics::SetExtrinsics(const cv::Mat &R, const cv::Mat &t,
+                                     const StreamIntrinsics &intrinsics, const cv::Mat &R_reference, const cv::Mat &t_reference)
+{
+  if (R.empty() || t.empty())
+  {
+    // Compute extrinsics from the (hopefully) known transformation to this stream's reference view/stream:
+    if (intrinsics.Empty() || !intrinsics.HasTransformationToReference() || R_reference.empty() || t_reference.empty())
+      return false;
+    // Get known sensor transformation:
+    cv::Mat R_view2ref, t_view2ref;
+    intrinsics.TransformationToReference(R_view2ref, t_view2ref);
+
+    // Check types
+    if (R_reference.type() != t_reference.type() || R_view2ref.type() != R_reference.type() || t_view2ref.type() != t_reference.type())
+    {
+      VCP_LOG_FAILURE("Matrix type mismatch for extrinsics/known view-to-reference transformation:"
+                      << "R_ref=" << imutils::CVMatTypeToString(R_reference)
+                      << ", t_ref=" << imutils::CVMatTypeToString(t_reference) << std::endl
+                      << "R_view2ref=" << imutils::CVMatTypeToString(R_view2ref)
+                      << ", t_view2ref=" << imutils::CVMatTypeToString(t_view2ref));
+    }
+    // Build a 4x4 extrinsic transformation matrix for the reference view
+    cv::Mat Mref = cv::Mat::eye(4, 4, R_reference.type());
+    R_reference.copyTo(Mref(cv::Rect(0, 0, 3, 3)));
+    t_reference.copyTo(Mref(cv::Rect(3, 0, 1, 3)));
+    // The known sensor transformation warps from the current view to the
+    // reference view, so we need to invert it:
+    cv::Mat M_ref2view = cv::Mat::eye(4, 4, R_reference.type());
+    const cv::Mat R_view2ref_inv = R_view2ref.t();
+    const cv::Mat t_view2ref_inv = -t_view2ref;
+    R_view2ref_inv.copyTo(M_ref2view(cv::Rect(0, 0, 3, 3)));
+    t_view2ref_inv.copyTo(M_ref2view(cv::Rect(3, 0, 1, 3)));
+    // Transform
+    const cv::Mat M = M_ref2view * Mref;
+    M(cv::Rect(0, 0, 3, 3)).copyTo(R_);
+    M(cv::Rect(3, 0, 1, 3)).copyTo(t_);
+  }
+  else
+  {
+    // Take as-is
+    R_ = R.clone();
+    t_ = t.clone();
+  }
+  return !Empty();
+}
+
+cv::Mat StreamExtrinsics::R() const
+{
+  return R_;
+}
+
+cv::Mat StreamExtrinsics::t() const
+{
+  return t_;
+}
+
 
 /** @brief Helper to read a FileStorage node (if it exists). */
 bool ReadMat(const cv::FileStorage &fs, const std::string &key, const std::vector<std::string> &keys, cv::Mat &mat)
@@ -511,6 +586,7 @@ std::vector<StreamIntrinsics> LoadIntrinsicsByGenericType(const cv::FileStorage 
 
   return intrinsics;
 }
+
 
 std::vector<StreamIntrinsics> LoadIntrinsicsFromFile(const std::string &calibration_file,
                                                      const std::vector<std::string> &label_order)

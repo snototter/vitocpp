@@ -34,8 +34,6 @@ struct K4AColorControlSetting
 /** @brief Parametrization of a K4A device. */
 struct K4ASinkParams : SinkParams
 {
-  //FIXME k4a: for multiple cameras, see depth stream offset: https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/green_screen/main.cpp
-
   std::string serial_number; // Set to kEmptyK4ASerialNumber (or empty string) to apply these params to the first connected RealSense device.
 
   bool write_calibration;     // If set, the (factory set) calibration will be written to the calibration_file

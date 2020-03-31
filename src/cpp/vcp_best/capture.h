@@ -245,13 +245,17 @@ public:
 
   /** @brief Use this to "inject" extrinsics into the sinks.
    *
+   * Returns true if the extrinsics have been successfully set. Returns false, if you pass empty matrices and
+   * the stream (1) doesn't have a pre-calibrated transformation to a reference view, or (2) the reference view
+   * has no valid extrinsics yet.
+   *
    * Required for example by examples/python3/tools/calibrate-extrinsics.py, a multi-stream sink (e.g. a
    * depth sensor) has to/will take care of adjusting the extrinsics for sensors where R & t are empty (cannot be
    * estimated visually, e.g. the depth stream). For such streams, the underlying sink is expected to have a
    * (probably factory-calibrated) transformation between the stream and a reference view (e.g. the sensor's
    * left and/or color view) which will be used to compute its extrinsics from R & t of the reference view.
    */
-  virtual void SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) = 0;
+  virtual bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) = 0;
 
 protected:
   Capture() {}
