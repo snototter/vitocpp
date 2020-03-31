@@ -5,19 +5,19 @@ C++/Python 3 utilities for common vision tasks, _e.g._ streaming, visualization 
 
 ```
 Current status:
-cloc --exclude-dir=.venv3,build,third-party,gen,doc --exclude-lang=make,XML .
+cloc --exclude-dir=.venv3,build,third-party,gen,doc,generated --exclude-lang=make,XML .
 TODO exclude mappings before updating LOC count!
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C++                             59           3626           2414          18863
-C/C++ Header                    49           1411           1561           3799
-CMake                           21            374            446           1691
-Python                          18            484            689           1455
-Markdown                         3             52              0            256
-Bourne Shell                     3             37             70            223
+C++                             61           4137           2295          22253
+C/C++ Header                    53           1559           1783           4216
+Python                          21            722            932           2608
+CMake                           21            383            449           1741
+Markdown                         3             53              0            259
+Bourne Shell                     3             37             70            224
 -------------------------------------------------------------------------------
-SUM:                           153           5984           5180          26287
+SUM:                           162           6891           5529          31301
 -------------------------------------------------------------------------------
 ```
 

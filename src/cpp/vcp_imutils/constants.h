@@ -21,7 +21,7 @@ namespace imutils
 //%% Use this for the original color names/color attributes:
 //load('w2c.mat');
 //fid = fopen('constants_colornames.cpp', 'w');
-//fprintf(fid, '#include "constants.h"\n');
+//fprintf(fid, '#include "../constants.h"\n');
 //fprintf(fid, 'namespace vcp {\n');
 //fprintf(fid, 'namespace imutils {\n');
 //rows = size(w2c, 1);

@@ -23,7 +23,7 @@ set(SOURCES
     imabstraction.cpp
     imutils.cpp
     matutils.cpp
-    constants_colornames.cpp
+    generated/constants_colornames.cpp
 )
 
 # We need OpenCV for matrix handling
