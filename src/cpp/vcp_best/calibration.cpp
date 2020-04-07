@@ -642,6 +642,7 @@ std::vector<StreamIntrinsics> LoadIntrinsicsFromFile(const std::string &calibrat
   if (label_order.empty())
     return intrinsics;
 
+  //TODO need to sort the intrinsics - or better, return a map!
   VCP_LOG_FIXME("Sort intrinsics: " << std::endl << intrinsics);
   return intrinsics;
 }
@@ -684,7 +685,6 @@ std::map<std::string, StreamExtrinsics> LoadExtrinsicsFromFile(const std::string
   }
 
   const auto keys = ListFileStorageNodes(fs);
-  VCP_LOG_FIXME("YOHO: extrinsic tags: " << keys);
 
   const auto nc = std::find(keys.begin(), keys.end(), "num_cameras");
   if (nc == keys.end())
@@ -718,7 +718,7 @@ std::map<std::string, StreamExtrinsics> LoadExtrinsicsFromFile(const std::string
     const auto pos_t = std::find(keys.begin(), keys.end(), key_t);
     if (pos_r == keys.end() || pos_t == keys.end())
     {
-      VCP_LOG_FIXME("OHNOOOOOO - empty ext at " << label);
+      VCP_LOG_WARNING("No extrinsics available to load for stream '" << label << "'.");
       extrinsics.insert(std::pair<std::string, StreamExtrinsics>(label, StreamExtrinsics()));
     }
     else
@@ -726,7 +726,14 @@ std::map<std::string, StreamExtrinsics> LoadExtrinsicsFromFile(const std::string
       cv::Mat R, t;
       fs[key_r] >> R;
       fs[key_t] >> t;
-      VCP_LOG_FIXME("Valid extrinsics: " << label << ", " << R << t);
+      if (R.empty() || t.empty())
+      {
+        VCP_LOG_FAILURE("Invalid extrinsics for stream '" << label << "'." << std::endl << "R: " << R << ", t: " << t);
+      }
+      else
+      {
+        VCP_LOG_INFO("Extrinsics loaded " << label << ", " << R << t);
+      }
       extrinsics.insert(std::pair<std::string, StreamExtrinsics>(label, StreamExtrinsics(R, t)));
     }
   }
