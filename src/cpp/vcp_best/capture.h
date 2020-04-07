@@ -214,19 +214,26 @@ public:
   /** @brief Check if the given stream is rectified. */
   virtual bool IsStreamRectified(size_t stream_index) const = 0;
 
+  /** @brief Returns true if the stream at the given index originates from a "step-through-able" @see ImageDirectorySink.
+   * Note: in the (very distant) future, we might implement a "TimedImageDirectorySink", which acts like a live stream.
+   * For this, IsStepAbleImageDirectory is expected to return false.
+   */
+  virtual bool IsStepAbleImageDirectory(size_t stream_index) const = 0;
+
 
   /** @brief Stores a configuration file (along with intrinsic calibrations if available) to "replay" the recorded streams.
    *
    * - Note that you have to record/store the streams yourself!
    * - Provide the output folder as argument, the configuration will be stored as "<folder>/replay.cfg"
    * - Intrinsic calibrations will be stored as "<folder>/calibration/calib-<stream_label>.xml"
+   * - If save_extrinsics is true (and available, i.e. either it (1) has been loaded upon creating this capture or
+   *   (2) it has been set by you via @see SetExtrinsicsAt), it will be stored as "<folder>/calibration/extrinsics.xml".
    * - "folder" will be created if it does not exist
    * - Existing contents will be overwritten!
    * - There must be exactly one storage_param for each configured stream, i.e. storage_param[i] belongs to stream/frame[i]
    * - "folder" will be prepended to relative storage_params[i].path entries.
    */
-  //virtual bool SaveReplayConfiguration(const std::string &folder, const std::vector<StreamStorageParams> &storage_params) const = 0;
-  virtual bool SaveReplayConfiguration(const std::string &folder, const std::map<std::string, StreamStorageParams> &storage_params) const = 0;
+  virtual bool SaveReplayConfiguration(const std::string &folder, const std::map<std::string, StreamStorageParams> &storage_params, bool save_extrinsics) const = 0;
 
   /** @brief Returns the 3x3 intrinsic camera matrix. */
   virtual cv::Mat CameraMatrixAt(size_t stream_index) const = 0;
@@ -256,6 +263,14 @@ public:
    * left and/or color view) which will be used to compute its extrinsics from R & t of the reference view.
    */
   virtual bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) = 0;
+
+  /** @brief "Inject" extrinsics by the stream's label. */
+  virtual bool SetExtrinsicsAt(const std::string &stream_label, const cv::Mat &R, const cv::Mat &t) = 0;
+
+  /** @brief Stores the extrinsic calibration (if it has (1) been loaded upon startup, i.e. already
+   * existed or (2) has been injected via @see SetExtrinsicsAt) as cv::FileStorage-compatible XML file.
+   */
+  virtual bool SaveExtrinsicCalibration(const std::string &filename) const = 0;
 
 protected:
   Capture() {}

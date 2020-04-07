@@ -95,7 +95,7 @@ def streaming_demo(cfg_file, folder, output_folder=None, output_fps=15):
                     os.path.join(output_folder, pn),
                     file_extension='.png', flip_channels=False, verbose=False)
 
-        capture.save_replay_config(output_folder, storage_params)
+        capture.save_replay_config(output_folder, storage_params, False)
 
     while capture.all_devices_available():
         if not capture.wait_for_frames(1000.0):

@@ -3,6 +3,7 @@
 
 #include <string>
 #include <vector>
+#include <map>
 #include <iostream>
 
 #include <opencv2/core/version.hpp>
@@ -121,6 +122,9 @@ public:
   /** @brief C'tor. */
   StreamExtrinsics();
 
+  /** @brief C'tor. */
+  StreamExtrinsics(const cv::Mat &R, const cv::Mat &t);
+
   /** @brief Copy constructor. */
   StreamExtrinsics(const StreamExtrinsics &other);
 
@@ -173,6 +177,17 @@ std::vector<StreamIntrinsics> LoadIntrinsicsFromFile(const std::string &calibrat
 
 /** @brief Returns true, if there are any distortion coefficients != 0 ('distortion' must be Nx1, CV_64FC1). */
 bool HasLensDistortion(const cv::Mat &distortion);
+
+/** @brief Load an extrinsic calibration file using cv::FileStorage (thus, supporting XML and YAML).
+ *
+ * Parameters/tags within the calibration file:
+ * * Mandatory: <num_cameras>N (int)</num_cameras>
+ * * For X in [0, N-1]:
+ *   * <labelX>stream label (string)</labelX>
+ *   * [optional - only present if stream is calibrated] <RX>3x3 rotation matrix</RX>
+ *   * [optional - only present if stream is calibrated] <tX>3x1 translation vector</tX>
+ */
+std::map<std::string, StreamExtrinsics> LoadExtrinsicsFromFile(const std::string &calibration_file);
 
 } // namespace calibration
 } // namespace best

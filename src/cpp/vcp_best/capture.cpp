@@ -87,16 +87,30 @@ public:
         sink->SetVerbose(verbose);
     }
 
-    if (config.SettingExists("extrinsic_calibration"))
+    const std::string kext = config.SettingExists("extrinsic_calibration")
+        ? "extrinsic_calibration"
+        : (config.SettingExists("extrinsic_calibration_file")
+           ? "extrinsic_calibration_file"
+           : "");
+    if (!kext.empty())
     {
-      const std::string ext_calib_file = config.GetString("extrinsic_calibration");
-      VCP_LOG_FIXME("Need to load extrinsic calibration from: " << ext_calib_file);
+      const std::string ext_calib_file = config.GetString(kext);
+      if (vcp::utils::file::Exists(ext_calib_file))
+      {
+        const auto extrinsics = calibration::LoadExtrinsicsFromFile(ext_calib_file);
+        for (const auto &ext : extrinsics)
+          SetExtrinsicsAt(ext.first, ext.second.R(), ext.second.t());
+      }
+      else
+      {
+        VCP_LOG_FAILURE("Parameter '" << kext << "' has been set, but file '"
+                        << ext_calib_file << "' does not exist!");
+      }
     }
   }
 
   void LoadSinkConfigs(const vcp::config::ConfigParams &config)
   {
-    //FIXME: load extrinsics
     VCP_LOG_DEBUG("MultiDeviceCapture::LoadConfig()");
 
     std::vector<file::ImageDirectorySinkParams> imgdir_params;
@@ -320,6 +334,12 @@ public:
     return SinkParamsAt(stream_index).rectify;
   }
 
+  bool IsStepAbleImageDirectory(size_t stream_index) const override
+  {
+    const auto &lookup = frame2sink_[stream_index];
+    return file::IsImageDirectorySink(sinks_[lookup.first]);
+  }
+
   bool AreAllDevicesAvailable() const override
   {
     VCP_LOG_DEBUG("AreDevicesAvailable()");
@@ -506,7 +526,7 @@ public:
   }
 
 
-  bool SaveReplayConfiguration(const std::string &folder, const std::map<std::string, StreamStorageParams> &storage_params) const override
+  bool SaveReplayConfiguration(const std::string &folder, const std::map<std::string, StreamStorageParams> &storage_params, bool save_extrinsics) const override
   {
     // Sanity checks.
     if (storage_params.size() != frame_labels_.size())
@@ -595,6 +615,16 @@ public:
       }
     }
 
+    if (save_extrinsics)
+    {
+      const std::string rel_ext_file = vcp::utils::file::FullFile("calibration", "extrinsics.xml");
+      const std::string ext_file = vcp::utils::file::FullFile(folder, rel_ext_file);
+      if (SaveExtrinsicCalibration(ext_file))
+        config->SetString("extrinsic_calibration_file", rel_ext_file);
+      else
+        VCP_LOG_FAILURE("Couldn't save extrinsics to '" << ext_file << "'.");
+    }
+
     const std::string cfg_file = vcp::utils::file::FullFile(folder, "replay.cfg");
     const bool success = config->SaveConfiguration(cfg_file);
     if (success)
@@ -651,6 +681,54 @@ public:
   {
     const auto &lookup = frame2sink_[stream_index];
     return sinks_[lookup.first]->SetExtrinsicsAt(lookup.second, R, t);
+  }
+
+  bool SetExtrinsicsAt(const std::string &stream_label, const cv::Mat &R, const cv::Mat &t) override
+  {
+    for (size_t i = 0; i < frame_labels_.size(); ++i)
+    {
+      if (stream_label.compare(frame_labels_[i]) == 0)
+        return SetExtrinsicsAt(i, R, t);
+    }
+    VCP_LOG_FAILURE("Cannot set extrinsics because stream '" << stream_label << "' is unknown."
+                    << "Known labels: " << frame_labels_);
+    return false;
+  }
+
+  bool SaveExtrinsicCalibration(const std::string &filename) const override
+  {
+    cv::FileStorage fs(filename, cv::FileStorage::WRITE);
+    if (!fs.isOpened())
+    {
+      VCP_LOG_FAILURE("Cannot open FileStorage to store extrinsics at '" << filename << "'.");
+      return false;
+    }
+
+    fs << "num_cameras" << static_cast<int>(frame_labels_.size());
+    for (size_t i = 0; i < frame_labels_.size(); ++i)
+    {
+      std::stringstream ss;
+      ss << "label" << i;
+      fs << ss.str() << frame_labels_[i];
+
+      cv::Mat R, t;
+      ExtrinsicsAt(i, R, t);
+
+      if (!R.empty() && !t.empty())
+      {
+        ss.str("");
+        ss.clear();
+        ss << "R" << i;
+        fs << ss.str() << R;
+
+        ss.str("");
+        ss.clear();
+        ss << "t" << i;
+        fs << ss.str() << t;
+      }
+    }
+    fs.release();
+    return true;
   }
 
 private:
@@ -789,384 +867,6 @@ std::unique_ptr<Capture> CreateCapture(const vcp::config::ConfigParams &config)
   return std::unique_ptr<MultiDeviceCapture>(new MultiDeviceCapture(config));
 }
 
-
-////--------------------------------------------------------------------------------------------
-//// Rectified Capture
-
-//class RectifiedCaptureImpl : public RectifiedCapture
-//{
-//public:
-//  RectifiedCaptureImpl(const pvt::config::ConfigParams &config, bool force_loading_extrinsics) : RectifiedCapture()
-//  {
-//    plain_capture_ = pvt::icc::CreateRawCapture(config);
-//    if (config.SettingExists("multicam_calibration"))
-//    {
-//      LoadCombinedCalibration(config, force_loading_extrinsics);
-//    }
-//    else
-//    {
-//      LoadSeparateIntrinsics();
-//      LoadSeparateExtrinsics(config, force_loading_extrinsics);
-//    }
-//  }
-
-//  virtual ~RectifiedCaptureImpl() {}
-
-//  bool IsAvailable() const override { return plain_capture_->IsAvailable(); }
-
-//  bool IsFrameAvailable() const override { return plain_capture_->IsFrameAvailable(); }
-
-//  bool Start() override { return plain_capture_->Start(); }
-
-//  std::vector<cv::Mat> NextFrame() override
-//  {
-//    const std::vector<cv::Mat> frames = plain_capture_->NextFrame();
-//    std::vector<cv::Mat> rectified;
-//    rectified.reserve(frames.size());
-
-//    for (size_t i = 0; i < frames.size(); ++i)
-//      rectified.push_back(rectifier_[i]->Rectify(frames[i]));
-
-//    return rectified;
-//  }
-
-
-//  std::vector<cv::Mat> PreviousFrame() override
-//  {
-//    const std::vector<cv::Mat> frames = plain_capture_->PreviousFrame();
-//    std::vector<cv::Mat> rectified;
-//    rectified.reserve(frames.size());
-
-//    for (size_t i = 0; i < frames.size(); ++i)
-//      rectified.push_back(rectifier_[i]->Rectify(frames[i]));
-
-//    return rectified;
-//  }
-
-
-//  std::vector<cv::Mat> FastForward(size_t num_frames) override
-//  {
-//    const std::vector<cv::Mat> frames = plain_capture_->FastForward(num_frames);
-//    std::vector<cv::Mat> rectified;
-//    rectified.reserve(frames.size());
-
-//    for (size_t i = 0; i < frames.size(); ++i)
-//      rectified.push_back(rectifier_[i]->Rectify(frames[i]));
-
-//    return rectified;
-//  }
-
-
-//  bool Terminate() override { return plain_capture_->Terminate(); }
-
-//  cv::Mat K(size_t sink_index) const override { return rectifier_[sink_index]->K(); }
-
-//  cv::Mat P2(size_t sink_index) const override { return rectifier_[sink_index]->P2(); }
-
-//  cv::Mat R(size_t sink_index) const override
-//  {
-//    if (extrinsics_.empty())
-//      return cv::Mat();
-//    return extrinsics_[sink_index].first;
-//  }
-
-//  cv::Mat t(size_t sink_index) const override
-//  {
-//    if (extrinsics_.empty())
-//      return cv::Mat();
-//    return extrinsics_[sink_index].second;
-//  }
-
-//  cv::Mat C(size_t sink_index) const override
-//  {
-//    if (extrinsics_.empty())
-//      return cv::Mat();
-//    const cv::Mat R = extrinsics_[sink_index].first;
-//    const cv::Mat t = extrinsics_[sink_index].second;
-//    if (R.empty() || t.empty())
-//      return cv::Mat();
-//    return -R.t() * t;
-//  }
-
-//  cv::Vec4d ImagePlane(size_t sink_index) const override
-//  {
-//    if (extrinsics_.empty())
-//      return cv::Vec4d();
-//    return pvt::math::geo3d::ImagePlaneInWorldCoordinateSystem(extrinsics_[sink_index].first, extrinsics_[sink_index].second);
-//  }
-
-//  void StereoRt(size_t sink_index, cv::Mat &R, cv::Mat &t) const override
-//  {
-//    if (rectifier_.empty())
-//    {
-//      R = cv::Mat();
-//      t = cv::Mat();
-//    }
-//    else
-//    {
-//      rectifier_[sink_index]->StereoExtrinsics(R, t);
-//    }
-//  }
-
-//  size_t NumStreams() const override { return plain_capture_->NumStreams(); }
-//  std::string GetSinkLabel(size_t sink_index) const override { return plain_capture_->GetSinkLabel(sink_index); }
-//  std::string GetCalibrationFile(size_t sink_index) const override { return plain_capture_->GetCalibrationFile(sink_index); }
-//  std::string GetCorrespondingConfigKey(size_t sink_index) const override { return plain_capture_->GetCorrespondingConfigKey(sink_index); }
-//  StreamType GetStreamType(size_t stream_index) const override { return plain_capture_->GetStreamType(stream_index); }
-//  std::vector<StreamType> GetStreamTypes() const override { return plain_capture_->GetStreamTypes(); }
-
-//  void SaveCalibration(const std::string &filename) const override
-//  {
-//    if (!IsAvailable())
-//    {
-//      throw std::runtime_error("Capture must be started/available while saving the calibration - we need to query the stream resolutions!");
-//    }
-
-//    const size_t num_streams = NumStreams();
-
-//    // Query frame sizes
-//    std::vector<cv::Size> frame_sizes;
-//    frame_sizes.reserve(num_streams);
-//    while (true)
-//    {
-//      if (plain_capture_->IsFrameAvailable())
-//      {
-//        std::vector<cv::Mat> frames = plain_capture_->NextFrame();
-//        bool all_frames_valid = true;
-//        for (const auto &f : frames)
-//          all_frames_valid = all_frames_valid && !f.empty();
-
-//        if (all_frames_valid)
-//        {
-//          for (const auto &f : frames)
-//            frame_sizes.push_back(cv::Size(f.cols, f.rows));
-//          break;
-//        }
-//      }
-//      else
-//      {
-//        std::this_thread::sleep_for(std::chrono::milliseconds(50));
-//      }
-//    }
-
-//    // Store calibration for all configured streams:
-//    cv::FileStorage fs(filename, cv::FileStorage::WRITE);
-//    for (size_t i = 0; i < num_streams; ++i)
-//    {
-//      std::stringstream ss;
-//      if (GetStreamType(i) != StreamType::STEREO)
-//      {
-//        ss << "K" << (i+1);
-//        fs << ss.str() << K(i);
-
-//        ss.str("");
-//        ss.clear();
-//        ss << "D" << (i+1);
-//        fs << ss.str() << cv::Mat::zeros(5,1, CV_64FC1);
-//      }
-//      else
-//      {
-//        ss << "K" << (i+1) << "-1";
-//        fs << ss.str() << K(i);
-
-//        ss.str(""); ss.clear();
-//        ss << "D" << (i+1) << "-1";
-//        fs << ss.str() << cv::Mat::zeros(5,1, CV_64FC1);
-
-//        const cv::Mat Pstereo2 = P2(i);
-//        ss.str(""); ss.clear();
-//        ss << "K" << (i+1) << "-2";
-//        fs << ss.str() << Pstereo2.colRange(0, 3);
-
-//        ss.str(""); ss.clear();
-//        ss << "D" << (i+1) << "-2";
-//        fs << ss.str() << cv::Mat::zeros(5,1, CV_64FC1);
-
-//        // Store relative stereo extrinsics
-//        cv::Mat Rstereo, tstereo;
-//        StereoRt(i, Rstereo, tstereo);
-
-//        ss.str(""); ss.clear();
-//        ss << "R" << (i+1) << "-stereo";
-//        fs << ss.str() << Rstereo;
-
-//        ss.str(""); ss.clear();
-//        ss << "t" << (i+1) << "-stereo";
-//        fs << ss.str() << tstereo;
-//      }
-
-//      ss.str("");
-//      ss.clear();
-//      ss << "R" << (i+1);
-//      fs << ss.str() << R(i);
-
-//      ss.str("");
-//      ss.clear();
-//      ss << "t" << (i+1);
-//      fs << ss.str() << t(i);
-
-//      ss.str("");
-//      ss.clear();
-//      ss << "img_width" << (i+1);
-//      const int width = GetStreamType(i) == StreamType::STEREO ? (frame_sizes[i].width / 2) : frame_sizes[i].width;
-//      fs << ss.str() << width;
-
-//      ss.str("");
-//      ss.clear();
-//      ss << "img_height" << (i+1);
-//      fs << ss.str() << frame_sizes[i].height;
-
-//      ss.str("");
-//      ss.clear();
-//      ss << "label" << (i+1);
-//      fs << ss.str() << GetSinkLabel(i);
-//    }
-//    fs.release();
-//  }
-
-
-//private:
-//  std::unique_ptr<pvt::icc::Capture> plain_capture_;
-//  std::vector<std::unique_ptr<Rectifier>> rectifier_;
-//  std::vector<std::pair<cv::Mat, cv::Mat>> extrinsics_;
-
-//  void LoadCombinedCalibration(const pvt::config::ConfigParams &config, bool force_loading_extrinsics)
-//  {
-//    const bool has_extrinsics = config.SettingExists("multicam_calibration");
-//    if (!has_extrinsics)
-//    {
-//      if (force_loading_extrinsics)
-//        throw std::runtime_error("Configuration doesn't provide a multicam_calibration file (loading extrinsics was forced)");
-//      return;
-//    }
-
-//    const std::string filename = config.GetString("multicam_calibration");
-//    if (!pvt::utils::file::Exists(filename))
-//    {
-//      const std::string msg = "Extrinsic calibration file specified, but does not exist! Check location of '" + filename + "'";
-//      if (force_loading_extrinsics)
-//        throw std::runtime_error(msg);
-
-//      PVT_LOG_FAILURE(msg);
-//      return;
-//    }
-
-//    cv::FileStorage fs(filename, cv::FileStorage::READ);
-//    const size_t num_sinks = NumStreams();
-//    for (size_t i = 0; i < num_sinks; ++i)
-//    {
-//      // Check if the calibration matches the sink label
-//      std::stringstream ss;
-//      ss << "label" << (i+1);
-//      std::string label;
-//      fs[ss.str()] >> label;
-//      const std::string expected_label = GetSinkLabel(i);
-//      if (expected_label.compare(label) != 0)
-//      {
-//        ss.str("");
-//        ss.clear();
-//        ss << "Expected calibration of camera" << (i+1) << " to belong to '" << expected_label << "' but got '" << label << "'.";
-//        if (force_loading_extrinsics)
-//        {
-//          throw std::runtime_error(ss.str());
-//        }
-//        else
-//        {
-//          ss << " Ignoring extrinsics for this stream.";
-//          PVT_LOG_FAILURE_NOFILE(ss.str());
-//          extrinsics_.push_back(std::pair<cv::Mat, cv::Mat>(cv::Mat(), cv::Mat()));
-//          continue;
-//        }
-//      }
-
-//      // Load rectifier (usually, if you replay a calibrated multicam capture, this should be all None (i.e. no distortion coefficients):
-//      rectifier_.push_back(GetRectifier(fs, GetStreamType(i), (i+1)));
-
-//      // Load extrinsics:
-//      ss.str("");
-//      ss.clear();
-//      ss << "R" << (i+1);
-//      cv::Mat R;
-//      fs[ss.str()] >> R;
-
-//      ss.str("");
-//      ss.clear();
-//      ss << "t" << (i+1);
-//      cv::Mat t;
-//      fs[ss.str()] >> t;
-
-//      extrinsics_.push_back(std::pair<cv::Mat, cv::Mat>(R, t));
-//    }
-//  }
-
-//  void LoadSeparateIntrinsics()
-//  {
-//    const size_t num_sinks = NumStreams();
-//    for (size_t i = 0; i < num_sinks; ++i)
-//    {
-//      auto rectifier = GetRectifier(GetCalibrationFile(i), GetStreamType(i), GetSinkLabel(i));
-//      rectifier_.push_back(std::move(rectifier));
-//    }
-//  }
-
-//  void LoadSeparateExtrinsics(const pvt::config::ConfigParams &config, bool force_loading_extrinsics)
-//  {
-//    const bool has_extrinsics = config.SettingExists("extrinsic_calibration_file");
-//    if (!has_extrinsics)
-//    {
-//      if (force_loading_extrinsics)
-//        throw std::runtime_error("Configuration doesn't provide an extrinsic calibration file (loading extrinsics was forced)");
-//      return;
-//    }
-
-//    const std::string filename = config.GetString("extrinsic_calibration_file");
-//    if (!pvt::utils::file::Exists(filename))
-//    {
-//      const std::string msg = "Extrinsic calibration file specified, but does not exist! Check location of '" + filename + "'";
-//      if (force_loading_extrinsics)
-//        throw std::runtime_error(msg);
-
-//      PVT_LOG_FAILURE(msg);
-//      return;
-//    }
-
-//    cv::FileStorage fs(filename, cv::FileStorage::READ);
-//    // Note there's an OpenCV (python wrapper) bug, we cannot write integers (only doubles): https://github.com/opencv/opencv/issues/10506
-////    int num_cameras;
-////    fs["num_cameras"] >> num_cameras;
-//    const size_t num_cameras = plain_capture_->NumStreams();
-//    for (size_t i = 0; i < num_cameras; ++i)
-//    {
-//      std::stringstream ss;
-//      ss << "R" << (i+1);
-//      cv::Mat R;
-//      fs[ss.str()] >> R;
-
-//      ss.str("");
-//      ss.clear();
-//      ss << "t" << (i+1);
-//      cv::Mat t;
-//      fs[ss.str()] >> t;
-
-//      ss.str("");
-//      ss.clear();
-//      ss << "label" << (i+1);
-//      std::string label;
-//      fs[ss.str()] >> label;
-
-//      const std::string expected_label = GetSinkLabel(i);
-//      if (expected_label.compare(label) != 0)
-//      {
-//        ss.str("");
-//        ss.clear();
-//        ss << "Expected R" << (i+1) << ", t" << (i+1) << " to belong to '" << expected_label << "' but got '" << label << "'";
-//        throw std::runtime_error(ss.str());
-//      }
-//      extrinsics_.push_back(std::pair<cv::Mat, cv::Mat>(R, t));
-//    }
-//    fs.release();
-//  }
-//};
 
 } // namespace best
 } // namespace vcp

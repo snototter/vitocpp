@@ -25,7 +25,7 @@ from vcp import best
 from vcp import colormaps
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-from calibration_utils import ExtrinsicsAprilTag, split_pose
+from utils_ext_calib import ExtrinsicsAprilTag, split_pose
 
 class Streamer(QThread):
     newFrameset = pyqtSignal(list)
@@ -87,6 +87,9 @@ class Streamer(QThread):
             raise RuntimeError('Cannot open devices')
         if not self._capture.start():
             raise RuntimeError('Cannot start streams')
+
+        if self._step_through is None:
+            self._step_through = any([self._capture.is_step_able_image_sequence(idx) for idx in range(self._capture.num_streams())])
 
         # Some cameras (especially our tested RGBD sensors) take quite long to provide the 
         # initial frameset, so it's recommended to wait a bit longer for the device to finish
@@ -497,7 +500,7 @@ class CalibApplication(QMainWindow):
     def loadNextFrameset(self):
         frames = self._streamer.getNextFrameset()
         if frames is None:
-            print('Received empty frameset')
+            print('[WARNING] Received empty frameset')
             self._btn_next.setEnabled(False)
         else:
             self.displayFrameset(frames)
@@ -666,6 +669,8 @@ class CalibApplication(QMainWindow):
         self.updateVisualizationOptions(None)
         self.changeDepthVisualization(None)
         self.changeInfraredVisualization(None)
+        # Set a default storage filename
+        self._filename_widget.set_value('extrinsics.xml')
 
     def prepareShortcuts(self):
         sc = QShortcut(QKeySequence('Ctrl+F'), self)
@@ -676,6 +681,8 @@ class CalibApplication(QMainWindow):
         sc.activated.connect(self.saveExtrinsics)
         sc = QShortcut(QKeySequence('Ctrl+Shift+S'), self)
         sc.activated.connect(self.saveExtrinsicsAs)
+        sc = QShortcut(QKeySequence('Ctrl+R'), self)
+        sc.activated.connect(self.saveReplayConfig)
 
     # def __load_request(self):
     #     filename, _ = QFileDialog.getOpenFileName(self, "Open image", "",
@@ -720,10 +727,51 @@ class CalibApplication(QMainWindow):
     def saveExtrinsics(self):
         fn = self._filename_save
         if fn is None:
-            print('Cannot save extrinsics - You must select a filename first!')
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText('Cannot save extrinsics - You must select a filename first!')
+            msg.setWindowTitle('Error')
+            msg.exec()
             return
-        print('FIXME need to save the world extrinsics to ', self._filename_save)
-    
+        if self._streamer.getCapture().save_extrinsics(self._filename_save):
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setText('Extrinsics saved to "{:s}"'.format(self._filename_save))
+            msg.setWindowTitle('Success')
+            msg.exec()
+        else:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText('Error saving extrinsics to "{:s}"'.format(self._filename_save))
+            msg.setWindowTitle('Error')
+            msg.exec()
+
+    def saveReplayConfig(self):
+        """Saves a "dummy" replay configuration (assuming each stream is dumped as an image sequence)
+        so you don't have to build the configuration from scratch."""
+        folder = 'output-ext-calib'
+        # Assume that each stream will be dumped as an image sequence
+        cap = self._streamer.getCapture()
+        storage_params = dict()
+        for idx in range(cap.num_streams()):
+            lbl = cap.frame_label(idx)
+            pn = cap.canonic_frame_label(idx)
+            storage_params[lbl] = best.StreamStorageParams(
+                best.StreamStorageParams.Type.ImageSequence, pn)
+
+        if cap.save_replay_config(folder=folder, storage_params=storage_params, save_extrinsics=True):
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Information)
+            msg.setText('Replay configuration saved to "{:s}"'.format(folder))
+            msg.setWindowTitle('Success')
+            msg.exec()
+        else:
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Critical)
+            msg.setText('Error saving replay configuration to "{:s}"'.format(folder))
+            msg.setWindowTitle('Error')
+            msg.exec()
+
     def changeDepthVisualization(self, changed_value):
         rv = self._depth_range_widget.value()
         vo = self._depth_visualization_dropdown.value()
@@ -752,7 +800,7 @@ class CalibApplication(QMainWindow):
 
     def streamVisibilityToggled(self, stream_index, active):
         if active:
-            print("Stream '{}' becomes active".format(self._viewers[stream_index].streamLabel()))
+            # print("Stream '{}' becomes active".format(self._viewers[stream_index].streamLabel()))
             # Remove viewer widget from inactive list
             idx_layout_from = self._inactive_scroll_layout.indexOf(self._viewers[stream_index])
             self._inactive_scroll_layout.takeAt(idx_layout_from)
@@ -822,7 +870,7 @@ def parseArguments():
 
     parser.add_argument('--step-through', action='store_true', dest='step_through',
         help="Step through recording manually (instead of live streaming)")
-    parser.set_defaults(step_through=False)
+    parser.set_defaults(step_through=None)
 
     args = parser.parse_args()
     # Convert grid limits to rectangle:

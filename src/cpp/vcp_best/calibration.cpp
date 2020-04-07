@@ -11,6 +11,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 
 #include <string>
+#include <sstream>
 #include <vector>
 #include <algorithm>
 
@@ -283,6 +284,11 @@ StreamExtrinsics::StreamExtrinsics()
 
 StreamExtrinsics::StreamExtrinsics(const StreamExtrinsics &other)
   : R_(other.R_.clone()), t_(other.t_.clone())
+{
+}
+
+StreamExtrinsics::StreamExtrinsics(const cv::Mat &R, const cv::Mat &t)
+  : R_(R.clone()), t_(t.clone())
 {
 }
 
@@ -601,7 +607,7 @@ std::vector<StreamIntrinsics> LoadIntrinsicsFromFile(const std::string &calibrat
   cv::FileStorage fs(calibration_file, cv::FileStorage::READ);
   if (!fs.isOpened())
   {
-    VCP_LOG_FAILURE("Cannot open calibration file '" << calibration_file << "'");
+    VCP_LOG_FAILURE("Cannot open calibration file '" << calibration_file << "'.");
     return intrinsics;
   }
 
@@ -658,6 +664,74 @@ bool HasLensDistortion(const cv::Mat &distortion)
 
   // All distortion parameters are (too close to) 0
   return false;
+}
+
+
+std::map<std::string, StreamExtrinsics> LoadExtrinsicsFromFile(const std::string &calibration_file)
+{
+  std::map<std::string, StreamExtrinsics> extrinsics;
+  if (!vcp::utils::file::Exists(calibration_file))
+  {
+    VCP_LOG_FAILURE("Calibration file '" << calibration_file << "' does not exist.");
+    return extrinsics;
+  }
+
+  cv::FileStorage fs(calibration_file, cv::FileStorage::READ);
+  if (!fs.isOpened())
+  {
+    VCP_LOG_FAILURE("Cannot open calibration file '" << calibration_file << "'.");
+    return extrinsics;
+  }
+
+  const auto keys = ListFileStorageNodes(fs);
+  VCP_LOG_FIXME("YOHO: extrinsic tags: " << keys);
+
+  const auto nc = std::find(keys.begin(), keys.end(), "num_cameras");
+  if (nc == keys.end())
+  {
+    VCP_LOG_FAILURE("Extrinsic calibration file doesn't specify the 'num_cameras' parameter/tag!");
+    return extrinsics;
+  }
+
+  int num_cameras;
+  fs["num_cameras"] >> num_cameras;
+
+  for (int i = 0; i < num_cameras; ++i)
+  {
+    std::stringstream ss;
+    std::string label;
+    ss << "label" << i;
+    fs[ss.str()] >> label;
+
+    // Check if this stream is actually calibrated:
+    ss.str("");
+    ss.clear();
+    ss << "R" << i;
+    const std::string key_r = ss.str();
+
+    ss.str("");
+    ss.clear();
+    ss << "t" << i;
+    const std::string key_t = ss.str();
+
+    const auto pos_r = std::find(keys.begin(), keys.end(), key_r);
+    const auto pos_t = std::find(keys.begin(), keys.end(), key_t);
+    if (pos_r == keys.end() || pos_t == keys.end())
+    {
+      VCP_LOG_FIXME("OHNOOOOOO - empty ext at " << label);
+      extrinsics.insert(std::pair<std::string, StreamExtrinsics>(label, StreamExtrinsics()));
+    }
+    else
+    {
+      cv::Mat R, t;
+      fs[key_r] >> R;
+      fs[key_t] >> t;
+      VCP_LOG_FIXME("Valid extrinsics: " << label << ", " << R << t);
+      extrinsics.insert(std::pair<std::string, StreamExtrinsics>(label, StreamExtrinsics(R, t)));
+    }
+  }
+
+  return extrinsics;
 }
 
 } // namespace calibration

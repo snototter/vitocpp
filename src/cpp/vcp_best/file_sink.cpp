@@ -222,6 +222,19 @@ public:
     return intrinsics_;
   }
 
+  void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    R = extrinsics_.R().clone();
+    t = extrinsics_.t().clone();
+  }
+
+  bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return extrinsics_.SetExtrinsics(R, t, intrinsics_);
+  }
+
   void SetVerbose(bool verbose) override
   {
     params_.verbose = verbose;
@@ -240,6 +253,7 @@ private:
   VideoFileSinkParams params_;
   bool eof_;
   calibration::StreamIntrinsics intrinsics_;
+  calibration::StreamExtrinsics extrinsics_;
 
   std::thread stream_thread_;
   mutable std::mutex image_queue_mutex_;
@@ -536,6 +550,19 @@ public:
     return intrinsics_;
   }
 
+  void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    R = extrinsics_.R().clone();
+    t = extrinsics_.t().clone();
+  }
+
+  bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return extrinsics_.SetExtrinsics(R, t, intrinsics_);
+  }
+
   void SetVerbose(bool verbose) override
   {
     params_.verbose = verbose;
@@ -551,6 +578,7 @@ private:
   VideoFileSinkParams params_;
   bool eof_;
   calibration::StreamIntrinsics intrinsics_;
+  calibration::StreamExtrinsics extrinsics_;
 };
 
 
@@ -783,6 +811,19 @@ public:
     return intrinsics_;
   }
 
+  void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    R = extrinsics_.R().clone();
+    t = extrinsics_.t().clone();
+  }
+
+  bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return extrinsics_.SetExtrinsics(R, t, intrinsics_);
+  }
+
   void SetVerbose(bool verbose) override
   {
     params_.verbose = verbose;
@@ -799,6 +840,7 @@ private:
   bool load_images_;                    /**< Whether we should load (and decode) images or raw/zipped cv::Mat files. */
   std::vector<std::string> filenames_;  /**< Stores the relative filenames. */
   calibration::StreamIntrinsics intrinsics_;
+  calibration::StreamExtrinsics extrinsics_;
 };
 
 
@@ -911,6 +953,14 @@ std::unique_ptr<StreamSink> CreateImageDirectorySink(const ImageDirectorySinkPar
   }
   else
     return std::unique_ptr<ImageDirectorySink>(new ImageDirectorySink(params));
+}
+
+bool IsImageDirectorySink(const std::unique_ptr<StreamSink> &ptr)
+{
+  ImageDirectorySink *cast = dynamic_cast<ImageDirectorySink*>(ptr.get());
+  if (cast)
+    return true;
+  return false;
 }
 
 } // namespace file

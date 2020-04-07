@@ -303,6 +303,11 @@ public:
     return IsFrameImage(stream_index) && capture_->SinkParamsAt(stream_index).color_as_bgr;
   }
 
+  bool IsStepAbleImageSequence(size_t stream_index) const
+  {
+    return capture_->IsStepAbleImageDirectory(stream_index);
+  }
+
   std::vector<size_t> StreamsFromSameSink(size_t stream_index, bool include_self) const
   {
     return capture_->StreamsFromSameSink(stream_index, include_self);
@@ -329,9 +334,19 @@ public:
     capture_->SetExtrinsicsAt(stream_index, R, t);
   }
 
-  bool SaveReplayConfig(const std::string &folder, const std::map<std::string, vcp::best::StreamStorageParams> &storage_params)
+  void SetExtrinsics(const std::string &stream_label, const cv::Mat &R, const cv::Mat &t)
   {
-    return capture_->SaveReplayConfiguration(folder, storage_params);
+    capture_->SetExtrinsicsAt(stream_label, R, t);
+  }
+
+  bool SaveReplayConfig(const std::string &folder, const std::map<std::string, vcp::best::StreamStorageParams> &storage_params, bool save_extrinsics)
+  {
+    return capture_->SaveReplayConfiguration(folder, storage_params, save_extrinsics);
+  }
+
+  bool SaveExtrinsics(const std::string &filename) const
+  {
+    return capture_->SaveExtrinsicCalibration(filename);
   }
 
 private:
@@ -381,6 +396,7 @@ private:
     // the configuration...
     const std::vector<std::string> param_names = {
       "extrinsic_calibration_file",               // Multi-cam calibration
+      "extrinsic_calibration",                    // Backwards compatibility (with PVT)
       "calibration_file",                         // Intrinsic calibration
       "video_file", "video", "file", "filename",  // VideoFileSink
       "directory"                                 // ImageDirectorySink
@@ -469,41 +485,41 @@ py::list ListK4ADevices(bool warn_if_no_devices)
 }
 
 
-bool StoreExtrinsics(const std::string &filename, const std::vector<std::string> &labels, const py::list &extrinsics)
-{
-  const int num_cameras = static_cast<int>(labels.size());
-  cv::FileStorage fs(filename, cv::FileStorage::WRITE);
-  if (!fs.isOpened())
-  {
-    VCP_LOG_FAILURE("Cannot open FileStorage '" << filename << "'");
-    return false;
-  }
-
-  fs << "num_cameras" << num_cameras;
-  for (int i = 0; i < num_cameras; ++i)
-  {
-    const std::string label = labels[i];
-    const py::tuple &rt = extrinsics[i].cast<py::tuple>();
-    const cv::Mat R = vcp::python::conversion::NDArrayToMat(rt[0].cast<py::array>());
-    const cv::Mat t = vcp::python::conversion::NDArrayToMat(rt[1].cast<py::array>());
-    std::stringstream ss;
-    ss << "label" << i;
-    fs << ss.str() << label;
-
-    ss.str("");
-    ss.clear();
-    ss << "R" << i;
-    fs << ss.str() << R;
-
-    ss.str("");
-    ss.clear();
-    ss << "t" << i;
-    fs << ss.str() << t;
-  }
-
-  fs.release();
-  return true;
-}
+//bool StoreExtrinsics(const std::string &filename, const std::vector<std::string> &labels, const py::list &extrinsics)
+//{
+//  // First, set extrinsics
+//  for (size_t idx = 0, idx < labels.size(); ++i)
+//  {
+//  }
+//  const int num_cameras = static_cast<int>(labels.size());
+//  cv::FileStorage fs(filename, cv::FileStorage::WRITE);
+//  if (!fs.isOpened())
+//  {
+//    VCP_LOG_FAILURE("Cannot open FileStorage '" << filename << "'");
+//    return false;
+//  }
+//  fs << "num_cameras" << num_cameras;
+//  for (int i = 0; i < num_cameras; ++i)
+//  {
+//    const std::string label = labels[i];
+//    const py::tuple &rt = extrinsics[i].cast<py::tuple>();
+//    const cv::Mat R = vcp::python::conversion::NDArrayToMat(rt[0].cast<py::array>());
+//    const cv::Mat t = vcp::python::conversion::NDArrayToMat(rt[1].cast<py::array>());
+//    std::stringstream ss;
+//    ss << "label" << i;
+//    fs << ss.str() << label;
+//    ss.str("");
+//    ss.clear();
+//    ss << "R" << i;
+//    fs << ss.str() << R;
+//    ss.str("");
+//    ss.clear();
+//    ss << "t" << i;
+//    fs << ss.str() << t;
+//  }
+//  fs.release();
+//  return true;
+//}
 
 class LiveViewWrapper
 {
@@ -689,7 +705,7 @@ PYBIND11_MODULE(best_cpp, m)
            py::arg("flip_channels")=false)
       .def("fast_forward", &pybest::CaptureWrapper::FastForward,
            "Some sinks support skipping frames (if num_frames > 1), i.e. video and\n"
-           "image directory. Others will raise an exception. @see next_frame()\n"
+           "image directory. Others will raise an exception. @see next()\n"
            "for description of the return value and 'flip_channel'.",
            py::arg("num_frames"), py::arg("flip_channel")=false)
 // Info & status queries
@@ -783,6 +799,12 @@ PYBIND11_MODULE(best_cpp, m)
       .def("is_rgb", &pybest::CaptureWrapper::IsFrameRGB,
            "Returns True if the frame at the given index is RGB.",
            py::arg("stream_index"))
+      .def("is_step_able_image_sequence", &pybest::CaptureWrapper::IsStepAbleImageSequence,
+           "Returns True if the frame at the given index comes from\n"
+           "an image sequence where each call to @see next() would\n"
+           "load the next frameset from disk. Thus, you could use this\n"
+           "information to make your application 'step through' the stream\n"
+           "instead of assuming it is a live stream.", py::arg("stream_index"))
       .def("same_sink", &pybest::CaptureWrapper::StreamsFromSameSink,
            "Returns a list of frame indices which originate from the\n"
            "same sink as the given frame index.\n"
@@ -799,7 +821,7 @@ PYBIND11_MODULE(best_cpp, m)
            "Returns the extrinsic camera pose for the given stream\n"
            "as tuple (R,t), where R is 3x3 and t is 3x1.",
            py::arg("stream_index"))
-      .def("set_extrinsics", &pybest::CaptureWrapper::SetExtrinsics,
+      .def("set_extrinsics", (void (pybest::CaptureWrapper::*)(size_t, const cv::Mat &, const cv::Mat &)) &pybest::CaptureWrapper::SetExtrinsics,
            "Sets the extrinsics (R, t) for the given stream. If they\n"
            "are invalid (None), the corresponding sensor/sink will try\n"
            "to derive the transformation from the corresponding reference\n"
@@ -809,24 +831,43 @@ PYBIND11_MODULE(best_cpp, m)
            ":param R: Rotation matrix as 3x3 numpy ndarray.\n"
            ":param t: Translation vector as 3x1 numpy ndarray.",
            py::arg("stream_index"), py::arg("R"), py::arg("t"))
-      //FIXME transformation (R,t) to reference view (or None)
+      .def("set_extrinsics", (void (pybest::CaptureWrapper::*)(const std::string &, const cv::Mat &, const cv::Mat &)) &pybest::CaptureWrapper::SetExtrinsics,
+           "Sets the extrinsics (R, t) for the given stream. If they\n"
+           "are invalid (None), the corresponding sensor/sink will try\n"
+           "to derive the transformation from the corresponding reference\n"
+           "view (e.g. a stereo camera's left view or an RGBD sensor's color\n"
+           "stream).\n\n"
+           ":param stream_label: Which stream to set the extrinsics for.\n"
+           ":param R: Rotation matrix as 3x3 numpy ndarray.\n"
+           ":param t: Translation vector as 3x1 numpy ndarray.",
+           py::arg("stream_index"), py::arg("R"), py::arg("t"))
 // Saving
       .def("save_replay_config", &pybest::CaptureWrapper::SaveReplayConfig,
            "Store a configuration file plus required intrinsic calibrations\n"
-           "to the given output folder.\n\n"
-           "Note that you have to record/store the streams yourself!\n\n"
+           "to the given output folder.\nIf (1) the extrinsic calibrations\n"
+           "have been loaded upon startup or (2) have been injected by you\n"
+           "via @see set_extrinsics) and you set save_extrinsics to True,\n"
+           "they'll be stored, too.\n\n"
+           "Note that you have to record/store the streams (image data) yourself!\n\n"
            ":param folder: Output folder where to store the configuration\n"
            "               and calibration to. Will be created if it does\n"
            "               not exist. Existing files WILL BE OVERWRITTEN!\n"
            "               The config will be stored to <folder>/replay.cfg,\n"
            "               calibration files to <folder>/<calibration>/calib-<stream_label>.xml\n\n"
-           ""
            ":param storage_params: A dict of frame_label: vcp.best.StreamStorageParams,\n"
            "               one for each stream - specifying whether (and where\n"
            "               the corresponding stream will be saved to).\n"
            "               If a StreamStorageParams.path is relative, the 'folder' will be prepended.\n"
+           ":param save_extrinsics: Boolean flag.\n"
            ":return: Boolean (True upon success).",
-           py::arg("folder"), py::arg("storage_params"));
+           py::arg("folder"), py::arg("storage_params"), py::arg("save_extrinsics"))
+      .def("save_extrinsics", &pybest::CaptureWrapper::SaveExtrinsics,
+           "Store the capture's extrinsics (which have to be set PIOR to this call\n"
+           "by (1) loading from disk, i.e. using the config file or (2) by setting\n"
+           "them via @see set_extrinsics) to the given (XML) file.\n"
+           ":param filename: String, where to store the extrinsics.\n"
+           ":returns: True if extrinsics have been written.",
+           py::arg("filename"));
 
 
   //      .def("get_camera_matrix", &pybest::CaptureWrapper::ReturnNone,
@@ -920,8 +961,8 @@ PYBIND11_MODULE(best_cpp, m)
         py::arg("warn_if_no_devices")=true,
         py::arg("include_incompatible_devices")=false);
 
-  m.def("store_extrinsics", &pybest::StoreExtrinsics,
-        "Saves the extrinsic calibration to the given file.", //TODO doc
-        py::arg("filename"), py::arg("labels"), py::arg("extrinsics"));
+//  m.def("store_extrinsics", &pybest::StoreExtrinsics,
+//        "Saves the extrinsic calibration to the given file.", //TODO doc
+//        py::arg("filename"), py::arg("labels"), py::arg("extrinsics"));
 
 }

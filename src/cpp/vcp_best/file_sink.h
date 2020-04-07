@@ -58,6 +58,9 @@ bool IsVideoFileSink(const std::string &type_param);
 /** @brief Given the cameraXX.type (configuration) parameter, checks if the configuration belongs to a VideoFileSink. */
 bool IsImageDirectorySink(const std::string &type_param);
 
+/** @brief Checks if the given StreamSink is actually an ImageDirectorySink (i.e. can be stepped through). */
+bool IsImageDirectorySink(const std::unique_ptr<StreamSink> &ptr);
+
 
 /** @brief Parses the configuration group "cam_param" into a VideoFileSinkParams configuration. */
 VideoFileSinkParams VideoFileSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
