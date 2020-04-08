@@ -37,6 +37,13 @@ def pseudocolor(values, limits=[0.0, 1.0], color_map=colormaps.colormap_parula_r
 
 # TODO also need this in Cpp
 def overlay(img1, img2, weight1, mask1=None):
+    """Overlay two images with alpha blending, s.t.
+    out = img1 * weight1 + img2 * (1-weight2).
+    Optionally, only overlays those parts of the image which are indicated by
+    non-zero mask1 pixels: out = blended if mask1 > 0, else img2
+    Output dtype will be the same as img2.dtype.
+    Only float32, float64 and uint8 are supported.
+    """
     return vimvis.overlay(img1, img2, weight1, mask1)
 
 
