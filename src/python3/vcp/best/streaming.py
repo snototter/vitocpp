@@ -6,6 +6,7 @@ import os
 import sys
 import threading
 import time
+# import logging # doesn't work with multiprocessing (if you also use storage.py...)
 
 from .best_cpp import Capture
 
@@ -46,10 +47,12 @@ class MulticamStreamer(object):
 
     def __del__(self):
         self.stop()
+        if self._capture_thread.is_alive():
+            self._capture_thread.join()
 
     def start(self):
         if self._verbose:
-            print('\nStarting to stream {} sinks from {} devices'.format(self._capture.num_streams(), self._capture.num_devices()))
+            print('[MulticamStreamer] Starting to stream {} sinks from {} devices'.format(self._capture.num_streams(), self._capture.num_devices()))
             print('The configured capture yields the following streams:')
             print('  * Labels:             {}'.format(self._capture.frame_labels()))
             print('  * Configuration keys: {}'.format(self._capture.configuration_keys()))
@@ -71,12 +74,12 @@ class MulticamStreamer(object):
         while True:
             if not self._capture.wait_for_frames(self._wait_ms_next_frameset):
                 if self._verbose:
-                    print('[WARNING]: capture.wait_for_frames() timed out')
+                    print('[MulticamStreamer] capture.wait_for_frames() timed out')
                 continue
             frames = self._capture.next()
             if any([f is None for f in frames]):
                 if self._verbose:
-                    print('[WARNING]: Skipping invalid frameset')
+                    print('[MulticamStreamer] Skipping invalid frameset')
             else:
                 break
         
@@ -90,17 +93,16 @@ class MulticamStreamer(object):
     def stop(self):
         if self._keep_running:
             self._keep_running = False
-            self._capture_thread.join()
     
     def wait(self):
-        if self._keep_running:
+        if self._capture_thread.is_alive():
             self._capture_thread.join()
     
     def _receive(self):
         while self._capture.all_devices_available() and self._keep_running:
             if not self._capture.wait_for_frames(self._wait_ms_next_frameset):
                 if self._verbose:
-                    print('[WARNING]: capture.wait_for_frames() timed out')
+                    print('[MulticamStreamer] capture.wait_for_frames() timed out')
                 continue
 
             # Query the frames (since we know that all streams are available now)
@@ -119,7 +121,7 @@ class MulticamStreamer(object):
         if not self._capture.close():
             raise StreamingError('Cannot close devices')
 
-
+#TODO use logging!
 class MulticamStepper(object):
     """Step through the streams of the multi-cam setup."""
 
@@ -146,7 +148,7 @@ class MulticamStepper(object):
 
     def start(self):
         if self._verbose:
-            print('\nStarting to stream {} sinks from {} devices'.format(self._capture.num_streams(), self._capture.num_devices()))
+            print('\nStarting to receive {} streams from {} devices'.format(self._capture.num_streams(), self._capture.num_devices()))
             print('The configured capture yields the following streams:')
             print('  * Labels:             {}'.format(self._capture.frame_labels()))
             print('  * Configuration keys: {}'.format(self._capture.configuration_keys()))

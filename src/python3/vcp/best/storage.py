@@ -70,16 +70,17 @@ class ImageSequenceStorage:
         self.__start()
 
     def __del__(self):
-        self.__stop()
+        self.stop()
 
     def __start(self):
         self.worker = mp.Process(target=_store_snapshot, args=(0, self.queue, self.verbose, lambda signum, frame: self.__sigint_handler(0, signum, frame), ))
         self.worker.start()
 
-    def __stop(self):
-        self.queue.put(None)
-        self.worker.join()
-        self.queue.close()
+    def stop(self):
+        if self.worker.is_alive():
+            self.queue.put(None)
+            self.worker.join()
+            self.queue.close()
 
     def __sigint_handler(self, terminated_worker, signum, frame):
         # Handle sigint as 'just a user intent' - i.e. "schedule" raising an Exception, so we don't screw up the worker process
@@ -128,12 +129,13 @@ class SingleVideoStorage:
         self.worker.start()
 
     def __del__(self):
-        self.__stop()
+        self.stop()
         
-    def __stop(self):
-        self.queue.put(None)
-        self.worker.join()
-        self.queue.close()
+    def stop(self):
+        if self.worker.is_alive():
+            self.queue.put(None)
+            self.worker.join()
+            self.queue.close()
 
     def __sigint_handler(self, signum, frame):
         # Handle sigint as 'just a user intent' - i.e. "schedule" raising an Exception, so we don't screw up the worker process
@@ -172,6 +174,13 @@ class MultiVideoStorage:
         self._video_stores = {k:_create_video_storage(k) for k in videos}
         if verbose:
             mp.get_logger().info('vcp.best.storage.MultiVideoStorage initialized workers for frame labels: [{}]'.format(', '.join([k for k in videos])))
+    
+    def __del__(self):
+        self.stop()
+    
+    def stop(self):
+        for k in self._video_stores:
+            self._video_stores[k].stop()
 
     def put_storage_request(self, image_dict):
         """

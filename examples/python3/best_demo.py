@@ -19,12 +19,7 @@ from vcp import best
 
 import multiprocessing as mp
 
-#TODO provide util fx "stream" with frame callback, i.e. the util takes care of initializing and querying frames,
-# then passes the aquired frameset to the frame callback.
-# Also add a post-setup/pre-main-loop callback (e.g. to set up recorder, detectors, etc.)
-# callback_initialized(capture, initial_frameset)
-# callback_frameset(capture, frameset) - return True (continue), False (abort/terminate)
-# callback_terminated (?)
+#TODO use best.MulticamStreamer/MulticamStepper
 
 def streaming_demo(cfg_file, folder, output_folder=None, output_fps=15):
     # cfg_file = 'replay.cfg'

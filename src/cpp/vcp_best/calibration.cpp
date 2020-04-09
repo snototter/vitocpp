@@ -732,7 +732,7 @@ std::map<std::string, StreamExtrinsics> LoadExtrinsicsFromFile(const std::string
       }
       else
       {
-        VCP_LOG_INFO("Extrinsics loaded " << label << ", " << R << t);
+        VCP_LOG_INFO("Extrinsics loaded for stream '" << label << "'."); //<< ", " << R << t);
       }
       extrinsics.insert(std::pair<std::string, StreamExtrinsics>(label, StreamExtrinsics(R, t)));
     }

@@ -972,7 +972,7 @@ public:
 
     if (rgb_stream_enabled_)
     {
-      const auto &intr = IntrinsicsAt(stream_index);
+      const auto &intr = available_ ? IntrinsicsAt(stream_index) : calibration::StreamIntrinsics();
       const bool retval = ext->SetExtrinsics(R, t, intr, rgb_extrinsics_.R(), rgb_extrinsics_.t());
       if (retval && stream_index == 0)
       {
@@ -1436,6 +1436,8 @@ public:
 
   void SetVerbose(bool verbose) override
   {
+    for (auto &p : params_)
+      p.verbose = verbose;
     verbose_ = verbose;
   }
 
@@ -1470,7 +1472,7 @@ public:
     const auto &sink_params = params_[dev_lookup];
     if (sink_params.IsColorStreamEnabled())
     {
-      const auto &intr = IntrinsicsAt(stream_index);
+      const auto &intr = available_ ? IntrinsicsAt(stream_index) : calibration::StreamIntrinsics();
       const bool retval = ext->SetExtrinsics(R, t, intr, rgb_extrinsics_[dev_lookup].R(), rgb_extrinsics_[dev_lookup].t());
       if (retval && FrameTypeAt(stream_index) == FrameType::MONOCULAR)
       {
