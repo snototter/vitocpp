@@ -40,6 +40,9 @@ protected:
   // Optional identifier.
   std::string stream_id_;
 
+  // IP sinks usually stream color as BGR, the user, however, may want RGB frames.
+  bool color_as_rgb_;
+
   // Callback which will be invoked after the subclasses have decoded a frame.
   void (*callback_frame_received_)(const cv::Mat &, void *);
   // User data to be passed (e.g. a pointer to the class instance ;-)

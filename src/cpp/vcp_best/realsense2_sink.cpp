@@ -1176,6 +1176,18 @@ public:
     return *(intrinsics[stream_index]);
   }
 
+  bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
+  {
+    VCP_LOG_FIXME("SetExtrinsicsAt() not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
+    VCP_ERROR("Not yet implemented!");
+  }
+
+  void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
+  {
+    VCP_LOG_FIXME("ExtrinsicsAt() not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
+    VCP_ERROR("Not yet implemented!");
+  }
+
   void SetVerbose(bool verbose) override
   {
     rgbd_params_.verbose = verbose;

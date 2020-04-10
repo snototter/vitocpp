@@ -1495,8 +1495,7 @@ void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, con
     image_corners_on_gp.push_back(utils::TransformVecWithScale(H_img2gp, cv::Vec2d(0.0, 0.0)));
     image_corners_on_gp.push_back(utils::TransformVecWithScale(H_img2gp, cv::Vec2d(original_width-1.0, 0.0)));
   }
-//FIXME maybe change that now...
-  // Always take the bottom corners (yes, we deliberately do not support a 180 degree rotated camera)
+  // Always take the bottom corners (yes, we deliberately do not support a 180 degree rotated camera) //FIXME maybe change that now in 2020...
   image_corners_on_gp.push_back(utils::TransformVecWithScale(H_img2gp, cv::Vec2d(original_width-1.0, original_height-1.0)));
   image_corners_on_gp.push_back(utils::TransformVecWithScale(H_img2gp, cv::Vec2d(0.0, original_height-1.0)));
 

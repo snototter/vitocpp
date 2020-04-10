@@ -478,18 +478,6 @@ class CalibApplication(QMainWindow):
         if streamer.isStepThrough():
             self.loadNextFrameset()
 
-        # # self.show()
-        # # streamer.start_stream()
-        # self.__prepare_shortcuts()
-
-    # def __prepare_shortcuts(self):
-    #     # Open file
-    #     sc = QShortcut(QKeySequence('Ctrl+O'), self)
-    #     sc.activated.connect(self.__load_request)
-    #     # Save file
-    #     sc = QShortcut(QKeySequence('Ctrl+S'), self)
-    #     sc.activated.connect(self.__save_request)
-
     def rescaleViewers(self):
         self._resize_viewers = True
 

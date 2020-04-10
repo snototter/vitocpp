@@ -615,7 +615,7 @@ public:
     for (size_t i = 0; i < sinks_.size(); ++i)
     {
       // HttpMjpegSinks yield one frame each.
-      // Fort RTSP, however, we have one "multi-sink"
+      // For RTSP, however, we have one "multi-sink"
       // which sets up the streaming environment and does
       // all the nasty stuff to get the decoded images.
       // Then, this "multi-sink" returns all frames in a vector.
@@ -634,6 +634,24 @@ public:
   SinkType GetSinkType() const override
   {
     return SinkType::IPCAM_MONOCULAR; //TODO FIXME, we should only support monocular ipcams
+  }
+
+  vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
+  {
+    VCP_LOG_FIXME("IntrinsicsAt(" << stream_index << ") is not yet implemented for stream '" << StreamLabel(stream_index) << "'.");
+    VCP_ERROR("Not yet implemented!");
+  }
+
+  bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
+  {
+    VCP_LOG_FIXME("SetExtrinsicsAt() not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
+    VCP_ERROR("Not yet implemented!");
+  }
+
+  void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
+  {
+    VCP_LOG_FIXME("ExtrinsicsAt() not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
+    VCP_ERROR("Not yet implemented!");
   }
 
 

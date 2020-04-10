@@ -213,12 +213,7 @@ public:
 
   virtual SinkType GetSinkType() const = 0;
 
-  //TODO add Intrinsics(), etc.
-  virtual vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const
-  {
-    VCP_LOG_FAILURE("IntrinsicsAt(" << stream_index << ") is not yet implemented for stream '" << StreamLabel(stream_index) << "'.");
-    return vcp::best::calibration::StreamIntrinsics();
-  }
+  virtual vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const = 0;
 
   virtual void SetVerbose(bool verbose) = 0;
 
@@ -230,36 +225,29 @@ public:
    * (probably factory-calibrated) transformation between the stream and a reference view (e.g. the sensor's
    * left and/or color view) which will be used to compute its extrinsics from R & t of the reference view.
    */
-  virtual bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) // = 0;
-  { //TODO make purely virtual once implemented in all sinks!
-    VCP_ERROR("Not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
-  }
+  virtual bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) = 0;
 
   /** @brief Sets the extrinsics for the given stream if known. Otherwise, R & t will be empty matrices. */
-  virtual void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const // = 0;
-  {
-    //TODO make purely virtual...
-    VCP_ERROR("Not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
-  }
+  virtual void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const = 0;
+};
 
-protected:
-  /** @brief Changes the layer order (i.e. converts BGR->RGB or BGRA->RGB). */
-  inline cv::Mat FlipChannels(const cv::Mat &frame)
-  {
-    if (frame.empty())
-      return cv::Mat();
-    if (frame.channels() < 3 || frame.channels() > 4)
-      return frame;
-    std::vector<cv::Mat> layers;
-    cv::split(frame, layers);
-    std::vector<cv::Mat> tm = {layers[2], layers[1], layers[0]};
+/** @brief Changes the layer order (i.e. converts BGR->RGB or BGRA->RGB). */
+inline cv::Mat FlipChannels(const cv::Mat &frame)
+{
+  if (frame.empty())
+    return cv::Mat();
+  if (frame.channels() < 3 || frame.channels() > 4)
+    return frame;
+  std::vector<cv::Mat> layers;
+  cv::split(frame, layers);
+  std::vector<cv::Mat> tm = {layers[2], layers[1], layers[0]};
 //    if (layers.size() == 4)
 //      tm.push_back(layers[3]);
-    cv::Mat flipped;
-    cv::merge(tm, flipped);
-    return flipped;
-  }
-};
+  cv::Mat flipped;
+  cv::merge(tm, flipped);
+  return flipped;
+}
+
 
 inline void SetIntrinsicsResolution(calibration::StreamIntrinsics &intrinsics, const cv::Mat &frame)
 {

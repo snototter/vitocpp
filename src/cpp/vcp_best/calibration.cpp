@@ -612,7 +612,6 @@ std::vector<StreamIntrinsics> LoadIntrinsicsFromFile(const std::string &calibrat
   }
 
   const auto keys = ListFileStorageNodes(fs);
-//  VCP_LOG_FIXME("Available calibration nodes in '" << calibration_file << "':"<< std::endl << keys);
 
   const auto sink_type = std::find(keys.begin(), keys.end(), "sink_type");
   if (sink_type != keys.end())

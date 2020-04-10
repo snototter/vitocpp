@@ -258,9 +258,9 @@ message("  [+] Building shared ${LIB_NAME} library")
 set(LIBS ${LIB_NAME})
 add_library(${LIB_NAME} SHARED ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
 target_link_libraries(${LIB_NAME} 
-  #vcp_utils
+  vcp_utils
   vcp_imutils
-  #vcp_math # TODO FIXME which vcp libs do we need
+  vcp_math
   vcp_config
   ${ICC_EXTERNAL_LIBS}
 )
@@ -275,9 +275,9 @@ if(VCP_BUILD_STATIC)
   set(LIBS ${LIBS} ${LIB_NAME}_static)
   add_library(${LIB_NAME}_static STATIC ${PUBLIC_HEADERS} ${PRIVATE_HEADERS} ${SOURCES})
   target_link_libraries(${LIB_NAME}_static 
-    #vcp_utils
+    vcp_utils
     vcp_imutils
-    #vcp_math #TODO FIXME
+    vcp_math
     vcp_config
     ${ICC_EXTERNAL_LIBS}
   )

@@ -244,6 +244,24 @@ public:
   }
 
 
+  vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
+  {
+    VCP_LOG_FIXME("IntrinsicsAt(" << stream_index << ") is not yet implemented for stream '" << StreamLabel(stream_index) << "'.");
+    VCP_ERROR("Not yet implemented!");
+  }
+
+  bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
+  {
+    VCP_LOG_FIXME("SetExtrinsicsAt() not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
+    VCP_ERROR("Not yet implemented!");
+  }
+
+  void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
+  {
+    VCP_LOG_FIXME("ExtrinsicsAt() not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
+    VCP_ERROR("Not yet implemented!");
+  }
+
 protected:
   std::vector<std::unique_ptr<SinkBuffer>> image_queues_;
   std::unique_ptr<RtspClientEnvironment> rtsp_client_env_;

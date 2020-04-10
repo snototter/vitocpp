@@ -3,6 +3,7 @@
 #include <thread>
 #include <mutex>
 #include <atomic>
+#include <vcp_utils/file_utils.h>
 
 // TODO add DEBUG FRAMERATE code
 
@@ -126,6 +127,30 @@ public:
     if (params_.transport_protocol != IpTransportProtocol::TCP)
       VCP_LOG_WARNING("HTTP/MJPEG streams can only use TCP (curl default): " << params_);
 
+
+    // Load calibration if available
+    if (params_.rectify || vcp::utils::file::Exists(params_.calibration_file))
+    {
+      if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))
+      {
+        VCP_LOG_FAILURE("To undistort & rectify the http/mjpeg stream " << params_ << ", the calibration file '"
+                  << params_.calibration_file << "' must exist!");
+        return false;
+      }
+
+      const auto intrinsics = calibration::LoadIntrinsicsFromFile(params_.calibration_file);
+      if (intrinsics.size() != 1)
+      {
+        VCP_LOG_FAILURE("Loaded invalid number of " << intrinsics.size() << " intrinsic calibrations from " << params_.calibration_file << ".");
+        return false;
+      }
+
+      intrinsics_ = intrinsics[0];
+
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for http/mjpeg stream: " << params_ << ".");
+    }
+
     mjpg_stream_ = curl::url_fopen(&mjpg_multi_handle_, params_.stream_url.c_str(), "r");
     return mjpg_stream_ != nullptr;
   }
@@ -199,6 +224,25 @@ public:
     return SinkType::IPCAM_MONOCULAR;
   }
 
+  vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return intrinsics_;
+  }
+
+  bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return extrinsics_.SetExtrinsics(R, t, intrinsics_);
+  }
+
+  void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    R = extrinsics_.R().clone();
+    t = extrinsics_.t().clone();
+  }
+
 private:
   IpCameraSinkParams params_;
   curl::URL_FILE *mjpg_stream_;
@@ -209,6 +253,9 @@ private:
   std::atomic<bool> is_stream_available_;
   mutable std::mutex image_queue_mutex_;
   std::unique_ptr<SinkBuffer> image_queue_;
+
+  calibration::StreamIntrinsics intrinsics_;
+  calibration::StreamExtrinsics extrinsics_;
 
   void Receive()
   {

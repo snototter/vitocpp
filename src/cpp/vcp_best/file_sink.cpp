@@ -69,6 +69,27 @@ public:
       return false;
     }
 
+    // Load calibration if needed/available.
+    if (params_.rectify || vcp::utils::file::Exists(params_.calibration_file))
+    {
+      if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))
+      {
+        VCP_LOG_FAILURE("To undistort & rectify the video '" << params_.filename << "', the calibration file '" << params_.calibration_file << "' must exist!");
+        return false;
+      }
+
+      std::vector<calibration::StreamIntrinsics> intrinsics = calibration::LoadIntrinsicsFromFile(params_.calibration_file);
+      if (intrinsics.size() != 1)
+      {
+        VCP_LOG_FAILURE("Calibration file '" << params_.calibration_file << "' provides intrinsics for " << intrinsics.size() << " streams, expected exactly 1.");
+        return false;
+      }
+      intrinsics_ = intrinsics[0];
+
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for video '" << params_.filename << "'");
+    }
+
     if (params_.verbose)
       VCP_LOG_INFO_DEFAULT("TimedVideoSink opened '" << params_.filename << "'");
     return true;
@@ -106,26 +127,6 @@ public:
       }
     }
 
-    if (params_.rectify || vcp::utils::file::Exists(params_.calibration_file))
-    {
-      if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))
-      {
-        VCP_LOG_FAILURE("To undistort & rectify the video '" << params_.filename << "', the calibration file '" << params_.calibration_file << "' must exist!");
-        return false;
-      }
-
-      std::vector<calibration::StreamIntrinsics> intrinsics = calibration::LoadIntrinsicsFromFile(params_.calibration_file);
-      if (intrinsics.size() != 1)
-      {
-        VCP_LOG_FAILURE("Calibration file '" << params_.calibration_file << "' provides intrinsics for " << intrinsics.size() << " streams, expected exactly 1.");
-        return false;
-      }
-      intrinsics_ = intrinsics[0];
-
-      if (params_.verbose)
-        VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for video '" << params_.filename << "'");
-    }
-
     if (params_.verbose)
       VCP_LOG_INFO_DEFAULT("TimedVideoSink starting thread to play back '" << params_.filename << "'");
     eof_ = false;
@@ -142,6 +143,8 @@ public:
         VCP_LOG_INFO_DEFAULT("TimedVideoSink waiting for playback thread on '" << params_.filename << "' to finish.");
       continue_capture_ = false;
       stream_thread_.join();
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Playback thread on '" << params_.filename << "' finished.");
     }
     return true;
   }
@@ -305,7 +308,6 @@ private:
   }
 };
 
-//FIXME params_.verbose => VCP_LOG_INFO_DEFAULT
 /** @brief Replays a video frame-by-frame. Supports retrieving previous frames. */
 class VideoFileSink : public StreamSink
 {
@@ -376,6 +378,9 @@ public:
       if (params_.verbose)
         VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for video '" << params_.filename << "'");
     }
+
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Opened video file '" << params_.filename << "' to stream as '" << params_.sink_label << "'.");
     return true;
   }
 
@@ -386,6 +391,8 @@ public:
     if (capture_)
       capture_.release();
     capture_.reset();
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Closed video file '" << params_.filename << "'.");
     return true;
   }
 
@@ -596,7 +603,6 @@ public:
     VCP_LOG_DEBUG("~ImageDirectorySink()");
   }
 
-  //TODO only log if params.verbose for all file sinks
   bool OpenDevice() override
   {
     if (params_.verbose)
@@ -635,24 +641,11 @@ public:
       VCP_LOG_DEBUG("Image directory '" << params_.directory << "' contains " << filenames_.size() << " images.");
       load_images_ = true;
     }
-    return true;
-  }
 
-  bool CloseDevice() override
-  {
-    VCP_LOG_DEBUG("CloseDevice()");
-    filenames_.clear();
-    return true;
-  }
-
-  bool StartStreaming() override
-  {
-    VCP_LOG_DEBUG("StartStreaming()");
-    frame_idx_ = params_.first_frame;
-
+    // Load calibration if needed/available
     if (params_.rectify || vcp::utils::file::Exists(params_.calibration_file))
     {
-      if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))//FIXME add to VideoSinks and RealSense, too!
+      if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))
       {
         VCP_LOG_FAILURE("To undistort & rectify the image sequence '" << params_.directory << "', the calibration file '" << params_.calibration_file << "' must exist!");
         return false;
@@ -669,6 +662,20 @@ public:
       if (params_.verbose)
         VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for image sequence '" << params_.directory << "'");
     }
+    return true;
+  }
+
+  bool CloseDevice() override
+  {
+    VCP_LOG_DEBUG("CloseDevice()");
+    filenames_.clear();
+    return true;
+  }
+
+  bool StartStreaming() override
+  {
+    VCP_LOG_DEBUG("StartStreaming()");
+    frame_idx_ = params_.first_frame;
     return frame_idx_ < filenames_.size();
   }
 
@@ -677,6 +684,8 @@ public:
     VCP_LOG_DEBUG("StopStreaming()");
     // Set frame pointer to invalid index
     frame_idx_ = filenames_.size();
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Closed image sequence stream '" << params_.directory<< "'.");
     return true;
   }
 
@@ -700,7 +709,7 @@ public:
         else
         {
           enqueue = FlipChannels(loaded);
-          //FIXME use flipchannels in every sink
+          //TODO use flipchannels in every other sink, too
         }
         SetIntrinsicsResolution(intrinsics_, enqueue);
         const cv::Mat rectified = params_.rectify ? intrinsics_.UndistortRectify(enqueue) : enqueue;

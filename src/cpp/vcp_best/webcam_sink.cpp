@@ -132,6 +132,29 @@ public:
       capture_->set(cv::CAP_PROP_FPS, params_.fps);
 #endif
     }
+
+    // Load calibration if available
+    if (params_.rectify || vcp::utils::file::Exists(params_.calibration_file))
+    {
+      if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))
+      {
+        VCP_LOG_FAILURE("To undistort & rectify the webcam stream " << params_ << ", the calibration file '"
+                  << params_.calibration_file << "' must exist!");
+        return false;
+      }
+
+      const auto intrinsics = calibration::LoadIntrinsicsFromFile(params_.calibration_file);
+      if (intrinsics.size() != 1)
+      {
+        VCP_LOG_FAILURE("Loaded invalid number of " << intrinsics.size() << " intrinsic calibrations from " << params_.calibration_file << ".");
+        return false;
+      }
+
+      intrinsics_ = intrinsics[0];
+
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for webcam: " << params_ << ".");
+    }
     return true;
   }
 
@@ -258,11 +281,32 @@ public:
     return SinkType::WEBCAM;
   }
 
+  vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return intrinsics_;
+  }
+
+  bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return extrinsics_.SetExtrinsics(R, t, intrinsics_);
+  }
+
+  void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    R = extrinsics_.R().clone();
+    t = extrinsics_.t().clone();
+  }
+
 private:
   std::atomic<bool> continue_capture_;
   std::unique_ptr<SinkBuffer> image_queue_;
   std::unique_ptr<cv::VideoCapture> capture_;
   WebcamSinkParams params_;
+  calibration::StreamIntrinsics intrinsics_;
+  calibration::StreamExtrinsics extrinsics_;
 
 #ifdef VCP_BEST_DEBUG_FRAMERATE
   std::chrono::high_resolution_clock::time_point previous_frame_timepoint_;

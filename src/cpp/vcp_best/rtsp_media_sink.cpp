@@ -78,7 +78,7 @@ RtspMediaSink::RtspMediaSink(UsageEnvironment &env, MediaSubsession &subsession,
   : MediaSink(env), receive_buffer_(nullptr), subsession_(subsession),
     num_received_frames_(0), has_been_rtcp_synchronized_(false),
     frame_width_(params.frame_width), frame_height_(params.frame_height),
-    stream_id_(params.stream_url),
+    color_as_rgb_(params.color_as_bgr), stream_id_(params.stream_url),
     callback_frame_received_(callback_frame_received), callback_user_data_(callback_user_data)
 {
   receive_buffer_ = new u_int8_t[RTSP_MEDIA_SINK_RECEIVE_BUFFER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
@@ -127,7 +127,7 @@ protected:
     // We've just received a frame of data.
     if (num_truncated_bytes > 0)
     {
-      VCP_LOG_FAILURE("Received corrupt JPEG frame");
+      VCP_LOG_FAILURE("Received corrupt JPEG frame from '" << stream_id_ << "'.");
     }
     else
     {
@@ -135,7 +135,7 @@ protected:
       cv::Mat decoded_frame = cv::imdecode(buf, CV_LOAD_IMAGE_COLOR);
       ++num_received_frames_;
       // Notify observer (which stores the image in a queue)
-      (*this->callback_frame_received_)(decoded_frame, this->callback_user_data_);
+      (*this->callback_frame_received_)(color_as_rgb_ ? FlipChannels(decoded_frame) : decoded_frame, this->callback_user_data_);
     }
     continuePlaying();
   }
@@ -304,7 +304,7 @@ protected:
                     << frame_width_ << "x" << frame_height_ << " stream, but received packets for " << picture->width << "x" << picture->height);
 
         cv::Mat dec(picture->height, picture->width, CV_8UC3, picture_bgr->data[0], picture_bgr->linesize[0]);
-       (*this->callback_frame_received_)(dec, this->callback_user_data_);
+       (*this->callback_frame_received_)(color_as_rgb_ ? FlipChannels(dec) : dec, this->callback_user_data_);
         ++num_received_frames_;
 #ifdef DEBUG_RTSP_H264_DECODING
         VCP_LOG_INFO_DEFAULT("Decoded frame " << num_received_frames_ << " vs " << codec_context->frame_number << " with delay [# of frames]: " << codec_context->delay);
@@ -365,7 +365,6 @@ protected:
     {
       // If we have NAL units encoded in "sprop parameter strings", prepend these to the buffer for parsing/decoding:
       unsigned numSPropRecords;
-      //SPropRecord* sPropRecords = parseSPropParameterSets(fSPropParameterSetsStr, numSPropRecords);
       SPropRecord* sPropRecords = parseSPropParameterSets(subsession_.fmtp_spropparametersets(), numSPropRecords);
       for (unsigned i = 0; i < numSPropRecords; ++i)
       {
