@@ -491,7 +491,7 @@ class CalibApplication(QMainWindow):
             print('[WARNING] Received empty frameset')
             self._btn_next.setEnabled(False)
         else:
-            self.displayFrameset(frames)
+            self._processing_thread.enqueueFrameset(frames)
 
     def prepareLayout(self):
         min_lbl_width = 90 # Minimum width of an input's label
@@ -524,7 +524,7 @@ class CalibApplication(QMainWindow):
         btn_zoom_fit = QPushButton('Scale Images to Fit')
         btn_zoom_fit.clicked.connect(self.fitViewers)
 
-        slider_viewer_columns = inputs.SliderSelectionWidget('Layout:', 1, self._num_streams, self._num_streams-1,
+        slider_viewer_columns = inputs.SliderSelectionWidget('Layout:', 1, max(self._num_streams, 2), max(1, self._num_streams-1),
             initial_value=self._num_viewer_columns, value_format_fx=lambda v: '{:s} streams/row'.format(inputs.format_int(v, 2)), min_label_width=min_lbl_width)
         slider_viewer_columns.value_changed.connect(self.updateViewerLayout)
 
