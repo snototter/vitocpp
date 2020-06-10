@@ -149,6 +149,16 @@ if [ $rc_vcp_lib -ne 0 ]; then
     echo "      Check the build output."
 else
     ##############################################################################
+    # Prepare the pth file
+    ##############################################################################
+    echo "[vcp] Preparing the .pth file for inclusion in your virtualenv's site-packages"
+    VCP_PTH=${VCP_ROOT_DIR}/gen/vcp.pth
+    echo "${VCP_ROOT_DIR}/gen" > $VCP_PTH
+    echo "      Please use ${VCP_PTH}"
+    echo 
+    
+
+    ##############################################################################
     # Prepare the examples/tools
     ##############################################################################
     echo "[vcp] Building C++ examples"
