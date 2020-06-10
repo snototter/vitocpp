@@ -29,7 +29,7 @@ function check_optional_packages {
 # Check default packages required to build the basic VCP library
 ##############################################################################
 #TODO add build-essentials cmake, etc
-PKG_DEFAULT="cmake build-essential libopencv-dev python-opencv python3-opencv zlib1g-dev libconfig++-dev ffmpeg python3-dev python3-pip"
+PKG_DEFAULT="cmake build-essential libopencv-dev python-opencv python3-opencv zlib1g-dev libconfig++-dev ffmpeg python3-dev python3-pip python3-venv"
 #TODO check if some packages are missing (maybe required by OpenCV(?)): 
 # libopenblas-base libopenblas-dev
 # libeigen3-dev libatlas-base-dev libatlas3-base
