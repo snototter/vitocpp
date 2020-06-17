@@ -103,7 +103,7 @@ public:
       }
       else
       {
-        VCP_LOG_FAILURE("Parameter '" << kext << "' has been set, but file '"
+        VCP_LOG_WARNING("Parameter '" << kext << "' has been set, but file '"
                         << ext_calib_file << "' does not exist!");
       }
     }
