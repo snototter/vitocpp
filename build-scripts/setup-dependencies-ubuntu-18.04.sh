@@ -91,6 +91,15 @@ if [ $? -eq 1 ]; then
     printf "    All satisfied.\n  => Did you check /etc/default/grub for large enough usbcore.usbfs_memory_mb setting?\n"
     return_code=$((return_code | 0x08))
 fi
+# Also check newer versions
+PKG_KINECT=(libk4a1.4 libk4a1.4-dev)
+echo
+printf "  Checking optional packages for Azure Kinect support:\n"
+check_optional_packages "${PKG_KINECT[@]}"
+if [ $? -eq 1 ]; then
+    printf "    All satisfied.\n  => Did you check /etc/default/grub for large enough usbcore.usbfs_memory_mb setting?\n"
+    return_code=$((return_code | 0x08))
+fi
 
 # IP camera streaming
 # Dependencies are satisified if 5th bit of the return code is set
