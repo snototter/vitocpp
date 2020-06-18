@@ -308,7 +308,11 @@ bool StreamExtrinsics::SetExtrinsics(const cv::Mat &R, const cv::Mat &t,
   {
     // Compute extrinsics from the (hopefully) known transformation to this stream's reference view/stream:
     if (intrinsics.Empty() || !intrinsics.HasTransformationToReference() || R_reference.empty() || t_reference.empty())
+    {
+      R_ = cv::Mat();
+      t_ = cv::Mat();
       return false;
+    }
     // Get known sensor transformation:
     cv::Mat R_view2ref, t_view2ref;
     intrinsics.TransformationToReference(R_view2ref, t_view2ref);
