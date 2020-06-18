@@ -973,7 +973,10 @@ public:
     if (rgb_stream_enabled_)
     {
       const auto &intr = available_ ? IntrinsicsAt(stream_index) : calibration::StreamIntrinsics();
-      const bool retval = ext->SetExtrinsics(R, t, intr, rgb_extrinsics_.R(), rgb_extrinsics_.t());
+      //const bool retval = ext->SetExtrinsics(R, t, intr, rgb_extrinsics_.R(), rgb_extrinsics_.t());
+      const cv::Mat &ref_R = FrameTypeAt(stream_index) == vcp::best::FrameType::MONOCULAR ? cv::Mat() : rgb_extrinsics_.R();
+      const cv::Mat &ref_t = FrameTypeAt(stream_index) == vcp::best::FrameType::MONOCULAR ? cv::Mat() : rgb_extrinsics_.t();
+      const bool retval = ext->SetExtrinsics(R, t, intr, ref_R, ref_t);
       if (retval && stream_index == 0)
       {
         // If RGB is enabled AND we just set the extrinsics of the color stream successfully,
@@ -1473,7 +1476,10 @@ public:
     if (sink_params.IsColorStreamEnabled())
     {
       const auto &intr = available_ ? IntrinsicsAt(stream_index) : calibration::StreamIntrinsics();
-      const bool retval = ext->SetExtrinsics(R, t, intr, rgb_extrinsics_[dev_lookup].R(), rgb_extrinsics_[dev_lookup].t());
+      const cv::Mat &ref_R = FrameTypeAt(stream_index) == vcp::best::FrameType::MONOCULAR ? cv::Mat() : rgb_extrinsics_[dev_lookup].R();
+      const cv::Mat &ref_t = FrameTypeAt(stream_index) == vcp::best::FrameType::MONOCULAR ? cv::Mat() : rgb_extrinsics_[dev_lookup].t();
+      const bool retval = ext->SetExtrinsics(R, t, intr, ref_R, ref_t);
+      //const bool retval = ext->SetExtrinsics(R, t, intr, rgb_extrinsics_[dev_lookup].R(), rgb_extrinsics_[dev_lookup].t());
       if (retval && FrameTypeAt(stream_index) == FrameType::MONOCULAR)
       {
         // If RGB is enabled AND we just set the extrinsics of the color stream successfully,
