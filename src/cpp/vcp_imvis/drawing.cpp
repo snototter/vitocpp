@@ -1567,19 +1567,8 @@ void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, con
     x += grid_spacing;
   }
 
-//FIXME WIP - needs complete overhaul!
-  // Draw grid lines - first all y, then all x
-  const cv::Vec4d image_plane = vcp::math::geo3d::ImagePlaneInWorldCoordinateSystem(R, t);
+  // Draw grid lines
   const cv::Vec4d clip_plane = vcp::math::geo3d::ImagePlaneInWorldCoordinateSystem(R, t);
-//  //FIXME slightly move the image plane in front of the actual image plane to prevent numerical issues when projecting the lines
-//  const cv::Vec3d unit_vec_z(0.0, 0.0, 1.0);
-//  const double distance = vcp::math::geo3d::DistancePointPlane(vcp::convert::ToVec3d(t), vcp::math::geo3d::MakePlane(unit_vec_z, -4));
-//  // Rotate plane normal to express it in the world reference frame:
-//  const cv::Mat Rinv = R.t();
-//  const cv::Vec3d plane_normal = vcp::math::geo3d::Apply3x3(Rinv, unit_vec_z); // In world reference
-//  const cv::Vec4d clip_plane = vcp::math::geo3d::MakePlane(plane_normal, distance);
-
-  // End-of-FIXME
   const cv::Scalar &color_x_axis = flip_color_channels ? kAxisColorsRGB[0] : kAxisColorsBGR[0];
   const cv::Scalar &color_y_axis = flip_color_channels ? kAxisColorsRGB[1] : kAxisColorsBGR[1];
   x = cnt_x_from * grid_spacing;
@@ -1589,15 +1578,15 @@ void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, con
     const vcp::math::geo3d::Line3d clipped = vcp::math::geo3d::ClipLineSegmentByPlane(
           vcp::math::geo3d::Line3d(cv::Vec3d(from[0], from[1], 0.0), cv::Vec3d(to[0], to[1], 0.0)), clip_plane);
 
-//    if (!clipped.empty() && vcp::math::geo3d::IsPointInFrontOfPlane(clipped.From(), image_plane)
-//        && vcp::math::geo3d::IsPointInFrontOfPlane(clipped.To(), image_plane))
     if (!clipped.empty())
     {
-      const cv::Vec3d from3 = clipped.From();// + clipped.UnitDirection() * 0.1;
-      const cv::Vec3d to3 = clipped.To();// - clipped.UnitDirection() * 0.1;
+      const cv::Vec3d from3 = clipped.From();
+      const cv::Vec3d to3 = clipped.To();
       const cv::Vec2d axis_from = utils::TransformVecWithScale(H_gp2img, cv::Vec2d(from3[0], from3[1]), scale_image_points);
       const cv::Vec2d axis_to = utils::TransformVecWithScale(H_gp2img, cv::Vec2d(to3[0], to3[1]), scale_image_points);
-      cv::line(image, vcp::convert::ToPoint(axis_from), vcp::convert::ToPoint(axis_to), color_y_axis, line_thickness);
+      // Finally, clip the 2d line to the image region
+      const auto line2d = vcp::math::geo2d::ClipLineSegmentByRectangle(vcp::math::geo2d::Line2d(axis_from, axis_to), vcp::imutils::ImageRect(image));
+      cv::line(image, vcp::convert::ToPoint(line2d.From()), vcp::convert::ToPoint(line2d.To()), color_y_axis, line_thickness);
     }
     x += grid_spacing;
   }
@@ -1607,17 +1596,15 @@ void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, con
     const cv::Vec2d from(x_min, y), to(x_max, y);
     const vcp::math::geo3d::Line3d clipped = vcp::math::geo3d::ClipLineSegmentByPlane(
           vcp::math::geo3d::Line3d(cv::Vec3d(from[0], from[1], 0.0), cv::Vec3d(to[0], to[1], 0.0)), clip_plane);
-    //FIXME clip by image! vcp::math::geo2d::ClipLineByRectangle()
 
-//    if (!clipped.empty() && vcp::math::geo3d::IsPointInFrontOfPlane(clipped.From(), image_plane)
-//        && vcp::math::geo3d::IsPointInFrontOfPlane(clipped.To(), image_plane))
     if (!clipped.empty())
     {
-      const cv::Vec3d from3 = clipped.From();// + clipped.UnitDirection() * 0.1;
-      const cv::Vec3d to3 = clipped.To();// - clipped.UnitDirection() * 0.1;
+      const cv::Vec3d from3 = clipped.From();
+      const cv::Vec3d to3 = clipped.To();
       const cv::Vec2d axis_from = utils::TransformVecWithScale(H_gp2img, cv::Vec2d(from3[0], from3[1]), scale_image_points);
       const cv::Vec2d axis_to = utils::TransformVecWithScale(H_gp2img, cv::Vec2d(to3[0], to3[1]), scale_image_points);
-      cv::line(image, vcp::convert::ToPoint(axis_from), vcp::convert::ToPoint(axis_to), color_x_axis, line_thickness);
+      const auto line2d = vcp::math::geo2d::ClipLineSegmentByRectangle(vcp::math::geo2d::Line2d(axis_from, axis_to), vcp::imutils::ImageRect(image));
+      cv::line(image, vcp::convert::ToPoint(line2d.From()), vcp::convert::ToPoint(line2d.To()), color_x_axis, line_thickness);
     }
     y += grid_spacing;
   }
