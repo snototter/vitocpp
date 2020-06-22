@@ -68,6 +68,11 @@ py::object ClipLineSegmentByPlane(const geo3d::Line3d &segment, const cv::Vec4d 
     return py::make_tuple(vpc::VecToTuple<double,3>(clipped.From()), vpc::VecToTuple<double,3>(clipped.To()));
 }
 
+cv::Vec3d CameraCenter(const cv::Mat &R, const cv::Mat &t)
+{
+  return geo3d::CameraCenterFromRt(R, t);
+}
+
 bool IsPointInFrontOfImagePlane(const cv::Vec3d &pt, const cv::Mat &R, const cv::Mat &t)
 {
   return geo3d::IsInFrontOfImagePlane(pt, R, t);
@@ -238,10 +243,16 @@ PYBIND11_MODULE(math3d, m)
 
   // #######################################################################################
   // Camera geometry stuff
-  //TODO ambiguous c++: geo3d::CameraCenterFromRt();
+  //TODO ambiguous c++:
 //  geo3d::GroundplaneToImageHomographyFromP();
 //  geo3d::ImagePlaneInWorldCoordinateSystem();
 //  geo3d::ImageToGroundplaneHomographyFromP();
+
+  m.def("camera_center", &vpmg::CameraCenter,
+        "Returns C = -R' * t\n"
+        ":param R: 3x3 camera rotation matrix\n"
+        ":param t: 3x1 camera translation or (tx,ty,tz)",
+        py::arg("R"), py::arg("t"));
 
   m.def("is_point_in_front_of_image_plane", &vpmg::IsPointInFrontOfImagePlane,
         "Returns true if the world point lies in front of the image plane.\n"
