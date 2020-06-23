@@ -144,9 +144,10 @@ cv::Vec<_Tp, _Cn> PyObjectToVec(const py::object &object, bool *is_valid)
     if (buffer.size < _Cn)
       VCP_ERROR("Buffer (np.array) contains too few elements to convert to cv::Vec<T,C>!");
 
-    _Tp *ptr = static_cast<_Tp*>(buffer.ptr);
+    // When using the buffer view, we would need to manually handle the stride, etc. _Tp *ptr = static_cast<_Tp*>(buffer.ptr);
     for (int i = 0; i < _Cn; ++i)
-      value[i] = ptr[i];
+      value[i] = nd.at(i);
+      //value[i] = ptr[i];
   }
   else
   {
