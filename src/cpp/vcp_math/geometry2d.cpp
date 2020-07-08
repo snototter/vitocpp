@@ -1141,7 +1141,6 @@ std::vector<cv::Point> ConvexHullGrahamScan(const std::vector<cv::Point> &points
   return hull;
 }
 
-//TODO add scale parameter: scale, convert to point, hull, rescale, return
 std::vector<cv::Vec2d> ConvexHullGrahamScan(const std::vector<cv::Vec2d> &points, bool check_for_duplicates, double scale)
 {
   std::vector<cv::Point> converted;

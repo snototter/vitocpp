@@ -142,7 +142,9 @@ std::ostream &operator<< (std::ostream &stream, const Plane3d &plane)
 
 cv::Vec4d EnsurePlaneNormalForm(const cv::Vec4d &plane)
 {
-  return MakePlane(Normalize(PlaneNormal(plane)), plane[3]);
+  double norm;
+  const cv::Vec3d normal = Normalize(PlaneNormal(plane), &norm);
+  return MakePlane(normal, plane[3] / norm);
 }
 
 
