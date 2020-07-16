@@ -1,15 +1,37 @@
 # BESt - Best Effort Streaming
-## Streaming Example: Webcam, Image Sequence & Video File
-```c++
-// 4 image streams (1 stereo + 2 monocular) from 2 physical devices.
+This submodule enables "best effort streaming" from multiple cameras.
+To start streaming, you simply need a libconfig++ style configuration file (see "streaming examples" below).
 
+Currently supported sensors:
+* Standard webcams, videos and image sequences (i.e. all images within a folder).
+* IP cameras (MJPEG & H.264 over RTSP & HTTP)
+* RGB-D sensors (ZED stereo cam, Intel RealSense, Microsoft Azure Kinect)
+
+TODO add cmd for terminal/ui usage
+
+## Specifics & Caveats
+* For USB3 camera setups, you should increase the internal USB memory.<br/>For example, on Unix, append `usbcore.usbfs_memory_mb=1024` (enter an approximate memory consumption according to your setup here) to the parameter `GRUB_CMDLINE_LINUX_DEFAULT` in `/etc/default/grub`. Then `sudo update-grub` and `reboot`.
+* Sensor-specific SDKs must be installed manually, then enable the corresponding `VCP_BEST_WITH_xxx` option of VCP via CMake
+  * ZED SDK: https://www.stereolabs.com/developers/release/
+  * RealSense: https://github.com/IntelRealSense/librealsense/blob/development/doc/distribution_linux.md
+  * Azure Kinect https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/docs/usage.md
+
+
+## Streaming Example: Webcam
+This configuration file sets up live streaming from a standard webcam:
+```c++
 camera-webcam = {
   // Required
   sink_type = "webcam";
   // Required. On Unix, -1 selects the first available webcam.
   device_number = -1;
 }
+```
 
+
+## Streaming Example: Image Sequence & Video File
+To replay a video + corresponding still frames (e.g. RGB-D sensor recording where RGB is stored as video and depth frames are stored as 16-bit png files), use the image sequence and video sinks:
+```c++
 camera-video-playback = {
   // Required
   sink_type = "video";
@@ -26,6 +48,8 @@ camera-sequence = {
   directory = "/path/to/image-directory";
 }
 ```
+
+
 ## Streaming Example: Azure Kinect (K4A)
 ## Streaming Example: RealSense
 ## Streaming Example: IP Cameras (Axis)
