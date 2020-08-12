@@ -321,6 +321,14 @@ public:
     return vcp::python::conversion::MatToNDArray(M);
   }
 
+  py::object Distortion(size_t stream_index) const
+  {
+    const cv::Mat D = capture_->DistortionAt(stream_index);
+    if (D.empty())
+      return py::none();
+    return vcp::python::conversion::MatToNDArray(D);
+  }
+
   py::tuple StereoTransformation(size_t stream_index) const
   {
     cv::Mat R, t;
@@ -825,6 +833,9 @@ PYBIND11_MODULE(best_cpp, m)
            py::arg("stream_index"))
       .def("intrinsics", &pybest::CaptureWrapper::CameraMatrix,
            "Alias for @see camera_matrix().")
+      .def("distortion_coefficients", &pybest::CaptureWrapper::Distortion,
+           "Returns the Nx1 distortion coefficients of this stream (if calibrated).",
+           py::arg("stream_index"))
       .def("stereo_transformation", &pybest::CaptureWrapper::StereoTransformation,
            "Returns the transformation from this stream/view to the reference\n"
            "view as tuple (R,t) if exists. Only useful for calibrated stereo\n"

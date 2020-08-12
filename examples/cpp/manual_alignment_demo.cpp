@@ -137,10 +137,13 @@ void Stream(const std::string &config_file)
     return;
   }
 
-  cv::Mat Kc, Kd, R, t;
+  cv::Mat Kc, Kd, R, t, Dc, Dd;
   Kc = capture->CameraMatrixAt(0);
   Kd = capture->CameraMatrixAt(1);
+  Dc = capture->DistortionAt(0);
+  Dd = capture->DistortionAt(1);
   capture->StereoTransformation(1, R, t);
+  VCP_LOG_FAILURE("DISTORTION STUFF" << capture->DistortionAt(0) << " depth: " << capture->DistortionAt(1));
 
   //FIXME memory management (delete trafo, delete img in warpdetph())
   const int warp_dest_width = 400;
@@ -155,14 +158,28 @@ void Stream(const std::string &config_file)
   calib.color_camera_calibration.intrinsics.parameters.param.fy = Kc.at<double>(1, 1) * sy;
   calib.color_camera_calibration.intrinsics.parameters.param.cx = Kc.at<double>(0, 2) * sx;
   calib.color_camera_calibration.intrinsics.parameters.param.cy = Kc.at<double>(1, 2) * sy;
-  calib.color_camera_calibration.intrinsics.parameters.param.k1 = 0;
-  calib.color_camera_calibration.intrinsics.parameters.param.k2 = 0;
-  calib.color_camera_calibration.intrinsics.parameters.param.k3 = 0;
-  calib.color_camera_calibration.intrinsics.parameters.param.k4 = 0;
-  calib.color_camera_calibration.intrinsics.parameters.param.k5 = 0;
-  calib.color_camera_calibration.intrinsics.parameters.param.k6 = 0;
-  calib.color_camera_calibration.intrinsics.parameters.param.p1 = 0;
-  calib.color_camera_calibration.intrinsics.parameters.param.p2 = 0;
+  if (Dc.empty())
+  {
+    calib.color_camera_calibration.intrinsics.parameters.param.k1 = 0;
+    calib.color_camera_calibration.intrinsics.parameters.param.k2 = 0;
+    calib.color_camera_calibration.intrinsics.parameters.param.k3 = 0;
+    calib.color_camera_calibration.intrinsics.parameters.param.k4 = 0;
+    calib.color_camera_calibration.intrinsics.parameters.param.k5 = 0;
+    calib.color_camera_calibration.intrinsics.parameters.param.k6 = 0;
+    calib.color_camera_calibration.intrinsics.parameters.param.p1 = 0;
+    calib.color_camera_calibration.intrinsics.parameters.param.p2 = 0;
+  }
+  else
+  {
+    calib.color_camera_calibration.intrinsics.parameters.param.k1 = Dc.at<double>(0);
+    calib.color_camera_calibration.intrinsics.parameters.param.k2 = Dc.at<double>(1);
+    calib.color_camera_calibration.intrinsics.parameters.param.k3 = Dc.at<double>(4);
+    calib.color_camera_calibration.intrinsics.parameters.param.k4 = Dc.at<double>(5);
+    calib.color_camera_calibration.intrinsics.parameters.param.k5 = Dc.at<double>(6);
+    calib.color_camera_calibration.intrinsics.parameters.param.k6 = Dc.at<double>(7);
+    calib.color_camera_calibration.intrinsics.parameters.param.p1 = Dc.at<double>(2);
+    calib.color_camera_calibration.intrinsics.parameters.param.p2 = Dc.at<double>(3);
+  }
   calib.color_camera_calibration.intrinsics.parameters.param.codx = 0;
   calib.color_camera_calibration.intrinsics.parameters.param.cody = 0;
   calib.color_camera_calibration.intrinsics.parameters.param.metric_radius = 0;
@@ -177,14 +194,28 @@ void Stream(const std::string &config_file)
   calib.depth_camera_calibration.intrinsics.parameters.param.fy = Kd.at<double>(1, 1);
   calib.depth_camera_calibration.intrinsics.parameters.param.cx = Kd.at<double>(0, 2);
   calib.depth_camera_calibration.intrinsics.parameters.param.cy = Kd.at<double>(1, 2);
-  calib.depth_camera_calibration.intrinsics.parameters.param.k1 = 0;
-  calib.depth_camera_calibration.intrinsics.parameters.param.k2 = 0;
-  calib.depth_camera_calibration.intrinsics.parameters.param.k3 = 0;
-  calib.depth_camera_calibration.intrinsics.parameters.param.k4 = 0;
-  calib.depth_camera_calibration.intrinsics.parameters.param.k5 = 0;
-  calib.depth_camera_calibration.intrinsics.parameters.param.k6 = 0;
-  calib.depth_camera_calibration.intrinsics.parameters.param.p1 = 0;
-  calib.depth_camera_calibration.intrinsics.parameters.param.p2 = 0;
+  if (Dd.empty())
+  {
+    calib.depth_camera_calibration.intrinsics.parameters.param.k1 = 0;
+    calib.depth_camera_calibration.intrinsics.parameters.param.k2 = 0;
+    calib.depth_camera_calibration.intrinsics.parameters.param.k3 = 0;
+    calib.depth_camera_calibration.intrinsics.parameters.param.k4 = 0;
+    calib.depth_camera_calibration.intrinsics.parameters.param.k5 = 0;
+    calib.depth_camera_calibration.intrinsics.parameters.param.k6 = 0;
+    calib.depth_camera_calibration.intrinsics.parameters.param.p1 = 0;
+    calib.depth_camera_calibration.intrinsics.parameters.param.p2 = 0;
+  }
+  else
+  {
+    calib.depth_camera_calibration.intrinsics.parameters.param.k1 = Dd.at<double>(0);
+    calib.depth_camera_calibration.intrinsics.parameters.param.k2 = Dd.at<double>(1);
+    calib.depth_camera_calibration.intrinsics.parameters.param.k3 = Dd.at<double>(4);
+    calib.depth_camera_calibration.intrinsics.parameters.param.k4 = Dd.at<double>(5);
+    calib.depth_camera_calibration.intrinsics.parameters.param.k5 = Dd.at<double>(6);
+    calib.depth_camera_calibration.intrinsics.parameters.param.k6 = Dd.at<double>(7);
+    calib.depth_camera_calibration.intrinsics.parameters.param.p1 = Dd.at<double>(2);
+    calib.depth_camera_calibration.intrinsics.parameters.param.p2 = Dd.at<double>(3);
+  }
   calib.depth_camera_calibration.intrinsics.parameters.param.codx = 0;
   calib.depth_camera_calibration.intrinsics.parameters.param.cody = 0;
   calib.depth_camera_calibration.intrinsics.parameters.param.metric_radius = 0;
