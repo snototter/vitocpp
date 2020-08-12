@@ -146,7 +146,7 @@ class MulticamStepper(object):
         if not self._capture.close():
             raise StreamingError('Cannot close devices')
 
-    def start(self):
+    def start(self, wait_ms_first_frameset=10000):
         if self._verbose:
             print('\nStarting to receive {} streams from {} devices'.format(self._capture.num_streams(), self._capture.num_devices()))
             print('The configured capture yields the following streams:')
@@ -158,6 +158,8 @@ class MulticamStepper(object):
             raise StreamingError('Cannot open devices')
         if not self._capture.start():
             raise StreamingError('Cannot start streams')
+        if not self._capture.wait_for_frames(wait_ms_first_frameset):
+            raise StreamingError("Didn't receive an initial frameset within {:.2f} seconds".format(wait_ms_first_frameset/1000.0))
         return self._capture
     
     def is_available(self):
