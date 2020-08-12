@@ -321,6 +321,14 @@ public:
     return vcp::python::conversion::MatToNDArray(M);
   }
 
+  py::tuple StereoTransformation(size_t stream_index) const
+  {
+    cv::Mat R, t;
+    capture_->StereoTransformation(stream_index, R, t);
+    return py::make_tuple(vcp::python::conversion::MatToNDArray(R),
+                          vcp::python::conversion::MatToNDArray(t));
+  }
+
   py::tuple Extrinsics(size_t stream_index) const
   {
     cv::Mat R, t;
@@ -817,6 +825,11 @@ PYBIND11_MODULE(best_cpp, m)
            py::arg("stream_index"))
       .def("intrinsics", &pybest::CaptureWrapper::CameraMatrix,
            "Alias for @see camera_matrix().")
+      .def("stereo_transformation", &pybest::CaptureWrapper::StereoTransformation,
+           "Returns the transformation from this stream/view to the reference\n"
+           "view as tuple (R,t) if exists. Only useful for calibrated stereo\n"
+           "setups.",
+           py::arg("stream_index"))
       .def("extrinsics", &pybest::CaptureWrapper::Extrinsics,
            "Returns the extrinsic camera pose for the given stream\n"
            "as tuple (R,t), where R is 3x3 and t is 3x1.",

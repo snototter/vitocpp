@@ -645,6 +645,21 @@ public:
     return intrinsics.IntrinsicsOriginal();
   }
 
+  void StereoTransformation(size_t stream_index, cv::Mat &R, cv::Mat &t) const  override
+  {
+    const auto &lookup = frame2sink_[stream_index];
+    const calibration::StreamIntrinsics intrinsics = sinks_[lookup.first]->IntrinsicsAt(lookup.second);
+    if (intrinsics.Empty() || !intrinsics.HasTransformationToReference())
+    {
+      R = cv::Mat();
+      t = cv::Mat();
+    }
+    else
+    {
+      intrinsics.TransformationToReference(R, t);
+    }
+  }
+
   void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
   {
     const auto &lookup = frame2sink_[stream_index];
