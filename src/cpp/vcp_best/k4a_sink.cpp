@@ -409,6 +409,16 @@ void DumpCalibration(const K4ASinkParams &params, k4a_calibration_t sensor_calib
 
       fs << "R_depth2color" << R_d2c;
       fs << "t_depth2color" << t_d2c;
+      VCP_LOG_FAILURE("TODO CHECK calibration: " << sensor_calibration.color_camera_calibration.intrinsics.parameter_count << ", " << sensor_calibration.depth_camera_calibration.intrinsics.parameter_count);
+      VCP_LOG_FAILURE("DEPTH CALIB: " << sensor_calibration.depth_camera_calibration.metric_radius << ", " << sensor_calibration.depth_camera_calibration.resolution_height << " x " << sensor_calibration.depth_camera_calibration.resolution_width << ", " << sensor_calibration.depth_camera_calibration.extrinsics.rotation[0]);
+
+      VCP_LOG_FAILURE("Metric radius color: " << sensor_calibration.color_camera_calibration.metric_radius << ", " << sensor_calibration.color_camera_calibration.intrinsics.parameters.param.metric_radius);
+      VCP_LOG_FAILURE("Metric radius depth: " << sensor_calibration.depth_camera_calibration.metric_radius << ", " << sensor_calibration.depth_camera_calibration.intrinsics.parameters.param.metric_radius);
+      for (int j = 0; j < 15; ++j)
+        VCP_LOG_FAILURE("  COLOR CALIB #" << j << ": " << sensor_calibration.color_camera_calibration.intrinsics.parameters.v[j]);
+
+      for (int j = 0; j < 15; ++j)
+        VCP_LOG_FAILURE("  DEPTH CALIB #" << j << ": " << sensor_calibration.depth_camera_calibration.intrinsics.parameters.v[j]);
     }
   }
 
@@ -490,7 +500,7 @@ void SetColorControl(const K4ASinkParams &params, k4a_device_t k4a_device)
 
 
 // Currently as of libk4a-1.3, only depth can be warped to color (not the IR stream, although it's the
-// same uint16 pixel format...
+// same uint16 pixel format and we know the actual depth at each IR pixel...
 cv::Mat Extract16U(const K4ASinkParams &params, k4a_image_t &image, k4a_transformation_t &transformation, bool is_depth, const cv::Mat &cvrgb)
 {
   cv::Mat extracted;
