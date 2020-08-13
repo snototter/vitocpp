@@ -151,6 +151,11 @@ void Stream(const std::string &config_file)
   const double sx = warp_dest_width / 1280.0;
   const double sy = warp_dest_height / 720.0;
 
+  const int depth_width = 640;
+  const int depth_height = 480;
+  const double sx_depth = depth_width / 640.0;
+  const double sy_depth = depth_height / 576.0;
+
   k4a_calibration_t calib;
   //  k4a_calibration_camera_t color_camera_calibration; /**< Color camera calibration. */
   calib.color_camera_calibration.intrinsics.type = K4A_CALIBRATION_LENS_DISTORTION_MODEL_BROWN_CONRADY;
@@ -190,10 +195,10 @@ void Stream(const std::string &config_file)
 
   //  k4a_calibration_camera_t depth_camera_calibration; /**< Depth camera calibration. */
   calib.depth_camera_calibration.intrinsics.type = K4A_CALIBRATION_LENS_DISTORTION_MODEL_BROWN_CONRADY;
-  calib.depth_camera_calibration.intrinsics.parameters.param.fx = Kd.at<double>(0, 0);
-  calib.depth_camera_calibration.intrinsics.parameters.param.fy = Kd.at<double>(1, 1);
-  calib.depth_camera_calibration.intrinsics.parameters.param.cx = Kd.at<double>(0, 2);
-  calib.depth_camera_calibration.intrinsics.parameters.param.cy = Kd.at<double>(1, 2);
+  calib.depth_camera_calibration.intrinsics.parameters.param.fx = Kd.at<double>(0, 0) * sx_depth;
+  calib.depth_camera_calibration.intrinsics.parameters.param.fy = Kd.at<double>(1, 1) * sy_depth;
+  calib.depth_camera_calibration.intrinsics.parameters.param.cx = Kd.at<double>(0, 2) * sx_depth;
+  calib.depth_camera_calibration.intrinsics.parameters.param.cy = Kd.at<double>(1, 2) * sy_depth;
   if (Dd.empty())
   {
     calib.depth_camera_calibration.intrinsics.parameters.param.k1 = 0;
@@ -220,8 +225,8 @@ void Stream(const std::string &config_file)
   calib.depth_camera_calibration.intrinsics.parameters.param.cody = 0;
   calib.depth_camera_calibration.intrinsics.parameters.param.metric_radius = 0;
   calib.depth_camera_calibration.intrinsics.parameter_count = 14;
-  calib.depth_camera_calibration.resolution_width = 640;
-  calib.depth_camera_calibration.resolution_height = 576;
+  calib.depth_camera_calibration.resolution_width = depth_width;//640;
+  calib.depth_camera_calibration.resolution_height = depth_height;//576;
 
   calib.color_resolution = K4A_COLOR_RESOLUTION_720P;//THIS MIGHT BE A MAJOR PROBLEM! # FIXME check with downscaled Kc!
   calib.depth_mode = K4A_DEPTH_MODE_NFOV_UNBINNED;
@@ -319,7 +324,10 @@ void Stream(const std::string &config_file)
       continue;
     }
 
-    cv::Mat warped = WarpDepth(frames[1], trafo, warp_dest_width, warp_dest_height);
+    cv::Mat depth_resized;
+    cv::resize(frames[1], depth_resized, cv::Size(depth_width, depth_height));
+
+    cv::Mat warped = WarpDepth(depth_resized, trafo, warp_dest_width, warp_dest_height);
     VCP_LOG_FAILURE("WARPED SIZE: " << warped.cols << "x" << warped.rows);
     cv::Mat vis_warped;
     vcp::imvis::pseudocolor::Colorize(warped, vcp::imvis::pseudocolor::ColorMap::Turbo, vis_warped, 0, 3000);
