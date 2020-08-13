@@ -2321,7 +2321,18 @@ void FillK4AIntrinsicParameters(k4a_calibration_intrinsics_t &intrinsics, const 
 
 void FillCalibration(k4a_calibration_camera_t &cam_calib, const cv::Mat &K, const cv::Mat &D, const cv::Size &resolution)
 {
-  FillK4AIntrinsicParameters<double>(cam_calib.intrinsics, K, D);
+  if (K.type() == CV_32FC1)
+  {
+    FillK4AIntrinsicParameters<float>(cam_calib.intrinsics, K, D);
+  }
+  else if (K.type() == CV_64FC1)
+  {
+    FillK4AIntrinsicParameters<double>(cam_calib.intrinsics, K, D);
+  }
+  else
+  {
+    VCP_ERROR("Intrinsic calibration matrix must be single or double precision, you provided " <<  imutils::CVMatDepthToString(K.depth(), K.channels()));
+  }
   cam_calib.resolution_width = resolution.width;
   cam_calib.resolution_height = resolution.height;
   cam_calib.metric_radius = 1.7f; // This default value corresponds to a ~120 degree fov (to ensure K4A SDK actually reprojects points)
@@ -2415,11 +2426,26 @@ public:
     stereo_calibration_.color_resolution = K4A_COLOR_RESOLUTION_720P;
     stereo_calibration_.depth_mode = K4A_DEPTH_MODE_NFOV_UNBINNED;
 
-    FillRt<double>(stereo_calibration_.extrinsics[K4A_CALIBRATION_TYPE_DEPTH][K4A_CALIBRATION_TYPE_COLOR], R_d2c, t_d2c);
+    if (R_d2c.type() == CV_32FC1 && t_d2c.type() == CV_32FC1)
+    {
+      FillRt<float>(stereo_calibration_.extrinsics[K4A_CALIBRATION_TYPE_DEPTH][K4A_CALIBRATION_TYPE_COLOR], R_d2c, t_d2c);
+    }
+    else if (R_d2c.type() == CV_64FC1 && t_d2c.type() == CV_64FC1)
+    {
+      FillRt<double>(stereo_calibration_.extrinsics[K4A_CALIBRATION_TYPE_DEPTH][K4A_CALIBRATION_TYPE_COLOR], R_d2c, t_d2c);
+    }
+    else
+    {
+      VCP_ERROR("Both R & t must be of the same type and either single or double precision. Inputs are of type "
+                << imutils::CVMatDepthToString(R_d2c.depth(), R_d2c.channels()) << " (R) and "
+                << imutils::CVMatDepthToString(t_d2c.depth(), t_d2c.channels()) << " (t).");
+    }
 
     transformation_ = k4a_transformation_create(&stereo_calibration_);
     if (!transformation_)
+    {
       VCP_ERROR("Could not initialize the (K4A SDK-based) transformation for RGBD alignment.");
+    }
   }
 
   virtual ~K4ARgbdAlignment()
@@ -2469,7 +2495,7 @@ public:
       depth_k4a = NULL;
     }
 
-    //TODO remove
+    //TODO FIXME remove
     double mi, ma;
     cv::minMaxIdx(warped, &mi, &ma);
     VCP_LOG_FAILURE("Depth 2 color Min/max values: " << mi << ", " << ma);
