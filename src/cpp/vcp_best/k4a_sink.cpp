@@ -2466,6 +2466,8 @@ public:
       return cv::Mat();
     }
 
+    VCP_LOG_FAILURE("Align D2C: step1: " << depth.step1() << ", steps[0] " << depth.step[0]); //TODO remove debug
+
     // Convert OpenCV buffer to k4a depth image buffer
     k4a_image_t depth_k4a;
     if (k4a_image_create_from_buffer(K4A_IMAGE_FORMAT_DEPTH16, depth.cols, depth.rows, depth.step[0],
