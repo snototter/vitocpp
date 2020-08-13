@@ -2352,8 +2352,8 @@ void FillRt(k4a_calibration_extrinsics_t &extrinsics, const cv::Mat &R, const cv
   extrinsics.rotation[8] = static_cast<float>(R.at<T>(2, 2));
 
   extrinsics.translation[0] = static_cast<float>(t.at<T>(0));
-  extrinsics.translation[1] = static_cast<float>(t.at<T>(0));
-  extrinsics.translation[2] = static_cast<float>(t.at<T>(0));
+  extrinsics.translation[1] = static_cast<float>(t.at<T>(1));
+  extrinsics.translation[2] = static_cast<float>(t.at<T>(2));
 }
 
 cv::Mat TransformDepthToColor(k4a_image_t &src_depth, k4a_transformation_t &transformation, const cv::Size &dst_size)
@@ -2495,10 +2495,10 @@ public:
       depth_k4a = NULL;
     }
 
-    //TODO FIXME remove
-    double mi, ma;
-    cv::minMaxIdx(warped, &mi, &ma);
-    VCP_LOG_FAILURE("Depth 2 color Min/max values: " << mi << ", " << ma);
+//    //TODO FIXME remove
+//    double mi, ma;
+//    cv::minMaxIdx(warped, &mi, &ma);
+//    VCP_LOG_FAILURE("Depth 2 color Min/max values: " << mi << ", " << ma);
     return warped;
   }
 

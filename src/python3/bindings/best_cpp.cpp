@@ -447,7 +447,6 @@ public:
       alignment_.reset();
   }
 
-  //TODO FIXME align!
   py::object AlignDepthToColor(const cv::Mat &depth)
   {
     if (!alignment_)
