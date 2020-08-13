@@ -100,6 +100,7 @@ set(PUBLIC_HEADERS
     capture.h
     calibration.h
     liveview.h
+    rgbd.h
 )
 set(PRIVATE_HEADERS)
 
@@ -111,6 +112,7 @@ set(SOURCES
     capture.cpp
     calibration.cpp
     liveview.cpp
+    rgbd.cpp
 )
 
 # All need OpenCV for image conversion

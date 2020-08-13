@@ -24,6 +24,7 @@
 #include <vcp_utils/timing_utils.h>
 #include <vcp_best/capture.h>
 #include <vcp_best/liveview.h>
+#include <vcp_best/rgbd.h>
 
 #ifdef VCP_BEST_WITH_IPCAM
   #include <vcp_best/ipcam_sink.h>
@@ -321,6 +322,14 @@ public:
     return vcp::python::conversion::MatToNDArray(M);
   }
 
+  py::object Distortion(size_t stream_index) const
+  {
+    const cv::Mat D = capture_->DistortionAt(stream_index);
+    if (D.empty())
+      return py::none();
+    return vcp::python::conversion::MatToNDArray(D);
+  }
+
   py::tuple StereoTransformation(size_t stream_index) const
   {
     cv::Mat R, t;
@@ -413,6 +422,49 @@ private:
   }
 };
 
+
+
+class RgbdAlignmentWrapper
+{
+public:
+  RgbdAlignmentWrapper() : alignment_(nullptr) {}
+
+  RgbdAlignmentWrapper(const cv::Mat &K_c, const cv::Mat &K_d,
+                const cv::Mat &R_d2c, const cv::Mat &t_d2c,
+                const cv::Size &size_c, const cv::Size &size_d,
+                const cv::Mat &D_c, const cv::Mat &D_d)
+  {
+    alignment_ = vcp::best::rgbd::CreateRgbdAlignment(K_c, K_d, R_d2c, t_d2c, size_c, size_d, D_c, D_d);
+  }
+
+  // Disable copying
+  RgbdAlignmentWrapper(const RgbdAlignmentWrapper&) = delete;
+  RgbdAlignmentWrapper &operator=(const RgbdAlignmentWrapper&) = delete;
+
+  virtual ~RgbdAlignmentWrapper()
+  {
+    if (alignment_)
+      alignment_.reset();
+  }
+
+  //TODO FIXME align!
+  py::object AlignDepthToColor(const cv::Mat &depth)
+  {
+    if (!alignment_)
+    {
+      VCP_LOG_FAILURE("RgbdAlignment was not properly initialized!");
+      return py::none();
+    }
+
+    cv::Mat warped = alignment_->AlignDepth2Color(depth);
+    if (warped.empty())
+      return py::none();
+    return vcp::python::conversion::MatToNDArray(warped);
+  }
+
+private:
+  std::unique_ptr<vcp::best::rgbd::RgbdAlignment> alignment_;
+};
 
 
 py::list ListMvBlueFox3Devices(bool warn_if_no_devices)
@@ -825,6 +877,9 @@ PYBIND11_MODULE(best_cpp, m)
            py::arg("stream_index"))
       .def("intrinsics", &pybest::CaptureWrapper::CameraMatrix,
            "Alias for @see camera_matrix().")
+      .def("distortion_coefficients", &pybest::CaptureWrapper::Distortion,
+           "Returns the Nx1 distortion coefficients of this stream (if calibrated).",
+           py::arg("stream_index"))
       .def("stereo_transformation", &pybest::CaptureWrapper::StereoTransformation,
            "Returns the transformation from this stream/view to the reference\n"
            "view as tuple (R,t) if exists. Only useful for calibrated stereo\n"
@@ -954,6 +1009,41 @@ PYBIND11_MODULE(best_cpp, m)
       .value("ImageSequence", vcp::best::StreamStorageParams::Type::IMAGE_DIR)
       .value("Video", vcp::best::StreamStorageParams::Type::VIDEO)
       .export_values();
+
+
+  py::class_<pybest::RgbdAlignmentWrapper>(m, "RgbdAlignment")
+// Initialization
+//      .def(py::init<>(), "Default constructor")
+      /*const cv::Mat &K_c, const cv::Mat &K_d,
+                    const cv::Mat &R_d2c, const cv::Mat &t_d2c,
+                    const cv::Size &size_c, const cv::Size &size_d,
+                    const cv::Mat &D_c, const cv::Mat &D_d*/
+      .def(py::init<const cv::Mat &, const cv::Mat &, const cv::Mat &, const cv::Mat &,
+                    const cv::Size &, const cv::Size &, const cv::Mat &, const cv::Mat &>(),
+           "Prepares the alignment from the given stereo calibration data.\n\n"
+           ":param K_color: 3x3 intrinsic calibration of color stream (single or double precision).\n"
+           ":param K_depth: 3x3 intrinsics of depth stream (single or double precision).\n"
+           ":param R_d2c:   3x3 rotation matrix from depth to color (single or double precision).\n"
+           ":param t_d2c:   3x1 translation vector from depth to color (single or double precision).\n"
+           ":param size_color: color stream resolution as tuple(width, height) of type int.\n"
+           ":param size_depth: depth stream resolution as tuple(width, height) of type int.\n"
+           ":param D_color:    Dx1 distortion coefficients (Brown Conrady model) for\n"
+           "                   color stream (single or double precision).\n"
+           "                   Should be [k1, k2, p1, p2] additional radial\n"
+           "                   coefficients can be provided starting from \n"
+           "                   the 5th element, up to [k1, k2, p1, p2, k3, k4, k5, k6]."
+           ":param D_depth:    Dx1 distortion coefficients (Brown Conrady model) for\n"
+           "                   depth stream (single or double precision).\n",
+           py::arg("K_color"), py::arg("K_depth"),
+           py::arg("R_d2c"), py::arg("t_d2c"),
+           py::arg("size_color"), py::arg("size_depth"),
+           py::arg("D_color")=cv::Mat(), py::arg("D_depth")=cv::Mat())
+      .def("align_d2c", &pybest::RgbdAlignmentWrapper::AlignDepthToColor,
+           "Align the given depth image to the color stream.\n\n"
+           ":param depth: single-channel 16bit (!) depth image\n"
+           ":return: single-channel 16bit depth image aligned to the color stream",
+           py::arg("depth"));
+
 
   m.def("list_k4a_devices", &pybest::ListK4ADevices,
         "Returns a list of connected Kinect Azure devices.", py::arg("warn_if_no_devices")=true);

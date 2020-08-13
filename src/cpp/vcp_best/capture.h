@@ -238,6 +238,9 @@ public:
   /** @brief Returns the 3x3 intrinsic camera matrix. */
   virtual cv::Mat CameraMatrixAt(size_t stream_index) const = 0;
 
+  /** @brief Returns the Nx1 distortion coefficients. */
+  virtual cv::Mat DistortionAt(size_t stream_index) const = 0;
+
   /** @brief Sets the stereo transformation from stream_index to its reference view (if calibrated). Otherwise, they'll be set to empty matrices. */
   virtual void StereoTransformation(size_t stream_index, cv::Mat &R, cv::Mat &t) const = 0;
 

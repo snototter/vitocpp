@@ -3,6 +3,7 @@
 
 #include "sink.h"
 #include "sink_buffer.h"
+#include "rgbd.h"
 #include <k4a/k4a.h>
 #include <vector>
 #include <string>
@@ -186,6 +187,11 @@ std::vector<K4ADeviceInfo> ListK4ADevices(bool warn_if_no_devices=true);
 /** @brief Checks if the configuration belongs to a K4A (Kinect Azure) device (using the configuration parameter "cameraX.type"). */
 bool IsK4A(const std::string &type_param);
 
+
+std::unique_ptr<rgbd::RgbdAlignment> CreateK4ARgbdAlignment(const cv::Mat &K_c, const cv::Mat &K_d,
+                                                            const cv::Mat &R_d2c, const cv::Mat &t_d2c,
+                                                            const cv::Size &size_c, const cv::Size &size_d,
+                                                            const cv::Mat &D_c, const cv::Mat &D_d);
 } // namespace k4a
 } // namespace best
 } // namespace vcp

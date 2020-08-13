@@ -9,6 +9,8 @@
 #include <limits>
 #include <malloc.h>
 
+#include <vcp_imutils/matutils.h>
+
 
 #include <opencv2/core/version.hpp>
 #if CV_VERSION_MAJOR < 3
@@ -409,6 +411,16 @@ void DumpCalibration(const K4ASinkParams &params, k4a_calibration_t sensor_calib
 
       fs << "R_depth2color" << R_d2c;
       fs << "t_depth2color" << t_d2c;
+//      VCP_LOG_FAILURE("TODO CHECK calibration: " << sensor_calibration.color_camera_calibration.intrinsics.parameter_count << ", " << sensor_calibration.depth_camera_calibration.intrinsics.parameter_count);
+//      VCP_LOG_FAILURE("DEPTH CALIB: " << sensor_calibration.depth_camera_calibration.metric_radius << ", " << sensor_calibration.depth_camera_calibration.resolution_height << " x " << sensor_calibration.depth_camera_calibration.resolution_width << ", " << sensor_calibration.depth_camera_calibration.extrinsics.rotation[0]);
+
+//      VCP_LOG_FAILURE("Metric radius color: " << sensor_calibration.color_camera_calibration.metric_radius << ", " << sensor_calibration.color_camera_calibration.intrinsics.parameters.param.metric_radius);
+//      VCP_LOG_FAILURE("Metric radius depth: " << sensor_calibration.depth_camera_calibration.metric_radius << ", " << sensor_calibration.depth_camera_calibration.intrinsics.parameters.param.metric_radius);
+//      for (int j = 0; j < 15; ++j)
+//        VCP_LOG_FAILURE("  COLOR CALIB #" << j << ": " << sensor_calibration.color_camera_calibration.intrinsics.parameters.v[j]);
+
+//      for (int j = 0; j < 15; ++j)
+//        VCP_LOG_FAILURE("  DEPTH CALIB #" << j << ": " << sensor_calibration.depth_camera_calibration.intrinsics.parameters.v[j]);
     }
   }
 
@@ -490,7 +502,7 @@ void SetColorControl(const K4ASinkParams &params, k4a_device_t k4a_device)
 
 
 // Currently as of libk4a-1.3, only depth can be warped to color (not the IR stream, although it's the
-// same uint16 pixel format...
+// same uint16 pixel format and we know the actual depth at each IR pixel...
 cv::Mat Extract16U(const K4ASinkParams &params, k4a_image_t &image, k4a_transformation_t &transformation, bool is_depth, const cv::Mat &cvrgb)
 {
   cv::Mat extracted;
@@ -2266,6 +2278,242 @@ bool IsK4A(const std::string &type_param)
   return false;
 }
 
+
+template<typename T>
+void FillK4AIntrinsicParameters(k4a_calibration_intrinsics_t &intrinsics, const cv::Mat &K, const cv::Mat &D)
+{
+  for (size_t i = 0; i < 15; ++i)
+    intrinsics.parameters.v[i] = 0.0f;
+
+  intrinsics.parameter_count = 14;
+  intrinsics.type = K4A_CALIBRATION_LENS_DISTORTION_MODEL_BROWN_CONRADY;
+
+  // Principal point
+  intrinsics.parameters.param.cx = static_cast<float>(K.at<T>(0, 2));
+  intrinsics.parameters.param.cy = static_cast<float>(K.at<T>(1, 2));
+  // Focal length
+  intrinsics.parameters.param.fx = static_cast<float>(K.at<T>(0, 0));
+  intrinsics.parameters.param.fy = static_cast<float>(K.at<T>(1, 1));
+  if (!D.empty())
+  {
+    // We assume the OpenCV standard coefficient representation: D = (k1, k2, p1, p2, [k3, [k4, k5, k6]])
+    int N = D.rows * D.cols;
+    // Radial distortion coefficients k1...k6, tangential p1 & p2
+    intrinsics.parameters.param.k1 = static_cast<float>(D.at<T>(0));
+    intrinsics.parameters.param.k2 = static_cast<float>(D.at<T>(1));
+    intrinsics.parameters.param.p1 = static_cast<float>(D.at<T>(2));
+    intrinsics.parameters.param.p2 = static_cast<float>(D.at<T>(3));
+    if (N > 4)
+    {
+      intrinsics.parameters.param.k3 = static_cast<float>(D.at<T>(4));
+      if (N == 8)
+      {
+        intrinsics.parameters.param.k4 = static_cast<float>(D.at<T>(5));
+        intrinsics.parameters.param.k5 = static_cast<float>(D.at<T>(6));
+        intrinsics.parameters.param.k6 = static_cast<float>(D.at<T>(7));
+      }
+    }
+    // Center of distortion in Z=1 plane (codx/cody) not needed as we don't use/support the Rational6KT distortion model.
+    // Tangential distortion coefficients
+  }
+  // metric_radius is ignored (the metric_radius inside k4a_calibration_camera_t is actually used).
+}
+
+void FillCalibration(k4a_calibration_camera_t &cam_calib, const cv::Mat &K, const cv::Mat &D, const cv::Size &resolution)
+{
+  if (K.type() == CV_32FC1)
+  {
+    FillK4AIntrinsicParameters<float>(cam_calib.intrinsics, K, D);
+  }
+  else if (K.type() == CV_64FC1)
+  {
+    FillK4AIntrinsicParameters<double>(cam_calib.intrinsics, K, D);
+  }
+  else
+  {
+    VCP_ERROR("Intrinsic calibration matrix must be single or double precision, you provided " <<  imutils::CVMatDepthToString(K.depth(), K.channels()));
+  }
+  cam_calib.resolution_width = resolution.width;
+  cam_calib.resolution_height = resolution.height;
+  cam_calib.metric_radius = 1.7f; // This default value corresponds to a ~120 degree fov (to ensure K4A SDK actually reprojects points)
+}
+
+template <typename T>
+void FillRt(k4a_calibration_extrinsics_t &extrinsics, const cv::Mat &R, const cv::Mat &t)
+{
+  extrinsics.rotation[0] = static_cast<float>(R.at<T>(0, 0));
+  extrinsics.rotation[1] = static_cast<float>(R.at<T>(0, 1));
+  extrinsics.rotation[2] = static_cast<float>(R.at<T>(0, 2));
+  extrinsics.rotation[3] = static_cast<float>(R.at<T>(1, 0));
+  extrinsics.rotation[4] = static_cast<float>(R.at<T>(1, 1));
+  extrinsics.rotation[5] = static_cast<float>(R.at<T>(1, 2));
+  extrinsics.rotation[6] = static_cast<float>(R.at<T>(2, 0));
+  extrinsics.rotation[7] = static_cast<float>(R.at<T>(2, 1));
+  extrinsics.rotation[8] = static_cast<float>(R.at<T>(2, 2));
+
+  extrinsics.translation[0] = static_cast<float>(t.at<T>(0));
+  extrinsics.translation[1] = static_cast<float>(t.at<T>(0));
+  extrinsics.translation[2] = static_cast<float>(t.at<T>(0));
+}
+
+cv::Mat TransformDepthToColor(k4a_image_t &src_depth, k4a_transformation_t &transformation, const cv::Size &dst_size)
+{
+  cv::Mat extracted;
+  if (src_depth != nullptr)
+  {
+    // OpenCV matrix header to point to the warped depth data.
+    cv::Mat tmp;
+    // Create output buffer
+    k4a_image_t aligned_depth_image = NULL;
+    if (k4a_image_create(
+            K4A_IMAGE_FORMAT_DEPTH16,
+            dst_size.width, dst_size.height,
+            dst_size.width * static_cast<int>(sizeof(uint16_t)), &aligned_depth_image)
+          != K4A_RESULT_SUCCEEDED)
+    {
+      VCP_LOG_FAILURE("Cannot allocate K4A image buffer to warp depth to color!");
+    }
+    else
+    {
+      if (k4a_transformation_depth_image_to_color_camera(transformation, src_depth, aligned_depth_image)
+          != K4A_RESULT_SUCCEEDED)
+      {
+        VCP_LOG_FAILURE("Cannot align K4A depth image to color image!");
+      }
+      else
+      {
+        // Get image buffer and size
+        uint8_t* buffer = k4a_image_get_buffer(aligned_depth_image);
+        const int rows = k4a_image_get_height_pixels(aligned_depth_image);
+        const int cols = k4a_image_get_width_pixels(aligned_depth_image);
+        // Create OpenCV Mat header pointing to the buffer (no copy yet!)
+        tmp = cv::Mat(rows, cols, CV_16U, static_cast<void*>(buffer),
+                      k4a_image_get_stride_bytes(aligned_depth_image));
+      }
+    }
+
+    extracted = tmp.clone();
+    // Now it's safe to clean up the k4a memory
+    if (aligned_depth_image)
+    {
+      k4a_image_release(aligned_depth_image);
+      aligned_depth_image = NULL;
+    }
+  }
+  else
+  {
+    VCP_LOG_WARNING("TransformDepthToColor() called without a valid K4A image!");
+  }
+  return extracted;
+}
+
+
+class K4ARgbdAlignment : public rgbd::RgbdAlignment
+{
+public:
+  K4ARgbdAlignment(const cv::Mat &K_c, const cv::Mat &K_d,
+                   const cv::Mat &R_d2c, const cv::Mat &t_d2c,
+                   const cv::Size &size_c, const cv::Size &size_d,
+                   const cv::Mat &D_c, const cv::Mat &D_d) :
+    RgbdAlignment(K_c, K_d, R_d2c, t_d2c, size_c, size_d, D_c, D_d),
+    transformation_(nullptr)
+  {
+    FillCalibration(stereo_calibration_.color_camera_calibration, K_c, D_c, size_c);
+    FillCalibration(stereo_calibration_.depth_camera_calibration, K_d, D_d, size_d);
+    //TODO maybe in the future, setting the following 2 modes to these default values may cause a problem
+    // Up until k4a 1.4 the lookup tables and transformations are mode-agnostic. These modes just need
+    // to be set to some value indicating that both color and depth are enabled!
+    stereo_calibration_.color_resolution = K4A_COLOR_RESOLUTION_720P;
+    stereo_calibration_.depth_mode = K4A_DEPTH_MODE_NFOV_UNBINNED;
+
+    if (R_d2c.type() == CV_32FC1 && t_d2c.type() == CV_32FC1)
+    {
+      FillRt<float>(stereo_calibration_.extrinsics[K4A_CALIBRATION_TYPE_DEPTH][K4A_CALIBRATION_TYPE_COLOR], R_d2c, t_d2c);
+    }
+    else if (R_d2c.type() == CV_64FC1 && t_d2c.type() == CV_64FC1)
+    {
+      FillRt<double>(stereo_calibration_.extrinsics[K4A_CALIBRATION_TYPE_DEPTH][K4A_CALIBRATION_TYPE_COLOR], R_d2c, t_d2c);
+    }
+    else
+    {
+      VCP_ERROR("Both R & t must be of the same type and either single or double precision. Inputs are of type "
+                << imutils::CVMatDepthToString(R_d2c.depth(), R_d2c.channels()) << " (R) and "
+                << imutils::CVMatDepthToString(t_d2c.depth(), t_d2c.channels()) << " (t).");
+    }
+
+    transformation_ = k4a_transformation_create(&stereo_calibration_);
+    if (!transformation_)
+    {
+      VCP_ERROR("Could not initialize the (K4A SDK-based) transformation for RGBD alignment.");
+    }
+  }
+
+  virtual ~K4ARgbdAlignment()
+  {
+    if (transformation_)
+      k4a_transformation_destroy(transformation_);
+  }
+
+  cv::Mat AlignDepth2Color(const cv::Mat &depth) override
+  {
+    if (depth.empty())
+      return cv::Mat();
+
+    if (depth.type() != CV_16UC1)//TODO test
+    {
+      VCP_LOG_FAILURE("Depth alignment is only supported for single-channel, 16bit depth maps (OpenCV: CV_16UC1, NumPy: uint16)." <<
+                      std::endl << "You provided " << imutils::CVMatDepthToString(depth.depth(), depth.channels()));
+      return cv::Mat();
+    }
+
+    // Convert OpenCV buffer to k4a depth image buffer
+    k4a_image_t depth_k4a;
+    if (k4a_image_create_from_buffer(K4A_IMAGE_FORMAT_DEPTH16, depth.cols, depth.rows, depth.step[0],
+                                     depth.data, depth.cols * depth.rows * sizeof(uint16_t),
+                                     NULL, NULL, &depth_k4a)
+        != K4A_RESULT_SUCCEEDED)
+    {
+      VCP_LOG_FAILURE("Cannot create K4A depth image buffer from OpenCV depth image data.");
+      return cv::Mat();
+    }
+
+  //Works  /////// check if conversion cv -> k4a -> cv works
+  //  // Get image buffer and size
+  //  uint8_t* buffer = k4a_image_get_buffer(image);
+  //  const int rows = k4a_image_get_height_pixels(image);
+  //  const int cols = k4a_image_get_width_pixels(image);
+  //  // Create OpenCV Mat header pointing to the buffer (no copy yet!)
+  //  cv::Mat tmp = cv::Mat(rows, cols, CV_16U, static_cast<void*>(buffer), k4a_image_get_stride_bytes(image));
+  //  return tmp.clone();
+
+    cv::Mat warped = TransformDepthToColor(depth_k4a, transformation_, size_c_);
+
+    // Clean up
+    if (depth_k4a)
+    {
+      k4a_image_release(depth_k4a);
+      depth_k4a = NULL;
+    }
+
+    //TODO FIXME remove
+    double mi, ma;
+    cv::minMaxIdx(warped, &mi, &ma);
+    VCP_LOG_FAILURE("Depth 2 color Min/max values: " << mi << ", " << ma);
+    return warped;
+  }
+
+private:
+  k4a_transformation_t transformation_;
+  k4a_calibration_t stereo_calibration_;
+
+};
+std::unique_ptr<rgbd::RgbdAlignment> CreateK4ARgbdAlignment(const cv::Mat &K_c, const cv::Mat &K_d,
+                                                            const cv::Mat &R_d2c, const cv::Mat &t_d2c,
+                                                            const cv::Size &size_c, const cv::Size &size_d,
+                                                            const cv::Mat &D_c, const cv::Mat &D_d)
+{
+  return std::unique_ptr<K4ARgbdAlignment>(new K4ARgbdAlignment(K_c, K_d, R_d2c, t_d2c, size_c, size_d, D_c, D_d));
+}
 } // namespace k4a
 } // namespace best
 } // namespace vcp

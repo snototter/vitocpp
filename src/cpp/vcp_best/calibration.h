@@ -21,7 +21,7 @@ namespace best
 // Forward declaration (defined in sink.h)
 enum class FrameType : short;
 
-/** @brief Functionality undistort & rectify images, load calibration files, etc. */
+/** @brief Functionality to undistort & rectify images, load calibration files, etc. */
 namespace calibration
 {
 

@@ -645,6 +645,15 @@ public:
     return intrinsics.IntrinsicsOriginal();
   }
 
+  cv::Mat DistortionAt(size_t stream_index) const override
+  {
+    const auto &lookup = frame2sink_[stream_index];
+    const calibration::StreamIntrinsics intrinsics = sinks_[lookup.first]->IntrinsicsAt(lookup.second);
+    if (intrinsics.Empty() || SinkParamsAt(stream_index).rectify)
+      return cv::Mat();
+    return intrinsics.Distortion();
+  }
+
   void StereoTransformation(size_t stream_index, cv::Mat &R, cv::Mat &t) const  override
   {
     const auto &lookup = frame2sink_[stream_index];
