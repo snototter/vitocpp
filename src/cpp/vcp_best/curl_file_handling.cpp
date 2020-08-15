@@ -173,6 +173,10 @@ URL_FILE *url_fopen(CURLM **multi_handle, const char *url, const char *operation
     // The default scheme works fine with Mobotix cameras, though!
     curl_easy_setopt(file->handle.curl, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
 
+    //TODO REMOVE AFTER DEBUG
+    curl_easy_setopt(file->handle.curl, CURLOPT_VERBOSE, 1L);
+    curl_easy_setopt(file->handle.curl, CURLOPT_TCP_KEEPALIVE, 1L);
+
     if(!*multi_handle)
       *multi_handle = curl_multi_init();
 

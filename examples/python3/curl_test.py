@@ -12,7 +12,7 @@ usr = 'admin'
 pwd = 'rootroot'
 auth = 'basic'
 
-# # AXIS
+# # # AXIS
 # url_toplevel = 'http://192.168.0.50'
 # url = url_toplevel + '/axis-cgi/mjpg/video.cgi?fps=20'
 # usr = 'root'
