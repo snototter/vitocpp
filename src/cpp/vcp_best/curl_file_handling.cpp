@@ -177,6 +177,7 @@ URL_FILE *url_fopen(CURLM **multi_handle, const char *url, const char *operation
     curl_easy_setopt(file->handle.curl, CURLOPT_VERBOSE, 1L);
     curl_easy_setopt(file->handle.curl, CURLOPT_TCP_KEEPALIVE, 1L);
     curl_easy_setopt(file->handle.curl, CURLOPT_CONNECTTIMEOUT_MS, 5000L);
+    //TODO FIXME CHECK: https://curl.haxx.se/docs/faq.html#Why_doesn_t_curl_return_an_error
 
     if(!*multi_handle)
       *multi_handle = curl_multi_init();
