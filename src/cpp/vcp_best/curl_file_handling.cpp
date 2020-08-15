@@ -176,6 +176,7 @@ URL_FILE *url_fopen(CURLM **multi_handle, const char *url, const char *operation
     //TODO REMOVE AFTER DEBUG
     curl_easy_setopt(file->handle.curl, CURLOPT_VERBOSE, 1L);
     curl_easy_setopt(file->handle.curl, CURLOPT_TCP_KEEPALIVE, 1L);
+    curl_easy_setopt(file->handle.curl, CURLOPT_CONNECTTIMEOUT_MS, 5000L);
 
     if(!*multi_handle)
       *multi_handle = curl_multi_init();

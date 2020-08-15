@@ -151,7 +151,7 @@ public:
         VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for http/mjpeg stream: " << params_ << ".");
     }
 
-    mjpg_stream_ = curl::url_fopen(&mjpg_multi_handle_, params_.stream_url.c_str(), "r", 5000);
+    mjpg_stream_ = curl::url_fopen(&mjpg_multi_handle_, params_.stream_url.c_str(), "r", 0);
     return mjpg_stream_ != nullptr;
   }
 
