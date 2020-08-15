@@ -62,7 +62,12 @@ static int fill_buffer(CURLM *multi_handle, URL_FILE *file, size_t want)
    * doesnt exceed required size already
    */
   if((!file->still_running) || (file->buffer_pos > want))
+  {
+//    if (!file->still_running)
+//      printf("ABORT!!!!!!!!! curlm file is not running anymore!");
+    //printf("ABORT - transactions not running or more chars read, %d vs %d)", file->buffer_pos, want);
     return 0;
+  }
 
   /* attempt to fill buffer */
   do {
@@ -84,6 +89,7 @@ static int fill_buffer(CURLM *multi_handle, URL_FILE *file, size_t want)
         timeout.tv_sec = 1;
       else
         timeout.tv_usec = (curl_timeo % 1000) * 1000;
+      //usleep(100000); //https://curl.haxx.se/libcurl/c/curl_multi_perform.html
     }
 
     /* get file descriptors from the transfers */
@@ -100,6 +106,7 @@ static int fill_buffer(CURLM *multi_handle, URL_FILE *file, size_t want)
     switch(rc) {
     case -1:
       /* select error */
+//        printf("SELECT ERRORRRRRRRRRRRRRRRRRRRr");
       break;
 
     case 0:
@@ -298,7 +305,10 @@ char *url_fgets(CURLM *multi_handle, char *ptr, size_t size, URL_FILE *file)
 
     // check if there's data in the buffer
     if(!file->buffer_pos)
+    {
+//      printf("No data in the buffer!\n");
       return NULL;
+    }
 
     // ensure only available data is considered
     if(file->buffer_pos < want)
@@ -324,6 +334,7 @@ char *url_fgets(CURLM *multi_handle, char *ptr, size_t size, URL_FILE *file)
   default: /* unknown or supported type - oh dear */
     ptr=NULL;
     errno=EBADF;
+    printf("UNSUPPORTED TYPE!");
     break;
   }
 

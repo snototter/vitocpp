@@ -405,7 +405,7 @@ cv::Size ParseResolutionFromConfig(const vcp::config::ConfigParams &config,
   sz.width = GetOptionalIntFromConfig(config, cam_group, kw, -1);
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), prefix + "width"), configured_keys.end());
 
-  const std::string kh = prefix + "width";
+  const std::string kh = prefix + "height";
   sz.height = GetOptionalIntFromConfig(config, cam_group, kh, -1);
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), prefix + "height"), configured_keys.end());
   return sz;

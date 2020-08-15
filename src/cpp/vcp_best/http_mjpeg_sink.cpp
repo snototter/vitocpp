@@ -261,18 +261,30 @@ private:
   {
     is_stream_available_ = true;
     size_t frame_drop_cnt = 0;
+    size_t received = 0;
     while (continue_stream_)
     {
       char garbage[80];
+VCP_LOG_WARNING("WAITING FOR --BOUNDARY, current buffer pos: " << mjpg_stream_->buffer_pos << "; still running: " << mjpg_stream_->still_running);
+if (mjpg_stream_->buffer_pos == 0 && mjpg_stream_->still_running == 0)
+  VCP_ERROR("Stream closed/lost after " << received << " frames");
       // Skip "--<boundary>"
-      curl::url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_);
+      if (!curl::url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_))
+        continue;
+      VCP_LOG_WARNING("Frame - boundary? '" << garbage << "'");
       // Skip "Content-type:...\n"
-      curl::url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_);
+      if (!curl::url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_))
+        continue;
+      VCP_LOG_WARNING("Frame - Content type? '" << garbage << "'");
       // Skip "Content-Length: "
-      curl::url_fread(mjpg_multi_handle_, (void *)garbage, sizeof(char), 16, mjpg_stream_);
+      if (!curl::url_fread(mjpg_multi_handle_, (void *)garbage, sizeof(char), 16, mjpg_stream_))
+        continue;
+      VCP_LOG_WARNING("Frame - Content length? '" << garbage << "'");
       // Read the frame size
-      curl::url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_);
+      if (!curl::url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_))
+        continue;
       int jpeg_bytes = atoi(garbage);
+      VCP_LOG_WARNING("Trying to receive jpeg of size " << jpeg_bytes << std::endl << "Buffer pos: " << mjpg_stream_->buffer_pos << "; still running: " << mjpg_stream_->still_running);
 
       if (jpeg_bytes == 0)
       {
@@ -281,12 +293,14 @@ private:
         ++frame_drop_cnt;
         if (frame_drop_cnt > 1000)
         {
+          VCP_ERROR("More than 1000 (" << frame_drop_cnt << ") dropped frames, aborting: " << params_);
           is_stream_available_ = false;
         }
         continue;
       }
+VCP_LOG_WARNING("TODO REMOVE: reading empty row & allocating buffer");
       frame_drop_cnt = 0;
-
+//FIXME collect bytes, then search for 0xff0xd8 and d9 markers!
       // Skip empty row before frame data
       curl::url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_);
       // Create space to store the frame
@@ -297,7 +311,7 @@ private:
         VCP_LOG_FAILURE("Cannot allocate frame buffer: " << params_);
         continue;
       }
-
+VCP_LOG_WARNING("TODO REMOVE: reading the frame, still running? " << mjpg_stream_->still_running);
       // Read the frame
       curl::url_fread(mjpg_multi_handle_, (void *)frame_data, sizeof(uchar), jpeg_bytes, mjpg_stream_);
 
@@ -306,11 +320,12 @@ private:
         VCP_LOG_FAILURE("Cannot retrieve frame data from URL handle: " << params_);
         continue;
       }
-
+VCP_LOG_WARNING("TODO REMOVE: reading next empty line, still running? " << mjpg_stream_->still_running);
       // Skip empty row before the next delimiter
+memset(garbage, 0, sizeof(garbage));
       curl::url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_);
       // Finished reading a frame, now convert!
-
+VCP_LOG_WARNING("TODO REMOVE: DECODING; empty line was '" << garbage << "', still running? " << mjpg_stream_->still_running);
       cv::Mat buf(1, jpeg_bytes, CV_8UC1, (void *)frame_data);
       cv::Mat decoded = cv::imdecode(buf, CV_LOAD_IMAGE_UNCHANGED);
       cv::Mat frame;
@@ -318,13 +333,15 @@ private:
         frame = decoded;
       else
         frame = FlipChannels(decoded);
-
+VCP_LOG_WARNING("TODO REMOVE: DECODED, yeah!!! Buffer pos: " << mjpg_stream_->buffer_pos << "; still running: " << mjpg_stream_->still_running);
       // Apply basic image transformations if needed.
       const cv::Mat img = imutils::ApplyImageTransformations(frame, params_.transforms);
       image_queue_mutex_.lock();
       image_queue_->PushBack(img.clone());
       image_queue_mutex_.unlock();
       delete[] frame_data;
+VCP_LOG_WARNING("TODO REMOVE: Image enqueued.");
+++received;
     }
   }
 };

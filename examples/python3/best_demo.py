@@ -60,9 +60,9 @@ def streaming_demo(cfg_file, folder, output_folder=None, output_fps=15):
             break
     
     # Query all intrinsics
-    print('\nStream intrinsics')
-    for i in range(capture.num_streams()):
-        print('Stream {}\n  {}\n'.format(capture.frame_label(i), capture.intrinsics(i)))
+    #print('\nStream intrinsics')
+    #for i in range(capture.num_streams()):
+    #    print('Stream {}\n  {}\n'.format(capture.frame_label(i), capture.intrinsics(i)))
 
     # Set up the stream storage
     if output_folder is None:
@@ -174,10 +174,14 @@ def demo():
 
     folder = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'data-best')
     # cfg_files = [file for file in os.listdir(folder) if file.endswith(".cfg")]
-    cfg_files = ['realsense.cfg'] #, 'image_sequence.cfg', 'k4a.cfg', 'webcam.cfg']
-    # cfg_files = ['zed.cfg', 'realsense.cfg']
-    cfg_files = ['rgbds.cfg']
-    cfg_files = ['kinects.cfg']
+    # cfg_files = ['realsense.cfg'] #, 'image_sequence.cfg', 'k4a.cfg', 'webcam.cfg']
+    # # cfg_files = ['zed.cfg', 'realsense.cfg']
+    # cfg_files = ['rgbds.cfg']
+    # cfg_files = ['kinects.cfg']
+    cfg_files = [
+        # 'axis-http.cfg', 
+        'axis-rtsp.cfg', 
+        'mobotix.cfg']
     # cfg_files = ['kinects-old.cfg']
     # print('FOOOOOOOOOO CHECK - OLD means not synced!')
     # cfg_files = ['webcam.cfg']
