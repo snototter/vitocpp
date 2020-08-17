@@ -1,3 +1,5 @@
+"""MJPEG over HTTP streaming via urllib.request"""
+
 import cv2
 import urllib.request
 import numpy as np
@@ -12,7 +14,8 @@ usr = 'admin'
 pwd = 'rootroot'
 auth = 'basic'
 
-# # # AXIS
+############################
+# AXIS
 # url_toplevel = 'http://192.168.0.50'
 # url = url_toplevel + '/axis-cgi/mjpg/video.cgi?fps=20'
 # usr = 'root'
@@ -60,7 +63,6 @@ with urllib.request.urlopen(url) as stream:
         read_bytes += stream.read(65536)
         a = find_jpg_start(read_bytes)
         b = find_jpg_end(read_bytes)
-#        import pdb; pdb.set_trace()
         if a != -1 and b != -1:
             jpg = read_bytes[a:b+2]
             read_bytes = read_bytes[b+2:]
