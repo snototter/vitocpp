@@ -71,8 +71,8 @@ std::string IpStreamEncodingToString(const IpStreamEncoding &s);
 enum class IpCameraType
 {
   Generic = 1, /**< Basically, all IP cameras are "generic" sinks, they only differ regarding their streaming URLs. */
-  Axis
-//  Mobotix,
+  Axis,
+  Mobotix
 //  Hikvision
 };
 

@@ -35,7 +35,11 @@ struct fcurl_data
 typedef struct fcurl_data URL_FILE;
 
 /* exported functions */
-URL_FILE *url_fopen(CURLM **multi_handle, const char *url, const char *operation, long timeout_ms=1500);
+
+/** @brief Opens a URL. If you're about to stream a video (e.g. MJPEG over HTTP), use request_timeout_ms=0, otherwise, the playback will terminate prematurely.
+ * The timeout parameters are not useful to detect camera connection errors, see: https://curl.haxx.se/docs/faq.html#Why_doesn_t_curl_return_an_error
+ */
+URL_FILE *url_fopen(CURLM **multi_handle, const char *url, const char *operation, long connection_timeout_ms=5000, long request_timeout_ms=0);
 int url_fclose(CURLM **multi_handle, URL_FILE *file);
 int url_feof(URL_FILE *file);
 size_t url_fread(CURLM *multi_handle, void *ptr, size_t size, size_t nmemb, URL_FILE *file);

@@ -143,7 +143,7 @@ static int use_buffer(URL_FILE *file,int want)
   return 0;
 }
 
-URL_FILE *url_fopen(CURLM **multi_handle, const char *url, const char *operation, long timeout_ms)
+URL_FILE *url_fopen(CURLM **multi_handle, const char *url, const char *operation, long connection_timeout_ms, long request_timeout_ms)
 {
   /* this code could check for URLs or types in the 'url' and
      basicly use the real fopen() for standard files */
@@ -168,16 +168,15 @@ URL_FILE *url_fopen(CURLM **multi_handle, const char *url, const char *operation
     curl_easy_setopt(file->handle.curl, CURLOPT_WRITEDATA, file);
     curl_easy_setopt(file->handle.curl, CURLOPT_VERBOSE, 0L);
     curl_easy_setopt(file->handle.curl, CURLOPT_WRITEFUNCTION, write_callback);
-    curl_easy_setopt(file->handle.curl, CURLOPT_TIMEOUT_MS, timeout_ms);
+    curl_easy_setopt(file->handle.curl, CURLOPT_CONNECTTIMEOUT_MS, connection_timeout_ms);
+    curl_easy_setopt(file->handle.curl, CURLOPT_TIMEOUT_MS, request_timeout_ms);
     // Allow any authorization mode CURL knows (required for Axis MJPEG Streaming via "http://usr:pwd@host" URLs)
     // The default scheme works fine with Mobotix cameras, though!
     curl_easy_setopt(file->handle.curl, CURLOPT_HTTPAUTH, CURLAUTH_ANY);
-
-    //TODO REMOVE AFTER DEBUG
-    curl_easy_setopt(file->handle.curl, CURLOPT_VERBOSE, 1L);
     curl_easy_setopt(file->handle.curl, CURLOPT_TCP_KEEPALIVE, 1L);
-    curl_easy_setopt(file->handle.curl, CURLOPT_CONNECTTIMEOUT_MS, 5000L);
-    //TODO FIXME CHECK: https://curl.haxx.se/docs/faq.html#Why_doesn_t_curl_return_an_error
+
+    // To debug, set verbosity!
+    //curl_easy_setopt(file->handle.curl, CURLOPT_VERBOSE, 1L);
 
     if(!*multi_handle)
       *multi_handle = curl_multi_init();

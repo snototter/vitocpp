@@ -281,8 +281,19 @@ bool GetColorAsBgrFromConfig(const vcp::config::ConfigParams &config,
                              const std::string &cam_group,
                              std::vector<std::string> &configured_keys)
 {
-  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "color_as_bgr"), configured_keys.end());
-  return GetOptionalBoolFromConfig(config, cam_group, "color_as_bgr", false);
+  if (config.SettingExists(cam_group + ".color_as_bgr"))
+  {
+    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "color_as_bgr"), configured_keys.end());
+    return GetOptionalBoolFromConfig(config, cam_group, "color_as_bgr", false);
+  }
+  // For convenience, also support "...rgb" parameter name (and invert the flag properly)
+  if (config.SettingExists(cam_group + ".color_as_rgb"))
+  {
+    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "color_as_rgb"), configured_keys.end());
+    const bool rgb = GetOptionalBoolFromConfig(config, cam_group, "color_as_rgb", true);
+    return !rgb;
+  }
+  return false;
 }
 
 

@@ -147,7 +147,7 @@ def streaming_demo(cfg_file, folder, output_folder=None, output_fps=15):
 
         # Display the images (as a single image/collage)
         collage = imvis.make_collage(vis_frames, num_images_per_row=2)
-        k = imvis.imshow(collage, title='streams', wait_ms=10)
+        k = imvis.imshow(collage, title='streams', wait_ms=100)
         if k == 27 or k == ord('q'):
             break
 

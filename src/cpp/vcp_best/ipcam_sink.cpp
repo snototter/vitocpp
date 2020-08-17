@@ -1,4 +1,5 @@
 #include "ipcam_sink.h"
+#include "curl_file_handling.h"
 
 #include <vcp_utils/vcp_logging.h>
 #include <sstream>
@@ -97,19 +98,79 @@ std::string GetAxisUrl(const IpCameraSinkParams &p)
 }
 
 
-//std::string GetMobotixUrl(const pvt::icc::ipcam::IpCameraParams &p)
-//{
-//  if (p.protocol == ipcam::IpApplicationProtocol::HTTP && p.stream_type == ipcam::IpStreamEncoding::MJPEG)
-//  {
-//    std::stringstream url;
-//    url << "http://";
-//    if (!p.user.empty())
-//      url << p.user << ":" << p.password << "@";
-//    url << p.host << "/cgi-bin/faststream.jpg?stream=full&needlength&fps=" << std::setprecision(1) << static_cast<double>(p.frame_rate);
-//    return url.str();
-//  }
-//  PVT_ABORT("Currently, we only support (or have tested) MJPEG over HTTP for Mobotix cameras. You requested " << p.stream_type << " over " << p.protocol);
-//}
+
+
+std::string GetMobotixRtspUrl(const IpCameraSinkParams &p)
+{
+  std::string codec;
+  if (p.stream_encoding == IpStreamEncoding::MJPEG)
+    codec = "/stream0/mobotix.mjpeg";
+  else if (p.stream_encoding == IpStreamEncoding::H264)
+    codec = "/mobotix.h264";
+  else
+    VCP_ERROR("Mobotix only supports MJPEG or H264 over RTSP. Change the stream encoding configuration.");
+
+  std::stringstream rtsp;
+  rtsp << "rtsp://";
+
+  if (!p.user.empty())
+    rtsp << p.user << ":" << p.password << "@";
+
+  rtsp << p.host << codec;
+
+  if (p.frame_width <= 0 || p.frame_height <= 0)
+    VCP_ERROR("You must specify 'frame_width' and 'frame_height' for mobotix stream: '" << p.sink_label << "'.");
+
+  return rtsp.str();
+}
+
+
+std::string GetMobotixHttpUrl(const IpCameraSinkParams &p)
+{
+  if (p.stream_encoding != IpStreamEncoding::MJPEG)
+    VCP_ERROR("Mobotix can only stream MJPEG over HTTP, either change stream type or protocol!");
+
+  std::stringstream http;
+  http << "http://";
+
+  if (!p.user.empty())
+    http << p.user << ':' << p.password << '@';
+
+  http << p.host << "/control/faststream.jpg?stream=full&needlength&jpheaderupdate=0";
+
+  if (p.frame_width > 0 && p.frame_height > 0)
+    http << "&size=" << p.frame_width << 'x' << p.frame_height;
+  if (p.frame_rate > 0)
+    http << "&fps=" << p.frame_rate;
+
+  return http.str();
+}
+
+std::string GetMobotixUrl(const IpCameraSinkParams &p)
+{
+  if (p.application_protocol == IpApplicationProtocol::HTTP)
+    return GetMobotixHttpUrl(p);
+  if (p.application_protocol == IpApplicationProtocol::RTSP)
+    return GetMobotixRtspUrl(p);
+  VCP_ERROR("Protocol type for Mobotix streaming must be HTTP or RTSP");
+}
+
+void MobotixDisableTextOverlay(const IpCameraSinkParams &p)
+{
+  // All tested mobotix cameras so far always re-enable the default text
+  // overlay after camera reboot. Didn't have time to dig deeper into
+  // other ways to configure the camera (rather than using the web interface
+  // and saving the disabled overlay, which is reset...). Thus, we use
+  // this workaround (via the mobotix HTTP API).
+  std::stringstream url;
+  url << "http://";
+  if (!p.user.empty())
+    url << p.user << ":" << p.password<< "@";
+  url << p.host << "/control/control?section=text&textdisplay=disable";
+  if (vcp::best::curl::url_http_get(url.str().c_str(), 5) != 0)
+    VCP_LOG_FAILURE("Could not disable the text overlay on Mobotix camera: " << p);
+}
+
 
 
 //std::string GetHikvisionUrl(const pvt::icc::ipcam::IpCameraParams &p)
@@ -244,8 +305,8 @@ IpCameraType IpCameraTypeFromString(const std::string &camera_type)
     return IpCameraType::Generic;
   if (vcp::utils::string::StartsWith(lower, "axis"))
     return IpCameraType::Axis;
-//  if (vcp::utils::string::StartsWith(lower, "mobotix"))
-//    return IpCameraType::Mobotix;
+  if (vcp::utils::string::StartsWith(lower, "mobotix"))
+    return IpCameraType::Mobotix;
 //  if (vcp::utils::string::StartsWith(lower, "hikvision"))
 //    return IpCameraType::Hikvision;
 
@@ -293,8 +354,8 @@ std::string GetStreamingUrl(const IpCameraSinkParams &p)
       return p.stream_url;
     case ipcam::IpCameraType::Axis:
       return GetAxisUrl(p);
-//    case ipcam::IpCameraType::Mobotix:
-//      return GetMobotixUrl(this);
+    case ipcam::IpCameraType::Mobotix:
+      return GetMobotixUrl(p);
 //    case ipcam::IpCameraType::Hikvision:
 //      return GetHikvisionUrl(this);
     default:
@@ -579,6 +640,19 @@ public:
     bool success = true;
     for (size_t i = 0; i < sinks_.size(); ++i)
       success &= sinks_[i]->OpenDevice();
+
+    // For mobotix cameras, we need to manually disable the text overlay after each camera reboot (after connection
+    // has been established):
+    for (const auto &p : params_http_)
+    {
+      if (p.ipcam_type == IpCameraType::Mobotix)
+        MobotixDisableTextOverlay(p);
+    }
+    for (const auto &p : params_rtsp_)
+    {
+      if (p.ipcam_type == IpCameraType::Mobotix)
+        MobotixDisableTextOverlay(p);
+    }
     return success;
   }
 
@@ -633,7 +707,7 @@ public:
 
   SinkType GetSinkType() const override
   {
-    return SinkType::IPCAM_MONOCULAR; //TODO FIXME, we should only support monocular ipcams
+    return SinkType::IPCAM_MONOCULAR; //TODO FIXME, vcp will only support monocular ipcams
   }
 
   vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
@@ -695,17 +769,18 @@ bool IsAxisStereo(const std::string &camera_type)
   return lower.compare("axis-stereo") == 0;
 }
 
-//bool IsMobotix(const std::string &camera_type)
-//{
-//  return camera_type.compare("mobotix") == 0;
-//}
+bool IsMobotix(const std::string &camera_type)
+{
+  return camera_type.compare("mobotix") == 0;
+}
+
 //bool IsHikvision(const std::string &camera_type) { return camera_type.compare("hikvision") == 0; }
 
 bool IsMonocularIpCamera(const std::string &camera_type)
 {
   return IsGenericIpCameraMonocular(camera_type) ||
-      IsAxisMonocular(camera_type);
-//      || IsMobotix(camera_type)
+      IsAxisMonocular(camera_type) ||
+      IsMobotix(camera_type);
 //      || IsHikvision(camera_type);
 }
 

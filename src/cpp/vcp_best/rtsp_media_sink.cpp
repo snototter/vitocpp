@@ -78,7 +78,7 @@ RtspMediaSink::RtspMediaSink(UsageEnvironment &env, MediaSubsession &subsession,
   : MediaSink(env), receive_buffer_(nullptr), subsession_(subsession),
     num_received_frames_(0), has_been_rtcp_synchronized_(false),
     frame_width_(params.frame_width), frame_height_(params.frame_height),
-    color_as_rgb_(params.color_as_bgr), stream_id_(params.stream_url),
+    stream_id_(params.stream_url), color_as_rgb_(!params.color_as_bgr),
     callback_frame_received_(callback_frame_received), callback_user_data_(callback_user_data)
 {
   receive_buffer_ = new u_int8_t[RTSP_MEDIA_SINK_RECEIVE_BUFFER_SIZE + AV_INPUT_BUFFER_PADDING_SIZE];
@@ -122,7 +122,7 @@ public:
   }
 
 protected:
-  void DecodeFrame(unsigned /*frame_size*/, unsigned num_truncated_bytes, struct timeval /*presentation_time*/, unsigned /*duration_in_microseconds*/) //, cv::Mat &decoded_frame) override
+  void DecodeFrame(unsigned frame_size, unsigned num_truncated_bytes, struct timeval /*presentation_time*/, unsigned /*duration_in_microseconds*/) //, cv::Mat &decoded_frame) override
   {
     // We've just received a frame of data.
     if (num_truncated_bytes > 0)
@@ -131,6 +131,10 @@ protected:
     }
     else
     {
+      if (frame_width_ < 1 || frame_height_ < 1)
+      {
+        VCP_ERROR("Cannot decode a MJPEG stream without knowing its resolution. You have to specify 'resolution' or 'frame_width' & 'frame_height' via the configuration file!");
+      }
       cv::Mat buf(frame_height_, frame_width_, CV_8UC3, (void *)receive_buffer_);
       cv::Mat decoded_frame = cv::imdecode(buf, CV_LOAD_IMAGE_COLOR);
       ++num_received_frames_;
