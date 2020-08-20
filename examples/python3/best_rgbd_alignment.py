@@ -1,5 +1,5 @@
 """
-Manually align depth to RGB stream
+Manually align depth to RGB stream (using a Kinect Azure)
 """
 
 import os
@@ -39,26 +39,6 @@ def overlay_labels(frames, labels):
     return frames
 
 
-# def transform_3d_to_3d
-# transformation_apply_extrinsic_transformation
-# def transfrom_3d_to_2d
-# transformation_3d_to_3d
-# transformation_project(&calibration->color_camera_calibration, target_point3d, target_point2d, valid)); # https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/6fdbcb01888f601708677b3cc3aed60c5d99d2b5/src/transformation/transformation.c
-
-# k4a_transformation_depth_image_to_color_camera # https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/52cfb4a87639b3db9cb176b8b9ac814e2b5a4900/src/sdk/k4a.c
-# => transformation_depth_image_to_color_camera_custom # https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/6fdbcb01888f601708677b3cc3aed60c5d99d2b5/src/transformation/transformation.c
-#   => gpu or cpu
-#      transformation_depth_image_to_color_camera_internal # https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/b033d2e552456e3f830c9c5e9eede04374723540/src/transformation/rgbz.c
-#     => transformation_depth_to_color # https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/b033d2e552456e3f830c9c5e9eede04374723540/src/transformation/rgbz.c
-#       => iterate pixels
-#             transformation_compute_correspondence
-#             => 
-#                 transformation_3d_to_3d
-#                 correspondence->depth = color_point3d.xyz.z
-#                 transformation_3d_to_2d
-#             transformation_check_valid_correspondences (check slantedness of surfaces, skip interpolation at large depth discontinuities)
-#             transformation_compute_bounding_box
-#             transformation_draw_rectangle
 def align_depth_to_color(depth, K_color, K_depth, Rt_stereo, width_color, height_color):
     target_width = 400
     target_height = 400
@@ -103,8 +83,6 @@ def align_depth_to_color(depth, K_color, K_depth, Rt_stereo, width_color, height
     values = pts_3d[2, valid]
 
     aligned = np.zeros((height_color, width_color), dtype=depth.dtype)
-    # linidx = np.ravel_multi_index(np.array([y_c, x_c]), (height_color, width_color))
-    # aligned[linidx] = values
     aligned[y_c, x_c] = values
 
     return aligned
@@ -114,7 +92,7 @@ def img_resolution(npimg):
     return (npimg.shape[1], npimg.shape[0])
 
 
-def demo_k4a_align():
+def demo_align():
     cfg_base_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data', 'data-best')
     cfg_file = os.path.join(cfg_base_path, 'k4a-manual-alignment.cfg')
 
@@ -123,18 +101,13 @@ def demo_k4a_align():
     
     _, frameset = streamer.next_frameset()
     
-    # for i in range(len(frameset)):
-    #     print('Calib stream', capture.frame_label(i), calibrations[i])
     K_color = capture.intrinsics(0)
     K_depth = capture.intrinsics(1)
     Rt_stereo = capture.stereo_transformation(1)
     D_color = capture.distortion_coefficients(0)
     D_depth = capture.distortion_coefficients(1)
-    
-#TODO transformation.c
-# transformation_create
-# transformation_allocate_xy_tables
-#
+
+
     alignment = None
     num_frames_processed = 1
     while streamer.is_available():
@@ -153,13 +126,15 @@ def demo_k4a_align():
 
         vis_frames = [color, vis_depth(depth), vis_infrared(infrared)]
         vis_labels = ['RGB', 'Depth (original)', 'IR (original)']
-        print(depth.shape)
+        
+        ## The cpp version takes care of properly interpolating depth values during alignment
+        # takes about 3-5ms per 640x480 depth
+        ## The python version is a naive reprojection + binning (without depth ordering, filtering, interpolation, etc.)
+        # takes about 20-30 ms (~4-5 times slower than cpp)
+        # pyutils.tic('py-align')
+        # aligned_depth_py = align_depth_to_color(depth, K_color, K_depth, Rt_stereo, color.shape[1], color.shape[0])
+        # pyutils.toc('py-align')
 
-        # vis_frames[-1] = imvis.overlay(vis_frames[-2], color, 0.7)
-        # vis_labels[-1] = 'Overlay alignment'
-        pyutils.tic('py-align')
-        aligned_depth_py = align_depth_to_color(depth, K_color, K_depth, Rt_stereo, color.shape[1], color.shape[0])
-        pyutils.toc('py-align')
         aligned_depth = aligned_depth_cpp
         vis_aligned_depth = vis_depth(aligned_depth)
         vis_frames.append(vis_aligned_depth)
@@ -171,11 +146,6 @@ def demo_k4a_align():
 
         vis_frames.append(imvis.overlay(vis_aligned_depth, color_resized, 0.7))#, aligned_depth > 0))
         vis_labels.append('Overlay alignment')
-
-        # vis_frames.append(imvis.overlay(vis_aligned_depth, color, 0.7))#, aligned_depth > 0))
-        # vis_labels.append('Overlay alignment')
-        # vis_frames.append(imvis.highlight(color, aligned_depth < 1, color=(255,0,0), color_opacity=1))
-        # vis_labels.append('Invalid alignment')
 
         # Visualization (rescale, overlay a label, show a single collage)
         vis_frames = [imutils.aspect_aware_resize(f, (640, 480))[0] for f in vis_frames]
@@ -189,6 +159,5 @@ def demo_k4a_align():
         num_frames_processed += 1
 
 
-
 if __name__ == '__main__':
-    demo_k4a_align()
+    demo_align()

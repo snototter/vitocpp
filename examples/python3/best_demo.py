@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 # coding=utf-8
-"""Showcasing Best Effort Streaming (BESt)."""
+"""
+Showcasing Best Effort Streaming (BESt) - only streaming + some visualization stuff, no calibration, etc.
+"""
 
 import os
 import sys

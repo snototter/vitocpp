@@ -1,4 +1,4 @@
-"""MJPEG over HTTP streaming via urllib.request"""
+"""MJPEG over HTTP streaming via urllib.request (no VCP!)"""
 
 import cv2
 import urllib.request
