@@ -8,7 +8,6 @@
     #include <opencv2/core.hpp>
 #endif
 
-//TODO nice-to-have: wrap Gaussian Mixture Model, too
 namespace vcp
 {
 /** @brief Background models. */

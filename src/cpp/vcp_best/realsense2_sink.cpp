@@ -457,7 +457,8 @@ std::string GetDeviceSerialNumber(const rs2::device &device)
 
 bool IsPlatformCamera(const rs2::device &device)
 {
-  // TODO what are "platform cameras"? (the Intel code sample ignores them, so we probably want to do the same)
+  // The official Intel coding samples ignores "platform cameras" (whatever they are), so
+  // we just do the same.
   const std::string camera_name = GetDeviceName(device);
   return camera_name.compare("Platform Camera") == 0;
 }
@@ -952,7 +953,6 @@ public:
                      << " left infrared stream @" << rgbd_params_.depth_frame_rate << " fps");
         config_.enable_stream(RS2_STREAM_INFRARED, 1,
                               rgbd_params_.depth_width, rgbd_params_.depth_height, RS2_FORMAT_Y8, rgbd_params_.depth_frame_rate);
-        //TODO calibration of infrared streams is not stored currently!
       }
       if (ir2_stream_enabled_)
       {
@@ -960,7 +960,6 @@ public:
                      << " right infrared stream @" << rgbd_params_.depth_frame_rate << " fps");
         config_.enable_stream(RS2_STREAM_INFRARED, 2,
                               rgbd_params_.depth_width, rgbd_params_.depth_height, RS2_FORMAT_Y8, rgbd_params_.depth_frame_rate);
-        //TODO calibration of infrared streams is not stored currently!
       }
       return true;
     }

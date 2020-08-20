@@ -36,9 +36,6 @@ struct MixtureOfGaussiansBgmParams : BgmParams
   {}
 };
 
-
-//TODO parse from config --> nice-to-have, maybe later.
-
 /** @brief Create GMM-based background model, uses cv::BackgroundSubtractorMOG2. */
 std::unique_ptr<BackgroundModel> CreateMixtureOfGaussiansBgm(const MixtureOfGaussiansBgmParams &params);
 } // namespace bgm

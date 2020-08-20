@@ -47,9 +47,7 @@ void OrChannels(const cv::Mat& src, cv::Mat& dst)
   }
 }
 
-
-//TODO might be useful for other bg models too.
-// Generic template - quite slow.
+/** @brief Generic template (quite slow) to convert a single pixel to grayscale. */
 template<typename T, int Channels>
 inline float ConvertToGray(const T *ptr, int col)
 {
@@ -66,7 +64,7 @@ inline float ConvertToGray(const T *ptr, int col)
   }
 }
 
-// Specialization for uchar's, based on cv::cvtColor().
+/** @brief Template specialization for uchar's, based on cv::cvtColor(). */
 template<>
 inline float ConvertToGray<uchar,3>(const uchar *ptr, int col)
 {

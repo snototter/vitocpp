@@ -411,16 +411,6 @@ void DumpCalibration(const K4ASinkParams &params, k4a_calibration_t sensor_calib
 
       fs << "R_depth2color" << R_d2c;
       fs << "t_depth2color" << t_d2c;
-//      VCP_LOG_FAILURE("TODO CHECK calibration: " << sensor_calibration.color_camera_calibration.intrinsics.parameter_count << ", " << sensor_calibration.depth_camera_calibration.intrinsics.parameter_count);
-//      VCP_LOG_FAILURE("DEPTH CALIB: " << sensor_calibration.depth_camera_calibration.metric_radius << ", " << sensor_calibration.depth_camera_calibration.resolution_height << " x " << sensor_calibration.depth_camera_calibration.resolution_width << ", " << sensor_calibration.depth_camera_calibration.extrinsics.rotation[0]);
-
-//      VCP_LOG_FAILURE("Metric radius color: " << sensor_calibration.color_camera_calibration.metric_radius << ", " << sensor_calibration.color_camera_calibration.intrinsics.parameters.param.metric_radius);
-//      VCP_LOG_FAILURE("Metric radius depth: " << sensor_calibration.depth_camera_calibration.metric_radius << ", " << sensor_calibration.depth_camera_calibration.intrinsics.parameters.param.metric_radius);
-//      for (int j = 0; j < 15; ++j)
-//        VCP_LOG_FAILURE("  COLOR CALIB #" << j << ": " << sensor_calibration.color_camera_calibration.intrinsics.parameters.v[j]);
-
-//      for (int j = 0; j < 15; ++j)
-//        VCP_LOG_FAILURE("  DEPTH CALIB #" << j << ": " << sensor_calibration.depth_camera_calibration.intrinsics.parameters.v[j]);
     }
   }
 
@@ -1097,7 +1087,7 @@ private:
       DumpCalibration(params_, sensor_calibration);
 
     // Load calibration if needed
-    // TODO A nice-to-have extension would be to refactor DumpCalibration into something like
+    // TODO Nice-to-have would be to refactor DumpCalibration into something like
     // ReadCalibration() which returns vector<StreamIntrinsics>. This can then be saved
     // (if write_calibration is true) and used (if rectify is true).
     // However, for now it's perfectly fine (i.e. way less effort) to throw an exception
@@ -1222,7 +1212,6 @@ private:
   }
 };
 
-//FIXME extrinsics for synced sink!
 
 /** @brief Streams from multiple wire-synced Azure Kinects. */
 class K4ASyncedRGBDSink : public StreamSink
@@ -1895,10 +1884,11 @@ private:
     // https://github.com/microsoft/Azure-Kinect-Sensor-SDK/blob/develop/examples/green_screen/MultiDeviceCapturer.h
     // This blocking call is based on their green screen example.
 
-    // Potential TODOs:
+    // TODO Potential pointers if "something" goes wrong in a sync'ed multi-k4a streaming setup:
     // * The SDK example uses K4A_WAIT_INFINITE upon k4a_device_get_capture. We prefer not to
     //   wait forever.
-    // * Check known "Multiple Device Sync Issues": https://github.com/microsoft/Azure-Kinect-Sensor-SDK/issues/530
+    // * Check known "Multiple Device Sync Issues":
+    //   https://github.com/microsoft/Azure-Kinect-Sensor-SDK/issues/530
 
     // Get a frameset from each sink:
     k4a_wait_result_t res = K4A_WAIT_RESULT_SUCCEEDED;
@@ -2420,9 +2410,10 @@ public:
   {
     FillCalibration(stereo_calibration_.color_camera_calibration, K_c, D_c, size_c);
     FillCalibration(stereo_calibration_.depth_camera_calibration, K_d, D_d, size_d);
-    //TODO maybe in the future, setting the following 2 modes to these default values may cause a problem
-    // Up until k4a 1.4 the lookup tables and transformations are mode-agnostic. These modes just need
-    // to be set to some value indicating that both color and depth are enabled!
+    //TODO As of libk4a<=1.4, setting default color & depth streaming modes works for
+    // alignment. These modes just need to be set to some value indicating that both
+    // color and depth are enabled!
+    // If alignment crashes/fails, this would be the first potential issue to be checked.
     stereo_calibration_.color_resolution = K4A_COLOR_RESOLUTION_720P;
     stereo_calibration_.depth_mode = K4A_DEPTH_MODE_NFOV_UNBINNED;
 
@@ -2459,14 +2450,12 @@ public:
     if (depth.empty())
       return cv::Mat();
 
-    if (depth.type() != CV_16UC1)//TODO test
+    if (depth.type() != CV_16UC1)
     {
       VCP_LOG_FAILURE("Depth alignment is only supported for single-channel, 16bit depth maps (OpenCV: CV_16UC1, NumPy: uint16)." <<
                       std::endl << "You provided " << imutils::CVMatDepthToString(depth.depth(), depth.channels()));
       return cv::Mat();
     }
-
-    VCP_LOG_FAILURE("Align D2C: step1: " << depth.step1() << ", steps[0] " << depth.step[0]); //TODO remove debug
 
     // Convert OpenCV buffer to k4a depth image buffer
     k4a_image_t depth_k4a;
@@ -2479,15 +2468,6 @@ public:
       return cv::Mat();
     }
 
-  //Works  /////// check if conversion cv -> k4a -> cv works
-  //  // Get image buffer and size
-  //  uint8_t* buffer = k4a_image_get_buffer(image);
-  //  const int rows = k4a_image_get_height_pixels(image);
-  //  const int cols = k4a_image_get_width_pixels(image);
-  //  // Create OpenCV Mat header pointing to the buffer (no copy yet!)
-  //  cv::Mat tmp = cv::Mat(rows, cols, CV_16U, static_cast<void*>(buffer), k4a_image_get_stride_bytes(image));
-  //  return tmp.clone();
-
     cv::Mat warped = TransformDepthToColor(depth_k4a, transformation_, size_c_);
 
     // Clean up
@@ -2496,11 +2476,6 @@ public:
       k4a_image_release(depth_k4a);
       depth_k4a = NULL;
     }
-
-//    //TODO FIXME remove
-//    double mi, ma;
-//    cv::minMaxIdx(warped, &mi, &ma);
-//    VCP_LOG_FAILURE("Depth 2 color Min/max values: " << mi << ", " << ma);
     return warped;
   }
 

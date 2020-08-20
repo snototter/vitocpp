@@ -316,10 +316,5 @@ PYBIND11_MODULE(imutils_cpp, m)
         ":param output_bgr: set True if you want BGR output.\n"
         ":return: color mapped WxHx3 uint8 numpy ndarray.",
         py::arg("normals"), py::arg("output_bgr")=false);
-
-  //TODO #ifdef VCP_IMUTILS_WITH_COLORNAMES
-  //cv::Mat ConvertToColorName(const cv::Mat &img, bool is_rgb=false);
-  //cv::Mat ConvertToColorNameFeature(const cv::Mat &img, bool is_rgb=false);
-//#endif
 }
 

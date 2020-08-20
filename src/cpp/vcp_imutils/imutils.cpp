@@ -349,7 +349,7 @@ cv::Mat SurfaceNormalsC1Helper(const cv::Mat &depth)
 
 
 template <typename _T>
-cv::Mat SurfaceNormalsC3Helper(const cv::Mat &xyz)
+cv::Mat SurfaceNormalsC3Helper(const cv::Mat &/*xyz*/)
 {
   //TODO compute normals from 3d point coordinates
   VCP_ERROR("Not yet implemented!");

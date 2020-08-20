@@ -44,7 +44,6 @@ std::ostream &operator<<(std::ostream &stream, const FrameType &s);
 
 
 /** @brief Strongly typed enum to look up a sink's type. */
-//TODO change generic IPCAM_MONO to AXIS, etc.
 enum class SinkType
 {
   IMAGE_DIR,
@@ -203,18 +202,22 @@ public:
   /** @brief Returns the number of physical devices - usually 1 (might differ for example for IP camera streams - 1 device can serve multiple streams). */
   virtual size_t NumDevices() const = 0;
 
-  //TODO doc
-  //virtual SinkType Type(size_t stream_index) const = 0;
+  /** @brief Returns the type of the stream/frame at the given index. */
   virtual FrameType FrameTypeAt(size_t stream_index) const = 0;
 
+  /** @brief Returns the label of the stream/frame at the given index. */
   virtual std::string StreamLabel(size_t stream_index) const = 0;
 
+  /** @brief Returns the (basic) parametrization of the stream at the given index. */
   virtual SinkParams SinkParamsAt(size_t stream_index) const = 0;
 
+  /** @brief Returns this sink's type. */
   virtual SinkType GetSinkType() const = 0;
 
+  /** @brief Returns the intrinsic calibration of the stream at the given index. */
   virtual vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const = 0;
 
+  /** @brief Setter for verbosity flag. */
   virtual void SetVerbose(bool verbose) = 0;
 
   /** @brief Use this to "inject" extrinsics into the sinks.
@@ -241,8 +244,9 @@ inline cv::Mat FlipChannels(const cv::Mat &frame)
   std::vector<cv::Mat> layers;
   cv::split(frame, layers);
   std::vector<cv::Mat> tm = {layers[2], layers[1], layers[0]};
-//    if (layers.size() == 4)
-//      tm.push_back(layers[3]);
+// Alpha inputs will be converted to 3-channel outputs!
+//  if (layers.size() == 4)
+//    tm.push_back(layers[3]);
   cv::Mat flipped;
   cv::merge(tm, flipped);
   return flipped;

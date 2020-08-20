@@ -15,10 +15,10 @@ namespace vcp
 
 /** @brief BESt (Best Effort Streaming) module.
  *
- * Configuration can easily be done via:
- * libconfig++
- * TODO refer to examples/data/data-best/ *.cfg
- * or python bindings/demo
+ * Please refer to the Python examples which use the
+ * corresponding Python bindings: examples/python3/best_demo.py
+ * Exemplary libconfig++ configuration files for streaming from
+ * different supported devices can be found at examples/data/data-best/<*.cfg>
  */
 namespace best
 {
@@ -83,8 +83,6 @@ std::ostream& operator<<(std::ostream & os, const StreamStorageParams &ssp);
  *    Note: didn't test restarting exhaustively, so there may some devices
  *    that don't support that.
  * 7. CloseDevices() to gracefully shut down.
- *
- * // TODO doc numframes/numdevices/configurationkeys/etc.
  */
 class Capture
 {
@@ -139,20 +137,16 @@ public:
    */
   virtual std::vector<cv::Mat> Next() = 0;
 
-
   /** @brief Some sinks support seeking backwards (i.e. image directory and video sinks). Others will throw a std::runtime_error. */
   virtual std::vector<cv::Mat> Previous() = 0;
-
 
   /** @brief Some sinks (video and imagedir) support fast forwarding (skipping frames). Others will throw a std::runtime_error. */
   virtual std::vector<cv::Mat> FastForward(size_t num_frames) = 0;
 
-
-  /** @brief returns the number of configured streams (NOT the number of sinks). */
+  /** @brief Returns the number of configured streams (NOT the number of sinks). */
   virtual size_t NumStreams() const = 0;
 
-
-  /** @brief returns the number of devices/sinks (NOT the number of streams/frames).
+  /** @brief Returns the number of devices/sinks (NOT the number of streams/frames).
    *
    * While this number corresponds to the number of "software sinks" used in VCP,
    * it may not be exactly the number of physical devices: For example, you could
@@ -160,7 +154,6 @@ public:
    * other by its hostname. Handling such cases would be too complex.
    */
   virtual size_t NumDevices() const = 0;
-
 
   /** @brief Return the (user-defined) frame labels.
    * Note that:
@@ -172,14 +165,11 @@ public:
    */
   virtual std::vector<std::string> FrameLabels() const = 0;
 
-
   /** @brief Look up the FrameLabel for a specific stream/frame, also refer to @see FrameLabels(). */
   virtual std::string FrameLabelAt(size_t stream_index) const = 0;
 
-
   /** @brief Look up a canonic version (special characters will be stripped/replaced) of the FrameLabel for a specific stream/frame, also refer to @see FrameLabels(). */
   virtual std::string CanonicFrameLabelAt(size_t stream_index) const = 0;
-
 
   /** @brief Returns the configuration parameter name, i.e. "cameraX", for
    * each stream/frame.
@@ -189,10 +179,8 @@ public:
    */
   virtual std::vector<std::string> ConfigurationKeys() const = 0;
 
-
   /** @brief Look up the configuration key/parameter name for a specific stream/frame, also refer to @see ConfigurationKeys(). */
   virtual std::string ConfigurationKeyAt(size_t stream_index) const = 0;
-
 
   /** @brief Returns the FrameType for each stream/frame.
    * See comments on @see FrameLabels() why you cannot assume
@@ -206,10 +194,8 @@ public:
    */
   virtual std::vector<FrameType> FrameTypes() const = 0;
 
-
   /** @brief Look up the FrameType for a specific stream/frame, also refer to @see FrameTypes(). */
   virtual FrameType FrameTypeAt(size_t stream_index) const = 0;
-
 
   /** @brief Check if the given stream is rectified. */
   virtual bool IsStreamRectified(size_t stream_index) const = 0;
@@ -217,9 +203,10 @@ public:
   /** @brief Returns true if the stream at the given index originates from a "step-through-able" @see ImageDirectorySink.
    * Note: in the (very distant) future, we might implement a "TimedImageDirectorySink", which acts like a live stream.
    * For this, IsStepAbleImageDirectory is expected to return false.
+   * Is used within the Python bindings to check whether a "MulticamStreamer" (using callbacks to receive framesets) or
+   * a "MulticamStepper" (loop-based frameset retrieval, one frameset per iteration) should be used.
    */
   virtual bool IsStepAbleImageDirectory(size_t stream_index) const = 0;
-
 
   /** @brief Stores a configuration file (along with intrinsic calibrations if available) to "replay" the recorded streams.
    *
@@ -289,28 +276,6 @@ std::ostream& operator<<(std::ostream & os, const Capture &cap);
 
 /** @brief Creates a capture based on the provided configuration. */
 std::unique_ptr<Capture> CreateCapture(const vcp::config::ConfigParams &config);
-
-
-////---------------------------------------------------------------------------------------------------------------------------
-///** @brief Base class to access rectified image stream(s). Requires valid calibration files. */
-////TODO remove
-//class RectifiedCapture : public Capture
-//{
-//public:
-//  virtual ~RectifiedCapture() {}
-
-//  virtual cv::Mat K(size_t sink_index) const = 0;
-//  virtual cv::Mat P2(size_t sink_index) const = 0;
-//  virtual cv::Mat R(size_t sink_index) const = 0;
-//  virtual cv::Mat t(size_t sink_index) const = 0;
-//  virtual cv::Mat C(size_t sink_index) const = 0;
-//  virtual cv::Vec4d ImagePlane(size_t sink_index) const = 0;
-//  virtual void StereoRt(size_t sink_index, cv::Mat &R, cv::Mat &t) const = 0;
-//  virtual void SaveCalibration(const std::string &filename) const = 0;
-
-//protected:
-//  RectifiedCapture() : Capture() {}
-//};
 
 } // namespace best
 } // namespace vcp

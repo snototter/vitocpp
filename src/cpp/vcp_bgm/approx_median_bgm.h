@@ -29,10 +29,6 @@ struct ApproxMedianBgmParams : BgmParams
 };
 
 
-
-//TODO parse from config --> nice-to-have, maybe later.
-
-
 /**
  * @brief Create an approximate median background model with channel reduction.
  *

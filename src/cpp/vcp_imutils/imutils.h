@@ -37,6 +37,7 @@ enum class ImgTransform : uint32_t
   // WHITENing 'whiten', 'whitening'
 // * color quantization (min-variance, x-bit, ...)
 // * whitening (https://stackoverflow.com/a/45290312/400948
+  // nice explanations with numpy https://stackoverflow.com/a/41894317/400948
   // Check https://hadrienj.github.io/posts/Preprocessing-for-deep-learning/
   // https://stats.stackexchange.com/questions/12842/covariance-and-independence
 // * Gamma correction   https://docs.opencv.org/3.4/d3/dc1/tutorial_basic_linear_transform.html
@@ -175,9 +176,9 @@ inline void ClipRectangleToImageBoundaries(cv::Rect &rect, const cv::Size &img_s
 
 
 /** @brief Apply the given function to a region of interest. Takes care of clipping the ROI. */
-//TODO make variadic: https://stackoverflow.com/questions/25392935/wrap-a-function-pointer-in-c-with-variadic-template
 inline void ApplyFunctionToImageROI(cv::Mat &image, const cv::Rect &roi, void (*function)(cv::Mat &))
 {
+  //Nice-to-have: make variadic, see https://stackoverflow.com/a/25403872/400948
   cv::Rect clipped(roi);
   ClipRectangleToImageBoundaries(clipped, image.size());
   if (clipped.width > 0 && clipped.height > 0)

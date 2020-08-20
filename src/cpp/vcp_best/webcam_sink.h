@@ -36,15 +36,15 @@ std::ostream &operator<< (std::ostream &out, const WebcamSinkParams &p);
 bool IsWebcamSink(const std::string &type_param);
 
 
-//TODO doc
+/** @brief Parses a webcam's configuration. */
 WebcamSinkParams WebcamSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
 
-
+/** @brief Struct holding webcam parameters needed to identify it system-wide. */
 struct WebcamDeviceInfo
 {
-  std::string dev_name;  // Device identifier, e.g. /dev/video1
-  int device_nr;         // Device number as used by OpenCV, e.g. 1
-  std::string name;      // Name from the device's metadata (queried via v4l on linux)
+  std::string dev_name;  /**< Device identifier, e.g. /dev/video1 */
+  int device_nr;         /**< Device number as used by OpenCV, e.g. 1 */
+  std::string name;      /**< Name from the device's metadata (queried via v4l on linux) */
 
   /** @brief Default c'tor. */
   WebcamDeviceInfo() : dev_name("Unknown"), device_nr(-1), name("Unknown") {}
@@ -55,6 +55,7 @@ struct WebcamDeviceInfo
   /** @brief Comparison operator. */
   bool operator>(const WebcamDeviceInfo &other) { return device_nr > other.device_nr; }
 };
+
 
 /** @brief Returns a vector of connected webcams.
  *

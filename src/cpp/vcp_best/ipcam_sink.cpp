@@ -355,7 +355,7 @@ std::string GetStreamingUrl(const IpCameraSinkParams &p)
     case ipcam::IpCameraType::Axis:
       return GetAxisUrl(p);
     case ipcam::IpCameraType::Mobotix:
-      return GetMobotixUrl(p);
+      return GetMobotixUrl(p); // https://community.mobotix.com/t/getting-started-with-the-http-api/52
 //    case ipcam::IpCameraType::Hikvision:
 //      return GetHikvisionUrl(this);
     default:

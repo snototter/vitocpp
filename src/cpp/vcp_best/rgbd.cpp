@@ -28,7 +28,7 @@ RgbdAlignment::RgbdAlignment(const cv::Mat &K_c, const cv::Mat &K_d,
   D_d_ = D_d.clone();
 }
 
-//TODO function to create a standardized calibration struct from distortion coeffs of different length (8 k4a, 5 opencv)
+//TODO add function (to calibration.*!) to create a standardized calibration struct from distortion coeffs of different length (8 k4a, 5 opencv)
 
 std::unique_ptr<RgbdAlignment> CreateRgbdAlignment(const cv::Mat &K_c, const cv::Mat &K_d,
                                                    const cv::Mat &R_d2c, const cv::Mat &t_d2c,

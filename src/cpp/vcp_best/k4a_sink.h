@@ -135,7 +135,7 @@ K4ASinkParams K4ASinkParamsFromConfig(const vcp::config::ConfigParams &config, c
 /** @brief Split K4A parameters into single sinks (unsynchronized) and
  * those synchronized (configured as master/subordinates).
  *
- * Afterwards create sinks via @see CreateK4ASink() and @see CreateK4ASynchronizedSink(). FIXME
+ * Afterwards create sinks via @see CreateK4ASink() and @see CreateK4ASynchronizedSink().
 */
 void GroupK4ASinkParams(const std::vector<K4ASinkParams> &configured, std::vector<K4ASinkParams> &params_single, std::vector<std::vector<K4ASinkParams>> &params_multi);
 

@@ -42,8 +42,6 @@ struct NormalizedRgbBgmParams : BgmParams
   {}
 };
 
-//TODO parse from config --> nice-to-have, maybe later.
-
 /** @brief Create a normalized RGB background model. */
 std::unique_ptr<BackgroundModel> CreateNormalizedRgbBgm(const NormalizedRgbBgmParams &params);
 } // namespace bgm

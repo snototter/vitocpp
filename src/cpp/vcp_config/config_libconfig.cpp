@@ -806,7 +806,6 @@ public:
   {
     return config_.lookup(param_name).getLength();
   }
-//TODO all vcp_error/warnings should be prefixed by function name
 
   bool SaveConfiguration(const std::string &filename) override
   {

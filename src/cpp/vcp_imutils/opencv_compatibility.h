@@ -1,8 +1,7 @@
 #ifndef __VCP_OPENCV_COMPATIBILITY_H__
 #define __VCP_OPENCV_COMPATIBILITY_H__
 
-// TODO: should we move this file to a more common module??
-//   => vcp_utils doesn't depend on OpenCV and I like to keep it that way! there is no "common vcp/opencv module" and just creating it for a simple header is overkill
+// should we move this file to a "more common" module (vcp_utils)? => vcp_utils doesn't depend on OpenCV and I like to keep it that way! there is no "common vcp/opencv module" and just creating it for a simple header is overkill
 
 /** We're currently developing with Versions 2.4.x-3.4.x, so some APIs are not available on all installations. */
 

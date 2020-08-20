@@ -23,8 +23,7 @@ namespace best
 namespace rgbd
 {
 
-/** @brief Manually align depth to RGB in a calibrated RGBD stereo pair (using K4A SDK). */
-// TODO add seperate stereo utils (abstract base), factory in k4a
+/** @brief Manually aligns depth to RGB in a calibrated RGBD stereo pair. */
 class RgbdAlignment
 {
 public:
@@ -48,6 +47,7 @@ protected:
   cv::Mat D_d_;
 };
 
+/** @brief Initialize an RgbdAlignment instance to align depth to color imagery. */
 std::unique_ptr<RgbdAlignment> CreateRgbdAlignment(const cv::Mat &K_c, const cv::Mat &K_d,
                                                    const cv::Mat &R_d2c, const cv::Mat &t_d2c,
                                                    const cv::Size &size_c, const cv::Size &size_d,
