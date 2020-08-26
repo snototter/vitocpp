@@ -76,21 +76,21 @@ inline py::dtype MatDepthToNDArrayType(int depth)
 
 inline int NDArrayTypeToMatDepth(const py::dtype &dtype)
 {
-  if (dtype.is(py::dtype::of<uint8_t>()))
+  if (dtype.equal(py::dtype::of<uint8_t>()))
     return CV_8U;
-  if (dtype.is(py::dtype::of<int8_t>()))
+  if (dtype.equal(py::dtype::of<int8_t>()))
     return CV_8S;
-  if (dtype.is(py::dtype::of<uint16_t>()))
+  if (dtype.equal(py::dtype::of<uint16_t>()))
     return CV_16U;
-  if (dtype.is(py::dtype::of<int16_t>()))
+  if (dtype.equal(py::dtype::of<int16_t>()))
     return CV_16S;
-  if (dtype.is(py::dtype::of<int32_t>()))
+  if (dtype.equal(py::dtype::of<int32_t>()))
     return CV_32S;
-  if (dtype.is(py::dtype::of<float>()))
+  if (dtype.equal(py::dtype::of<float>()))
     return CV_32F;
-  if (dtype.is(py::dtype::of<double>()))
+  if (dtype.equal(py::dtype::of<double>()))
     return CV_64F;
-  if (dtype.is(py::dtype::of<bool>()))
+  if (dtype.equal(py::dtype::of<bool>()))
   {
     VCP_LOG_WARNING("Cannot check if we deal with a packed boolean ndarray. Naively assuming that we can cast np.bool to uint8!");
     return CV_8U;
