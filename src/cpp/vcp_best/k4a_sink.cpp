@@ -65,7 +65,7 @@ constexpr int32_t TIME_BETWEEN_DEPTH_CAPTURES_USEC = 160;
 constexpr int64_t WAIT_FOR_SYNCHRONIZED_CAPTURE_TIMEOUT = 60000;
 
 /** @brief Maximum tolerated difference between an image's expected timestamp and the time it actually occured. */
-constexpr std::chrono::microseconds MAX_ALLOWABLE_TIME_OFFSET_ERROR_FOR_IMAGE_TIMESTAMP(100);
+constexpr std::chrono::microseconds MAX_ALLOWABLE_TIME_OFFSET_ERROR_FOR_IMAGE_TIMESTAMP(2000);
 
 
 
