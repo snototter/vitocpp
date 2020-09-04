@@ -171,6 +171,17 @@ void MobotixDisableTextOverlay(const IpCameraSinkParams &p)
     VCP_LOG_FAILURE("Could not disable the text overlay on Mobotix camera: " << p);
 }
 
+void MobotixSetPowerLineFrequency(const IpCameraSinkParams &p)
+{
+  std::stringstream url;
+  url << "http://";
+  if (!p.user.empty())
+    url << p.user << ":" << p.password<< "@";
+  url << p.host << "/control/control?section=exposurecontrol&ca_linefreq=50"; // 0 (No artificial light), 50 (Hz), 60 (Hz)
+  if (vcp::best::curl::url_http_get(url.str().c_str(), 5) != 0)
+    VCP_LOG_FAILURE("Could not enable anti-flickering on Mobotix camera: " << p);
+}
+
 
 
 //std::string GetHikvisionUrl(const pvt::icc::ipcam::IpCameraParams &p)
@@ -646,7 +657,10 @@ public:
     for (const auto &p : params_http_)
     {
       if (p.ipcam_type == IpCameraType::Mobotix)
+      {
         MobotixDisableTextOverlay(p);
+        MobotixSetPowerLineFrequency(p);
+      }
     }
     for (const auto &p : params_rtsp_)
     {
