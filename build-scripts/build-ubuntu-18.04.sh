@@ -59,6 +59,13 @@ else
     BUILD555=false
 fi
 
+# Zed camera
+if [ $((OPT_PKG_FLAGS & 0x20)) -gt 0 ]; then
+    CMAKEOPTIONS+=("-DVCP_BEST_WITH_ZED=ON")
+else
+    CMAKEOPTIONS+=("-DVCP_BEST_WITH_ZED=OFF")
+fi
+
 
 ##############################################################################
 # Set up third-party dependencies

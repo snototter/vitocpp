@@ -85,7 +85,7 @@ fi
 # Dependencies are satisfied if 4th bit of return code is set
 PKG_KINECT=(libk4a1.3 libk4a1.3-dev)
 echo
-printf "  Checking optional packages for Azure Kinect support:\n"
+printf "  Checking optional packages for Azure Kinect support (libk4a1.3):\n"
 check_optional_packages "${PKG_KINECT[@]}"
 if [ $? -eq 1 ]; then
     printf "    All satisfied.\n  => Did you check /etc/default/grub for large enough usbcore.usbfs_memory_mb setting?\n"
@@ -94,7 +94,7 @@ fi
 # Also check newer versions
 PKG_KINECT=(libk4a1.4 libk4a1.4-dev)
 echo
-printf "  Checking optional packages for Azure Kinect support:\n"
+printf "  Checking optional packages for Azure Kinect support (libk4a1.4):\n"
 check_optional_packages "${PKG_KINECT[@]}"
 if [ $? -eq 1 ]; then
     printf "    All satisfied.\n  => Did you check /etc/default/grub for large enough usbcore.usbfs_memory_mb setting?\n"
@@ -110,6 +110,18 @@ check_optional_packages "${PKG_IPC[@]}"
 if [ $? -eq 1 ]; then
     printf "    All satisfied.\n"
     return_code=$((return_code | 0x10))
+fi
+
+# ZED camera streaming
+# Requires a separate SDK, which is installed by default at /usr/local/zed
+echo
+zedpath=/usr/local/zed/
+printf "  Checking StereoLabs Zed SDK at '${zedpath}':\n"
+if [ -d "${zedpath}" ]; then
+    printf "    SDK found, enabling Zed streaming.\n"
+    return_code=$((return_code | 0x20))
+else
+    printf "    SDK NOT found, disabling Zed streaming.\n"
 fi
 
 exit $return_code
