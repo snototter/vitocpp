@@ -264,6 +264,11 @@ public:
     return vcp::best::FrameTypeToString(capture_->FrameTypeAt(stream_index));
   }
 
+  std::string SinkTypeAt(size_t stream_index) const
+  {
+    return vcp::best::SinkTypeToString(capture_->SinkParamsAt(stream_index).sink_type);
+  }
+
   bool IsFrameTypeUnknown(size_t stream_index) const
   {
     return capture_->FrameTypeAt(stream_index) == vcp::best::FrameType::UNKNOWN;
@@ -821,6 +826,8 @@ PYBIND11_MODULE(best_cpp, m)
       .def("frame_type", &pybest::CaptureWrapper::FrameTypeAt,
            "Returns the FrameType of the frame/stream at the given stream_index.",
            py::arg("stream_index"))
+      .def("sink_type", &pybest::CaptureWrapper::SinkTypeAt,
+           "Returns the SinkType (not frame type!) of the frame/stream at the given stream_index.")
       .def("is_unknown_type", &pybest::CaptureWrapper::IsFrameTypeUnknown,
            "Returns true if the FrameType of the frame at the given stream_index\n"
            "is 'unknown' (i.e. it hasn't been set or cannot be deduced from the\n"
