@@ -3,12 +3,15 @@
 #include <vector>
 #include <cstdio>
 #include <fstream>
+#include <chrono>
+#include <thread>
 
 #include <vcp_utils/string_utils.h>
 #include <vcp_utils/file_utils.h>
 
 #define VCP_LOG_LEVEL_INFO
 #include <vcp_utils/vcp_logging.h>
+#include <vcp_utils/stop_watch.h>
 
 int main(int argc, char **argv)
 {
@@ -81,5 +84,16 @@ int main(int argc, char **argv)
   std::cout << "List at most 3 files in current directory (length sort):" << std::endl;
   for (const auto dirent : curr_dir_list)
     std::cout << "  " << dirent << std::endl;
+
+  // Stop watch test
+  vcp::utils::LogWatch<> watch("DemoWatch");
+  for (int i = 0; i < 20; ++i)
+  {
+    const int to_sleep = 100 + i*5;
+    watch.Start();
+    std::this_thread::sleep_for(std::chrono::milliseconds(to_sleep));
+    watch.Log();
+    VCP_LOG_INFO_DEFAULT("^ should have slept for " << to_sleep << "ms");
+  }
   return 0;
 }

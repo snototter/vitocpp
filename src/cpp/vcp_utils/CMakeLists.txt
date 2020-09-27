@@ -15,6 +15,7 @@ set(HEADERS
     timing_utils.h
     math_utils.h
     sort_utils.h
+    stop_watch.h
     version.h
 )
 

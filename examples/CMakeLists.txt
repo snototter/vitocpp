@@ -82,14 +82,15 @@ add_custom_command(TARGET best_demo POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy ${CMAKE_CURRENT_SOURCE_DIR}/data/data-best/* ${CMAKE_BINARY_DIR}/data-best/
 )
 
-add_executable(manual_alignment_demo
-  cpp/manual_alignment_demo.cpp
-)
-find_package(k4a REQUIRED)
-target_link_libraries(manual_alignment_demo
-    ${VCP_LIBRARIES}
-k4a
-)
+## TODO remove (was used to test manual rgb/depth alignment via k4a sdk)
+#add_executable(manual_alignment_demo
+#  cpp/manual_alignment_demo.cpp
+#)
+#find_package(k4a REQUIRED)
+#target_link_libraries(manual_alignment_demo
+#    ${VCP_LIBRARIES}
+#k4a
+#)
 
 #
 # Streaming demo
