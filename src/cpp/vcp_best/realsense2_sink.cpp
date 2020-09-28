@@ -307,7 +307,15 @@ RealSense2SinkParams RealSense2SinkParamsFromConfig(const vcp::config::ConfigPar
   }
   else
   {
-    VCP_LOG_WARNING("No depth resolution specified for '" << cam_param << "', using the default setting of " << params.depth_width << "x" << params.depth_height);
+    if (params.align_depth_to_color)
+    {
+      params.depth_width = params.rgb_width;
+      params.depth_height = params.rgb_height;
+    }
+    else
+    {
+      VCP_LOG_WARNING("No depth resolution specified for '" << cam_param << "', using the default setting of " << params.depth_width << "x" << params.depth_height);
+    }
   }
 
   params.rgb_frame_rate = GetOptionalIntFromConfig(config, cam_param, "rgb_frame_rate", 30);
