@@ -472,7 +472,7 @@ IpCameraSinkParams ParseIpCameraSinkParams(const vcp::config::ConfigParams &conf
 }
 
 
-IpCameraSinkParams MonocularIpCameraSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param)
+IpCameraSinkParams IpCameraSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param)
 {
   std::vector<std::string> configured_keys = config.ListConfigGroupParameters(cam_param);
   IpCameraSinkParams params = ParseIpCameraSinkParams(config, cam_param, std::string(), configured_keys);
@@ -481,17 +481,17 @@ IpCameraSinkParams MonocularIpCameraSinkParamsFromConfig(const vcp::config::Conf
 }
 
 
-std::pair<IpCameraSinkParams, IpCameraSinkParams> StereoIpCameraSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param)
-{
-  std::vector<std::string> configured_keys = config.ListConfigGroupParameters(cam_param);
-  IpCameraSinkParams left = ParseIpCameraSinkParams(config, cam_param, "_left", configured_keys);
-  IpCameraSinkParams right = ParseIpCameraSinkParams(config, cam_param, "_right", configured_keys);
-  left.sink_label = left.sink_label + "-left";
-  right.sink_label = right.sink_label + "-right";
+//std::pair<IpCameraSinkParams, IpCameraSinkParams> StereoIpCameraSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param)
+//{
+//  std::vector<std::string> configured_keys = config.ListConfigGroupParameters(cam_param);
+//  IpCameraSinkParams left = ParseIpCameraSinkParams(config, cam_param, "_left", configured_keys);
+//  IpCameraSinkParams right = ParseIpCameraSinkParams(config, cam_param, "_right", configured_keys);
+//  left.sink_label = left.sink_label + "-left";
+//  right.sink_label = right.sink_label + "-right";
 
-  WarnOfUnusedParameters(cam_param, configured_keys);
-  return std::make_pair(left, right);
-}
+//  WarnOfUnusedParameters(cam_param, configured_keys);
+//  return std::make_pair(left, right);
+//}
 
 
 /**
@@ -724,7 +724,8 @@ public:
 
   SinkType GetSinkType() const override
   {
-    return SinkType::IPCAM_MONOCULAR; //TODO FIXME, vcp will only support monocular ipcams
+    VCP_LOG_FAILURE("GetSinkType() should not be called for an IpCamera, use SinkParamsAt(stream_index).sink_type instead!");
+    return SinkType::IPCAM_GENERIC;
   }
 
   vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
@@ -760,31 +761,30 @@ std::unique_ptr<StreamSink> CreateIpCameraSink(const std::vector<IpCameraSinkPar
   return std::unique_ptr<GenericIpCameraSink>(new GenericIpCameraSink(params));
 }
 
-bool IsGenericIpCameraMonocular(const std::string &camera_type)
+bool IsGenericIpCamera(const std::string &camera_type)
 {
   std::string lower = vcp::utils::string::Lower(camera_type);
   return lower.compare("ipcam") == 0 || lower.compare("ipcamera") == 0
-      || lower.compare("ipcam-monocular") == 0 || lower.compare("ipcamera-monocular") == 0
-      || lower.compare("ipcam-mono") == 0 || lower.compare("ipcamera-mono") == 0;
+      || lower.compare("ipcam-generic") == 0 || lower.compare("ipcamera-generic") == 0;
 }
 
-bool IsGenericIpCameraStereo(const std::string &camera_type)
+//bool IsGenericIpCameraStereo(const std::string &camera_type)
+//{
+//  std::string lower = vcp::utils::string::Lower(camera_type);
+//  return lower.compare("ipcam-stereo") == 0 || lower.compare("ipcamera-stereo") == 0;
+//}
+
+bool IsAxis(const std::string &camera_type)
 {
   std::string lower = vcp::utils::string::Lower(camera_type);
-  return lower.compare("ipcam-stereo") == 0 || lower.compare("ipcamera-stereo") == 0;
+  return lower.compare("axis") == 0;
 }
 
-bool IsAxisMonocular(const std::string &camera_type)
-{
-  std::string lower = vcp::utils::string::Lower(camera_type);
-  return lower.compare("axis") == 0 || lower.compare("axis-mono") == 0 || lower.compare("axis-monocular") == 0;
-}
-
-bool IsAxisStereo(const std::string &camera_type)
-{
-  std::string lower = vcp::utils::string::Lower(camera_type);
-  return lower.compare("axis-stereo") == 0;
-}
+//bool IsAxisStereo(const std::string &camera_type)
+//{
+//  std::string lower = vcp::utils::string::Lower(camera_type);
+//  return lower.compare("axis-stereo") == 0;
+//}
 
 bool IsMobotix(const std::string &camera_type)
 {
@@ -793,25 +793,27 @@ bool IsMobotix(const std::string &camera_type)
 
 //bool IsHikvision(const std::string &camera_type) { return camera_type.compare("hikvision") == 0; }
 
-bool IsMonocularIpCamera(const std::string &camera_type)
-{
-  return IsGenericIpCameraMonocular(camera_type) ||
-      IsAxisMonocular(camera_type) ||
-      IsMobotix(camera_type);
-//      || IsHikvision(camera_type);
-}
+//bool IsMonocularIpCamera(const std::string &camera_type)
+//{
+//  return IsGenericIpCameraMonocular(camera_type) ||
+//      IsAxisMonocular(camera_type) ||
+//      IsMobotix(camera_type);
+////      || IsHikvision(camera_type);
+//}
 
 
-bool IsStereoIpCamera(const std::string &camera_type)
-{
-  return IsGenericIpCameraStereo(camera_type) ||
-      IsAxisStereo(camera_type);
-}
+//bool IsStereoIpCamera(const std::string &camera_type)
+//{
+//  return IsGenericIpCameraStereo(camera_type) ||
+//      IsAxisStereo(camera_type);
+//}
 
 
 bool IsIpCamera(const std::string &camera_type)
 {
-  return IsMonocularIpCamera(camera_type) || IsStereoIpCamera(camera_type);
+  return IsGenericIpCamera(camera_type) ||
+      IsAxis(camera_type) ||
+      IsMobotix(camera_type);
 }
 
 } // namespace ipcam

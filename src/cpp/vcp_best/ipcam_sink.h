@@ -126,27 +126,23 @@ struct IpCameraSinkParams : SinkParams
 
 std::ostream &operator<< (std::ostream &out, const IpCameraSinkParams &p);
 
-IpCameraSinkParams MonocularIpCameraSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
-std::pair<IpCameraSinkParams, IpCameraSinkParams> StereoIpCameraSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
-
+IpCameraSinkParams IpCameraSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
+//std::pair<IpCameraSinkParams, IpCameraSinkParams> StereoIpCameraSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
 
 
 std::unique_ptr<StreamSink> CreateIpCameraSink(const std::vector<IpCameraSinkParams> &params);
-
-
 //std::unique_ptr<StreamSink> CreateStereoIpCameraSink(const std::vector<StereoIpCameraSinkParams> &params);
 
 
 /** @brief Given a configuration file's "camera_type" parameter, returns true if the camera is an IP cam (generic, axis, ...). */
 bool IsIpCamera(const std::string &camera_type);
 
+bool IsAxis(const std::string &camera_type);
+bool IsMobotix(const std::string &camera_type);
 
-/** @brief Check if the configuration belongs to a monocular IP camera. */
-bool IsMonocularIpCamera(const std::string &camera_type);
 
-
-/** @brief Check if the configuration belongs to a stereo IP camera (i.e. two seperate physical devices whose frames are concatenated by the StreamSink). */
-bool IsStereoIpCamera(const std::string &camera_type);
+// bool IsMonocularIpCamera(const std::string &camera_type);
+//bool IsStereoIpCamera(const std::string &camera_type);
 
 } // namespace ipcam
 } // namespace best

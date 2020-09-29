@@ -240,7 +240,8 @@ public:
 
   SinkType GetSinkType() const override
   {
-    return SinkType::IPCAM_MONOCULAR; //TODO FIXME we should only support monocular ip cam streaming!
+    VCP_LOG_FAILURE("GetSinkType() should not be called for an MultiRtspStreamSink, use SinkParamsAt(stream_index).sink_type instead!");
+    return SinkType::IPCAM_GENERIC;
   }
 
 

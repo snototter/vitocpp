@@ -109,8 +109,9 @@ std::string SinkTypeToString(const SinkType &s)
   MAKE_SINKTYPE_TO_STRING_CASE(IMAGE_DIR);
 
 #ifdef VCP_BEST_WITH_IPCAM
-  MAKE_SINKTYPE_TO_STRING_CASE(IPCAM_MONOCULAR);
-  MAKE_SINKTYPE_TO_STRING_CASE(IPCAM_STEREO);
+  MAKE_SINKTYPE_TO_STRING_CASE(IPCAM_GENERIC);
+  MAKE_SINKTYPE_TO_STRING_CASE(IPCAM_AXIS);
+  MAKE_SINKTYPE_TO_STRING_CASE(IPCAM_MOBOTIX);
 #endif
 
 #ifdef VCP_BEST_WITH_K4A
@@ -158,10 +159,12 @@ SinkType SinkTypeFromString(const std::string &s)
 #endif
 
 #ifdef VCP_BEST_WITH_IPCAM
-  else if (ipcam::IsMonocularIpCamera(s))
-    return SinkType::IPCAM_MONOCULAR;
-  else if (ipcam::IsStereoIpCamera(s))
-    return SinkType::IPCAM_STEREO;
+  else if (ipcam::IsAxis(s))
+    return SinkType::IPCAM_AXIS;
+  else if (ipcam::IsMobotix(s))
+    return SinkType::IPCAM_MOBOTIX;
+  else if (ipcam::IsIpCamera(s)) // Must be last, as it will be true for any IP cam (including axis, mobotix, etc.)
+    return SinkType::IPCAM_GENERIC;
 #endif
 
 #ifdef VCP_BEST_WITH_REALSENSE2

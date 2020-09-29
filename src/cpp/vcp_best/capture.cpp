@@ -154,16 +154,10 @@ public:
           break;
 
 #ifdef VCP_BEST_WITH_IPCAM
-        case SinkType::IPCAM_MONOCULAR:
-          ipcam_params.push_back(ipcam::MonocularIpCameraSinkParamsFromConfig(config, cam_config_name));
-          break;
-
-        case SinkType::IPCAM_STEREO:
-          {
-            const auto &stereo_params = ipcam::StereoIpCameraSinkParamsFromConfig(config, cam_config_name);
-            ipcam_params.push_back(stereo_params.first);
-            ipcam_params.push_back(stereo_params.second);
-          }
+        case SinkType::IPCAM_GENERIC:
+        case SinkType::IPCAM_AXIS:
+        case SinkType::IPCAM_MOBOTIX:
+          ipcam_params.push_back(ipcam::IpCameraSinkParamsFromConfig(config, cam_config_name));
           break;
 #endif
 
