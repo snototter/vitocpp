@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <chrono>
+#include <sstream>
 
 #include "vcp_logging.h"
 
@@ -10,6 +11,25 @@ namespace vcp
 {
 namespace utils
 {
+
+template <typename P>
+std::string DurationAbbreviation()
+{
+  if (std::is_same<P, std::chrono::nanoseconds>::value)
+    return "ns";
+  else if (std::is_same<P, std::chrono::microseconds>::value)
+    return "us";
+  else if (std::is_same<P, std::chrono::milliseconds>::value)
+    return "ms";
+  else if (std::is_same<P, std::chrono::seconds>::value)
+    return "sec";
+  else if (std::is_same<P, std::chrono::minutes>::value)
+    return "min";
+  else if (std::is_same<P, std::chrono::hours>::value)
+    return "h";
+  return std::string("");
+}
+
 /** @brief A stop watch with configurable clock and precision. */
 template <typename C=std::chrono::high_resolution_clock, typename P=std::chrono::milliseconds>
 class StopWatch
@@ -20,6 +40,12 @@ public:
 
   /** @brief C'tor starts the stop watch. */
   StopWatch() { Start(); }
+
+  StopWatch(const StopWatch &other) :
+    t_start_(other.t_start_)
+  {}
+
+  virtual ~StopWatch() {}
 
   /** @brief (Re-)starts the stop watch. */
   void Start()
@@ -42,31 +68,47 @@ public:
     return duration_hrs.count() / (24.0 * 365.25);
   }
 
+  /** @brief Returns whether the underyling clock is steady or not. */
+  bool IsSteady() const
+  {
+    return clock_type::is_steady;
+  }
+
+  /** @brief Returns the abbreviation for the clock's precision ('ns', 'us', 'ms', etc.). */
+  std::string PrecisionAbbreviation() const
+  {
+    return DurationAbbreviation<P>();
+  }
+
 private:
   typename clock_type::time_point t_start_;
 };
 
+
 /** @brief A stop watch which logs elapsed time via vcp_logging macros. */
 template <typename C=std::chrono::high_resolution_clock, typename P=std::chrono::milliseconds>
-class LogWatch
+class LogWatch : public StopWatch<C, P>
 {
 public:
   LogWatch(const std::string &label):
+    StopWatch<C,P>(),
     label_(label)
   {}
 
-  void Start()
+  std::string LogMessage() const
   {
-    watch_.Start();
+    std::stringstream msg;
+    msg << "StopWatch [" << label_ << "] elapsed: " << this->Elapsed() << " " << this->PrecisionAbbreviation();
+    return msg.str();
   }
 
-  void Log() const
+  void PrintLog() const
   {
-    VCP_LOG_INFO_DEFAULT("[" << label_ << "] Elapsed: " << watch_.Elapsed());
+    VCP_LOG_INFO_DEFAULT(LogMessage());
   }
+
 private:
   std::string label_;
-  StopWatch<C, P> watch_;
 };
 } // namespace utils
 } // namespace vcp

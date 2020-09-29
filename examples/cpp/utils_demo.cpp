@@ -87,12 +87,13 @@ int main(int argc, char **argv)
 
   // Stop watch test
   vcp::utils::LogWatch<> watch("DemoWatch");
+  VCP_LOG_INFO_DEFAULT("StopWatch test, watch is steady: " << watch.IsSteady());
   for (int i = 0; i < 20; ++i)
   {
     const int to_sleep = 100 + i*5;
     watch.Start();
     std::this_thread::sleep_for(std::chrono::milliseconds(to_sleep));
-    watch.Log();
+    watch.PrintLog();
     VCP_LOG_INFO_DEFAULT("^ should have slept for " << to_sleep << "ms");
   }
   return 0;

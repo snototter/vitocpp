@@ -20,3 +20,15 @@ if __name__ == "__main__":
     
     for dirent in os.listdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')):
         print("'{}' is{}an image".format(dirent, ' ' if vutils.is_image_file(dirent) else ' not '))
+    
+
+    print('\nStop watch demo:')
+    watch1 = vutils.StopWatch()
+    watch2 = vutils.StopWatch('some-label')
+
+    for i in range(10):
+        to_sleep = 0.01 + i*0.1
+        watch1.start()
+        watch2.start()
+        time.sleep(to_sleep)
+        print('Elapsed (should be {} ms), watch1: {} ms, watch2: {} ms'.format(to_sleep*1e3, watch1.elapsed(), watch2.elapsed()))
