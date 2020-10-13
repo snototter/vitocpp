@@ -179,6 +179,12 @@ public:
     return FramesToList(frames, flip_channels);
   }
 
+  /** @brief Returns the current frame number. */
+  size_t FrameNumber() const
+  {
+    return capture_->CurrentFrameNumber();
+  }
+
 
   /** @brief returns the number of configured streams (NOT the number of sinks). */
   size_t NumStreams() const
@@ -773,15 +779,19 @@ PYBIND11_MODULE(best_cpp, m)
            "for description of the return value and 'flip_channel'.",
            py::arg("num_frames"), py::arg("flip_channel")=false)
 // Info & status queries
-        .def("all_devices_available", &pybest::CaptureWrapper::AreAllDevicesAvailable,
-             "Returns True if the capturing device/s is/are available.")
-        .def("all_frames_available", &pybest::CaptureWrapper::AreAllFramesAvailable,
-             "Returns true if frames (from all devices) can be retrieved (i.e. have been enqueued).")
-        .def("num_available_frames", &pybest::CaptureWrapper::NumAvailableFrames,
-             "Returns the number of available frames.\n\n"
-             "Might be useful if one of your sinks stops working/streaming and you still want to continue\n"
-             "processing, etc. In such a case, @see all_frames_available() would return false, whereas here\n"
-             "you get the actual number of frames and can decide what to do for yourself.")
+      .def("frame_number", &pybest::CaptureWrapper::FrameNumber,
+           "Returns the current frame number (keeps track of the next(),\n"
+           "previous() and fast_forward() calls).\n"
+           "The counter always starts at 0 upon initialization of the capture!")
+      .def("all_devices_available", &pybest::CaptureWrapper::AreAllDevicesAvailable,
+           "Returns True if the capturing device/s is/are available.")
+      .def("all_frames_available", &pybest::CaptureWrapper::AreAllFramesAvailable,
+           "Returns true if frames (from all devices) can be retrieved (i.e. have been enqueued).")
+      .def("num_available_frames", &pybest::CaptureWrapper::NumAvailableFrames,
+           "Returns the number of available frames.\n\n"
+           "Might be useful if one of your sinks stops working/streaming and you still want to continue\n"
+           "processing, etc. In such a case, @see all_frames_available() would return false, whereas here\n"
+           "you get the actual number of frames and can decide what to do for yourself.")
       .def("num_streams", &pybest::CaptureWrapper::NumStreams,
            "Returns the number of configured streams (NOT the number of sinks).")
       .def("num_devices", &pybest::CaptureWrapper::NumDevices,

@@ -155,6 +155,15 @@ public:
    */
   virtual size_t NumDevices() const = 0;
 
+
+  /** @brief Returns the current frame number.
+   *
+   * The internal counter is expected to keep track of the @see Next(), @see Previous()
+   * and @see FastForward() calls.
+   * The counter always starts at 0 upon initialization of the capture.
+   */
+  virtual size_t CurrentFrameNumber() const = 0;
+
   /** @brief Return the (user-defined) frame labels.
    * Note that:
    * - The order may differ from the one you used in the configuration file.

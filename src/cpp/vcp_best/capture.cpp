@@ -72,6 +72,7 @@ public:
   {
     VCP_LOG_DEBUG("MultiDeviceCapture::MultiDeviceCapture()");
     num_devices_ = 0;
+    frame_number_ = 0;
     LoadSinkConfigs(config);
     LoadGlobalConfig(config);
     SanityCheck();
@@ -282,6 +283,11 @@ public:
     return num_devices_;
   }
 
+  size_t CurrentFrameNumber() const override
+  {
+    return frame_number_;
+  }
+
   std::vector<std::string> ConfigurationKeys() const override
   {
     std::vector<std::string> keys;
@@ -488,6 +494,7 @@ public:
       std::vector<cv::Mat> captured = sinks_[i]->Next();
       frames.insert(frames.end(), captured.begin(), captured.end());
     }
+    frame_number_++;
     return frames;
   }
 
@@ -502,6 +509,8 @@ public:
       std::vector<cv::Mat> captured = sinks_[i]->Previous();
       frames.insert(frames.end(), captured.begin(), captured.end());
     }
+    if (frame_number_ > 0)
+      frame_number_--;
     return frames;
   }
 
@@ -516,6 +525,7 @@ public:
       std::vector<cv::Mat> captured = sinks_[i]->FastForward(num_frames);
       frames.insert(frames.end(), captured.begin(), captured.end());
     }
+    frame_number_ += num_frames;
     return frames;
   }
 
@@ -755,6 +765,7 @@ private:
   std::vector<FrameType> frame_types_;  // Note: they will be per stream/frame (i.e. possibly duplicated), not per device
   std::vector<std::string> frame_labels_; /**< Unique label per stream (the user can provide per-sink labels, which will be post-fixed by the corresponding sensor sink). */
   size_t num_devices_;
+  size_t frame_number_;
 
 #ifdef VCP_BEST_DEBUG_FRAMERATE
   std::chrono::high_resolution_clock::time_point prev_frame_timestamp_;
