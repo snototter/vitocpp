@@ -161,6 +161,8 @@ public:
    * The internal counter is expected to keep track of the @see Next(), @see Previous()
    * and @see FastForward() calls.
    * The counter always starts at 0 upon initialization of the capture.
+   * Note that after retrieving the first frameset (via Next()), the returned frame
+   * number will be 1.
    */
   virtual size_t CurrentFrameNumber() const = 0;
 

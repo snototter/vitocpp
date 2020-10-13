@@ -782,7 +782,9 @@ PYBIND11_MODULE(best_cpp, m)
       .def("frame_number", &pybest::CaptureWrapper::FrameNumber,
            "Returns the current frame number (keeps track of the next(),\n"
            "previous() and fast_forward() calls).\n"
-           "The counter always starts at 0 upon initialization of the capture!")
+           "The counter always starts at 0 upon initialization of the capture!\n"
+           "Note that after retrieving the first frameset (e.g. via next()),\n"
+           "the frame_number() will be 1!")
       .def("all_devices_available", &pybest::CaptureWrapper::AreAllDevicesAvailable,
            "Returns True if the capturing device/s is/are available.")
       .def("all_frames_available", &pybest::CaptureWrapper::AreAllFramesAvailable,
