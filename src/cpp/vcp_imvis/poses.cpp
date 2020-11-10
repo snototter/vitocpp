@@ -272,7 +272,28 @@ void DrawPose(const PoseModel &model, cv::Mat &image, const float score_threshol
   // Draw keypoints/joints.
   const auto keypoints = model.KeypointPixelCoords();
   for (size_t idx = 0; idx < keypoints.size(); ++idx)
+  {
+    // Skip unreliable estimates
+    if (model.scores.size() > 0 && (model.scores[idx] < score_threshold))
+        continue;
     cv::circle(image, keypoints[idx], keypoint_radius, colors[idx], keypoint_thickness);
+  }
+}
+
+void DrawPoses(const std::vector<PoseModel> &models, cv::Mat &image, const float opacity, const float score_threshold, const int keypoint_radius, const int keypoint_thickness, const int skeleton_thickness, const bool draw_ellipses)
+{
+  if (opacity < 1.f)
+  {
+    cv::Mat cp = image.clone();
+    for (const auto &model : models)
+      DrawPose(model, cp, score_threshold, keypoint_radius, keypoint_thickness, skeleton_thickness, draw_ellipses);
+    cv::addWeighted(cp, opacity, image, 1.f-opacity, 0.0, image);
+  }
+  else
+  {
+    for (const auto &model : models)
+      DrawPose(model, image, score_threshold, keypoint_radius, keypoint_thickness, skeleton_thickness, draw_ellipses);
+  }
 }
 
 } // namespace poses

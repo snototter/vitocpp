@@ -482,13 +482,24 @@ cv::Mat RenderPerspective(const cv::Mat &image,
                                                 adjust_projection, nullptr, nullptr);
 }
 
-cv::Mat DrawPose(const vcp::imvis::poses::PoseModel &model, cv::Mat &image,
+cv::Mat DrawPose(cv::Mat &image, const vcp::imvis::poses::PoseModel &model,
                  const float score_threshold, const int keypoint_radius,
                  const int keypoint_thickness, const int skeleton_thickness,
                  const bool draw_ellipses)
 {
   cv::Mat cp = image.clone();
   vcp::imvis::poses::DrawPose(model, cp, score_threshold, keypoint_radius, keypoint_thickness, skeleton_thickness, draw_ellipses);
+  return cp;
+}
+
+cv::Mat DrawPoses(cv::Mat &image, const std::vector<vcp::imvis::poses::PoseModel> &models,
+                  const float opacity,
+                  const float score_threshold, const int keypoint_radius,
+                  const int keypoint_thickness, const int skeleton_thickness,
+                  const bool draw_ellipses)
+{
+  cv::Mat cp = image.clone();
+  vcp::imvis::poses::DrawPoses(models, cp, opacity, score_threshold, keypoint_radius, keypoint_thickness, skeleton_thickness, draw_ellipses);
   return cp;
 }
 
@@ -1007,12 +1018,24 @@ PYBIND11_MODULE(imvis_cpp, m)
       .value("COCO17", vcp::imvis::poses::PoseType::COCO17)
       .value("COCO18", vcp::imvis::poses::PoseType::COCO18)
       .value("BODY25", vcp::imvis::poses::PoseType::BODY25)
+      .value("MPII15", vcp::imvis::poses::PoseType::MPII15)
       .export_values();
 
   m.def("draw_pose", &vpi::DrawPose,
         "TODO",
-        py::arg("pose_model"),
         py::arg("image"),
+        py::arg("pose_model"),
+        py::arg("score_threshold")=0.1f,
+        py::arg("keypoint_radius")=5,
+        py::arg("keypoint_thickness")=-1,
+        py::arg("skeleton_thickness")=7,
+        py::arg("draw_ellipses")=true);
+
+  m.def("draw_poses", &vpi::DrawPoses,
+        "TODO",
+        py::arg("image"),
+        py::arg("pose_models"),
+        py::arg("opacity")=1.0f,
         py::arg("score_threshold")=0.1f,
         py::arg("keypoint_radius")=5,
         py::arg("keypoint_thickness")=-1,

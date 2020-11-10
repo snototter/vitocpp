@@ -21,6 +21,7 @@ namespace poses
 /** Supported pose estimation models. **/
 enum class PoseType : unsigned char
 {
+  // Don't forget to update the python enum (vcp_imvis)
   NONE=0,
   COCO17, /**< Standard COCO keypoints. */
   COCO18, /**< COCO17 + neck (as used by OpenPose). */
@@ -69,9 +70,7 @@ struct PoseModel
 std::ostream& operator<<(std::ostream & os, const PoseModel &pm);
 
 void DrawPose(const PoseModel &model, cv::Mat &image, const float score_threshold=0.1, const int keypoint_radius=5, const int keypoint_thickness=-1, const int skeleton_thickness=7, const bool draw_ellipses=true);
-//TODO drawposes!
-//TODO python wrapper: accept ndarray for multiple poses
-//TODO opacity
+void DrawPoses(const std::vector<PoseModel> &models, cv::Mat &image, const float opacity=1.f, const float score_threshold=0.1, const int keypoint_radius=5, const int keypoint_thickness=-1, const int skeleton_thickness=7, const bool draw_ellipses=true);
 
 } // namespace poses
 } // namespace imvis
