@@ -87,6 +87,49 @@ def draw_text_box(image, text, pos, text_anchor='northwest',
         padding=padding, fill_opacity=fill_opacity)
 
 
+def object_class_color(oc):
+    """Returns an RGB tuple for the given object class (string)."""
+    colors = {
+        'human':        (  0, 200,   0),
+        'person':       (  0, 200,   0),
+        'car':          (200, 200,   0),
+        'vehicle':      (200, 200,   0)
+    }
+    if oc in colors:
+        return colors[oc]
+    return (100, 100, 100)
+
+
+def bboxes2d_from_detection_dict(detections, class2label_fx=None, boxes_as_corners=True):
+    """Given a detection dict, this returns a list of bounding boxes which can be used by draw_bboxes2d.
+    Detection dict:
+      'num_detections'
+      'detection_boxes'
+      'detection_classes'
+      'detection_scores'
+    """
+    N = detections['num_detections']
+    if N == 0:
+        return list()
+    bboxes = list()
+    default_box_color=(200,0,0)
+    for idx in range(N):
+        dscore = detections['detection_scores'][idx]
+        dclass = detections['detection_classes'][idx]
+        # Extract the bbox rectangle
+        bbox = detections['detection_boxes'][idx, :].copy()
+        if boxes_as_corners:
+            bbox[2] -= bbox[0]
+            bbox[3] -= bbox[1]
+        # If we have a label lookup, use it to create the box caption
+        if class2label_fx is not None:
+            lbl = class2label_fx(dclass)
+            bboxes.append((bbox, object_class_color(lbl), lbl + ' {:.2f}'.format(dscore)))
+        else:
+            bboxes.append((bbox, default_box_color, '{:.2f}'.format(dscore)))
+    return bboxes
+
+
 # Needs to be wrapped because of the text-to-param mapping for the text_anchor
 def draw_bboxes2d(image, bounding_boxes, default_box_color=(0,0,255),
         line_width=1, fill_opacity=0.0,
