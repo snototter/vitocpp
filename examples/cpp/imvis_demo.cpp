@@ -13,8 +13,6 @@ int main(int argc, char **argv)
   VCP_UNUSED_VAR(argc);
   VCP_UNUSED_VAR(argv);
 
-  vcp::imvis::poses::DrawPose();
-
   const std::string kPeaksFile = "peaks.png";
   VCP_LOG_INFO("[Test] PseudoColor");
 

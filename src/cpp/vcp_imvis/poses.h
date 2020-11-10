@@ -69,6 +69,9 @@ struct PoseModel
 std::ostream& operator<<(std::ostream & os, const PoseModel &pm);
 
 void DrawPose(const PoseModel &model, cv::Mat &image, const float score_threshold=0.1, const int keypoint_radius=5, const int keypoint_thickness=-1, const int skeleton_thickness=7, const bool draw_ellipses=true);
+//TODO drawposes!
+//TODO python wrapper: accept ndarray for multiple poses
+//TODO opacity
 
 } // namespace poses
 } // namespace imvis
