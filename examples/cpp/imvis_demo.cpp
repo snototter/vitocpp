@@ -6,10 +6,14 @@
 #include <vcp_utils/vcp_error.h>
 #include <vcp_utils/file_utils.h>
 
+#include <vcp_imvis/poses.h>
+
 int main(int argc, char **argv)
 {
   VCP_UNUSED_VAR(argc);
   VCP_UNUSED_VAR(argv);
+
+  vcp::imvis::poses::DrawPose();
 
   const std::string kPeaksFile = "peaks.png";
   VCP_LOG_INFO("[Test] PseudoColor");

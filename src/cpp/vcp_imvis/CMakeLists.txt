@@ -15,6 +15,7 @@ set(HEADERS
     anaglyph.h
     collage.h
     drawing.h
+    poses.h
     trajectories.h
 )
 
@@ -25,6 +26,7 @@ set(SOURCES
     anaglyph.cpp
     collage.cpp
     drawing.cpp
+    poses.cpp
     trajectories.cpp
 )
 

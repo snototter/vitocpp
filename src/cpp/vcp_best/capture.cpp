@@ -285,6 +285,7 @@ public:
 
   size_t CurrentFrameNumber() const override
   {
+    // TODO check if we use image/video sinks and use their frame number instead (if it's the same for all sinks!)
     return frame_number_;
   }
 

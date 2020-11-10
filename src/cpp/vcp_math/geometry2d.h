@@ -74,6 +74,12 @@ inline double LengthSquared(const cv::Vec2d &v)
   return v[0]*v[0] + v[1]*v[1];
 }
 
+/** @brief Returns the squared length of the vector. */
+inline float LengthSquared2f(const cv::Vec2f &v)
+{
+  return v[0]*v[0] + v[1]*v[1];
+}
+
 
 inline long LengthSquared(const cv::Point &p)
 {
@@ -89,6 +95,12 @@ inline double Length(const cv::Vec2d &v)
   return std::sqrt(LengthSquared(v));
 }
 
+/** @brief Returns the length of the vector. */
+inline float Length2f(const cv::Vec2f &v)
+{
+  return std::sqrt(LengthSquared2f(v));
+}
+
 
 /** @brief Returns the Euclidean distance between the two vectors. */
 inline double Distance(const cv::Vec2d &v, const cv::Vec2d &w)
@@ -96,6 +108,11 @@ inline double Distance(const cv::Vec2d &v, const cv::Vec2d &w)
   return Length(v-w);
 }
 
+/** @brief Returns the Euclidean distance between the two vectors. */
+inline float Distance2f(const cv::Vec2f &v, const cv::Vec2f &w)
+{
+  return Length2f(v-w);
+}
 
 /** @brief Returns the unit vector and optionally sets the length to the original vector magnitude (before normalization). */
 inline cv::Vec2d Normalize(const cv::Vec2d &v, double *length=nullptr)
