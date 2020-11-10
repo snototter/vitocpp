@@ -21,12 +21,39 @@ namespace poses
 /** Supported pose estimation models. **/
 enum class PoseType : unsigned char
 {
-  COCO17=0
+  NONE=0,
+  COCO17, /**< Standard COCO keypoints. */
+  COCO18, /**< COCO17 + neck (as used by OpenPose). */
+  BODY25, /**< OpenPose 25 keypoints. */
+  MPII15   /**< MPII body model. */
 };
 
-extern const std::vector<std::string> kCOCO17Keypoints;
+std::string PoseTypeToString(const PoseType &p);
+PoseType PoseTypeFromString(const std::string &s);
+
+/** Pairs of COCO model keypoints that make up the human skeleton. */
 extern const std::vector<std::pair<size_t, size_t>> kCOCO17Skeleton;
+
+/** Colors for COCO17 pose results. */
 extern const std::vector<cv::Scalar> kCOCO17Colors;
+
+/** Pairs of COCO (17+1) model keypoints that make up the human skeleton. */
+extern const std::vector<std::pair<size_t, size_t>> kCOCO18Skeleton;
+
+/** Colors for COCO (17+1) pose results. */
+extern const std::vector<cv::Scalar> kCOCO18Colors;
+
+/** Pairs of BODY_25 model keypoints that make up the human skeleton. */
+extern const std::vector<std::pair<size_t, size_t>> kBODY25Skeleton;
+
+/** Colors for BODY_25 pose results. */
+extern const std::vector<cv::Scalar> kBODY25Colors;
+
+/** Pairs of MPII_15 model keypoints that make up the human skeleton. */
+extern const std::vector<std::pair<size_t, size_t>> kMPII15Skeleton;
+
+/** Colors for MPII_15 pose results. */
+extern const std::vector<cv::Scalar> kMPII15Colors;
 
 
 struct PoseModel
@@ -39,14 +66,9 @@ struct PoseModel
   std::vector<cv::Point> KeypointPixelCoords() const;
 };
 
-//TODO how to represent a pose?
-// vector<vector<float>>, each entry: x, y, score
-// enum for supported pose models
-// GetPoseColor(model)
-// Flag fast (lines) vs beautification (ellipses)
-// ellipse angle computation: https://stackoverflow.com/questions/2676719/calculating-the-angle-between-the-line-defined-by-two-points
-//void DrawPose(cv::Mat &image, const std::vector<cv::Point> &polygon, const cv::Scalar &color, int line_width=1, int dash_length=-1, double fill_opacity=0.0);
-void DrawPose();//cv::Mat &image);
+std::ostream& operator<<(std::ostream & os, const PoseModel &pm);
+
+void DrawPose(const PoseModel &model, cv::Mat &image, const float score_threshold=0.1, const int keypoint_radius=5, const int keypoint_thickness=-1, const int skeleton_thickness=7, const bool draw_ellipses=true);
 
 } // namespace poses
 } // namespace imvis

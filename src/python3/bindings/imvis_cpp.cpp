@@ -7,6 +7,7 @@
 #include <vcp_imvis/drawing.h>
 #include <vcp_imvis/trajectories.h>
 #include <vcp_imvis/pseudocolor.h>
+#include <vcp_imvis/poses.h>
 #include <vcp_utils/vcp_error.h>
 #include <vcp_utils/sort_utils.h>
 #include <vcp_math/geometry2d.h>
@@ -479,6 +480,16 @@ cv::Mat RenderPerspective(const cv::Mat &image,
   return vcp::imvis::collage::RenderPerspective(image, rx, ry, rz, angles_in_deg, tx, ty, tz,
                                                 border_color, inter_linear_alpha, 1.0f,
                                                 adjust_projection, nullptr, nullptr);
+}
+
+cv::Mat DrawPose(const vcp::imvis::poses::PoseModel &model, cv::Mat &image,
+                 const float score_threshold, const int keypoint_radius,
+                 const int keypoint_thickness, const int skeleton_thickness,
+                 const bool draw_ellipses)
+{
+  cv::Mat cp = image.clone();
+  vcp::imvis::poses::DrawPose(model, cp, score_threshold, keypoint_radius, keypoint_thickness, skeleton_thickness, draw_ellipses);
+  return cp;
 }
 
 } // namespace imvis
@@ -990,4 +1001,21 @@ PYBIND11_MODULE(imvis_cpp, m)
         py::arg("color")=cv::Scalar(255, 0, 0),
         py::arg("line_width")=1,
         py::arg("fill_opacity")=0.0);
+
+
+  py::enum_<vcp::imvis::poses::PoseType>(m, "PoseType")
+      .value("COCO17", vcp::imvis::poses::PoseType::COCO17)
+      .value("COCO18", vcp::imvis::poses::PoseType::COCO18)
+      .value("BODY25", vcp::imvis::poses::PoseType::BODY25)
+      .export_values();
+
+  m.def("draw_pose", &vpi::DrawPose,
+        "TODO",
+        py::arg("pose_model"),
+        py::arg("image"),
+        py::arg("score_threshold")=0.1f,
+        py::arg("keypoint_radius")=5,
+        py::arg("keypoint_thickness")=-1,
+        py::arg("skeleton_thickness")=7,
+        py::arg("draw_ellipses")=true);
 }

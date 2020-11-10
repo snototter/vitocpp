@@ -339,6 +339,41 @@ VisLine2d PyObjectToVisLine2d(const py::object &object)
   }
   return line;
 }
+
+vcp::imvis::poses::PoseModel PyObjectToPoseModel(const py::object &object)
+{
+  vcp::imvis::poses::PoseModel model;
+  model.type = vcp::imvis::poses::PoseType::NONE;
+
+  if (object.is_none())
+    return model;
+
+  const std::string type = py::cast<std::string>(object.attr("__class__").attr("__name__"));
+  if (type.compare("tuple") == 0)
+  {
+    py::tuple tuple = py::cast<py::tuple>(object);
+    if (py::len(tuple) != 3)
+      VCP_ERROR("Tuple must contain 3 entries: type, list-of-keypoints, list-of-scores, but the given tuple holds " + std::to_string(py::len(tuple)));
+
+    model.type = py::cast<vcp::imvis::poses::PoseType>(tuple[0]);
+    py::list keypoints = py::cast<py::list>(tuple[1]);
+    for (size_t i = 0; i < keypoints.size(); ++i)
+      model.keypoints.push_back(PyObjectToVec<float, 2>(keypoints[i], nullptr));
+
+    if (!tuple[2].is_none())
+    {
+      py::list scores = py::cast<py::list>(tuple[2]);
+      for (size_t i = 0; i < scores.size(); ++i)
+        model.scores.push_back(py::cast<float>(scores[i]));
+    }
+    //TODO maybe add support for numpy ndarrays in the future
+  }
+  else
+  {
+    VCP_LOG_FAILURE("Cannot convert type '" << type << "' to PoseModel.");
+  }
+  return model;
+}
 } // namespace conversion
 } // namespace python
 } // namespace vcp

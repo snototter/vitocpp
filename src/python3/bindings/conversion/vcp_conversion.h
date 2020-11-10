@@ -10,6 +10,7 @@ namespace py = pybind11;
 #include <vcp_imutils/opencv_compatibility.h>
 #include <vcp_utils/vcp_logging.h>
 #include <vcp_utils/vcp_error.h>
+#include <vcp_imvis/poses.h>
 
 #include <vcp_imvis/drawing.h>
 #include <vcp_math/geometry2d.h>
@@ -156,6 +157,10 @@ typedef struct
 } VisLine2d;
 
 VisLine2d PyObjectToVisLine2d(const py::object &object);
+
+
+/** @brief Type conversion for pose estimation results. */
+vcp::imvis::poses::PoseModel PyObjectToPoseModel(const py::object &object);
 
 } // namespace conversion
 } // namespace python
@@ -349,6 +354,26 @@ public:
     VCP_ERROR("Not yet implemented!");
   }
 };
+
+template <> struct type_caster<vcp::imvis::poses::PoseModel>
+{
+public:
+  PYBIND11_TYPE_CASTER(vcp::imvis::poses::PoseModel, _("PoseModel: (PoseType, list(keypoints), list(scores))"));
+
+  bool load(handle src, bool)
+  {
+    value = vcp::python::conversion::PyObjectToPoseModel(src.cast<py::object>());
+    return value.type != vcp::imvis::poses::PoseType::NONE && !PyErr_Occurred();
+  }
+
+  static handle cast(const vcp::python::conversion::VisLine2d &src, return_value_policy policy, handle parent)
+  {
+    VCP_UNUSED_VAR(src);
+    VCP_UNUSED_VAR(policy);
+    VCP_UNUSED_VAR(parent);
+    VCP_ERROR("Not yet implemented!");
+  }
+}; // type caster for PoseModel
 } // namespace detail
 } // namespace pybind11
 
