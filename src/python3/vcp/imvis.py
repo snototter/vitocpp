@@ -8,6 +8,7 @@ import numpy as np
 from .imvis_cpp import *
 from . import colormaps
 from vito import imvis as vimvis
+from vito import detection2d as vdet2d
 
 
 ################################################################################
@@ -127,6 +128,24 @@ def bboxes2d_from_detection_dict(detections, class2label_fx=None, boxes_as_corne
             bboxes.append((bbox, object_class_color(lbl), lbl + ' {:.2f}'.format(dscore)))
         else:
             bboxes.append((bbox, default_box_color, '{:.2f}'.format(dscore)))
+    return bboxes
+
+
+def bboxes2d_from_detection_list(detections, class2label_fx=vdet2d.label_lookup_coco):
+    """Given a list of vito.detection2d.Detection instances, this returns a list
+    of bounding boxes which can be used by draw_boxes2d."""
+    default_box_color = (200, 0, 0)
+    bboxes = list()
+    for det in detections:
+        bb_rect = det.bounding_box.to_rect_repr()
+        if class2label_fx is None:
+            lbl = '{:.2f}'.format(det.score)
+            color = default_box_color
+        else:
+            lbl = class2label_fx(det)
+            color = object_class_color(lbl)
+            lbl += ' {:.2f}'.format(det.score)
+        bboxes.append((bb_rect, color, lbl))
     return bboxes
 
 
