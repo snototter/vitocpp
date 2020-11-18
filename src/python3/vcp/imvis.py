@@ -131,9 +131,14 @@ def bboxes2d_from_detection_dict(detections, class2label_fx=None, boxes_as_corne
     return bboxes
 
 
-def bboxes2d_from_detection_list(detections, class2label_fx=vdet2d.label_lookup_coco):
-    """Given a list of vito.detection2d.Detection instances, this returns a list
-    of bounding boxes which can be used by draw_boxes2d."""
+def bboxes2d_from_detection_list(detections, class2label_fx=None):
+    """
+    Given a list of vito.detection2d.Detection instances, this returns a list
+    of bounding boxes which can be used by draw_boxes2d.
+
+    class2label_fx is a function handle taking a vdet2d.Detection and returns 
+        the corresponding class label, e.g. vdet2d.LabelMapCOCO.label()
+    """
     default_box_color = (200, 0, 0)
     bboxes = list()
     for det in detections:
