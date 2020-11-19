@@ -638,7 +638,8 @@ public:
     }
     else
     {
-      VCP_LOG_DEBUG("Image directory '" << params_.directory << "' contains " << filenames_.size() << " images.");
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Image directory '" << params_.directory << "' contains " << filenames_.size() << " images.");
       load_images_ = true;
     }
 
