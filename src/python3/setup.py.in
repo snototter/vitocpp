@@ -19,7 +19,11 @@ setuptools.setup(
     packages=setuptools.find_packages(),
     install_requires=[
         'numpy',
-        'Pillow'],
+        'Pillow',
+        'vito',
+        'iminspect',
+        'scikit-video'
+    ],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
