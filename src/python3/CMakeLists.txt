@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 3.1)
 project(vcp-bindings)
 
 message("Configuring Python3 bindings")
-set(PYVCP_LIBRARY_DESTINATION "${CMAKE_CURRENT_SOURCE_DIR}/../../gen/vcp")
+set(PYVCP_LIBRARY_DESTINATION_PARENT "${CMAKE_CURRENT_SOURCE_DIR}/../../gen")
+set(PYVCP_LIBRARY_DESTINATION "${PYVCP_LIBRARY_DESTINATION_PARENT}/vcp")
 
 IF(NOT WIN32)
     add_definitions(-std=c++11 -fPIC -Wall -Wpedantic -Wextra)
@@ -336,4 +337,5 @@ message("  [vcp-bindings] Configuring install target for python files\n")
 install(DIRECTORY vcp/
     DESTINATION ${PYVCP_LIBRARY_DESTINATION}
     FILES_MATCHING PATTERN "*.py")
+configure_file(setup.py.in ${PYVCP_LIBRARY_DESTINATION_PARENT}/setup.py)
 
