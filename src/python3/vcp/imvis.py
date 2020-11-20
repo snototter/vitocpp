@@ -144,7 +144,7 @@ def bboxes2d_from_detection_list(detections, class2label_fx=None):
     for det in detections:
         bb_rect = det.bounding_box.to_rect_repr()
         if class2label_fx is None:
-            lbl = '{:.2f}'.format(det.score)
+            lbl = '{:d} {:.2f}'.format(det.class_id, det.score)
             color = default_box_color
         else:
             lbl = class2label_fx(det)
