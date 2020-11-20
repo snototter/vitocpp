@@ -1248,6 +1248,7 @@ private:
                 << "          If you get 'non-descriptive' error messages below, check your configuration file/sensor parameters carefully."
                 << std::endl << "Corresponding librealsense2 error: " << e.what());
     }
+    //VCP_LOG_INFO("Pipeline started");
 
     // Get sensors corresponding to color and depth
     rs2::sensor rgb_sensor, depth_sensor;
@@ -1327,13 +1328,14 @@ private:
     double ms_between_ir1 = -1.0;
     double ms_between_ir2 = -1.0;
 #endif // DEBUG_RS2_FRAMERATE
-
+//VCP_LOG_INFO("Streams configured");
     available_ = 1;
     while(continue_capture_)
     {
+      //VCP_LOG_INFO("Waiting for RS frames");
       try
       {
-        rs2::frameset frameset = pipe.wait_for_frames();
+        rs2::frameset frameset = pipe.wait_for_frames(5000);
 
         if (frameset)
         {
