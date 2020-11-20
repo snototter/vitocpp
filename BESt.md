@@ -9,8 +9,9 @@ Currently supported sensors:
 * IP cameras (MJPEG & H.264 over RTSP & HTTP)
 * RGB-D sensors (ZED stereo cam, Intel RealSense, Microsoft Azure Kinect)
 
-[//]: # (TODO add images (setup + capture result))
-[//]: # (https://ecotrust-canada.github.io/markdown-toc/)
+<!--TODO add images (setup + capture result)
+TOC generator: https://ecotrust-canada.github.io/markdown-toc/
+-->
 
 Table-of-Contents:
 * [Quickstart](#quickstart)
