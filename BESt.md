@@ -9,7 +9,25 @@ Currently supported sensors:
 * IP cameras (MJPEG & H.264 over RTSP & HTTP)
 * RGB-D sensors (ZED stereo cam, Intel RealSense, Microsoft Azure Kinect)
 
-TODO add images (setup + capture result)
+[//]: # (TODO add images (setup + capture result))
+[//]: # (https://ecotrust-canada.github.io/markdown-toc/)
+
+Table-of-Contents:
+* [Quickstart](#quickstart)
+* [Specifics & Caveats](#specifics---caveats)
+* [Common Sink Configurations](#common-sink-configurations)
+* [Exemplary Streaming Configurations](#exemplary-streaming-configurations)
+  + [Streaming Example: Webcam](#streaming-example--webcam)
+  + [Streaming Example: Image Sequence & Video File](#streaming-example--image-sequence---video-file)
+  + [Streaming Example: Azure Kinect (K4A)](#streaming-example--azure-kinect--k4a-)
+  + [Streaming Example: RealSense](#streaming-example--realsense)
+  + [Streaming Example: StereoLabs ZED](#streaming-example--stereolabs-zed)
+  + [Streaming Example: IP Cameras](#streaming-example--ip-cameras)
+    - [Generic IP Camera Streaming](#generic-ip-camera-streaming)
+    - [Axis IP Camera Streaming](#axis-ip-camera-streaming)
+    - [Mobotix IP Camera Streaming](#mobotix-ip-camera-streaming)
+
+
 
 ## Quickstart
 If you enable the examples when building `vcp`, the following CLI will work out-of-the-box:
@@ -75,7 +93,8 @@ All implemented image data sinks support the following (optional) configuration 
 ```
 
 
-## Streaming Example: Webcam
+## Exemplary Streaming Configurations
+### Streaming Example: Webcam
 This configuration file sets up live streaming from a standard webcam:
 ```c++
 sink-webcam = {
@@ -87,7 +106,7 @@ sink-webcam = {
 ```
 
 
-## Streaming Example: Image Sequence & Video File
+### Streaming Example: Image Sequence & Video File
 To replay a video + corresponding still frames (e.g. RGB-D sensor recording where RGB is stored as video and depth frames are stored as 16-bit png files), use the image sequence and video sinks:
 ```c++
 sink-video-playback = {
@@ -111,10 +130,10 @@ sink-sequence = {
 ```
 
 
-## Streaming Example: Azure Kinect (K4A)
+### Streaming Example: Azure Kinect (K4A)
 TODO
 
-## Streaming Example: RealSense
+### Streaming Example: RealSense
 The following configuration enables streaming from an Intel RealSense2 sensor:
 ```c++
 sink = {
@@ -142,10 +161,10 @@ sink = {
 };
 ```
 
-## Streaming Example: StereoLabs ZED
+### Streaming Example: StereoLabs ZED
 TODO
 
-## Streaming Example: IP Cameras
+### Streaming Example: IP Cameras
 IP camera streaming currently supports:
 * MJPEG over HTTP
 * MJPEG over RTSP
@@ -155,7 +174,7 @@ If you know the streaming URL for your camera, you can set up streaming from a "
 Some specific camera manufacturers (currently Axis and Mobotix) are supported out-of-the-box.
 See the following exemplary configurations:
 
-### Generic IP Camera Streaming
+#### Generic IP Camera Streaming
 
 ```c++
 sink-generic = {
@@ -169,7 +188,7 @@ sink-generic = {
 };
 ```
 
-### Axis IP Camera Streaming
+#### Axis IP Camera Streaming
 The following configuration sets up streaming from an Axis camera via MJPEG over HTTP (actually not recommended due to the high bandwidth requirements).
 Other supported streaming modes are `MJPEG over RTSP` and `H264 over RTSP`, just adjust the corresponding parameters accordingly (`application_protocol`, `transport_protocol` and `encoding`), see also the Mobotix streaming example below.
 
@@ -186,7 +205,7 @@ sink-example-axis-via-http = {
 };
 ```
 
-### Mobotix IP Camera Streaming
+#### Mobotix IP Camera Streaming
 The following configuration sets up streaming from a Mobotix camera via H264 over RTSP.
 To properly intialize the video codec, you have to additionally specify the stream resolution (here, 800x600).
 
