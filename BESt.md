@@ -30,12 +30,12 @@ TOC generator: https://ecotrust-canada.github.io/markdown-toc/
 * [Sensor Specifics & Caveats](#sensor-specifics---caveats)
 * [Common Sink Configurations](#common-sink-configurations)
 * [Exemplary Streaming Configurations](#exemplary-streaming-configurations)
-  + [Streaming Example: Webcam](#streaming-example--webcam)
-  + [Streaming Example: Image Sequence & Video File](#streaming-example--image-sequence---video-file)
-  + [Streaming Example: Azure Kinect (K4A)](#streaming-example--azure-kinect--k4a-)
-  + [Streaming Example: RealSense](#streaming-example--realsense)
-  + [Streaming Example: StereoLabs ZED](#streaming-example--stereolabs-zed)
-  + [Streaming Example: IP Cameras](#streaming-example--ip-cameras)
+  + [Streaming Example: Webcam](#streaming-example-webcam)
+  + [Streaming Example: Image Sequence & Video File](#streaming-example-image-sequence--video-file)
+  + [Streaming Example: Azure Kinect (K4A)](#streaming-example-azure-kinect-k4a)
+  + [Streaming Example: RealSense](#streaming-example-realsense)
+  + [Streaming Example: StereoLabs ZED](#streaming-example-stereolabs-zed)
+  + [Streaming Example: IP Cameras](#streaming-example-ip-cameras)
     - [Generic IP Camera Streaming](#generic-ip-camera-streaming)
     - [Axis IP Camera Streaming](#axis-ip-camera-streaming)
     - [Mobotix IP Camera Streaming](#mobotix-ip-camera-streaming)
@@ -108,6 +108,8 @@ All implemented image data sinks support the following (optional) configuration 
 
 
 ## Exemplary Streaming Configurations
+For more detailed configurations, please refer to the `*.cfg` files within `<VCP_ROOT_DIR>/examples/data/data-best`.
+
 ### Streaming Example: Webcam
 This configuration file sets up live streaming from a standard webcam:
 ```c++
