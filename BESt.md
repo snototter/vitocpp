@@ -8,7 +8,20 @@ Currently supported sensors:
 * IP cameras (MJPEG & H.264 over RTSP & HTTP)
 * RGB-D sensors (ZED stereo cam, Intel RealSense, Microsoft Azure Kinect)
 
-<!--TODO add images (setup + capture result)
+Streaming has been tested with:
+* Webcams, videos, image sequences
+* USB cameras:
+  * Intel [RealSense D435](https://www.intelrealsense.com/depth-camera-d435/) (RGBD camera)
+  * Microsoft [Azure Kinect](https://azure.microsoft.com/en-us/services/kinect-dk/) (RGBD camera)
+  * StereoLabs [ZED](https://www.stereolabs.com/zed/) (Passive stereo camera)
+  <!--no longer maintained by vitocpp * MatrixVision [mvBlueFox3](https://www.matrix-vision.com/USB3-vision-camera-mvbluefox3.html) (Industrial camera)-->
+* IP cameras:
+  * Axis [P1365](https://www.axis.com/products/axis-p1365) (h264/MJPEG over RTSP/HTTP)
+  * Hikvision [Pro Series](https://www.hikvision.com/en/products/IP-Products/Network-Cameras/Pro-Series-EasyIP-/ds-2cd2546g2-i-s-/) (h264/MJPEG over RTSP/HTTP)
+  * Mobotix [S16 DualFlex](https://www.mobotix.com/en/products/outdoor-cameras/s16-dualflex) (h264/MJPEG over RTSP/HTTP)
+  * Siqura [TrafficPTZ Ultimo](https://siqura.com/solutions/highway-monitoring/) (h264 over RTSP, configuration via SDP)
+
+<!--
 TOC generator: https://ecotrust-canada.github.io/markdown-toc/
 -->
 
@@ -70,6 +83,7 @@ All implemented image data sinks support the following (optional) configuration 
   // * Mirroring or rotation: fliplr, flipud, rotate-90/180/270
   // * Histogram equalization: hist-eq
   // * Color conversion: {bgr|rgb}2gray, {bgr|rgb}2hsv, {bgr|rgb}2lab
+  // * Depth to surface normals conversion & visualization: depth2surfnorm, surfnorm2rgb
   transform = "rotate-90, hist-eq";
 
   // [Optional] Path to the intrinsic calibration file.
@@ -215,7 +229,24 @@ sink = {
 ```
 
 ### Streaming Example: StereoLabs ZED
-TODO
+The following configuration sets up streaming from a StereoLabs ZED passive stereo sensor:
+```c++
+camera = {
+  camera_type = "zed";
+
+  // [Optional] By default, vcp will open the first available ZED cam:
+  //   * set device=X to open /dev/videoX on Linux (or camera X on Windows)
+  // OR
+  //   * set serial_number to open the ZED cam with the given serial number
+  //
+  //  serial_number = 12345;
+  //  device = 0;
+
+  // [Optional] By default, ZED will use the most powerful NVIDIA GPU found (gpu_id = -1).
+  // Set to 0-based index (0 to num_gpus-1) to select a specific GPU.
+  gpu_id = -1;
+};
+```
 
 ### Streaming Example: IP Cameras
 IP camera streaming currently supports:
