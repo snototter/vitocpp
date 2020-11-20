@@ -9,7 +9,7 @@ Currently supported sensors:
 * RGB-D sensors (ZED stereo cam, Intel RealSense, Microsoft Azure Kinect)
 
 Streaming has been tested with:
-* Webcams, videos, image sequences
+* Obviously: many different Webcams, videos and image sequences
 * USB cameras:
   * Intel [RealSense D435](https://www.intelrealsense.com/depth-camera-d435/) (RGBD camera)
   * Microsoft [Azure Kinect](https://azure.microsoft.com/en-us/services/kinect-dk/) (RGBD camera)
