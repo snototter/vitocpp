@@ -27,7 +27,7 @@ TOC generator: https://ecotrust-canada.github.io/markdown-toc/
 
 ## Table of Contents:
 * [Quickstart](#quickstart)
-* [Specifics & Caveats](#specifics---caveats)
+* [Sensor Specifics & Caveats](#sensor-specifics---caveats)
 * [Common Sink Configurations](#common-sink-configurations)
 * [Exemplary Streaming Configurations](#exemplary-streaming-configurations)
   + [Streaming Example: Webcam](#streaming-example--webcam)
@@ -62,7 +62,7 @@ python best_demo.py --stream-config ../data/data-best/webcam.cfg --capture OUTPU
 python best_demo.py --stream-config OUTPUT_FOLDER/replay.cfg
 ```
 
-## Specifics & Caveats
+## Sensor Specifics & Caveats
 * For USB3 camera setups, you should increase the internal USB memory.<br/>For example, on Unix, append `usbcore.usbfs_memory_mb=1024` (enter an approximate memory consumption according to your setup) to the parameter `GRUB_CMDLINE_LINUX_DEFAULT` in `/etc/default/grub`. Then `sudo update-grub` and `reboot`.
 * Sensor-specific SDKs must be installed manually, then enable the corresponding `VCP_BEST_WITH_xxx` option of VCP via CMake
   * ZED SDK: https://www.stereolabs.com/developers/release/
