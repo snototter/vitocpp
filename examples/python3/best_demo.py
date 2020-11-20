@@ -137,7 +137,7 @@ class StreamingDemo(object):
         for idx, frame in enumerate(frameset):
             frame_lbl = capture.frame_label(idx)
             vis_frame = imvis.pseudocolor(frame, [0, 5000], color_map=colormaps.colormap_turbo_rgb)\
-                if capture.is_depth(idx) else frame
+                if capture.is_depth(idx) or capture.is_infrared(idx) else frame
             vis_frames.append(vis_frame)
             vis_labels.append(frame_lbl)
         

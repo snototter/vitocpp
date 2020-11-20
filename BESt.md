@@ -1,8 +1,7 @@
 # BESt - Best Effort Streaming
 This submodule enables "best effort streaming" from multiple cameras.
 To start streaming, you simply need a libconfig++ style configuration file (see "streaming examples" below).
-Note that the following examples only show the most minimalistic configuration (mandatory configuration parameters) to be able to start streaming.
-For a more detailed overview of available options, please refer to the separate configuration files within `<VCP_ROOT_DIR>/examples/data/data-best/*.cfg`.
+Note that the following examples show only a few of the supported/available configuration parameters. For a more detailed overview of available options, please refer to the separate configuration files within `<VCP_ROOT_DIR>/examples/data/data-best/*.cfg`.
 
 Currently supported sensors:
 * Standard webcams, videos and image sequences (i.e. all images within a folder).
@@ -13,7 +12,7 @@ Currently supported sensors:
 TOC generator: https://ecotrust-canada.github.io/markdown-toc/
 -->
 
-Table-of-Contents:
+## Table of Contents:
 * [Quickstart](#quickstart)
 * [Specifics & Caveats](#specifics---caveats)
 * [Common Sink Configurations](#common-sink-configurations)
@@ -132,7 +131,60 @@ sink-sequence = {
 
 
 ### Streaming Example: Azure Kinect (K4A)
-TODO
+The following configuration enables streaming from a Microsoft Azure Kinect (several optional parameters are included).
+```c++
+sink = {
+  // [Mandatory] Specify the device/sink type.
+  sink_type = "k4a";
+
+  // [Optional] If omitted or empty, the first available azure kinect will be opened.
+  serial_number = "";
+
+  // [Optional] Set to true to rectify streams.
+  rectify = true;
+
+  // [Optional] Where to load/store the intrinsic calibration from/to.
+  calibration_file = "calib-k4a.xml";
+
+  // [Optional] If true, the sensor calibration will be stored to "calibration_file".
+  write_calibration = true; // If set, the calibration_file will be overwritten
+
+  // [Optional] If true, depth stream will be aligned to the color stream's view (if enabled).
+  align_depth_to_color = true;
+
+  // [Optional] How long should we wait (at most) for a new frameset to arrive.
+  capture_timeout_ms = 500;
+
+  // [Optional] k4a_color_resolution_t (specify the enum's name).
+  color_resolution = "K4A_COLOR_RESOLUTION_720P";
+
+  // [Optional] k4a_depth_mode_t (specify the enum's name).
+  depth_mode = "K4A_DEPTH_MODE_NFOV_UNBINNED";
+
+  // [Optional] In addition to color and depth, you can also retrieve the infrared stream.
+  enable_infrared_stream = false;
+
+  // [Optional] k4a_fps_t (specify the enum's name).
+  fps = "K4A_FRAMES_PER_SECOND_15";
+
+  // [Optional] Turn indicator LED on/off.
+  disable_streaming_indicator = false;
+
+  // [Optional] List of color sensor settings which should be set to "auto" mode.
+  color_control_auto = [
+    "K4A_COLOR_CONTROL_EXPOSURE_TIME_ABSOLUTE",
+    "K4A_COLOR_CONTROL_WHITEBALANCE"
+  ];
+
+  // [Optional] List of (color sensor setting, value) pairs which should be set.
+  color_control_manual = (
+    ("K4A_COLOR_CONTROL_BACKLIGHT_COMPENSATION", 1),
+    ("K4A_COLOR_CONTROL_POWERLINE_FREQUENCY", 1),
+    ("K4A_COLOR_CONTROL_SATURATION", 32),
+    ("K4A_COLOR_CONTROL_SHARPNESS", 2)
+  );
+};
+```
 
 ### Streaming Example: RealSense
 The following configuration enables streaming from an Intel RealSense2 sensor:
