@@ -4,20 +4,19 @@ C++/Python 3 utilities for common vision tasks, _e.g._ streaming, visualization 
 <b>Note:</b> As of 01/2020 this repository is <b>WIP</b>, I'm rewriting my utilities (especially simplifying the streaming module) over the next couple of months.
 
 ```
-Current status:
+Current status (12/2020):
 cloc --exclude-dir=.venv3,build,cmake,third-party,gen,doc,generated --exclude-lang=make,XML .
-TODO exclude mappings before updating LOC count!
 -------------------------------------------------------------------------------
 Language                     files          blank        comment           code
 -------------------------------------------------------------------------------
-C++                             61           4137           2295          22253
-C/C++ Header                    53           1559           1783           4216
-Python                          21            722            932           2608
-CMake                           12            269            243           1167
-Markdown                         3             53              0            256
-Bourne Shell                     3             37             70            224
+C++                             64           4305           2306          23566
+C/C++ Header                    56           1600           1827           4435
+Python                          25            841           1030           3172
+CMake                           12            270            248           1179
+Markdown                         3             97              0            389
+Bourne Shell                     3             41             77            251
 -------------------------------------------------------------------------------
-SUM:                           153           6777           5323          30724
+SUM:                           163           7154           5488          32992
 -------------------------------------------------------------------------------
 ```
 
@@ -158,26 +157,10 @@ Especially for the "best effort streaming" module, tests become quite difficult 
   ```
 
 ## TODOs
-* [ ] BESt module
-  * [ ] Load extrinsics
-  * [ ] Rectify streams
-    * [x] Mono
-    * [ ] Stereo
-    * [x] RGB+D K4A
-    * [x] RGB+D RealSense
-  * [x] Azure Kinect
-    * [x] Stream raw data
-    * [x] Align RGB+D
-    * [x] Query intrinsics
-  * [ ] mvBlueFox
-  * [ ] Mobotix, etc.
-* [ ] Increase unit test coverage
-* [ ] Tools/examples
+* [ ] Additional tools/examples
   * [ ] C++ Viewer (resize streams and use liveview)
   * [ ] Qt Viewer
   * [ ] Capturing tool
 * [ ] Camera calibration (nice-to-have)
   * [ ] Intrinsic calibration
   * [x] Extrinsic calibration
-* [ ] Tracking module
-
