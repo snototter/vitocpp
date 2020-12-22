@@ -1544,6 +1544,7 @@ private:
         VCP_LOG_FAILURE("RealSense image request failed: " << e.what());
       }
     }
+    available_ = 0;
     pipe.stop();
   }
 

@@ -1188,6 +1188,7 @@ private:
                           << std::setw(5) << (1000.0 / ms_between_frames_) << " fps");
 #endif // VCP_BEST_DEBUG_FRAMERATE
     }
+    available_ = 0;
     // Clean up
     if (k4a_capture)
       k4a_capture_release(k4a_capture);
@@ -1705,6 +1706,7 @@ private:
                           << std::setw(5) << (1000.0 / ms_between_frames_) << " fps");
 #endif // VCP_BEST_DEBUG_FRAMERATE
     }
+    available_ = 0;
 
     // Clean up
     for (size_t idx = 0; idx < k4a_devices_.size(); ++idx)
