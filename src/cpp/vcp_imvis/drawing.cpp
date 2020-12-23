@@ -1032,8 +1032,32 @@ cv::Point GetTextPos(const cv::RotatedRect &rect, int text_anchor)
   return vcp::convert::ToPoint(tpvec_rot);
 }
 
+char TextAnchorFromString(const std::string &s)
+{
+  if (s.compare("northwest") == 0 || s.compare("topleft") == 0)
+    return textanchor::TOP | textanchor::LEFT;
+  if (s.compare("north") == 0 || s.compare("top") == 0)
+    return textanchor::TOP | textanchor::HCENTER;
+  if (s.compare("northeast") == 0 || s.compare("topright") == 0)
+    return textanchor::TOP | textanchor::RIGHT;
+  if (s.compare("east") == 0 || s.compare("right") == 0)
+    return textanchor::VCENTER | textanchor::RIGHT;
+  if (s.compare("southeast") == 0 || s.compare("bottomright") == 0)
+    return textanchor::BOTTOM | textanchor::RIGHT;
+  if (s.compare("south") == 0 || s.compare("bottom") == 0)
+    return textanchor::BOTTOM | textanchor::HCENTER;
+  if (s.compare("southwest") == 0 || s.compare("bottomleft") == 0)
+    return textanchor::BOTTOM | textanchor::LEFT;
+  if (s.compare("west") == 0 || s.compare("left") == 0)
+    return textanchor::VCENTER | textanchor::RIGHT;
+  if (s.compare("center") == 0)
+    return textanchor::VCENTER | textanchor::HCENTER;
+  VCP_LOG_FAILURE("Invalid text anchor string '" << s << "'.");
+  return 0;
+}
 
-std::string TextAnchorToString(int text_anchor)
+
+std::string TextAnchorToString(char text_anchor)
 {
   if (text_anchor & textanchor::LEFT)
   {
@@ -1056,10 +1080,10 @@ std::string TextAnchorToString(int text_anchor)
 
   if (text_anchor & textanchor::TOP)
     return "north";
-  if (text_anchor & textanchor::VCENTER)
-    return "center";
-  else
+  if (text_anchor & textanchor::BOTTOM)
     return "south";
+  else
+    return "center";
 }
 
 

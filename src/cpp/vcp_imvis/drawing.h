@@ -36,7 +36,7 @@ namespace textanchor
 {
 
 /** @brief Supported anchor definitions for positioning text and text boxes. Force them to be int, so we can perform bit-wise operations. */
-enum TextAnchor : int
+enum TextAnchor : char
 {
   // Do NOT change these values, unless you know what you're doing.
   LEFT = 1,
@@ -55,7 +55,12 @@ cv::Point GetTextPos(const cv::RotatedRect &rect, int text_anchor=textanchor::TO
 
 
 /** @brief Get a readable representation of a text anchor value. */
-std::string TextAnchorToString(int text_anchor);
+std::string TextAnchorToString(char text_anchor);
+
+/** @brief Parse a TextAnchor setting from the given string (e.g. "northwest", "center", "southeast", or "bottomright", etc. */
+char TextAnchorFromString(const std::string &s);
+
+
 
 
 /** @brief Draw text on top of a (potentially transparent) filled rectangle. */
