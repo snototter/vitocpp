@@ -11,6 +11,7 @@ if (VCP_IMUTILS_WITH_COLORNAMES)
 endif()
 
 set(PUBLIC_HEADERS
+    vcp_imutils.h
     opencv_compatibility.h
     imabstraction.h
     imutils.h

@@ -11,6 +11,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 # Header files
 set(HEADERS 
+    vcp_ui.h
     point_selection.h
     rect_selection.h
 )

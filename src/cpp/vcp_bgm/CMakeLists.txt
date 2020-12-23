@@ -12,6 +12,7 @@ message("Configuring module ${LIB_NAME}")
 
 # Header files
 set(HEADERS 
+    vcp_bgm.h
     background_model.h
     approx_median_bgm.h
     blockbased_mean_bgm.h

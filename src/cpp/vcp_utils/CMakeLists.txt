@@ -6,6 +6,7 @@ message("Configuring module ${LIB_NAME}")
 
 # Header files
 set(HEADERS 
+    vcp_utils.h
     enum_utils.h
     file_utils.h
     vcp_error.h

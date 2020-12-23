@@ -18,6 +18,7 @@ include_directories(${NLOHMANNJSON_INCLUDE_DIR})
 
 # Header files
 set(HEADERS 
+    vcp_config.h
     config_params.h
 )
 

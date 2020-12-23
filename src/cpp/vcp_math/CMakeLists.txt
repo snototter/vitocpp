@@ -5,6 +5,7 @@ set(LIB_NAME ${PROJECT_NAME})
 message("Configuring module ${LIB_NAME}")
 
 set(PUBLIC_HEADERS
+    vcp_math.h
     geometry2d.h
     geometry3d.h
     common.h

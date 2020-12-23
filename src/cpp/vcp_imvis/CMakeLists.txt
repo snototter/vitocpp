@@ -11,6 +11,7 @@ include_directories(${OpenCV_INCLUDE_DIRS})
 
 # Header files
 set(HEADERS 
+    vcp_imvis.h
     pseudocolor.h
     anaglyph.h
     collage.h
