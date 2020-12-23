@@ -94,7 +94,7 @@ std::string ToStr(const T &t) {
 }
 
 /** @brief Specialization for booleans, returning "true" or "false". */
-std::string ToStr(bool v);
+std::string ToStr(const bool &v);
 
 /** @brief Template to allow conversion from numbers to a string with given precision.
   * @param[in] t Value to convert to a string.
