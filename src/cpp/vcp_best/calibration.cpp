@@ -650,6 +650,7 @@ std::vector<StreamIntrinsics> LoadIntrinsicsFromFile(const std::string &calibrat
 
   //TODO need to sort the intrinsics - or better, return a map!
   VCP_LOG_FIXME("Sort intrinsics: " << std::endl << intrinsics);
+  VCP_ERROR("Sorting intrinsics is not implemented - may change the interface to return a more useful map!");
   return intrinsics;
 }
 
