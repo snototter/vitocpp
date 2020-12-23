@@ -423,8 +423,11 @@ StreamIntrinsics LoadGenericMonocularCalibration(const cv::FileStorage &fs,
   if (!ReadMat(fs, "D" + postfix, calib_keys, D))
     ReadMat(fs, "distortion" + postfix, calib_keys, D);
 
-  ReadScalar(fs, "width" + postfix, calib_keys, width, -1);
-  ReadScalar(fs, "height" + postfix, calib_keys, height, -1);
+  // Read image dimensions. If "width"+postfix doesn't exist, try looking up "width".
+  if (!ReadScalar(fs, "width" + postfix, calib_keys, width, -1))
+    ReadScalar(fs, "width", calib_keys, width, -1);
+  if (!ReadScalar(fs, "height" + postfix, calib_keys, height, -1))
+    ReadScalar(fs, "height", calib_keys, height, -1);
 
   const std::string def_lbl = postfix.empty() ? "unknown" : (postfix[0] == '_' ? postfix.substr(1) : postfix);
   ReadScalar(fs, "label" + postfix, calib_keys, lbl, def_lbl);
