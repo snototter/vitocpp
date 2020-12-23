@@ -40,6 +40,9 @@ int main(int argc, char **argv)
                << ", " << vcp::utils::string::ToStr(std::chrono::microseconds{15})
                << ", " << vcp::utils::string::ToStr(std::chrono::nanoseconds{3000}));
 
+  VCP_LOG_INFO("ToStr: " << vcp::utils::string::ToStr(true) << " vs. " << vcp::utils::string::ToStr(false) << std::endl
+               << "  Num with precision 3: " << vcp::utils::string::ToStrPrec(13.1234567, 3) << ", vs 6: " << vcp::utils::string::ToStrPrec(13.1234567, 6));
+
   VCP_LOG_INFO("Filename utilities:");
   const std::vector<std::string> tokens = {"one", "tokenized/", "path"};
   std::cout << "Fullfile: " << vcp::utils::file::FullFile(tokens) << std::endl;

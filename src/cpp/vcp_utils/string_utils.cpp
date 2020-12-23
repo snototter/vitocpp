@@ -103,6 +103,22 @@ std::string Replace(const std::string &str, const std::string &search, const std
   return s;
 }
 
+std::string ToStr(bool v)
+{
+  if (v)
+    return "true";
+  else
+    return "false";
+}
+
+std::string ToStr(const bool &v)
+{
+  if (v)
+    return "true";
+  else
+    return "false";
+}
+
 std::string ToStr(const std::chrono::hours &h)
 {
   std::stringstream ss;
