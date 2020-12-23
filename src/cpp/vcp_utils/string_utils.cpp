@@ -2,6 +2,7 @@
 #include <algorithm>
 #include <iterator>
 #include <fstream>
+#include <sstream>
 #include "vcp_logging.h"
 
 namespace vcp {
@@ -100,6 +101,48 @@ std::string Replace(const std::string &str, const std::string &search, const std
     start_pos = s.find(search);
   } while (start_pos != std::string::npos);
   return s;
+}
+
+std::string ToStr(const std::chrono::hours &h)
+{
+  std::stringstream ss;
+  ss << h.count() << 'h';
+  return ss.str();
+}
+
+std::string ToStr(const std::chrono::minutes &m)
+{
+  std::stringstream ss;
+  ss << m.count() << "min";
+  return ss.str();
+}
+
+std::string ToStr(const std::chrono::seconds &s)
+{
+  std::stringstream ss;
+  ss << s.count() << 's';
+  return ss.str();
+}
+
+std::string ToStr(const std::chrono::milliseconds &ms)
+{
+  std::stringstream ss;
+  ss << ms.count() << "ms";
+  return ss.str();
+}
+
+std::string ToStr(const std::chrono::microseconds &us)
+{
+  std::stringstream ss;
+  ss << us.count() << "us";
+  return ss.str();
+}
+
+std::string ToStr(const std::chrono::nanoseconds &ns)
+{
+  std::stringstream ss;
+  ss << ns.count() << "ns";
+  return ss.str();
 }
 
 std::string SecondsToStr(int seconds)

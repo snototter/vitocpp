@@ -35,6 +35,11 @@ int main(int argc, char **argv)
             << " 10599: " << vcp::utils::string::SecondsToStr(10599) << std::endl
             << "999999: " << vcp::utils::string::SecondsToStr(999999) << std::endl << std::endl;
 
+  VCP_LOG_INFO("Printing durations: " << vcp::utils::string::ToStr(std::chrono::seconds{10})
+               << ", " << vcp::utils::string::ToStr(std::chrono::milliseconds{33})
+               << ", " << vcp::utils::string::ToStr(std::chrono::microseconds{15})
+               << ", " << vcp::utils::string::ToStr(std::chrono::nanoseconds{3000}));
+
   VCP_LOG_INFO("Filename utilities:");
   const std::vector<std::string> tokens = {"one", "tokenized/", "path"};
   std::cout << "Fullfile: " << vcp::utils::file::FullFile(tokens) << std::endl;

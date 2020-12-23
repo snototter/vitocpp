@@ -5,6 +5,7 @@
 #include <iomanip>
 #include <string>
 #include <vector>
+#include <chrono>
 
 // TODO generalize to basic_string and make header-only, e.g. trim: https://github.com/wichtounet/cpp_utils
 
@@ -102,6 +103,25 @@ std::string ToStrPrec(const T &t, int prec) {
   os << std::fixed << std::setprecision(prec) << t;
   return os.str();
 }
+
+/** @brief Returns a string representation of the given std::chrono::duration. */
+std::string ToStr(const std::chrono::hours &h);
+
+/** @brief Returns a string representation of the given std::chrono::duration. */
+std::string ToStr(const std::chrono::minutes &m);
+
+/** @brief Returns a string representation of the given std::chrono::duration. */
+std::string ToStr(const std::chrono::seconds &s);
+
+/** @brief Returns a string representation of the given std::chrono::duration. */
+std::string ToStr(const std::chrono::milliseconds &ms);
+
+/** @brief Returns a string representation of the given std::chrono::duration. */
+std::string ToStr(const std::chrono::microseconds &us);
+
+/** @brief Returns a string representation of the given std::chrono::duration. */
+std::string ToStr(const std::chrono::nanoseconds &ns);
+
 
 /**
  * @brief Returns a human readable string approximating the given time, e.g. sec2str(3700*24+50) = '1 day 41 mins'
