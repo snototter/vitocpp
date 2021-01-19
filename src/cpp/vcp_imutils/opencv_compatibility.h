@@ -38,7 +38,7 @@ inline bool IsValidSize(const cv::Size &sz)
 #endif
 }
 
-// OpenCV 4 changed the constants for cvtColor and mouse events
+// OpenCV 4 dropped some deprecated constants
 //// Wrap cvtColor constants
 #if CV_VERSION_MAJOR < 3
 #define CVTCOLOR_BGR2GRAY CV_BGR2GRAY
@@ -104,6 +104,13 @@ inline bool IsValidSize(const cv::Size &sz)
 
 #define CVTCOLOR_RGB2Lab cv::COLOR_RGB2Lab
 #define CVTCOLOR_BGR2Lab cv::COLOR_BGR2Lab
+#endif
+
+//// Wrap cvtColor constants
+#if CV_VERSION_MAJOR < 3
+#define COMPAT_CV_CAP_PROP_POS_FRAMES CV_CAP_PROP_POS_FRAMES
+#else
+#define COMPAT_CV_CAP_PROP_POS_FRAMES cv::CAP_PROP_POS_FRAMES
 #endif
 
 #endif // __VCP_OPENCV_COMPATIBILITY_H__

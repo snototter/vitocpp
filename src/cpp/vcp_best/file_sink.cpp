@@ -117,7 +117,7 @@ public:
 
     if (params_.first_frame > 0)
     {
-      if (!capture_->set(CV_CAP_PROP_POS_FRAMES, static_cast<double>(params_.first_frame)))
+      if (!capture_->set(COMPAT_CV_CAP_PROP_POS_FRAMES, static_cast<double>(params_.first_frame)))
       {
         VCP_LOG_FAILURE("Cannot jump to specified first frame [" << params_.first_frame << "]");
       }
@@ -354,7 +354,7 @@ public:
       return false;
     }
 
-    if (!capture_->set(CV_CAP_PROP_POS_FRAMES, static_cast<double>(params_.first_frame)))
+    if (!capture_->set(COMPAT_CV_CAP_PROP_POS_FRAMES, static_cast<double>(params_.first_frame)))
       VCP_LOG_FAILURE("Cannot jump to specified first frame ['" << params_.first_frame << "] of file '" << params_.filename << "'");
 
     eof_ = false;
@@ -443,11 +443,11 @@ public:
     std::vector<cv::Mat> frames;
     if (capture_)
     {
-      const double current_frame = capture_->get(CV_CAP_PROP_POS_FRAMES);
+      const double current_frame = capture_->get(COMPAT_CV_CAP_PROP_POS_FRAMES);
       if (current_frame > 1.0)
       {
         // Frame index already points to the next frame (which is not yet loaded, so seeking back must decrease by 2)
-        if (capture_->set(CV_CAP_PROP_POS_FRAMES, current_frame - 2.0))
+        if (capture_->set(COMPAT_CV_CAP_PROP_POS_FRAMES, current_frame - 2.0))
         {
           return Next();
         }
@@ -477,11 +477,11 @@ public:
     std::vector<cv::Mat> frames;
     if (capture_)
     {
-      const double current_frame = capture_->get(CV_CAP_PROP_POS_FRAMES);
+      const double current_frame = capture_->get(COMPAT_CV_CAP_PROP_POS_FRAMES);
       // Frame index already points to the next frame (which is not yet loaded, so
       // the skip step must be decreased by 1 (ffwd 1 = next frame, ffwd 2 = skip 1 frame, etc.)
       const double next_frame_index = current_frame + static_cast<double>(num_frames - 1);
-      if (capture_->set(CV_CAP_PROP_POS_FRAMES, next_frame_index))
+      if (capture_->set(COMPAT_CV_CAP_PROP_POS_FRAMES, next_frame_index))
       {
         frames = Next();
       }
