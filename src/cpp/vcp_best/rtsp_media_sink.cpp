@@ -126,6 +126,7 @@ public:
 protected:
   void DecodeFrame(unsigned frame_size, unsigned num_truncated_bytes, struct timeval /*presentation_time*/, unsigned /*duration_in_microseconds*/) //, cv::Mat &decoded_frame) override
   {
+    VCP_UNUSED_VAR(frame_size);
     // We've just received a frame of data.
     if (num_truncated_bytes > 0)
     {
