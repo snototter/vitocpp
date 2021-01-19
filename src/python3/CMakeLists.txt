@@ -22,7 +22,7 @@ include_directories(${PYTHON_INCLUDE_DIRS})
 set(ARCHIVE_OUTPUT_POSTFIX _py3)
 
 # Get proper extension for python binary shared object on this platform
-execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import distutils.sysconfig; print(distutils.sysconfig.get_config_var('SO'))"
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "import distutils.sysconfig; print(distutils.sysconfig.get_config_var('EXT_SUFFIX'))"
     RESULT_VARIABLE PYTHON_${PROJECT_NAME}_PY_PROCESS
     OUTPUT_VARIABLE ${PROJECT_NAME}_PY_SUFFIX
     OUTPUT_STRIP_TRAILING_WHITESPACE)
