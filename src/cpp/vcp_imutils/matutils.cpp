@@ -136,7 +136,10 @@ std::string CVMatDepthToString(int depth, int channels)
   MAKE_DEPTH_TO_STRING_CASE(CV_32S, str);
   MAKE_DEPTH_TO_STRING_CASE(CV_32F, str);
   MAKE_DEPTH_TO_STRING_CASE(CV_64F, str);
+#if CV_VERSION_MAJOR < 4
+  // CV_USRTYPE has been dropped in OpenCV 4
   MAKE_DEPTH_TO_STRING_CASE(CV_USRTYPE1, str);
+#endif
 
   default:
     str << "Unknown depth[" << CV_MAT_DEPTH(depth) << "]";
