@@ -19,6 +19,7 @@
 #include <vcp_utils/file_utils.h>
 #include <vcp_utils/string_utils.h>
 #include <vcp_imutils/matutils.h>
+#include <vcp_imutils/opencv_compatibility.h>
 
 #include "capture.h"
 
