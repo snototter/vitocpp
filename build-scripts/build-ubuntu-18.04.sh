@@ -29,7 +29,7 @@ echo
 ##############################################################################
 echo "[vcp] Checking requirements"
 echo
-"$VCP_SCRIPT_DIR"/setup-dependencies-ubuntu-18.04.sh
+/bin/bash "$VCP_SCRIPT_DIR"/setup-dependencies-ubuntu-18.04.sh
 OPT_PKG_FLAGS=$?
 
 # Exit upon error (setup-dependencies returns a status code indicating which
