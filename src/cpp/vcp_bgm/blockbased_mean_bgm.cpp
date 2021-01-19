@@ -39,7 +39,7 @@ public:
       params_ = p;
       return true;
     }
-    catch (std::bad_cast)
+    catch (std::bad_cast&)
     {
       VCP_ERROR("Parameters are not of type BlockBasedMeanBgmParams.");
     }

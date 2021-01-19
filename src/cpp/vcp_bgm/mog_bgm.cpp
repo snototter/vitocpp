@@ -68,7 +68,7 @@ public:
       cvmog_->setComplexityReductionThreshold(p.complexity_reduction_threshold);
       return true;
     }
-    catch (std::bad_cast)
+    catch (std::bad_cast&)
     {
       VCP_ERROR("Parameters are not of type ApproxMedianBgmParams.");
     }
