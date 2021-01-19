@@ -606,7 +606,7 @@ void ExtractK4AStreams(const K4ASinkParams &params,
 #ifdef VCP_BEST_WITH_K4A_MJPG
       // Stream is JPG encoded.
       // Note that decoding a stream into a 3840x2160x3 image takes ~40 ms!
-      cvrgb = cv::imdecode(buf, CV_LOAD_IMAGE_COLOR);
+      cvrgb = cv::imdecode(buf, COMPAT_CV_LOAD_IMAGE_COLOR);
 #else
       // Stream is BGRA32.
       // Converting a 3840x2160x4 image to 3-channels only takes ~2 ms.

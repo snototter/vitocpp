@@ -106,11 +106,21 @@ inline bool IsValidSize(const cv::Size &sz)
 #define CVTCOLOR_BGR2Lab cv::COLOR_BGR2Lab
 #endif
 
-//// Wrap cvtColor constants
+//// Wrap CAPTURE PROP constants
 #if CV_VERSION_MAJOR < 3
 #define COMPAT_CV_CAP_PROP_POS_FRAMES CV_CAP_PROP_POS_FRAMES
 #else
 #define COMPAT_CV_CAP_PROP_POS_FRAMES cv::CAP_PROP_POS_FRAMES
+#endif
+
+//// Wrap image loading/decoding flags
+#if CV_VERSION_MAJOR < 3
+#define COMPAT_CV_LOAD_IMAGE_COLOR CV_LOAD_IMAGE_COLOR
+#define COMPAT_CV_LOAD_IMAGE_UNCHANGED CV_LOAD_IMAGE_UNCHANGED
+#else
+//FIXME
+#define COMPAT_CV_LOAD_IMAGE_COLOR cv::IMREAD_COLOR
+#define COMPAT_CV_LOAD_IMAGE_UNCHANGED cv::IMREAD_UNCHANGED
 #endif
 
 #endif // __VCP_OPENCV_COMPATIBILITY_H__

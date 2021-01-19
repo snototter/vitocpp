@@ -17,6 +17,7 @@
 
 #include "curl_file_handling.h"
 #include <vcp_utils/vcp_error.h>
+#include <vcp_imutils/opencv_compatibility.h>
 
 namespace vcp
 {
@@ -315,7 +316,7 @@ private:
       curl::url_fgets(mjpg_multi_handle_, garbage, sizeof(garbage), mjpg_stream_);
       // Finished reading a frame, now convert!
       cv::Mat buf(1, jpeg_bytes, CV_8UC1, (void *)frame_data);
-      cv::Mat decoded = cv::imdecode(buf, CV_LOAD_IMAGE_UNCHANGED);
+      cv::Mat decoded = cv::imdecode(buf, COMPAT_CV_LOAD_IMAGE_UNCHANGED);
       cv::Mat frame;
       if (params_.color_as_bgr)
         frame = decoded;

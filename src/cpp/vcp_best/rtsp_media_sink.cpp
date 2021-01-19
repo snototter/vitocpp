@@ -9,6 +9,8 @@
     #include <opencv2/highgui.hpp>
 #endif
 
+#include <vcp_imutils/opencv_compatibility.h>
+
 // Use this to dump incoming rtsp frames (which 'should be' split into NAL units by live555).
 //#define DEBUG_RTSP_H264_DECODING
 #ifdef DEBUG_RTSP_H264_DECODING
@@ -136,7 +138,7 @@ protected:
         VCP_ERROR("Cannot decode a MJPEG stream without knowing its resolution. You have to specify 'resolution' or 'frame_width' & 'frame_height' via the configuration file!");
       }
       cv::Mat buf(frame_height_, frame_width_, CV_8UC3, (void *)receive_buffer_);
-      cv::Mat decoded_frame = cv::imdecode(buf, CV_LOAD_IMAGE_COLOR);
+      cv::Mat decoded_frame = cv::imdecode(buf, COMPAT_CV_LOAD_IMAGE_COLOR);
       ++num_received_frames_;
       // Notify observer (which stores the image in a queue)
       (*this->callback_frame_received_)(color_as_rgb_ ? FlipChannels(decoded_frame) : decoded_frame, this->callback_user_data_);
