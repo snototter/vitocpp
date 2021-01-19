@@ -13,6 +13,7 @@
     #include <opencv2/imgproc.hpp>
 #endif
 #include <opencv2/imgproc/imgproc.hpp>
+#include "opencv_compatibility.h"
 
 #define VCP_VERBOSE_TIMING
 #include <vcp_utils/timing_utils.h>
@@ -248,13 +249,13 @@ cv::Mat HistogramEqualization(const cv::Mat &img, bool is_rgb)
     cv::Mat ycrcb;
     if (img.channels() == 3)
     {
-      cv::cvtColor(img, ycrcb, is_rgb ? CV_RGB2YCrCb : CV_BGR2YCrCb);
+      cv::cvtColor(img, ycrcb, is_rgb ? CVTCOLOR_RGB2YCrCb : CVTCOLOR_BGR2YCrCb);
     }
     else
     {
       cv::Mat c3;
-      cv::cvtColor(img, c3, CV_BGRA2BGR);
-      cv::cvtColor(c3, ycrcb, is_rgb ? CV_RGB2YCrCb : CV_BGR2YCrCb);
+      cv::cvtColor(img, c3, CVTCOLOR_BGRA2BGR);
+      cv::cvtColor(c3, ycrcb, is_rgb ? CVTCOLOR_RGB2YCrCb : CVTCOLOR_BGR2YCrCb);
     }
 
     // Split channels
@@ -266,13 +267,13 @@ cv::Mat HistogramEqualization(const cv::Mat &img, bool is_rgb)
     cv::merge(channels, ycrcb);
     if (img.channels() == 3)
     {
-      cv::cvtColor(ycrcb, res, is_rgb ? CV_YCrCb2RGB : CV_YCrCb2BGR);
+      cv::cvtColor(ycrcb, res, is_rgb ? CVTCOLOR_YCrCb2RGB : CVTCOLOR_YCrCb2BGR);
     }
     else
     {
       cv::Mat c3;
-      cv::cvtColor(ycrcb, c3, is_rgb ? CV_YCrCb2RGB : CV_YCrCb2BGR);
-      cv::cvtColor(c3, res, CV_BGR2BGRA);
+      cv::cvtColor(ycrcb, c3, is_rgb ? CVTCOLOR_YCrCb2RGB : CVTCOLOR_YCrCb2BGR);
+      cv::cvtColor(c3, res, CVTCOLOR_BGR2BGRA);
     }
   }
   else if (img.channels() == 1)
@@ -478,12 +479,12 @@ cv::Mat ConvertToHsv(const cv::Mat &img, bool is_rgb)
 {
   cv::Mat res;
   if (img.channels() == 3)
-    cv::cvtColor(img, res, is_rgb ? CV_RGB2HSV : CV_BGR2HSV);
+    cv::cvtColor(img, res, is_rgb ? CVTCOLOR_RGB2HSV : CVTCOLOR_BGR2HSV);
   else if (img.channels() == 4)
   {
     cv::Mat c3;
-    cv::cvtColor(img, c3, CV_BGRA2BGR);
-    cv::cvtColor(c3, res, is_rgb ? CV_RGB2HSV : CV_BGR2HSV);
+    cv::cvtColor(img, c3, CVTCOLOR_BGRA2BGR);
+    cv::cvtColor(c3, res, is_rgb ? CVTCOLOR_RGB2HSV : CVTCOLOR_BGR2HSV);
   }
   else
     VCP_ERROR("Only RGB/BGR (+alpha) input images are supported for HSV conversion.");
@@ -494,12 +495,12 @@ cv::Mat ConvertToLab(const cv::Mat &img, bool is_rgb)
 {
   cv::Mat res;
   if (img.channels() == 3)
-    cv::cvtColor(img, res, is_rgb ? CV_RGB2Lab : CV_BGR2Lab);
+    cv::cvtColor(img, res, is_rgb ? CVTCOLOR_RGB2Lab : CVTCOLOR_BGR2Lab);
   else if (img.channels() == 4)
   {
     cv::Mat c3;
-    cv::cvtColor(img, c3, CV_BGRA2BGR);
-    cv::cvtColor(c3, res, is_rgb ? CV_RGB2Lab : CV_BGR2Lab);
+    cv::cvtColor(img, c3, CVTCOLOR_BGRA2BGR);
+    cv::cvtColor(c3, res, is_rgb ? CVTCOLOR_RGB2Lab : CVTCOLOR_BGR2Lab);
   }
   else
     VCP_ERROR("Only RGB/BGR (+alpha) input images are supported for L*a*b* conversion.");
@@ -591,7 +592,7 @@ cv::Mat ConvertToColorName(const cv::Mat &img, bool is_rgb)
       res = ColorNameHelper<false>(img, true);
     else
     {
-      cv::cvtColor(img, cvt, CV_BGR2RGB);
+      cv::cvtColor(img, cvt, CVTCOLOR_BGR2RGB);
       res = ColorNameHelper<false>(cvt, false);
     }
   }
@@ -599,12 +600,12 @@ cv::Mat ConvertToColorName(const cv::Mat &img, bool is_rgb)
   {
     if (is_rgb)
     {
-      cv::cvtColor(img, cvt, CV_RGBA2RGB);
+      cv::cvtColor(img, cvt, CVTCOLOR_RGBA2RGB);
       res = ColorNameHelper<false>(cvt, true);
     }
     else
     {
-      cv::cvtColor(img, cvt, CV_BGRA2RGB);
+      cv::cvtColor(img, cvt, CVTCOLOR_BGRA2RGB);
       res = ColorNameHelper<false>(cvt, false);
     }
   }
@@ -622,7 +623,7 @@ cv::Mat ConvertToColorNameFeature(const cv::Mat &img, bool is_rgb)
       res = ColorNameHelper<true>(img, true);
     else
     {
-      cv::cvtColor(img, cvt, CV_BGR2RGB);
+      cv::cvtColor(img, cvt, CVTCOLOR_BGR2RGB);
       res = ColorNameHelper<true>(cvt, false);
     }
   }
@@ -630,12 +631,12 @@ cv::Mat ConvertToColorNameFeature(const cv::Mat &img, bool is_rgb)
   {
     if (is_rgb)
     {
-      cv::cvtColor(img, cvt, CV_RGBA2RGB);
+      cv::cvtColor(img, cvt, CVTCOLOR_RGBA2RGB);
       res = ColorNameHelper<true>(cvt, true);
     }
     else
     {
-      cv::cvtColor(img, cvt, CV_BGRA2RGB);
+      cv::cvtColor(img, cvt, CVTCOLOR_BGRA2RGB);
       res = ColorNameHelper<true>(cvt, false);
     }
   }
@@ -930,9 +931,9 @@ cv::Mat Grayscale(const cv::Mat &image, bool is_rgb, bool output_single_channel)
   // Check layers
   cv::Mat gray;
   if (image.channels() == 3)
-    cv::cvtColor(image, gray, is_rgb ? cv::COLOR_RGB2GRAY : cv::COLOR_BGR2GRAY);
+    cv::cvtColor(image, gray, is_rgb ? CVTCOLOR_RGB2GRAY : CVTCOLOR_BGR2GRAY);
   else if (image.channels() == 4)
-    cv::cvtColor(image, gray, is_rgb ? cv::COLOR_RGBA2GRAY : cv::COLOR_BGRA2GRAY);
+    cv::cvtColor(image, gray, is_rgb ? CVTCOLOR_RGBA2GRAY : CVTCOLOR_BGRA2GRAY);
   else if (image.channels() == 1)
     gray = image;
   else

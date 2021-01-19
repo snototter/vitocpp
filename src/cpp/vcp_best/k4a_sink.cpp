@@ -10,6 +10,7 @@
 #include <malloc.h>
 
 #include <vcp_imutils/matutils.h>
+#include <vcp_imutils/opencv_compatibility.h>
 
 
 #include <opencv2/core/version.hpp>
@@ -612,9 +613,9 @@ void ExtractK4AStreams(const K4ASinkParams &params,
       // We need to drop the alpha channel anyways, so use cvtColor to make
       // the deep buffer copy:
       if (params.color_as_bgr)
-        cv::cvtColor(buf, cvrgb, CV_BGRA2BGR);
+        cv::cvtColor(buf, cvrgb, CVTCOLOR_BGRA2BGR);
       else
-        cv::cvtColor(buf, cvrgb, CV_BGRA2RGB);
+        cv::cvtColor(buf, cvrgb, CVTCOLOR_BGRA2RGB);
 #endif
       SetIntrinsicsResolution(rgb_intrinsics, cvrgb);
       if (params.rectify)

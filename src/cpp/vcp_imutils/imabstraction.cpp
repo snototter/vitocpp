@@ -8,6 +8,8 @@
     #include <opencv2/imgproc.hpp>
 #endif
 
+#include "opencv_compatibility.h"
+
 namespace vcp
 {
 namespace imutils
@@ -67,14 +69,14 @@ void Cartoonify(cv::Mat &image, int num_pyramid_levels, int num_bilateral_filter
   if (is_color)
   {
     if (image.channels() == 4)
-      cv::cvtColor(image, img_color, is_rgb ? cv::COLOR_RGBA2RGB : cv::COLOR_BGRA2BGR);
+      cv::cvtColor(image, img_color, is_rgb ? CVTCOLOR_RGBA2RGB : CVTCOLOR_BGRA2BGR);
     else
       img_color = image;
-    cv::cvtColor(img_color, img_gray, is_rgb ? cv::COLOR_RGB2GRAY : cv::COLOR_BGR2GRAY);
+    cv::cvtColor(img_color, img_gray, is_rgb ? CVTCOLOR_RGB2GRAY : CVTCOLOR_BGR2GRAY);
   }
   else
   {
-    cv::cvtColor(image, img_color, cv::COLOR_GRAY2BGR);
+    cv::cvtColor(image, img_color, CVTCOLOR_GRAY2BGR);
     img_gray = image;
   }
 
@@ -112,7 +114,7 @@ void Cartoonify(cv::Mat &image, int num_pyramid_levels, int num_bilateral_filter
     cv::Mat img_edge;
     cv::adaptiveThreshold(filter_helper, img_edge, 255.0, cv::ADAPTIVE_THRESH_MEAN_C, cv::THRESH_BINARY, edge_block_size, 2.0);
 
-    cv::cvtColor(img_edge, filter_helper, is_rgb ? cv::COLOR_GRAY2RGB : cv::COLOR_GRAY2BGR);
+    cv::cvtColor(img_edge, filter_helper, is_rgb ? CVTCOLOR_GRAY2RGB : CVTCOLOR_GRAY2BGR);
     filter_helper.copyTo(img_edge);
 
     cv::bitwise_and(img_color, img_edge, output);
@@ -123,7 +125,7 @@ void Cartoonify(cv::Mat &image, int num_pyramid_levels, int num_bilateral_filter
   if (is_color)
     image = output;
   else
-    cv::cvtColor(output, image, cv::COLOR_BGR2GRAY);
+    cv::cvtColor(output, image, CVTCOLOR_BGR2GRAY);
 }
 
 

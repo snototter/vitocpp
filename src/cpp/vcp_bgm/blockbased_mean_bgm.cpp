@@ -9,6 +9,8 @@
     #include <opencv2/imgproc.hpp>
 #endif
 
+#include <vcp_imutils/opencv_compatibility.h>
+
 namespace vcp
 {
 namespace bgm
@@ -88,12 +90,12 @@ private:
     {
       if (params_.channel == BlockBasedMeanBgmChannel::GRAYSCALE)
       {
-        cv::cvtColor(frame, to_model, CV_BGR2GRAY);
+        cv::cvtColor(frame, to_model, CVTCOLOR_BGR2GRAY);
       }
       else if (params_.channel == BlockBasedMeanBgmChannel::SATURATION)
       {
         cv::Mat hsv;
-        cv::cvtColor(frame, hsv, CV_RGB2HSV);
+        cv::cvtColor(frame, hsv, CVTCOLOR_RGB2HSV);
         std::vector<cv::Mat> layers;
         cv::split(hsv, layers);
 

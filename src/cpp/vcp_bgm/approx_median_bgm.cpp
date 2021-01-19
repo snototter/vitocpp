@@ -10,6 +10,7 @@
 #endif
 
 #include <vcp_imutils/matutils.h>
+#include <vcp_imutils/opencv_compatibility.h>
 #include <cmath>
 
 namespace vcp
@@ -232,7 +233,7 @@ public:
         }
         else
         {
-          cv::cvtColor(initial_bg_img, approx_median_, CV_BGR2GRAY);
+          cv::cvtColor(initial_bg_img, approx_median_, CVTCOLOR_BGR2GRAY);
         }
       }
       else
@@ -244,7 +245,7 @@ public:
         else
         {
           cv::Mat single_channel;
-          cv::cvtColor(initial_bg_img, single_channel, CV_BGR2GRAY);
+          cv::cvtColor(initial_bg_img, single_channel, CVTCOLOR_BGR2GRAY);
           single_channel.convertTo(approx_median_, CV_32F);
         }
       }
@@ -347,14 +348,14 @@ public:
       if (current_image.channels() == 1) {
         current_image.copyTo(curr32);
       } else {
-        cv::cvtColor(current_image, curr32, CV_BGR2GRAY);
+        cv::cvtColor(current_image, curr32, CVTCOLOR_BGR2GRAY);
       }
     } else {
       if (current_image.channels() == 1) {
         current_image.convertTo(curr32, CV_32F);
       } else {
         cv::Mat single_channel;
-        cv::cvtColor(current_image, single_channel, CV_BGR2GRAY);
+        cv::cvtColor(current_image, single_channel, CVTCOLOR_BGR2GRAY);
         single_channel.convertTo(curr32, CV_32F);
       }
     }

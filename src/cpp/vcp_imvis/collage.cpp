@@ -192,9 +192,9 @@ cv::Mat PrepareImageForCollage(const cv::Mat &image, const cv::Size &target_size
       return vcp::imutils::StackLayers(converted, num_layers);
     cv::Mat res;
     if (converted.channels() == 3 && num_layers == 4)
-      cv::cvtColor(converted, res, cv::COLOR_BGR2BGRA);
+      cv::cvtColor(converted, res, CVTCOLOR_BGR2BGRA);
     else if (converted.channels() == 4 && num_layers == 3)
-      cv::cvtColor(converted, res, cv::COLOR_BGRA2BGR);
+      cv::cvtColor(converted, res, CVTCOLOR_BGRA2BGR);
     else
       VCP_ERROR("Cannot convert a " << converted.channels() << "-channel image to " << num_layers << " channels.");
     return res;

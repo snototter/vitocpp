@@ -25,6 +25,7 @@
 #include <vcp_best/capture.h>
 #include <vcp_best/liveview.h>
 #include <vcp_best/rgbd.h>
+#include <vcp_imutils/opencv_compatibility.h>
 
 #ifdef VCP_BEST_WITH_IPCAM
   #include <vcp_best/ipcam_sink.h>
@@ -394,7 +395,7 @@ private:
         if (flip_channels && (mat.channels() == 3 || mat.channels() == 4))
         {
           cv::Mat converted;
-          cv::cvtColor(mat, converted, mat.channels() == 3 ? CV_BGR2RGB : CV_BGRA2RGBA);
+          cv::cvtColor(mat, converted, mat.channels() == 3 ? CVTCOLOR_BGR2RGB : CVTCOLOR_BGRA2RGBA);
           numpy_frames.append(vcp::python::conversion::MatToNDArray(converted));
         }
         else
@@ -637,7 +638,7 @@ public:
       if (flip_channels && (image.channels() == 3 || image.channels() == 4))
       {
         cv::Mat converted;
-        cv::cvtColor(image, converted, image.channels() == 3 ? CV_RGB2BGR : CV_RGBA2BGRA);
+        cv::cvtColor(image, converted, image.channels() == 3 ? CVTCOLOR_RGB2BGR : CVTCOLOR_RGBA2BGRA);
         liveview_->PushImageRequest(converted);
       }
       else
@@ -663,7 +664,7 @@ public:
         {
           cv::Mat converted;
           if (image.channels() == 3 || image.channels() == 4)
-            cv::cvtColor(image, converted, image.channels() == 3 ? CV_RGB2BGR : CV_RGBA2BGRA);
+            cv::cvtColor(image, converted, image.channels() == 3 ? CVTCOLOR_RGB2BGR : CVTCOLOR_RGBA2BGRA);
           else
             converted = image;
           flipped.push_back(converted);
