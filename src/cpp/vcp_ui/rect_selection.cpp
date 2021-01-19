@@ -11,6 +11,7 @@
 #endif
 
 #include <vcp_utils/vcp_logging.h>
+#include <vcp_imutils/opencv_compatibility.h>
 
 
 namespace vcp
@@ -45,14 +46,14 @@ void RectMouseCallback(int event, int x, int y, int /*flags*/, void* user_data)
   CallbackParameter *params = static_cast<CallbackParameter*>(user_data);
   switch(event)
   {
-  case CV_EVENT_LBUTTONDOWN:
+  case COMPAT_CV_EVENT_LBUTTONDOWN:
     params->start = cv::Point(x, y);
     params->roi = cv::Rect(x, y, 0, 0);
     params->selection_in_progress = true;
     UpdateImage(params->image, params->roi, params->window_name, params->color);
     break;
 
-  case CV_EVENT_LBUTTONUP:
+  case COMPAT_CV_EVENT_LBUTTONUP:
     if (params->selection_in_progress)
     {
       int left, right, top, bottom;
@@ -88,16 +89,16 @@ void RectMouseCallback(int event, int x, int y, int /*flags*/, void* user_data)
     }
     break;
 
-  case CV_EVENT_MBUTTONUP:
+  case COMPAT_CV_EVENT_MBUTTONUP:
     params->roi = cv::Rect(0, 0, 0, 0);
     params->selection_done = true;
     break;
 
-  case CV_EVENT_RBUTTONUP:
+  case COMPAT_CV_EVENT_RBUTTONUP:
     params->selection_done = true;
     break;
 
-  case CV_EVENT_MOUSEMOVE:
+  case COMPAT_CV_EVENT_MOUSEMOVE:
     if (params->selection_in_progress)
     {
       int left, right, top, bottom;

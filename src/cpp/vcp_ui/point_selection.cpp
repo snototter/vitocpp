@@ -11,6 +11,7 @@
     #include <opencv2/highgui.hpp>
     #include <opencv2/imgproc.hpp>
 #endif
+#include <vcp_imutils/opencv_compatibility.h>
 
 namespace vcp
 {
@@ -32,18 +33,18 @@ void PointMouseCallback(int event, int x, int y, int /*flags*/, void* user_data)
   CallbackParameter *params = static_cast<CallbackParameter*>(user_data);
   switch(event)
   {
-  case CV_EVENT_LBUTTONUP:
+  case COMPAT_CV_EVENT_LBUTTONUP:
     params->point = cv::Point(x, y);
     params->selection_valid = true;
     params->changed = true;
     break;
 
-  case CV_EVENT_RBUTTONUP:
+  case COMPAT_CV_EVENT_RBUTTONUP:
     params->selection_done = true;
     params->changed = true;
     break;
 
-  case CV_EVENT_MBUTTONUP:
+  case COMPAT_CV_EVENT_MBUTTONUP:
     params->selection_valid = false;
     params->selection_done = true;
     break;
@@ -55,7 +56,7 @@ void MultiPointsMouseCallback(int event, int x, int y, int /*flags*/, void* user
   CallbackParameter *params = static_cast<CallbackParameter*>(user_data);
   switch(event)
   {
-  case CV_EVENT_LBUTTONUP:
+  case COMPAT_CV_EVENT_LBUTTONUP:
     params->point = cv::Point(x, y);
     params->selection_done = false;
     params->selection_valid = true;
@@ -64,14 +65,14 @@ void MultiPointsMouseCallback(int event, int x, int y, int /*flags*/, void* user
     params->changed = true;
     break;
 
-  case CV_EVENT_MBUTTONUP:
+  case COMPAT_CV_EVENT_MBUTTONUP:
     params->selection_done = false;
     params->add_point = false;
     params->discard_at = cv::Point(x, y);
     params->changed = true;
     break;
 
-  case CV_EVENT_RBUTTONUP:
+  case COMPAT_CV_EVENT_RBUTTONUP:
     params->selection_valid = true;
     params->selection_done = true;
     params->add_point = false;
