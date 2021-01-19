@@ -5,6 +5,7 @@
 #include <vcp_imvis/collage.h>
 #include <vcp_utils/vcp_error.h>
 #include <vcp_utils/file_utils.h>
+#include <vcp_imutils/opencv_compatibility.h>
 
 #include <vcp_imvis/poses.h>
 
@@ -18,7 +19,7 @@ int main(int argc, char **argv)
 
   VCP_CHECK(vcp::utils::file::Exists(kPeaksFile));
 
-  cv::Mat img = cv::imread(kPeaksFile, CV_LOAD_IMAGE_GRAYSCALE);
+  cv::Mat img = cv::imread(kPeaksFile, COMPAT_CV_LOAD_IMAGE_GRAYSCALE);
   cv::Mat img_32f;
   img.convertTo(img_32f, CV_32FC1, 1.0/255.0);
 
@@ -39,7 +40,7 @@ int main(int argc, char **argv)
   // Collage
   const std::string kFlamingoFile = "flamingo.jpg";
   VCP_CHECK(vcp::utils::file::Exists(kFlamingoFile));
-  cv::Mat lena = cv::imread(kFlamingoFile, CV_LOAD_IMAGE_COLOR);
+  cv::Mat lena = cv::imread(kFlamingoFile, COMPAT_CV_LOAD_IMAGE_COLOR);
 
   std::vector<cv::Mat> collage_images;
   collage_images.push_back(lena);
