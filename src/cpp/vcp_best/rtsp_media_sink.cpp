@@ -173,11 +173,11 @@ public:
     codec_context->width = params.frame_width;
     codec_context->height = params.frame_height;
 
-    if(codec->capabilities & CODEC_CAP_TRUNCATED)
-      codec_context->flags |= CODEC_FLAG_TRUNCATED;
+    if(codec->capabilities & AV_CODEC_CAP_TRUNCATED)
+      codec_context->flags |= AV_CODEC_FLAG_TRUNCATED;
 
     // Force low delay
-    if (codec->capabilities & CODEC_CAP_DELAY)
+    if (codec->capabilities & AV_CODEC_CAP_DELAY)
       codec_context->flags |= AV_CODEC_FLAG_LOW_DELAY;
 
     // live555 should gather the NAL units for us, and tell us, once a "frame" (i.e. NALU) is ready, so
