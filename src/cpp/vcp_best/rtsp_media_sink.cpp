@@ -163,7 +163,12 @@ public:
 
     first_full_frame_arrived = false;
 
+#if LIBAVCODEC_VERSION_INT < AV_VERSION_INT(58, 10, 100)
+    // Deprecated since lavc 58.10.100 (2018-02-06, commit
+    // hash 36c85d6e77), check:
+    // https://github.com/FFmpeg/FFmpeg/blob/master/doc/APIchanges
     avcodec_register_all();
+#endif
 
     codec = avcodec_find_decoder(AV_CODEC_ID_H264);
     if(!codec)
