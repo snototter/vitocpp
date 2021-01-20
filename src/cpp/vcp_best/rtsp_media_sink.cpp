@@ -138,11 +138,7 @@ protected:
       {
         VCP_ERROR("Cannot decode a MJPEG stream without knowing its resolution. You have to specify 'resolution' or 'frame_width' & 'frame_height' via the configuration file!");
       }
-      cv::Mat buf(frame_height_, frame_width_, CV_8UC3, (void *)receive_buffer_);
-#if CV_VERSION_MAJOR > 3
-      VCP_LOG_FAILURE("With default IP cameras and OpenCV 4, expect that buf.checkVector(1, CV_8U) will fail in cv::imdecode!"
-                      << " Workaround: use h264 instead of the mjpeg stream.");
-#endif
+      cv::Mat buf(1, (int)frame_size, CV_8UC1, (void *)receive_buffer_);
       cv::Mat decoded_frame = cv::imdecode(buf, COMPAT_CV_LOAD_IMAGE_COLOR);
       ++num_received_frames_;
       // Notify observer (which stores the image in a queue)
