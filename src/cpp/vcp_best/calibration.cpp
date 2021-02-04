@@ -4,6 +4,7 @@
 
 #include <vcp_utils/string_utils.h>
 #include <vcp_utils/file_utils.h>
+#include <vcp_utils/sort_utils.h>
 #include <vcp_math/common.h>
 #include <vcp_imutils/matutils.h>
 
@@ -691,10 +692,11 @@ std::map<std::string, StreamExtrinsics> LoadExtrinsicsFromFile(const std::string
     return extrinsics;
   }
 
-  const auto keys = ListFileStorageNodes(fs);
+  const std::vector<std::string> keys = ListFileStorageNodes(fs);
 
-  const auto nc = std::find(keys.begin(), keys.end(), "num_cameras");
-  if (nc == keys.end())
+//  const auto nc = std::find(keys.begin(), keys.end(), "num_cameras");
+//  if (nc == keys.end())
+  if (!vcp::utils::Contains("num_cameras", keys.begin(), keys.end()))
   {
     VCP_LOG_FAILURE("Extrinsic calibration file doesn't specify the 'num_cameras' parameter/tag!");
     return extrinsics;
@@ -703,9 +705,29 @@ std::map<std::string, StreamExtrinsics> LoadExtrinsicsFromFile(const std::string
   int num_cameras;
   fs["num_cameras"] >> num_cameras;
 
-  for (int i = 0; i < num_cameras; ++i)
+  // Before vcp, there was pvt - and pvt used 1-based
+  // indices (since back then, we still used MATLAB a lot
+  // for quick prototyping).
+  // For backwards compatibility, check whether the calibration
+  // file is 0-based or 1-based
+  int loop_start = 0;
+  int loop_end = num_cameras;
+
+  std::stringstream ss;
+  ss << "label" << num_cameras;
+  if (!vcp::utils::Contains("label0", keys.begin(), keys.end())
+      && vcp::utils::Contains(ss.str(), keys.begin(), keys.end()))
   {
-    std::stringstream ss;
+    VCP_LOG_INFO("Extrinsic calibration file uses 1-based indices. Adjusting the lookup indices...");
+    ++loop_start;
+    ++loop_end;
+  }
+
+  for (int i = loop_start; i < loop_end; ++i)
+  {
+    // Reset the stringstream and clear its state flags:
+    ss.str("");
+    ss.clear();
     std::string label;
     ss << "label" << i;
     fs[ss.str()] >> label;

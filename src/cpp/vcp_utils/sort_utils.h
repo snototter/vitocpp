@@ -162,6 +162,13 @@ bool HasUniqueItems(const std::vector<_T> &data)
   FindDuplicates(data, duplicates);
   return duplicates.empty();
 }
+
+
+template <typename _T, typename Iter>
+bool Contains(const _T &value, Iter begin, Iter end)
+{
+  return std::find(begin, end, value) != end;
+}
 } // namespace utils
 } // namespace vcp
 

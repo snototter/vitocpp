@@ -719,8 +719,8 @@ public:
       if (stream_label.compare(frame_labels_[i]) == 0)
         return SetExtrinsicsAt(i, R, t);
     }
-    VCP_LOG_FAILURE("Cannot set extrinsics because stream '" << stream_label << "' is unknown."
-                    << "Known labels: " << frame_labels_);
+    VCP_LOG_WARNING_DEFAULT("Cannot set extrinsics because stream '" << stream_label
+                            << "' is unknown. Known labels: " << frame_labels_);
     return false;
   }
 
