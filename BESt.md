@@ -1,7 +1,12 @@
 # BESt - Best Effort Streaming
 This submodule enables "best effort streaming" from multiple cameras.
-To start streaming, you simply need a libconfig++ style configuration file (see "streaming examples" below).
+To start streaming, you simply need a `libconfig++` style configuration file (refer to the "streaming examples" below).
 Note that the following examples show only a few of the supported/available configuration parameters. For a more detailed overview of available options, please refer to the separate configuration files within `<VCP_ROOT_DIR>/examples/data/data-best/*.cfg`.
+
+A brief note on the terminology of this submodule:
+* In almost all use cases, you will interact with a `Capture` object which manages several `Sink`s. This means, a `Capture` ensures that all of its `Sink`s run simultaneously (multi-threaded), provides access to their calibration data, collects their images, etc.
+* A `Sink` is responsible for retrieving data (i.e. color, grayscale, intensity and/or depth images) from a single sensor.
+* If you want to stream from a single sensor, the recommended way is to also use a `Capture`.
 
 Currently supported sensors:
 * Standard webcams, videos and image sequences (i.e. all images within a folder).
