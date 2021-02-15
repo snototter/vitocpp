@@ -450,6 +450,23 @@ StreamIntrinsics LoadGenericMonocularCalibration(const cv::FileStorage &fs,
 }
 
 
+std::vector<StreamIntrinsics> LoadGenericStereoCalibration(const cv::FileStorage &fs,
+                                                           const std::string &filename,
+                                                           const std::vector<std::string> &calib_keys)
+{
+  std::vector<StreamIntrinsics> intrinsics;
+
+  const StreamIntrinsics left = LoadGenericMonocularCalibration(fs, filename, "_left", calib_keys);
+  if (!left.Empty())
+    intrinsics.push_back(left);
+
+  const StreamIntrinsics right = LoadGenericMonocularCalibration(fs, filename, "_right", calib_keys, "_right2left");
+  if (!right.Empty())
+    intrinsics.push_back(right);
+
+  return intrinsics;
+}
+
 
 std::vector<StreamIntrinsics> LoadGenericRGBDCalibration(const cv::FileStorage &fs,
                                                          const std::string &filename,
@@ -587,8 +604,8 @@ std::vector<StreamIntrinsics> LoadIntrinsicsByGenericType(const cv::FileStorage 
   if (t.compare("mono") == 0
       || t.compare("monocular") == 0)
     intrinsics.push_back(LoadGenericMonocularCalibration(calibration_fs, filename, std::string(), calib_keys, std::string()));
-//  else if (t.compare("stereo") == 0)
-//    return false; //TODO implement stereo rectification
+  else if (t.compare("stereo") == 0)
+    intrinsics = LoadGenericStereoCalibration(calibration_fs, filename, calib_keys);
   else if (t.compare("rgbd") == 0)
     intrinsics = LoadGenericRGBDCalibration(calibration_fs, filename, calib_keys);
   else
