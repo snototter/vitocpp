@@ -873,10 +873,11 @@ public:
   }
 
 
-  void EnsureAbsolutePaths(const std::vector<std::string> &param_names,
+  size_t EnsureAbsolutePaths(const std::vector<std::string> &param_names,
                            const std::string &absolute_base_path,
                            bool verbose) override
   {
+    size_t replaced = 0;
     // Get a list of all parameter names.
     const std::vector<std::string> configured_params = ListConfigParameters();
     // We'll split the parameter names for matching (remove optional parameter "groups", i.e.
@@ -914,11 +915,13 @@ public:
         const std::string abs_path = vcp::utils::file::RealPath(
               vcp::utils::file::FullFile(absolute_base_path, path));
         SetString(k, is_url ? "file://" + abs_path : abs_path);
+        ++replaced;
 
         if (verbose)
           VCP_LOG_INFO("Updated config path '" << k << "' to '" << GetString(k) << "'");
       }
     }
+    return replaced;
   }
 
 

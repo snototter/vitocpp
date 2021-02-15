@@ -186,7 +186,7 @@ public:
    * For example, the key "file_name" would match "group1.file_name" and a global "file_name"
    * parameter, BUT would NOT match "video_file_name".
    */
-  virtual void EnsureAbsolutePaths(const std::vector<std::string> &param_names, const std::string &absolute_base_path,
+  virtual size_t EnsureAbsolutePaths(const std::vector<std::string> &param_names, const std::string &absolute_base_path,
                                    bool verbose) = 0;
 
 protected:

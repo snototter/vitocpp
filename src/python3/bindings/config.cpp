@@ -79,7 +79,8 @@ PYBIND11_MODULE(config, m)
            "         to check. For example, ['file_name'] would make the global\n"
            "         parameter 'file_name' as well as the group parameter 'video1.file_name'\n"
            "         absolute, BUT NOT 'some_file_name'.\n\n"
-           ":verbose: if True, updated settings will be logged to console.",
+           ":verbose: if True, updated settings will be logged to console.\n\n"
+           ":returns: Number of changed paths.",
            py::arg("params"), py::arg("abs_base_path"),
            py::arg("verbose")=true);
 }
