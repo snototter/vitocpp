@@ -10,6 +10,7 @@
 #endif
 
 #include <vcp_imutils/opencv_compatibility.h>
+#include <vcp_utils/string_utils.h>
 
 // Use this to dump incoming rtsp frames (which 'should be' split into NAL units by live555).
 //#define DEBUG_RTSP_H264_DECODING
@@ -130,7 +131,7 @@ protected:
     // We've just received a frame of data.
     if (num_truncated_bytes > 0)
     {
-      VCP_LOG_FAILURE("Received corrupt JPEG frame from '" << stream_id_ << "'.");
+      VCP_LOG_FAILURE("Received corrupt JPEG frame from '" << vcp::utils::string::ObscureUrlAuthentication(stream_id_) << "'.");
     }
     else
     {
@@ -283,7 +284,7 @@ protected:
   {
     int ret = avcodec_send_packet(codec_context, pkt);
     if (ret < 0)
-      VCP_ERROR("Error sending a packet for decoding, capture '" << stream_id_ << "'");
+      VCP_ERROR("Error sending a packet for decoding, capture '" << vcp::utils::string::ObscureUrlAuthentication(stream_id_) << "'");
 
     while (ret >= 0)
     {
@@ -294,7 +295,7 @@ protected:
       }
       else if (ret < 0)
       {
-        VCP_ERROR("Error sending a packet for decoding, capture '" << stream_id_ << "'");
+        VCP_ERROR("Error sending a packet for decoding, capture '" << vcp::utils::string::ObscureUrlAuthentication(stream_id_) << "'");
       }
 
       // Create converter upon first invocation
@@ -312,7 +313,7 @@ protected:
       if (slice_height > 0)
       {
         if (frame_width_ != picture->width || frame_height_ != picture->height)
-          VCP_ERROR("Incorrect configuration of capture '" << stream_id_ << "': expected a "
+          VCP_ERROR("Incorrect configuration of capture '" << vcp::utils::string::ObscureUrlAuthentication(stream_id_) << "': expected a "
                     << frame_width_ << "x" << frame_height_ << " stream, but received packets for " << picture->width << "x" << picture->height);
 
         cv::Mat dec(picture->height, picture->width, CV_8UC3, picture_bgr->data[0], picture_bgr->linesize[0]);
@@ -365,7 +366,7 @@ protected:
     if (!first_full_frame_arrived)
     {
       frame_buffer.clear();
-      VCP_LOG_WARNING_NSEC("Skipping incoming packets for capture '" << stream_id_ << "' until we find SPS/PPS.", 0.5);
+      VCP_LOG_WARNING_NSEC("Skipping incoming packets for capture '" << vcp::utils::string::ObscureUrlAuthentication(stream_id_) << "' until we find SPS/PPS.", 0.5);
       continuePlaying();
       return;
     }
@@ -394,7 +395,7 @@ protected:
     AppendData(&zero_padding[0], AV_INPUT_BUFFER_PADDING_SIZE);
 
     if (num_truncated_bytes > 0)
-      VCP_LOG_FAILURE("Capture '" << stream_id_ << "' dropped " << num_truncated_bytes << " bytes - expect decoding errors!");
+      VCP_LOG_FAILURE("Capture '" << vcp::utils::string::ObscureUrlAuthentication(stream_id_) << "' dropped " << num_truncated_bytes << " bytes - expect decoding errors!");
 
     int data_size = frame_buffer.size() - AV_INPUT_BUFFER_PADDING_SIZE;
     uint8_t *data = &frame_buffer[0];
@@ -404,7 +405,7 @@ protected:
     {
       int len = av_parser_parse2(parser, codec_context, &pkt->data, &pkt->size, data, data_size, AV_NOPTS_VALUE, AV_NOPTS_VALUE, 0);
       if (len < 0)
-        VCP_ERROR("Error while parsing h264 stream, capture '" << stream_id_ << "'");
+        VCP_ERROR("Error while parsing h264 stream, capture '" << vcp::utils::string::ObscureUrlAuthentication(stream_id_) << "'");
       data += len;
       data_size -= len;
       consumed += len;
