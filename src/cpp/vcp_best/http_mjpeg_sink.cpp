@@ -17,6 +17,7 @@
 
 #include "curl_file_handling.h"
 #include <vcp_utils/vcp_error.h>
+#include <vcp_utils/string_utils.h>
 #include <vcp_imutils/opencv_compatibility.h>
 
 namespace vcp
@@ -118,15 +119,15 @@ public:
   {
     VCP_LOG_DEBUG("HttpMjpegSink::OpenDevice()");
     if (params_.verbose)
-      VCP_LOG_INFO_DEFAULT("Opening IP camera connection: " << params_);
+      VCP_LOG_INFO_DEFAULT("Opening IP camera connection: " << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url));
 
     if (mjpg_stream_)
     {
-      VCP_LOG_FAILURE("HTTP/MJPEG stream is already initialized: " << params_);
+      VCP_LOG_FAILURE("HTTP/MJPEG stream is already initialized: " << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url));
       return false;
     }
     if (params_.transport_protocol != IpTransportProtocol::TCP)
-      VCP_LOG_WARNING("HTTP/MJPEG streams can only use TCP (curl default): " << params_);
+      VCP_LOG_WARNING("HTTP/MJPEG streams can only use TCP (curl default): " << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url));
 
 
     // Load calibration if available
@@ -134,7 +135,7 @@ public:
     {
       if (params_.calibration_file.empty() || !vcp::utils::file::Exists(params_.calibration_file))
       {
-        VCP_LOG_FAILURE("To undistort & rectify the http/mjpeg stream " << params_ << ", the calibration file '"
+        VCP_LOG_FAILURE("To undistort & rectify the http/mjpeg stream " << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url) << ", the calibration file '"
                   << params_.calibration_file << "' must exist!");
         return false;
       }
@@ -142,14 +143,15 @@ public:
       const auto intrinsics = calibration::LoadIntrinsicsFromFile(params_.calibration_file);
       if (intrinsics.size() != 1)
       {
-        VCP_LOG_FAILURE("Loaded invalid number of " << intrinsics.size() << " intrinsic calibrations from " << params_.calibration_file << ".");
+        VCP_LOG_FAILURE("Loaded invalid number of " << intrinsics.size()
+                        << " intrinsic calibrations from " << params_.calibration_file << ".");
         return false;
       }
 
       intrinsics_ = intrinsics[0];
 
       if (params_.verbose)
-        VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for http/mjpeg stream: " << params_ << ".");
+        VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for http/mjpeg stream: " << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url) << ".");
     }
 
     mjpg_stream_ = curl::url_fopen(&mjpg_multi_handle_, params_.stream_url.c_str(), "r", 5000L, 0L);
@@ -164,7 +166,8 @@ public:
     {
       VCP_LOG_DEBUG("HttpMjpegSink::CloseDevice()");
       if (params_.verbose)
-        VCP_LOG_INFO_DEFAULT("Closing IP camera connection: '" << params_ << "'");
+        VCP_LOG_INFO_DEFAULT("Closing IP camera connection: '"
+                             << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url) << "'");
       curl::url_fclose(&mjpg_multi_handle_, mjpg_stream_);
       mjpg_stream_ = nullptr;
     }
@@ -176,12 +179,12 @@ public:
     VCP_LOG_DEBUG("HttpMjpegSink::StartStreaming()");
     if (!mjpg_stream_)
     {
-      VCP_LOG_FAILURE("IP camera has not been opened yet: " << params_);
+      VCP_LOG_FAILURE("IP camera has not been opened yet: " << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url));
       return false;
     }
 
     if (params_.verbose)
-      VCP_LOG_INFO_DEFAULT("Starting IP camera stream " << params_);
+      VCP_LOG_INFO_DEFAULT("Starting IP camera stream " << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url));
 
     continue_stream_ = true;
     stream_thread_ = std::thread(&HttpMjpegSink::Receive, this);
@@ -194,12 +197,12 @@ public:
     {
       VCP_LOG_DEBUG("HttpMjpegSink::StopStreaming()");
       if (params_.verbose)
-        VCP_LOG_INFO_DEFAULT("Stopping IP camera stream: " << params_);
+        VCP_LOG_INFO_DEFAULT("Stopping IP camera stream: " << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url));
       // Stop receiver thread.
       continue_stream_ = false;
       stream_thread_.join();
       if (params_.verbose)
-        VCP_LOG_INFO_DEFAULT("Successfully stopped IP camera stream: " << params_);
+        VCP_LOG_INFO_DEFAULT("Successfully stopped IP camera stream: " << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url));
     }
     return true;
   }
@@ -283,7 +286,7 @@ private:
 
       if (jpeg_bytes == 0)
       {
-        VCP_LOG_FAILURE_NSEC("IP camera received no bytes: " << params_, 0.25);
+        VCP_LOG_FAILURE_NSEC("IP camera received no bytes: " << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url), 0.25);
         ++frame_drop_cnt;
         if (frame_drop_cnt > 1000)
         {
@@ -301,7 +304,7 @@ private:
 
       if (!frame_data)
       {
-        VCP_LOG_FAILURE("Cannot allocate frame buffer: " << params_);
+        VCP_LOG_FAILURE("Cannot allocate frame buffer: " << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url));
         continue;
       }
       // Read the frame
@@ -309,7 +312,7 @@ private:
 
       if(!frame_data)
       {
-        VCP_LOG_FAILURE("Cannot retrieve frame data from URL handle: " << params_);
+        VCP_LOG_FAILURE("Cannot retrieve frame data from URL handle: " << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url));
         continue;
       }
       // Skip empty row before the next delimiter
