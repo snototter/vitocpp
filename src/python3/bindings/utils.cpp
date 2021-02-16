@@ -85,6 +85,10 @@ PYBIND11_MODULE(utils, m)
         "Log failure message.",
         py::arg("string"));
 
+  m.def("log_error", &LogFailure,
+        "Log failure message.",
+        py::arg("string"));
+
   namespace vuf = vcp::utils::file;
   m.def("is_image_file", &vuf::filename_filter::HasImageExtension,
         "Checks if the 'filename' has a known/supported image filename extension.",

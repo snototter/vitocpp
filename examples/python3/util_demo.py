@@ -13,10 +13,12 @@ import vcp.utils as vutils
 
 if __name__ == "__main__":
     help(vutils)
+    # Using C++ calls to print messages is overkill (but these were simple bindings
+    # to get me started with pybind11)
     vutils.log_debug('Debug message goes here')
     vutils.log_info('Status message goes here')
     vutils.log_warning('Warning message goes here')
-    vutils.log_failure('Error message goes here')
+    vutils.log_failure('Error message goes here') # aliased as log_error()
     
     for dirent in os.listdir(os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data')):
         print("'{}' is{}an image".format(dirent, ' ' if vutils.is_image_file(dirent) else ' not '))
