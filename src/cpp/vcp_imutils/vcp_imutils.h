@@ -2,7 +2,6 @@
 #define __VCP_IMUTILS_VCP_IMUTILS_H__
 
 #include "opencv_compatibility.h"
-#include "constants.h"
 #include "imabstraction.h"
 #include "imutils.h"
 #include "matutils.h"
