@@ -333,10 +333,14 @@ cv::Mat DrawCircles(const cv::Mat &image, const std::vector<cv::Point> &centers,
 
 cv::Mat DrawXYZAxes(const cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::Mat &t,
                     const cv::Vec3d &origin, double scale_axes, double scale_image_points, int line_width,
-                    int dash_length, double tip_length, bool image_is_rgb)
+                    int dash_length, double tip_length, const cv::Scalar &color_x,
+                    const cv::Scalar &color_y, const cv::Scalar &color_z)
 {
   cv::Mat img = image.clone();
-  vcp::imvis::drawing::DrawXYZAxes(img, K, R, t, origin, scale_axes, scale_image_points, line_width, dash_length, image_is_rgb, tip_length);
+  vcp::imvis::drawing::DrawXYZAxes(img, K, R, t, origin, scale_axes,
+                                   scale_image_points, line_width,
+                                   dash_length, tip_length, color_x,
+                                   color_y, color_z);
   return img;
 }
 
@@ -901,7 +905,7 @@ PYBIND11_MODULE(imvis_cpp, m)
         ":param line_width:   Line width in pixels.\n"
         ":param dash_length:  Arrows will be dashed if > 0.\n"
         ":param tip_length:   Arrow head/tip size as fraction of its length.\n"
-        ":param image_is_rgb: Set this to False if your image is BGR!"
+        ":params color_x, color_y, color_z: color tuple (RGB or BGR)\n\n"
         ":return: Visualization as np.array",
         py::arg("image"), py::arg("K"), py::arg("R"), py::arg("t"),
         py::arg("origin") = cv::Scalar::all(0.0),
@@ -910,7 +914,9 @@ PYBIND11_MODULE(imvis_cpp, m)
         py::arg("line_width") = 1,
         py::arg("dash_length") = -1,
         py::arg("tip_length") = 0.1,
-        py::arg("image_is_rgb") = true);
+        py::arg("color_x") = vcp::imvis::drawing::kAxisColorsRGB[0],
+        py::arg("color_y") = vcp::imvis::drawing::kAxisColorsRGB[1],
+        py::arg("color_z") = vcp::imvis::drawing::kAxisColorsRGB[2]);
 
 
   m.def("draw_horizon", &vpi::DrawHorizon,

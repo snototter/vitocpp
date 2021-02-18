@@ -1378,8 +1378,8 @@ void DrawCircles(cv::Mat &image, const std::vector<cv::Point> &centers,
 
 
 void DrawXYZAxes(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::Mat &t, const cv::Vec3d &origin,
-              double scale_axes, double scale_image_points, int line_width, int dash_length, bool image_is_rgb,
-              double tip_length)
+              double scale_axes, double scale_image_points, int line_width, int dash_length,
+              double tip_length, const cv::Scalar &color_x, const cv::Scalar &color_y, const cv::Scalar &color_z)
 {
   VCP_LOG_DEBUG("DrawXYZAxes()");
   // Check if origin is visible.
@@ -1435,7 +1435,8 @@ void DrawXYZAxes(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, const cv::M
 
   // Continue, even if none is visible as an axis' line may still be partially visible - it's too much
   // effort to clip each line prior to drawing (but these checks would be the fool-proof version)
-  const cv::Scalar *colors = image_is_rgb ? kAxisColorsRGB : kAxisColorsBGR;
+  const std::vector<cv::Scalar> colors = { color_x, color_y, color_z };
+//  const cv::Scalar *colors = image_is_rgb ? kAxisColorsRGB : kAxisColorsBGR;
 
   for (size_t i = 1; i < 4; ++i)
     DrawArrow(pts[0], pts[i], colors[i-1], image, line_width, tip_length, dash_length);
