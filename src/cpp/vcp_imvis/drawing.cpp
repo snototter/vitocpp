@@ -1478,6 +1478,7 @@ void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, con
                          int point_radius, int point_thickness, int line_thickness, double opacity, bool flip_color_channels)
 {
   VCP_LOG_DEBUG("DrawGroundplaneGrid()");
+  cv::Mat img_orig = image.clone();
   // If our FOV is smaller than the given grid extent, we don't want to project all the points - so first check what's actually visible, then continue to draw.
 
   // We need to avoid projecting points which are above the horizon!
@@ -1656,7 +1657,13 @@ void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, con
     }
 
     // Finally: draw!
-    DrawPoints(image, grid_points, colors, point_radius, point_thickness, opacity);
+    DrawPoints(image, grid_points, colors, point_radius, point_thickness);
+  }
+
+  if (opacity < 1.0)
+  {
+    cv::Mat tmp = image.clone();
+    cv::addWeighted(tmp, opacity, img_orig, 1.0-opacity, 0.0, image);
   }
 }
 
