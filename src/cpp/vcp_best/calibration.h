@@ -180,7 +180,13 @@ bool HasLensDistortion(const cv::Mat &distortion);
 
 /** @brief Load an extrinsic calibration file using cv::FileStorage (thus, supporting XML and YAML).
  *
- * Parameters/tags within the calibration file:
+ * If the extrinsic calibration file covers a single camera, it must contain the following tags:
+ * * <label>stream label</label>
+ * * <R>3x3 rotation matrix</R>
+ * * <t>3x1 translation vector</t>
+ *
+ * Otherwise - if there are extrinsics for multiple cameras within the calibration file,
+ * the following tags are needed:
  * * Mandatory: <num_cameras>N (int)</num_cameras>
  * * For X in [0, N-1]:
  *   * <labelX>stream label (string)</labelX>

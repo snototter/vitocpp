@@ -711,11 +711,34 @@ std::map<std::string, StreamExtrinsics> LoadExtrinsicsFromFile(const std::string
 
   const std::vector<std::string> keys = ListFileStorageNodes(fs);
 
-//  const auto nc = std::find(keys.begin(), keys.end(), "num_cameras");
-//  if (nc == keys.end())
   if (!vcp::utils::Contains("num_cameras", keys.begin(), keys.end()))
   {
-    VCP_LOG_FAILURE("Extrinsic calibration file doesn't specify the 'num_cameras' parameter/tag!");
+    // Expect R,t for a single camera
+    // Reset the stringstream and clear its state flags:
+    std::string label = "unknown";
+    if (vcp::utils::Contains("label", keys.begin(), keys.end()))
+      fs["label"] >> label;
+
+    if (vcp::utils::Contains("R", keys.begin(), keys.end()) && vcp::utils::Contains("t", keys.begin(), keys.end()))
+    {
+      cv::Mat R, t;
+      fs["R"] >> R;
+      fs["t"] >> t;
+      if (R.empty() || t.empty())
+      {
+        VCP_LOG_FAILURE("Invalid extrinsics for stream '" << label << "'." << std::endl << "R: " << R << ", t: " << t);
+      }
+      else
+      {
+        VCP_LOG_INFO("Extrinsics loaded for stream '" << label << "'."); //<< ", " << R << t);
+      }
+      extrinsics.insert(std::pair<std::string, StreamExtrinsics>(label, StreamExtrinsics(R, t)));
+    }
+    else
+    {
+      VCP_LOG_WARNING("No extrinsics available to load for stream '" << label << "'.");
+      extrinsics.insert(std::pair<std::string, StreamExtrinsics>(label, StreamExtrinsics()));
+    }
     return extrinsics;
   }
 
