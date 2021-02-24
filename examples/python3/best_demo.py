@@ -36,6 +36,9 @@ def parse_args():
     
     parser.add_argument('--cap-output-fps', dest='capture_output_fps', default=15.0,
         help="Output framerate for video captures (if --video is specified).")
+    
+    parser.add_argument('--cap-split', action='store', type=int,
+        default=None, help="If specified (and you record to a video), the output video will be split after X frames.")
 
     return parser.parse_args()
 
@@ -194,7 +197,7 @@ class StreamingDemo(object):
                             best.StreamStorageParams.Type.Video, filename, is_depth)
                     self._storage[lbl] = best.SingleVideoStorage(
                         filepath, self._args.capture_output_fps, w, h, flip_channels=False,
-                        verbose=self._args.verbose)
+                        verbose=self._args.verbose, split_output=self._args.cap_split)
                 else:
                     dirname = pyutils.slugify(lbl)
                     dirpath = os.path.join(self._args.capture_directory, dirname)

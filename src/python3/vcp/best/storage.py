@@ -28,26 +28,46 @@ def _store_snapshot(worker_id, queue, verbose, sigint_handler):
     queue.put(None) # To notify others of end-of-stream, too
 
 
-def _append_video_frame(name, writer, queue, verbose, sigint_handler):
+def _append_video_frame(name, writer_args, queue, verbose, sigint_handler):
     """Worker process to append images to the given video writer."""
     signal.signal(signal.SIGINT, sigint_handler)
-    num = 0
+    frame_counter = 0
+    writer = None
+    should_split = writer_args['split_output'] is not None
+    split_count = 0
+    def _filename(cnt):
+        if should_split:
+            pth, ext = os.path.splitext(writer_args['filename'])
+            return f'{pth}-{cnt}{ext}'
+        else:
+            return writer_args['filename']
     try:
         while True:
             image = queue.get()
             if image is None:
                 break
+            if writer is None:
+                #self.video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*fourcc), fps, resolution)
+                # scikit-video provides an interface to ffmpeg which is way more reliable than OpenCV's video writer stuff
+                writer = skvideo.io.FFmpegWriter(_filename(split_count),
+                    inputdict = {'-r': str(writer_args['fps']), '-s':'{:d}x{:d}'.format(writer_args['width'], writer_args['height'])},
+                    outputdict = {'-r': str(writer_args['fps']), '-crf':'17', # crf 0: lossless, 17: "visually lossless", 51: "worst quality ever"
+                    '-c:v': 'libx264', '-preset':'ultrafast', '-tune': 'zerolatency'})
             writer.writeFrame(image)
-            if verbose:
-                mp.get_logger().info('vcp.best.storage.SingleVideoStorage worker appended frame #{:d} to {:s}'.format(num, name))
-                num += 1
+            frame_counter += 1
+            if should_split and frame_counter % writer_args['split_output'] == 0:
+                writer.close()
+                writer = None
+                split_count += 1
+                frame_counter = 0
     except Exception as e:
         mp.get_logger().error('vcp.best.storage.SingleVideoStorage: Error occured while appending video frame: {}'.format(e))
     finally:
         if verbose:
             mp.get_logger().info('vcp.best.storage.SingleVideoStorage finalizing video {:s}'.format(name))
         try:
-            writer.close()
+            if writer is not None:
+                writer.close()
         except Exception as e:
             mp.get_logger().error('vcp.best.storage.SingleVideoStorage: Error while closing the video: {}'.format(e))
 
@@ -106,7 +126,7 @@ class ImageSequenceStorage:
 
 class SingleVideoStorage:
     """Only stores mp4, x264"""
-    def __init__(self, filename, fps, width, height, flip_channels=True, verbose=False):
+    def __init__(self, filename, fps, width, height, flip_channels=True, verbose=False, split_output=None):
         self.queue = mp.Queue()
         self.flip_channels = flip_channels
         self.filename = filename
@@ -118,13 +138,20 @@ class SingleVideoStorage:
                 mp.get_logger().info('vcp.best.storage.SingleVideoStorage creating output path: {:s}'.format(basename))
             os.makedirs(basename)
 
-        #self.video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*fourcc), fps, resolution)
-        # scikit-video provides an interface to ffmpeg which is way more reliable than OpenCV's video writer stuff
-        self.video_writer = skvideo.io.FFmpegWriter(filename, 
-            inputdict = {'-r': str(fps), '-s':'{:d}x{:d}'.format(width, height)},
-            outputdict = {'-r': str(fps), '-crf':'17', # crf 0: lossless, 17: "visually lossless", 51: "worst quality ever"
-            '-c:v': 'libx264', '-preset':'ultrafast', '-tune': 'zerolatency'})
-        self.worker = mp.Process(target=_append_video_frame, args=(filename, self.video_writer, self.queue, verbose, self.__sigint_handler, ))
+        video_writer_args = {
+            'filename': filename,
+            'fps': fps,
+            'width': width,
+            'height': height,
+            'split_output': split_output
+        }
+        # #self.video_writer = cv2.VideoWriter(filename, cv2.VideoWriter_fourcc(*fourcc), fps, resolution)
+        # # scikit-video provides an interface to ffmpeg which is way more reliable than OpenCV's video writer stuff
+        # self.video_writer = skvideo.io.FFmpegWriter(filename, 
+        #     inputdict = {'-r': str(fps), '-s':'{:d}x{:d}'.format(width, height)},
+        #     outputdict = {'-r': str(fps), '-crf':'17', # crf 0: lossless, 17: "visually lossless", 51: "worst quality ever"
+        #     '-c:v': 'libx264', '-preset':'ultrafast', '-tune': 'zerolatency'})
+        self.worker = mp.Process(target=_append_video_frame, args=(filename, video_writer_args, self.queue, verbose, self.__sigint_handler, ))
         self.sigint_received = False
         self.worker.start()
 
