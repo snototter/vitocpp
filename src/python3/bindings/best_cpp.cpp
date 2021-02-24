@@ -1019,16 +1019,29 @@ PYBIND11_MODULE(best_cpp, m)
            "Returns the current display frame rate.");
 
   py::class_<vcp::best::StreamStorageParams> storage_params(m, "StreamStorageParams");
-  storage_params.def(py::init<const vcp::best::StreamStorageParams::Type &, const std::string &>())
+  storage_params.def(py::init<const vcp::best::StreamStorageParams::StorageType &,
+                     const std::string &,
+                     const vcp::best::FrameType &>())
+      .def(py::init<const vcp::best::StreamStorageParams::StorageType &,
+                           const std::string &>())
       .def(py::init<>())
-      .def_readwrite("type", &vcp::best::StreamStorageParams::type)
-      .def_readwrite("path", &vcp::best::StreamStorageParams::path);
-  py::enum_<vcp::best::StreamStorageParams::Type>(storage_params, "Type")
-      .value("Skip", vcp::best::StreamStorageParams::Type::NONE)
-      .value("ImageSequence", vcp::best::StreamStorageParams::Type::IMAGE_DIR)
-      .value("Video", vcp::best::StreamStorageParams::Type::VIDEO)
+      .def_readwrite("storage_type", &vcp::best::StreamStorageParams::storage_type)
+      .def_readwrite("path", &vcp::best::StreamStorageParams::path)
+      .def_readwrite("frame_type", &vcp::best::StreamStorageParams::frame_type);
+
+  py::enum_<vcp::best::StreamStorageParams::StorageType>(m, "StorageType")
+      .value("Skip", vcp::best::StreamStorageParams::StorageType::NONE)
+      .value("ImageSequence", vcp::best::StreamStorageParams::StorageType::IMAGE_DIR)
+      .value("Video", vcp::best::StreamStorageParams::StorageType::VIDEO)
       .export_values();
 
+  py::enum_<vcp::best::FrameType>(m, "FrameType")
+      .value("Unknown", vcp::best::FrameType::UNKNOWN)
+      .value("Monocular", vcp::best::FrameType::MONOCULAR)
+      .value("Stereo", vcp::best::FrameType::STEREO)
+      .value("Depth", vcp::best::FrameType::DEPTH)
+      .value("Infrared", vcp::best::FrameType::INFRARED)
+      .export_values();
 
   py::class_<pybest::RgbdAlignmentWrapper>(m, "RgbdAlignment")
 // Initialization

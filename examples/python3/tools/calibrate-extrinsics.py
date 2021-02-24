@@ -745,7 +745,7 @@ class CalibApplication(QMainWindow):
             lbl = cap.frame_label(idx)
             pn = cap.canonic_frame_label(idx)
             storage_params[lbl] = best.StreamStorageParams(
-                best.StreamStorageParams.Type.ImageSequence, pn)
+                best.StorageType.ImageSequence, pn)
 
         if cap.save_replay_config(folder=folder, storage_params=storage_params, save_extrinsics=True):
             msg = QMessageBox()

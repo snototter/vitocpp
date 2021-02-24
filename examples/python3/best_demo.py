@@ -36,6 +36,9 @@ def parse_args():
     
     parser.add_argument('--cap-output-fps', dest='capture_output_fps', default=15.0,
         help="Output framerate for video captures (if --video is specified).")
+    
+    parser.add_argument('--cap-split', action='store', type=int,
+        default=None, help="If specified (and you record to a video), the output video will be split after X frames.")
 
     return parser.parse_args()
 
@@ -46,10 +49,10 @@ def save_replay_libconfig(storage_param_dict, filename):
     for stream_label, param in storage_param_dict.items():
         sink_id = 'sink{:d}'.format(num_stream)
         skip = False
-        if param.type == best.StreamStorageParams.Type.ImageSequence:
+        if param.type == best.StorageType.ImageSequence:
             sink_type = 'imagedir'
             cfg.set_string(sink_id + '.directory', param.path)
-        elif param.type == best.StreamStorageParams.Type.Video:
+        elif param.type == best.StorageType.Video:
             sink_type = 'video'
             cfg.set_string(sink_id + '.video', param.path)
         else:
@@ -63,7 +66,7 @@ def save_replay_libconfig(storage_param_dict, filename):
     print('Saved replay configuration to {}'.format(filename))
     print(cfg.dumps())
 
-
+#FIXME fuck
 class StorageParam(best.StreamStorageParams):
     """
     Extends best.StreamStorageParams with a flag indicating whether
@@ -190,8 +193,8 @@ class StreamingDemo(object):
                     filepath = os.path.join(self._args.capture_directory, filename)
                     print('Setting up RGB video storage for "{:s}" at "{:s}".'.format(lbl, filepath))
                     
-                    storage_params[lbl] = StorageParam(
-                            best.StreamStorageParams.Type.Video, filename, is_depth)
+                    storage_params[lbl] = best.StreamStorageParams(
+                            best.StorageType.Video, filename, best.FrameType.Depth if is_depth else best.FrameType.Monocular)
                     self._storage[lbl] = best.SingleVideoStorage(
                         filepath, self._args.capture_output_fps, w, h, flip_channels=False,
                         verbose=self._args.verbose)
@@ -200,8 +203,8 @@ class StreamingDemo(object):
                     dirpath = os.path.join(self._args.capture_directory, dirname)
                     print('Setting up depth still frame storage for "{:s}" at "{:s}".'.format(lbl, dirpath))
 
-                    storage_params[lbl] = StorageParam(
-                            best.StreamStorageParams.Type.ImageSequence, dirname, is_depth)
+                    storage_params[lbl] = best.StreamStorageParams(
+                            best.StorageType.ImageSequence, dirname, is_depth)
                     self._storage[lbl] = best.ImageSequenceStorage(
                         dirpath, file_extension='.png' if is_depth else '.jpg',
                         flip_channels=False, verbose=self._args.verbose)

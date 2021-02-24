@@ -66,19 +66,9 @@ class LiveStreamDemo(object):
         storage_params = dict() # Used to save the replay config & calibration
         for idx in range(capture.num_streams()):
             lbl = capture.frame_label(idx)
-            # if capture.is_image(idx):
-            #     # This stream can be stored as a video
-            #     h, w = frames[idx].shape[:2]
-            #     fn = capture.canonic_frame_label(idx) + '.mp4'
-            #     storage_params[lbl] = best.StreamStorageParams(
-            #             best.StreamStorageParams.Type.Video, fn)
-            #     storage[lbl] = best.SingleVideoStorage(
-            #         os.path.join(output_folder, fn),
-            #         output_fps, w, h, flip_channels=False, verbose=False)
-            # else:
             pn = capture.canonic_frame_label(idx)
             storage_params[lbl] = best.StreamStorageParams(
-                    best.StreamStorageParams.Type.ImageSequence, pn)
+                    best.StorageType.ImageSequence, pn)
             self._storage[lbl] = best.ImageSequenceStorage(
                 os.path.join(self._args.output_folder, pn),
                 file_extension='.png', flip_channels=False, verbose=False)

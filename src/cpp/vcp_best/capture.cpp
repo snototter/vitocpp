@@ -45,22 +45,22 @@ namespace best
 
 std::ostream& operator<<(std::ostream & os, const StreamStorageParams &ssp)
 {
-  switch (ssp.type)
+  switch (ssp.storage_type)
   {
-    case StreamStorageParams::Type::NONE:
+    case StreamStorageParams::StorageType::NONE:
       os << "Stream will not be saved";
       break;
 
-    case StreamStorageParams::Type::IMAGE_DIR:
+    case StreamStorageParams::StorageType::IMAGE_DIR:
       os << "Image sequence [" << ssp.path << "]";
       break;
 
-    case StreamStorageParams::Type::VIDEO:
+    case StreamStorageParams::StorageType::VIDEO:
       os << "Video [" << ssp.path << "]";
       break;
 
     default:
-      VCP_ERROR("StreamStorageParams " << static_cast<short>(ssp.type) << " is not yet supported.");
+      VCP_ERROR("StreamStorageParams " << static_cast<short>(ssp.storage_type) << " is not yet supported.");
   }
   return os;
 }
@@ -566,24 +566,24 @@ public:
 
       const std::string cam_group = "camera-" + vcp::utils::string::ToStr(fidx);
 
-      switch(it->second.type)
+      switch(it->second.storage_type)
       {
-        case StreamStorageParams::Type::NONE:
+        case StreamStorageParams::StorageType::NONE:
           VCP_LOG_INFO("Skipping configuration of stream '" << it->first << "' as it won't be saved.");
           continue;
 
-        case StreamStorageParams::Type::IMAGE_DIR:
+        case StreamStorageParams::StorageType::IMAGE_DIR:
           config->SetString(cam_group + ".sink_type", "imagedir");
           config->SetString(cam_group + ".directory", it->second.path);
           break;
 
-        case StreamStorageParams::Type::VIDEO:
+        case StreamStorageParams::StorageType::VIDEO:
           config->SetString(cam_group + ".sink_type", "video");
           config->SetString(cam_group + ".video", it->second.path);
           break;
 
         default:
-          VCP_ERROR("StreamStorageParams::Type " << static_cast<uchar>(it->second.type) << " is not yet supported.");
+          VCP_ERROR("StreamStorageParams::Type " << static_cast<uchar>(it->second.storage_type) << " is not yet supported.");
       }
 
       config->SetString(cam_group + ".label", it->first);

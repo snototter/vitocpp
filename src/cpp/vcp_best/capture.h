@@ -32,22 +32,27 @@ namespace best
  */
 struct StreamStorageParams
 {
-  enum class Type : short
+  enum class StorageType : short
   {
     NONE, /**< The corresponding stream won't be stored at all. */
     IMAGE_DIR, /**< The stream will be stored as an image sequence (usually for depth images). */
     VIDEO /**< The stream will be stored as a video file. */
   };
 
-  StreamStorageParams(const Type &type, const std::string &path)
-    : type(type), path(path)
+  StreamStorageParams(const StorageType &storage_type, const std::string &path, const FrameType &frame_type)
+    : storage_type(storage_type), path(path), frame_type(frame_type)
   {}
 
-  StreamStorageParams() : type(Type::NONE), path()
+  StreamStorageParams(const StorageType &storage_type, const std::string &path)
+    : storage_type(storage_type), path(path), frame_type(FrameType::UNKNOWN)
   {}
 
-  Type type;
+  StreamStorageParams() : storage_type(StorageType::NONE), path(), frame_type(FrameType::UNKNOWN)
+  {}
+
+  StorageType storage_type;
   std::string path;
+  FrameType frame_type;
 };
 
 std::ostream& operator<<(std::ostream & os, const StreamStorageParams &ssp);
