@@ -7,7 +7,6 @@ import logging
 from vito import imutils
 
 
-
 def _store_snapshot(worker_id, queue, verbose, sigint_handler):
     """Worker process to store images retrieved from the 'queue' as still frames at the disk.
     Use this if you prefer high latency (filesystem overhead) and wasting disk space."""
@@ -38,7 +37,7 @@ def _append_video_frame(name, writer_args, queue, verbose, sigint_handler):
     def _filename(cnt):
         if should_split:
             pth, ext = os.path.splitext(writer_args['filename'])
-            return f'{pth}-{cnt}{ext}'
+            return f'{pth}-{cnt:04d}{ext}'
         else:
             return writer_args['filename']
     try:
