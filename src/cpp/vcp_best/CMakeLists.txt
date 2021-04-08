@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 2.8)
 project(vcp_best)
 
 set(LIB_NAME ${PROJECT_NAME})
@@ -145,7 +144,7 @@ if(VCP_BEST_WITH_IPCAM)
     #################################################
     # RTSP streaming
     ## FFMPEG - needed for h264 decoding
-    find_package(FFMPEG REQUIRED)
+    find_package(FFmpeg REQUIRED)
     include_directories(${FFMPEG_INCLUDE_DIR})
 
     ## Live555 - needed for RTSP streaming

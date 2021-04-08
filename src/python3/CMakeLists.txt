@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 3.1)
 project(vcp-bindings)
 
 message("Configuring Python3 bindings")
@@ -41,7 +40,7 @@ endif ()
 
 
 # PyBind11
-find_package(pybind11 REQUIRED)
+find_package(PYBIND11 REQUIRED)
 include_directories(${PYBIND11_INCLUDE_DIRS})
 
 # VCP - prepare include directory and RPATH

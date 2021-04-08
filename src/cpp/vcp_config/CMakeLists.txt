@@ -1,4 +1,3 @@
-cmake_minimum_required(VERSION 2.8)
 project(vcp_config)
 
 set(LIB_NAME ${PROJECT_NAME})
