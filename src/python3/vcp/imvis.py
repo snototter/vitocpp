@@ -35,6 +35,8 @@ def color_by_id(id, flip_channels=False):
 def pseudocolor(values, limits=[0.0, 1.0], color_map=colormaps.colormap_parula_rgb):
     return vimvis.pseudocolor(values, limits, color_map)
 
+def overlay(img1, alpha1, img2, mask=None):
+    return vimvis.overlay(img1, alpha1, img2, mask)
 
 # # TODO should implement this in C++, too
 # TODO removed as vito's signature changed
