@@ -138,6 +138,10 @@ class MulticamStepper(object):
             self._capture.load_libconfig(cfg_file, rel_path_base_dir='' if cfg_file_rel_path_base_dir is None else cfg_file_rel_path_base_dir)
         else:
             self._capture.load_json_file(cfg_file)
+
+    @property
+    def capture(self):
+        return self._capture
     
     def __del__(self):
         # Shut down gracefully (would be called upon desctruction anyways)
