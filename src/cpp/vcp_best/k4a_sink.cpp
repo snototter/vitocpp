@@ -2455,7 +2455,7 @@ public:
 
   cv::Mat AlignDepth2Color(const cv::Mat &depth) override
   {
-    if (depth.empty())
+    if (depth.empty() || !IsAlignmentValid())
       return cv::Mat();
 
     if (depth.type() != CV_16UC1)
