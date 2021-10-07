@@ -2448,6 +2448,11 @@ public:
       k4a_transformation_destroy(transformation_);
   }
 
+  virtual bool IsAlignmentValid() const override
+  {
+    return transformation_ != nullptr;
+  }
+
   cv::Mat AlignDepth2Color(const cv::Mat &depth) override
   {
     if (depth.empty())

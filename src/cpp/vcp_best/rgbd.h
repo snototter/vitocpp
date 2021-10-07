@@ -36,6 +36,9 @@ public:
 
   virtual cv::Mat AlignDepth2Color(const cv::Mat &depth) = 0;
 
+  /** @brief Returns true if this object is properly configured, all external libraries are usable, etc. */
+  virtual bool IsAlignmentValid() const = 0;
+
 protected:
   cv::Mat K_c_;
   cv::Mat K_d_;
