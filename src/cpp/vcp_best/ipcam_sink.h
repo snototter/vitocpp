@@ -126,6 +126,8 @@ struct IpCameraSinkParams : SinkParams
 
 std::ostream &operator<< (std::ostream &out, const IpCameraSinkParams &p);
 
+std::string GetStreamingUrl(const IpCameraSinkParams &p);
+
 IpCameraSinkParams IpCameraSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
 //std::pair<IpCameraSinkParams, IpCameraSinkParams> StereoIpCameraSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param);
 
