@@ -641,7 +641,7 @@ public:
     if (!params_rtsp_.empty())
     {
 #ifdef VCP_BEST_WITH_IPCAM_RTSP
-      sinks_.push_back(std::move(rtsp::CreateMultiRtspStreamSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(params_rtsp_)));
+      sinks_.push_back(rtsp::CreateMultiRtspStreamSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(params_rtsp_));
 #else // VCP_BEST_WITH_IPCAM_RTSP
       VCP_ERROR("You need to compile VCP with RTSP streaming enabled!");
 #endif // VCP_BEST_WITH_IPCAM_RTSP
@@ -730,20 +730,17 @@ public:
 
   vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
   {
-    VCP_LOG_FIXME("IntrinsicsAt(" << stream_index << ") is not yet implemented for stream '" << StreamLabel(stream_index) << "'.");
-    VCP_ERROR("Not yet implemented!");
+    VCP_ERROR("IntrinsicsAt(" << stream_index << ") is not yet implemented for stream '" << StreamLabel(stream_index) << "'.");
   }
 
   bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
   {
-    VCP_LOG_FIXME("SetExtrinsicsAt() not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
-    VCP_ERROR("Not yet implemented!");
+    VCP_ERROR("SetExtrinsicsAt() not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
   }
 
   void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
   {
-    VCP_LOG_FIXME("ExtrinsicsAt() not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
-    VCP_ERROR("Not yet implemented!");
+    VCP_ERROR("ExtrinsicsAt() not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
   }
 
 
