@@ -1087,4 +1087,21 @@ PYBIND11_MODULE(best_cpp, m)
 //        "Saves the extrinsic calibration to the given file.", //TODO doc
 //        py::arg("filename"), py::arg("labels"), py::arg("extrinsics"));
 
+  //FUCK WITH IPCAM
+#ifdef VCP_BEST_WITH_IPCAM
+  py::enum_<vcp::best::ipcam::IpApplicationProtocol>(m, "IpApplicationProtocol")
+      .value("HTTP", vcp::best::ipcam::IpApplicationProtocol::HTTP)
+      .value("RTSP", vcp::best::ipcam::IpApplicationProtocol::RTSP)
+      .export_values();
+
+  py::enum_<vcp::best::ipcam::IpStreamEncoding>(m, "IpStreamEncoding")
+      .value("MJPEG", vcp::best::ipcam::IpStreamEncoding::MJPEG)
+      .value("H264", vcp::best::ipcam::IpStreamEncoding::H264)
+      .export_values();
+
+  py::enum_<vcp::best::ipcam::IpTransportProtocol>(m, "IpTransportProtocol")
+      .value("TCP", vcp::best::ipcam::IpTransportProtocol::TCP)
+      .value("UDP", vcp::best::ipcam::IpTransportProtocol::UDP)
+      .export_values();
+#endif // VCP_BEST_WITH_IPCAM
 }
