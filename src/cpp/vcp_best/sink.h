@@ -42,7 +42,7 @@ FrameType FrameTypeFromString(const std::string &s);
 /** @brief Print the FrameType. */
 std::ostream &operator<<(std::ostream &stream, const FrameType &s);
 
-
+//FIXME remove conditional defs and implement default behaviour instead (raise exception)
 /** @brief Strongly typed enum to look up a sink's type. */
 enum class SinkType
 {

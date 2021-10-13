@@ -40,14 +40,11 @@ enum class ImgTransform : uint32_t
   // nice explanations with numpy https://stackoverflow.com/a/41894317/400948
   // Check https://hadrienj.github.io/posts/Preprocessing-for-deep-learning/
   // https://stats.stackexchange.com/questions/12842/covariance-and-independence
-// * Gamma correction   https://docs.opencv.org/3.4/d3/dc1/tutorial_basic_linear_transform.html
   DEPTH2SURFACENORMALS = 0x01 << 19, /**< Compute surface normals from depth image. */
   COLOR_SURFACENORMALS_RGB = 0x01 << 20, /**< Colorize a surface normal image (3-channel 32F or 64F), output RGB. */
   COLOR_SURFACENORMALS_BGR = 0x01 << 21, /**< Colorize a surface normal image (3-channel 32F or 64F), output BGR. */
-#ifdef VCP_IMUTILS_WITH_COLORNAMES
   COLOR_RGB2COLORNAME = 0x01 << 22, /**< Quantize RGB into the 11 color names/attributes. */
   COLOR_BGR2COLORNAME = 0x01 << 23, /**< Quantize BGR into the 11 color names/attributes. */
-#endif
   COLOR_GRAY2RGB = 0x01 << 24,  /**< Convert single-channel grayscale to 3-channel RGB/BGR. */
   COLOR_RGB2HSV  = 0x01 << 25,  /**< Convert RGB image to HSV color space. */
   COLOR_BGR2HSV  = 0x01 << 26,  /**< Convert BGR image to HSV color space. */
@@ -99,7 +96,6 @@ cv::Mat ConvertToHsv(const cv::Mat &img, bool is_rgb=false);
 /** @brief Convenience wrapper to cv::cvtColor to be used as ImgTransformation (within the BESt vcp module). */
 cv::Mat ConvertToLab(const cv::Mat &img, bool is_rgb=false);
 
-#ifdef VCP_IMUTILS_WITH_COLORNAMES
 /**
  * @brief Discretize the RGB/BGR input image to the 11 base color names, returns an RGB/BGR image.
  *
@@ -115,7 +111,6 @@ cv::Mat ConvertToColorName(const cv::Mat &img, bool is_rgb=false);
  * for Real-World Applications. IEEE Trans. on Image Processing, 18(7):1512-23, 2009.
  */
 cv::Mat ConvertToColorNameFeature(const cv::Mat &img, bool is_rgb=false);
-#endif
 
 /** @brief Apply a basic image transformation (e.g. rotation/flipping). */
 cv::Mat ApplyImageTransformation(const cv::Mat &img, const vcp::imutils::ImgTransform &transform);

@@ -46,10 +46,8 @@ std::string ImgTransformToString(const ImgTransform &t)
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_SURFACENORMALS_RGB);
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_SURFACENORMALS_BGR);
 
-#ifdef VCP_IMUTILS_WITH_COLORNAMES
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_RGB2COLORNAME);
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_BGR2COLORNAME);
-#endif
 
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_GRAY2RGB);
   MAKE_IMAGETRANSFORMATION_TO_STRING_CASE(COLOR_RGB2HSV);
@@ -117,7 +115,6 @@ ImgTransform ImgTransformFromString(const std::string &s)
       || lower.compare("surfacenormals2bgr") == 0)
     return ImgTransform::COLOR_SURFACENORMALS_BGR;
 
-#ifdef VCP_IMUTILS_WITH_COLORNAMES
   if (lower.compare("rgb2cn") == 0
       || lower.compare("rgb2colorname") == 0)
     return ImgTransform::COLOR_RGB2COLORNAME;
@@ -133,7 +130,6 @@ ImgTransform ImgTransformFromString(const std::string &s)
     return ImgTransform::COLOR_RGB2COLORNAME;
   }
   //TODO add cnprobs (11-channel output!)
-#endif
 
   if (lower.compare("rgb2hsv") == 0)
     return ImgTransform::COLOR_RGB2HSV;
@@ -507,10 +503,10 @@ cv::Mat ConvertToLab(const cv::Mat &img, bool is_rgb)
   return res;
 }
 
-#ifdef VCP_IMUTILS_WITH_COLORNAMES
 template <bool PROBS>
 cv::Mat ColorNameHelper(const cv::Mat &rgb, bool output_rgb)
 {
+#ifdef VCP_IMUTILS_WITH_COLORNAMES
   VCP_INIT_TIC_TOC;
   VCP_TIC;
   if (rgb.type() != CV_8UC3)
@@ -581,10 +577,16 @@ cv::Mat ColorNameHelper(const cv::Mat &rgb, bool output_rgb)
   }
   VCP_TOC("COLORNAMES");
   return out;
+#else // VCP_IMUTILS_WITH_COLORNAMES
+  VCP_UNUSED_VAR(rgb);
+  VCP_UNUSED_VAR(output_rgb);
+  VCP_ERROR("ColorName transformations are not available - You have to build vcp with VCP_IMUTILS_WITH_COLORNAMES");
+#endif // VCP_IMUTILS_WITH_COLORNAMES
 }
 
 cv::Mat ConvertToColorName(const cv::Mat &img, bool is_rgb)
 {
+#ifdef VCP_IMUTILS_WITH_COLORNAMES
   cv::Mat res, cvt;
   if (img.channels() == 3)
   {
@@ -612,10 +614,16 @@ cv::Mat ConvertToColorName(const cv::Mat &img, bool is_rgb)
   else
     VCP_ERROR("Only RGB/BGR (+alpha) input images are supported for CN (color name) conversion.");
   return res;
+#else // VCP_IMUTILS_WITH_COLORNAMES
+  VCP_UNUSED_VAR(img);
+  VCP_UNUSED_VAR(is_rgb);
+  VCP_ERROR("ColorName transformations are not available - You have to build vcp with VCP_IMUTILS_WITH_COLORNAMES");
+#endif // VCP_IMUTILS_WITH_COLORNAMES
 }
 
 cv::Mat ConvertToColorNameFeature(const cv::Mat &img, bool is_rgb)
 {
+#ifdef VCP_IMUTILS_WITH_COLORNAMES
   cv::Mat res, cvt;
   if (img.channels() == 3)
   {
@@ -643,8 +651,12 @@ cv::Mat ConvertToColorNameFeature(const cv::Mat &img, bool is_rgb)
   else
     VCP_ERROR("Only RGB/BGR (+alpha) input images are supported for CN (color name) conversion.");
   return res;
+#else // VCP_IMUTILS_WITH_COLORNAMES
+  VCP_UNUSED_VAR(img);
+  VCP_UNUSED_VAR(is_rgb);
+  VCP_ERROR("ColorName transformations are not available - You have to build vcp with VCP_IMUTILS_WITH_COLORNAMES");
+#endif // VCP_IMUTILS_WITH_COLORNAMES
 }
-#endif
 
 cv::Mat ApplyImageTransformation(const cv::Mat &img, const ImgTransform &transform)
 {
@@ -679,13 +691,10 @@ cv::Mat ApplyImageTransformation(const cv::Mat &img, const ImgTransform &transfo
     case ImgTransform::COLOR_SURFACENORMALS_BGR:
       return ColorizeSurfaceNormals(img, true);
 
-
-#ifdef VCP_IMUTILS_WITH_COLORNAMES
     case ImgTransform::COLOR_RGB2COLORNAME:
       return ConvertToColorName(img, true);
     case ImgTransform::COLOR_BGR2COLORNAME:
       return ConvertToColorName(img, false);
-#endif
 
     case ImgTransform::COLOR_GRAY2RGB:
       return Grayscale(img, false, false);
