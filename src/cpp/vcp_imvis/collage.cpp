@@ -241,7 +241,9 @@ void Collage(const std::vector<cv::Mat> &images, cv::Mat &collage, size_t num_im
   convert_8U = convert_8U || !same_depth;
 
   // Build collage
-  collage = cv::Mat(collage_size, convert_8U ? CV_MAKETYPE(CV_8U, max_layers) : CV_MAKETYPE(images[0].depth(), max_layers), bg_color);
+  collage = cv::Mat(collage_size,
+                    convert_8U ? CV_MAKETYPE(CV_8U, max_layers) : CV_MAKETYPE(images[0].depth(), max_layers),
+                    bg_color);
 
   int insert_top = 0;
   for (size_t row = 0, img_idx = 0; row < num_rows && img_idx < num_images; ++row)

@@ -119,9 +119,14 @@ def demo_align():
 
         if alignment is None:
             alignment = best.RgbdAlignment(K_color, K_depth, Rt_stereo[0], Rt_stereo[1], img_resolution(color), img_resolution(depth), D_color, D_depth)
-        pyutils.tic('cpp-align')
-        aligned_depth_cpp = alignment.align_d2c(depth)
-        pyutils.toc('cpp-align')
+        # pyutils.tic('cpp-align')
+        # aligned_depth_cpp = alignment.align_d2c(depth)
+        # pyutils.toc('cpp-align')
+
+        pyutils.tic('cpp-align-di')
+        aligned_depth_cpp, aligned_ir_cpp = alignment.align_di2c(depth, infrared)
+        pyutils.toc('cpp-align-di')
+
         
 
         vis_frames = [color, vis_depth(depth), vis_infrared(infrared)]
@@ -129,6 +134,7 @@ def demo_align():
         
         ## The cpp version takes care of properly interpolating depth values during alignment
         # takes about 3-5ms per 640x480 depth
+        # Additionally aligning the intensity image adds another 0.8-1ms to the cpp processing time
         ## The python version is a naive reprojection + binning (without depth ordering, filtering, interpolation, etc.)
         # takes about 20-30 ms (~4-5 times slower than cpp)
         # pyutils.tic('py-align')
@@ -138,20 +144,33 @@ def demo_align():
         aligned_depth = aligned_depth_cpp
         vis_aligned_depth = vis_depth(aligned_depth)
         vis_frames.append(vis_aligned_depth)
-        vis_labels.append('Aligned')
-        
-        color_resized = cv2.resize(color, (aligned_depth.shape[1], aligned_depth.shape[0]))
-        vis_frames.append(color_resized)
-        vis_labels.append('color resized')
+        vis_labels.append('Aligned Depth')
 
-        vis_frames.append(imvis.overlay(vis_aligned_depth, color_resized, 0.7))#, aligned_depth > 0))
-        vis_labels.append('Overlay alignment')
+        aligned_ir = aligned_ir_cpp
+        vis_aligned_ir = vis_infrared(aligned_ir)
+        # vis_frames.append(vis_aligned_ir)
+        # vis_labels.append('Aligned IR')
+        
+        # color_resized = cv2.resize(color, (aligned_depth.shape[1], aligned_depth.shape[0]))
+        # vis_frames.append(color_resized)
+        # vis_labels.append('color resized')
+
+        # vis_frames.append(imvis.overlay(vis_aligned_depth, color_resized, 0.7))#, aligned_depth > 0))
+        vis_frames.append(imvis.overlay(vis_aligned_depth, color, 0.7))
+        vis_labels.append('RGB+D')
+
+        vis_frames.append(imvis.overlay(vis_aligned_ir, color, 0.7))
+        vis_labels.append('RGB+IR')
 
         # Visualization (rescale, overlay a label, show a single collage)
-        vis_frames = [imutils.aspect_aware_resize(f, (640, 480))[0] for f in vis_frames]
+        bg_color = (180, 180, 180)
+        vis_frames = [imutils.aspect_aware_resize(f, (640, 480), padding_value=bg_color)[0] for f in vis_frames]
         vis_frames = overlay_labels(vis_frames, vis_labels)
 
-        collage = imvis.make_collage(vis_frames, num_images_per_row=3)
+        img_per_row = len(vis_frames) // 2
+        img_per_row = img_per_row if len(vis_frames) % 2 == 0 else img_per_row + 1
+        collage = imvis.make_collage(vis_frames, bg_color=bg_color,
+                                     num_images_per_row=img_per_row)
         k = imvis.imshow(collage, title='Stream', wait_ms=20)
         if k == ord('q') or k == 27:
             break

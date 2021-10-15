@@ -2312,7 +2312,7 @@ void FillK4AIntrinsicParameters(k4a_calibration_intrinsics_t &intrinsics, const 
   // metric_radius is ignored (the metric_radius inside k4a_calibration_camera_t is actually used).
 }
 
-void FillCalibration(k4a_calibration_camera_t &cam_calib, const cv::Mat &K, const cv::Mat &D, const cv::Size &resolution)
+void FillCalibration(k4a_calibration_camera_t& cam_calib, const cv::Mat& K, const cv::Mat& D, const cv::Size& resolution)
 {
   if (K.type() == CV_32FC1)
   {
@@ -2332,7 +2332,7 @@ void FillCalibration(k4a_calibration_camera_t &cam_calib, const cv::Mat &K, cons
 }
 
 template <typename T>
-void FillRt(k4a_calibration_extrinsics_t &extrinsics, const cv::Mat &R, const cv::Mat &t)
+void FillRt(k4a_calibration_extrinsics_t& extrinsics, const cv::Mat& R, const cv::Mat& t)
 {
   extrinsics.rotation[0] = static_cast<float>(R.at<T>(0, 0));
   extrinsics.rotation[1] = static_cast<float>(R.at<T>(0, 1));
@@ -2349,7 +2349,7 @@ void FillRt(k4a_calibration_extrinsics_t &extrinsics, const cv::Mat &R, const cv
   extrinsics.translation[2] = static_cast<float>(t.at<T>(2));
 }
 
-cv::Mat TransformDepthToColor(k4a_image_t &src_depth, k4a_transformation_t &transformation, const cv::Size &dst_size)
+cv::Mat TransformDepthToColor(k4a_image_t& src_depth, k4a_transformation_t& transformation, const cv::Size& dst_size)
 {
   cv::Mat extracted;
   if (src_depth != nullptr)
@@ -2401,13 +2401,90 @@ cv::Mat TransformDepthToColor(k4a_image_t &src_depth, k4a_transformation_t &tran
 }
 
 
+void TransformDepthInfraredToColor(k4a_image_t& src_depth, k4a_image_t& src_ir,
+                                   k4a_transformation_t& transformation,
+                                   cv::Mat& aligned_depth, cv::Mat& aligned_ir,
+                                   const cv::Size& dst_size)
+{
+  if (src_depth != nullptr && src_ir != nullptr)
+  {
+    // OpenCV matrix header to point to the warped images
+    cv::Mat tmp_depth, tmp_ir;
+    // Create output buffer
+    k4a_image_t aligned_depth_image = NULL;
+    k4a_image_t aligned_ir_image = NULL;
+    if (k4a_image_create(
+            K4A_IMAGE_FORMAT_DEPTH16,
+            dst_size.width, dst_size.height,
+            dst_size.width * static_cast<int>(sizeof(uint16_t)), &aligned_depth_image)
+          != K4A_RESULT_SUCCEEDED
+        || k4a_image_create(
+          K4A_IMAGE_FORMAT_CUSTOM16,
+          dst_size.width, dst_size.height,
+          dst_size.width * static_cast<int>(sizeof(uint16_t)), &aligned_ir_image)
+        != K4A_RESULT_SUCCEEDED)
+    {
+      VCP_LOG_FAILURE("Cannot allocate K4A image buffers to warp depth & infrared to color!");
+    }
+    else
+    {
+      if (k4a_transformation_depth_image_to_color_camera_custom(transformation,
+              src_depth, src_ir, aligned_depth_image, aligned_ir_image,
+              K4A_TRANSFORMATION_INTERPOLATION_TYPE_LINEAR, 0)
+          != K4A_RESULT_SUCCEEDED)
+      {
+        VCP_LOG_FAILURE("Cannot align K4A depth & infrared to color image!");
+      }
+      else
+      {
+        // Get image buffer and size for aligned depth image
+        uint8_t* buffer_depth = k4a_image_get_buffer(aligned_depth_image);
+        const int rows_depth = k4a_image_get_height_pixels(aligned_depth_image);
+        const int cols_depth = k4a_image_get_width_pixels(aligned_depth_image);
+        // Create OpenCV Mat header pointing to the buffer (no copy yet!)
+        tmp_depth = cv::Mat(rows_depth, cols_depth, CV_16U, static_cast<void*>(buffer_depth),
+                            k4a_image_get_stride_bytes(aligned_depth_image));
+        // Get image buffer and size for aligned infrared image
+        uint8_t* buffer_ir = k4a_image_get_buffer(aligned_ir_image);
+        const int rows_ir = k4a_image_get_height_pixels(aligned_ir_image);
+        const int cols_ir = k4a_image_get_width_pixels(aligned_ir_image);
+        // Create OpenCV Mat header pointing to the buffer (no copy yet!)
+        tmp_ir = cv::Mat(rows_ir, cols_ir, CV_16U, static_cast<void*>(buffer_ir),
+                         k4a_image_get_stride_bytes(aligned_ir_image));
+      }
+    }
+
+    aligned_depth = tmp_depth.clone();
+    aligned_ir = tmp_ir.clone();
+    // Now it's safe to clean up the k4a memory
+    if (aligned_depth_image)
+    {
+      k4a_image_release(aligned_depth_image);
+      aligned_depth_image = NULL;
+    }
+    if (aligned_ir_image)
+    {
+      k4a_image_release(aligned_ir_image);
+      aligned_ir_image = NULL;
+    }
+  }
+  else
+  {
+    VCP_LOG_WARNING("TransformDepthInfraredToColor() called without valid K4A depth or infrared image!");
+    aligned_depth = cv::Mat();
+    aligned_ir = cv::Mat();
+  }
+}
+
+
+
 class K4ARgbdAlignment : public rgbd::RgbdAlignment
 {
 public:
-  K4ARgbdAlignment(const cv::Mat &K_c, const cv::Mat &K_d,
-                   const cv::Mat &R_d2c, const cv::Mat &t_d2c,
-                   const cv::Size &size_c, const cv::Size &size_d,
-                   const cv::Mat &D_c, const cv::Mat &D_d) :
+  K4ARgbdAlignment(const cv::Mat& K_c, const cv::Mat& K_d,
+                   const cv::Mat& R_d2c, const cv::Mat& t_d2c,
+                   const cv::Size& size_c, const cv::Size& size_d,
+                   const cv::Mat& D_c, const cv::Mat& D_d) :
     RgbdAlignment(K_c, K_d, R_d2c, t_d2c, size_c, size_d, D_c, D_d),
     transformation_(nullptr)
   {
@@ -2487,15 +2564,81 @@ public:
     return warped;
   }
 
+
+  void AlignDepthIR2Color(const cv::Mat& depth, const cv::Mat& ir,
+                          cv::Mat& aligned_depth, cv::Mat& aligned_ir) override
+  {
+    if (depth.empty() || ir.empty() || !IsAlignmentValid())
+    {
+      aligned_depth = cv::Mat();
+      aligned_ir = cv::Mat();
+      return;
+    }
+    if (depth.type() != CV_16UC1 || ir.type() != CV_16UC1)
+    {//TODO check if ir could also be 8UC1
+      VCP_LOG_FAILURE("Depth alignment is only supported for single-channel, 16bit depth maps and infrared images (OpenCV: CV_16UC1, NumPy: uint16)." <<
+                      std::endl << "You provided depth as " << imutils::CVMatDepthToString(depth.depth(), depth.channels())
+                      << " and IR as " << imutils::CVMatDepthToString(ir.depth(), ir.channels()));
+      aligned_depth = cv::Mat();
+      aligned_ir = cv::Mat();
+      return;
+    }
+
+    // Convert OpenCV buffers to k4a image buffers
+    k4a_image_t depth_k4a, ir_k4a;
+    if (k4a_image_create_from_buffer(K4A_IMAGE_FORMAT_DEPTH16, depth.cols, depth.rows, depth.step[0],
+                                     depth.data, depth.cols * depth.rows * sizeof(uint16_t),
+                                     NULL, NULL, &depth_k4a)
+        != K4A_RESULT_SUCCEEDED)
+    {
+      VCP_LOG_FAILURE("Cannot create K4A depth image buffer from OpenCV depth image data.");
+      aligned_depth = cv::Mat();
+      aligned_ir = cv::Mat();
+      return;
+    }
+
+    if (k4a_image_create_from_buffer(K4A_IMAGE_FORMAT_CUSTOM16, ir.cols, ir.rows, ir.step[0],//FUCK format
+                                     ir.data, ir.cols * ir.rows * sizeof(uint16_t),
+                                     NULL, NULL, &ir_k4a)
+        != K4A_RESULT_SUCCEEDED)
+    {
+      VCP_LOG_FAILURE("Cannot create K4A infrared image buffer from OpenCV infrared image data.");
+      aligned_depth = cv::Mat();
+      aligned_ir = cv::Mat();
+      if (depth_k4a)
+      {
+        k4a_image_release(depth_k4a);
+        depth_k4a = NULL;
+      }
+      return;
+    }
+
+    TransformDepthInfraredToColor(depth_k4a, ir_k4a, transformation_,
+                                  aligned_depth, aligned_ir, size_c_);
+
+    // Clean up
+    if (depth_k4a)
+    {
+      k4a_image_release(depth_k4a);
+      depth_k4a = NULL;
+    }
+
+    if (ir_k4a)
+    {
+      k4a_image_release(ir_k4a);
+      ir_k4a = NULL;
+    }
+  }
+
 private:
   k4a_transformation_t transformation_;
   k4a_calibration_t stereo_calibration_;
 
 };
-std::unique_ptr<rgbd::RgbdAlignment> CreateK4ARgbdAlignment(const cv::Mat &K_c, const cv::Mat &K_d,
-                                                            const cv::Mat &R_d2c, const cv::Mat &t_d2c,
-                                                            const cv::Size &size_c, const cv::Size &size_d,
-                                                            const cv::Mat &D_c, const cv::Mat &D_d)
+std::unique_ptr<rgbd::RgbdAlignment> CreateK4ARgbdAlignment(const cv::Mat& K_c, const cv::Mat& K_d,
+                                                            const cv::Mat& R_d2c, const cv::Mat& t_d2c,
+                                                            const cv::Size& size_c, const cv::Size& size_d,
+                                                            const cv::Mat& D_c, const cv::Mat& D_d)
 {
   return std::unique_ptr<K4ARgbdAlignment>(new K4ARgbdAlignment(K_c, K_d, R_d2c, t_d2c, size_c, size_d, D_c, D_d));
 }

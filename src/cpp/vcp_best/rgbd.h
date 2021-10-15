@@ -27,16 +27,19 @@ namespace rgbd
 class RgbdAlignment
 {
 public:
-  RgbdAlignment(const cv::Mat &K_c, const cv::Mat &K_d,
-                const cv::Mat &R_d2c, const cv::Mat &t_d2c,
-                const cv::Size &size_c, const cv::Size &size_d,
-                const cv::Mat &D_c, const cv::Mat &D_d);
+  RgbdAlignment(const cv::Mat& K_c, const cv::Mat& K_d,
+                const cv::Mat& R_d2c, const cv::Mat& t_d2c,
+                const cv::Size& size_c, const cv::Size& size_d,
+                const cv::Mat& D_c, const cv::Mat& D_d);
 
   virtual ~RgbdAlignment() {}
 
-  virtual cv::Mat AlignDepth2Color(const cv::Mat &depth) = 0;
+  virtual cv::Mat AlignDepth2Color(const cv::Mat& depth) = 0;
 
-  /** @brief Returns true if this object is properly configured, all external libraries are usable, etc. */
+  virtual void AlignDepthIR2Color(const cv::Mat& depth, const cv::Mat& ir,
+                                  cv::Mat& aligned_depth, cv::Mat& aligned_ir) = 0;
+
+  /** @brief Returns true if this object is properly configured, all external libraries/drivers are usable, etc. */
   virtual bool IsAlignmentValid() const = 0;
 
 protected:
@@ -51,11 +54,10 @@ protected:
 };
 
 /** @brief Initialize an RgbdAlignment instance to align depth to color imagery. */
-std::unique_ptr<RgbdAlignment> CreateRgbdAlignment(const cv::Mat &K_c, const cv::Mat &K_d,
-                                                   const cv::Mat &R_d2c, const cv::Mat &t_d2c,
-                                                   const cv::Size &size_c, const cv::Size &size_d,
-                                                   const cv::Mat &D_c=cv::Mat(), const cv::Mat &D_d=cv::Mat());
-
+std::unique_ptr<RgbdAlignment> CreateRgbdAlignment(const cv::Mat& K_c, const cv::Mat& K_d,
+                                                   const cv::Mat& R_d2c, const cv::Mat& t_d2c,
+                                                   const cv::Size& size_c, const cv::Size& size_d,
+                                                   const cv::Mat& D_c=cv::Mat(), const cv::Mat& D_d=cv::Mat());
 } // namespace rgbd
 } // namespace best
 } // namespace vcp

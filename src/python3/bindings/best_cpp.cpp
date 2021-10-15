@@ -473,6 +473,21 @@ public:
     return vcp::python::conversion::MatToNDArray(warped);
   }
 
+  py::tuple AlignDepthIrToColor(const cv::Mat &depth, const cv::Mat &infrared)
+  {
+    if (!alignment_)
+    {
+      VCP_LOG_FAILURE("RgbdAlignment was not properly initialized!");
+      return py::make_tuple(py::none(), py::none());
+    }
+
+    cv::Mat warped_depth, warped_ir;
+    alignment_->AlignDepthIR2Color(depth, infrared, warped_depth, warped_ir);
+
+    return py::make_tuple(warped_depth.empty() ? py::none() : vcp::python::conversion::MatToNDArray(warped_depth),
+                          warped_ir.empty() ? py::none() : vcp::python::conversion::MatToNDArray(warped_ir));
+  }
+
 private:
   std::unique_ptr<vcp::best::rgbd::RgbdAlignment> alignment_;
 };
@@ -1061,7 +1076,13 @@ PYBIND11_MODULE(best_cpp, m)
            "Align the given depth image to the color stream.\n\n"
            ":param depth: single-channel 16bit (!) depth image\n"
            ":return: single-channel 16bit depth image aligned to the color stream",
-           py::arg("depth"));
+           py::arg("depth"))
+      .def("align_di2c", &pybest::RgbdAlignmentWrapper::AlignDepthIrToColor,
+           "Align the given depth & infrared image to the color stream.\n\n"
+           ":param depth: single-channel 16bit depth image\n"
+           ":param ir:    single-channel 16bit intensity/infrared image\n"
+           ":return: tuple(aligned depth, aligned infrared)",
+           py::arg("depth"), py::arg("ir"));
 
 
   m.def("list_k4a_devices", &pybest::ListK4ADevices,
