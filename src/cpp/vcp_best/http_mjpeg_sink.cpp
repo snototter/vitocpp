@@ -325,6 +325,12 @@ private:
         frame = decoded;
       else
         frame = FlipChannels(decoded);
+      // Rectify if needed
+      if (params_.rectify)
+      {
+        cv::Mat tmp = frame.clone();
+        frame = intrinsics_.UndistortRectify(tmp);
+      }
       // Apply basic image transformations if needed.
       const cv::Mat img = imutils::ApplyImageTransformations(frame, params_.transforms);
       image_queue_mutex_.lock();

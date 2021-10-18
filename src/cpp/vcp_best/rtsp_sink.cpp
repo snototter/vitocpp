@@ -6,6 +6,7 @@
 #include <deque>
 #include <set>
 #include <string>
+#include <vcp_utils/file_utils.h>
 #ifdef VCP_BEST_DEBUG_FRAMERATE
   #include <chrono>
   #include <iomanip>
@@ -58,6 +59,35 @@ public:
       callback_data_.push_back(cbd);
 
       verbose_ |= params_[i].verbose;
+
+      // Load calibration if available
+      if (params_[i].rectify || vcp::utils::file::Exists(params_[i].calibration_file))
+      {
+        VCP_LOG_FAILURE("FUCK YEAH");
+        if (params_[i].calibration_file.empty() || !vcp::utils::file::Exists(params_[i].calibration_file))
+        {
+          VCP_ERROR("To undistort & rectify the rtsp stream [" << params_[i].sink_label
+                    << "], the calibration file '" << params_[i].calibration_file
+                    << "' must exist!");
+        }
+
+        const auto intrinsics = calibration::LoadIntrinsicsFromFile(params_[i].calibration_file);
+        if (intrinsics.size() != 1)
+        {
+          VCP_ERROR("Loaded invalid number of " << intrinsics.size()
+                     << " intrinsic calibrations from " << params_[i].calibration_file << ".");
+        }
+
+        intrinsics_.push_back(intrinsics[0]);
+
+        if (verbose_)
+          VCP_LOG_INFO_DEFAULT("Loaded intrinsic calibration for rtsp stream ["
+                         << params_[i].sink_label << "].");
+      }
+      else
+      {
+        intrinsics_.push_back(calibration::StreamIntrinsics());
+      }
 
 #ifdef VCP_BEST_DEBUG_FRAMERATE
       previous_enqueue_time_points_.push_back(std::chrono::high_resolution_clock::now());
@@ -247,20 +277,18 @@ public:
 
   vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
   {
-    VCP_LOG_FIXME("IntrinsicsAt(" << stream_index << ") is not yet implemented for stream '" << StreamLabel(stream_index) << "'.");
-    VCP_ERROR("Not yet implemented!");
+    return intrinsics_[stream_index];
   }
 
   bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
   {
-    VCP_LOG_FIXME("SetExtrinsicsAt() not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
-    VCP_ERROR("Not yet implemented!");
+    return extrinsics_[stream_index].SetExtrinsics(R, t, intrinsics_[stream_index]);
   }
 
   void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
   {
-    VCP_LOG_FIXME("ExtrinsicsAt() not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
-    VCP_ERROR("Not yet implemented!");
+    R = extrinsics_[stream_index].R().clone();
+    t = extrinsics_[stream_index].t().clone();
   }
 
 protected:
@@ -268,6 +296,8 @@ protected:
   std::unique_ptr<RtspClientEnvironment> rtsp_client_env_;
   bool verbose_;
   std::vector<IpCameraSinkParams> params_;
+  std::vector<calibration::StreamIntrinsics> intrinsics_;
+  std::vector<calibration::StreamExtrinsics> extrinsics_;
   std::vector<MultiCallbackData> callback_data_;
   mutable std::deque<std::mutex> image_queue_mutex_;
   std::thread stream_thread_;
@@ -284,7 +314,17 @@ protected:
 
   void EnqueueNextFrame(const cv::Mat &frame, size_t sink_idx)
   {
-    const cv::Mat img = imutils::ApplyImageTransformations(frame, params_[sink_idx].transforms);
+    // Rectify if needed
+    cv::Mat img;
+    if (params_[sink_idx].rectify)
+    {
+      cv::Mat tmp = intrinsics_[sink_idx].UndistortRectify(frame);
+      img = imutils::ApplyImageTransformations(tmp, params_[sink_idx].transforms);
+    }
+    else
+    {
+      img = imutils::ApplyImageTransformations(frame, params_[sink_idx].transforms);
+    }
     image_queue_mutex_[sink_idx].lock();
     image_queues_[sink_idx]->PushBack(img.clone());
     image_queue_mutex_[sink_idx].unlock();

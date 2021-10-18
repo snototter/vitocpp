@@ -154,31 +154,39 @@ public:
           webcam_params.push_back(webcam::WebcamSinkParamsFromConfig(config, cam_config_name));
           break;
 
-#ifdef VCP_BEST_WITH_IPCAM
         case SinkType::IPCAM_GENERIC:
         case SinkType::IPCAM_AXIS:
         case SinkType::IPCAM_MOBOTIX:
+#ifdef VCP_BEST_WITH_IPCAM
           ipcam_params.push_back(ipcam::IpCameraSinkParamsFromConfig(config, cam_config_name));
+#else
+          VCP_ERROR("IpCams are not available - You have to build vcp with VCP_BEST_WITH_IPCAM");
+#endif // VCP_BEST_WITH_IPCAM
           break;
-#endif
 
-#ifdef VCP_BEST_WITH_K4A
         case SinkType::K4A:
+#ifdef VCP_BEST_WITH_K4A
           k4a_params.push_back(k4a::K4ASinkParamsFromConfig(config, cam_config_name));
-          break;
+#else
+          VCP_ERROR("Azure Kinect is not available - You have to build vcp with VCP_BEST_WITH_K4A");
 #endif // VCP_BEST_WITH_K4A
+          break;
 
-#ifdef VCP_BEST_WITH_REALSENSE2
         case SinkType::REALSENSE:
+#ifdef VCP_BEST_WITH_REALSENSE2
           realsense2_params.push_back(realsense2::RealSense2SinkParamsFromConfig(config, cam_config_name));
-          break;
+#else
+          VCP_ERROR("RealSense2 is not available - You have to build vcp with VCP_BEST_WITH_REALSENSE2");
 #endif // VCP_BEST_WITH_REALSENSE2
-
-#ifdef VCP_BEST_WITH_ZED
-        case SinkType::ZED:
-          zed_params.push_back(zed::ZedSinkParamsFromConfig(config, cam_config_name));
           break;
+
+        case SinkType::ZED:
+#ifdef VCP_BEST_WITH_ZED
+          zed_params.push_back(zed::ZedSinkParamsFromConfig(config, cam_config_name));
+#else
+          VCP_ERROR("ZED is not available - You have to build vcp with VCP_BEST_WITH_ZED");
 #endif // VCP_BEST_WITH_ZED
+          break;
 
         default:
           VCP_LOG_FAILURE("Sink type '" << sink_type << "' is not yet supported!");

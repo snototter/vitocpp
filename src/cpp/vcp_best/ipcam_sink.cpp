@@ -183,7 +183,6 @@ void MobotixSetPowerLineFrequency(const IpCameraSinkParams &p)
 }
 
 
-
 //std::string GetHikvisionUrl(const pvt::icc::ipcam::IpCameraParams &p)
 //{
 //  if (p.protocol == ipcam::IpApplicationProtocol::RTSP && p.stream_type == ipcam::IpStreamEncoding::H264)
@@ -333,8 +332,8 @@ std::string IpCameraTypeToString(const IpCameraType &c)
       return "ipcam";
     case IpCameraType::Axis:
       return "axis";
-//    case IpCameraType::Mobotix:
-//      return "mobotix";
+    case IpCameraType::Mobotix:
+      return "mobotix";
 //    case IpCameraType::Hikvision:
 //      return "hikvision";
     default:
@@ -630,10 +629,15 @@ public:
       if (p.stream_url.empty())
         VCP_ERROR("Invalid/empty streaming URL for IP camera: " << p);
 
-      sinks_.push_back(http::CreateHttpMjpegSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p));
+      auto sink = http::CreateHttpMjpegSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p);
+      // Register sink/stream lookup for intrinsics, extrinsics, etc.
+      for (size_t stream_idx = 0; stream_idx < sink->NumStreams(); ++stream_idx)
+        stream2sink_lookup_.push_back(std::make_pair(sinks_.size(), stream_idx));
+
+      sinks_.push_back(std::move(sink));
       // TODO nice-to-have would be a camera-specific start-up routine (e.g. enabling/disabling overlays, etc.)
 #else // VCP_BEST_WITH_IPCAM_HTTP
-      VCP_ERROR("You need to compile VCP with HTTP streaming enabled!");
+      VCP_ERROR("You need to compile VCP with HTTP streaming enabled, i.e. VCP_BEST_WITH_IPCAM_HTTP!");
 #endif // VCP_BEST_WITH_IPCAM_HTTP
     }
 
@@ -641,9 +645,15 @@ public:
     if (!params_rtsp_.empty())
     {
 #ifdef VCP_BEST_WITH_IPCAM_RTSP
-      sinks_.push_back(rtsp::CreateMultiRtspStreamSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(params_rtsp_));
+      auto sink = rtsp::CreateMultiRtspStreamSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(params_rtsp_);
+
+      // Register sink/stream lookup for intrinsics, extrinsics, etc.
+      for (size_t stream_idx = 0; stream_idx < sink->NumStreams(); ++stream_idx)
+        stream2sink_lookup_.push_back(std::make_pair(sinks_.size(), stream_idx));
+
+      sinks_.push_back(std::move(sink));
 #else // VCP_BEST_WITH_IPCAM_RTSP
-      VCP_ERROR("You need to compile VCP with RTSP streaming enabled!");
+      VCP_ERROR("You need to compile VCP with RTSP streaming enabled, i.e. VCP_BEST_WITH_IPCAM_RTSP!");
 #endif // VCP_BEST_WITH_IPCAM_RTSP
     }
 
@@ -730,17 +740,20 @@ public:
 
   vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
   {
-    VCP_ERROR("IntrinsicsAt(" << stream_index << ") is not yet implemented for stream '" << StreamLabel(stream_index) << "'.");
+    const auto& l = stream2sink_lookup_[stream_index];
+    return sinks_[l.first]->IntrinsicsAt(l.second);
   }
 
   bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
   {
-    VCP_ERROR("SetExtrinsicsAt() not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
+    const auto& l = stream2sink_lookup_[stream_index];
+    return sinks_[l.first]->SetExtrinsicsAt(l.second, R, t);
   }
 
   void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
   {
-    VCP_ERROR("ExtrinsicsAt() not yet implemented for stream '" << SinkParamsAt(stream_index).sink_label << "'");
+    const auto& l = stream2sink_lookup_[stream_index];
+    sinks_[l.first]->ExtrinsicsAt(l.second, R, t);
   }
 
 
@@ -748,6 +761,7 @@ private:
   std::vector<IpCameraSinkParams> params_http_;
   std::vector<IpCameraSinkParams> params_rtsp_;
   std::vector<std::unique_ptr<StreamSink>> sinks_;
+  std::vector<std::pair<size_t, size_t>> stream2sink_lookup_; /**< Each sink may yield multiple streams, so we need 1) sink index and 2) stream index within the sink to look up intrinsics, etc. */
 };
 
 

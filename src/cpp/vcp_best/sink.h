@@ -46,26 +46,17 @@ std::ostream &operator<<(std::ostream &stream, const FrameType &s);
 /** @brief Strongly typed enum to look up a sink's type. */
 enum class SinkType
 {
-  IMAGE_DIR,
-#ifdef VCP_BEST_WITH_IPCAM
-  IPCAM_GENERIC,
-  IPCAM_AXIS,
-  IPCAM_MOBOTIX,
-#endif
-#ifdef VCP_BEST_WITH_K4A
-  K4A,
-#endif
-#ifdef VCP_WITH_MATRIXVISION
-  MVBLUEFOX3,
-#endif
-#ifdef VCP_BEST_WITH_REALSENSE2
-  REALSENSE,
-#endif
-#ifdef VCP_BEST_WITH_ZED
-  ZED,
-#endif
-  VIDEO_FILE,
-  WEBCAM
+  IMAGE_DIR     =  0,
+  VIDEO_FILE    =  1,
+  WEBCAM        =  2,
+  IPCAM_GENERIC = 10,
+  IPCAM_AXIS    = 11,
+  IPCAM_MOBOTIX = 12,
+  REALSENSE     = 20,
+  K4A           = 30,
+  ZED           = 40,
+  CUSTOM        = 99
+//  MVBLUEFOX3,
 };
 
 /** @brief Return string representation of SinkType. */
