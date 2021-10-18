@@ -2597,7 +2597,7 @@ public:
       return;
     }
 
-    if (k4a_image_create_from_buffer(K4A_IMAGE_FORMAT_CUSTOM16, ir.cols, ir.rows, ir.step[0],//FUCK format
+    if (k4a_image_create_from_buffer(K4A_IMAGE_FORMAT_CUSTOM16, ir.cols, ir.rows, ir.step[0],
                                      ir.data, ir.cols * ir.rows * sizeof(uint16_t),
                                      NULL, NULL, &ir_k4a)
         != K4A_RESULT_SUCCEEDED)

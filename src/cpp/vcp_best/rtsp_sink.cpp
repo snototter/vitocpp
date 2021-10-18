@@ -63,7 +63,6 @@ public:
       // Load calibration if available
       if (params_[i].rectify || vcp::utils::file::Exists(params_[i].calibration_file))
       {
-        VCP_LOG_FAILURE("FUCK YEAH");
         if (params_[i].calibration_file.empty() || !vcp::utils::file::Exists(params_[i].calibration_file))
         {
           VCP_ERROR("To undistort & rectify the rtsp stream [" << params_[i].sink_label
