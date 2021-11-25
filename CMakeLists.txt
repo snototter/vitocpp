@@ -1,10 +1,10 @@
 cmake_minimum_required(VERSION 3.1)
-project(vcp)
+project(vcp VERSION 1.2.2)
 
 ##############################################################################
 # Version info
 ##############################################################################
-set(VCP_VERSION "1.2.2")
+set(VCP_VERSION ${PROJECT_VERSION})
 
 message("[vcp] Configuring C++/Python vision utitility library v${VCP_VERSION}.")
 ##############################################################################
