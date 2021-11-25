@@ -413,42 +413,6 @@ const cv::Scalar kColormapMagma[] =
   cv::Scalar(178, 240, 252), cv::Scalar(180, 242, 252), cv::Scalar(182, 244, 252), cv::Scalar(184, 246, 252), cv::Scalar(185, 247, 252), cv::Scalar(187, 249, 252), cv::Scalar(189, 251, 252), cv::Scalar(191, 253, 252)
 };
 
-const cv::Scalar kColormapParula[] =
-{
-  cv::Scalar(168,  38,  62), cv::Scalar(172,  39,  62), cv::Scalar(175,  40,  63), cv::Scalar(178,  41,  63), cv::Scalar(180,  42,  64), cv::Scalar(183,  43,  64), cv::Scalar(186,  44,  65), cv::Scalar(189,  45,  65),
-  cv::Scalar(191,  46,  66), cv::Scalar(194,  47,  66), cv::Scalar(197,  48,  67), cv::Scalar(200,  49,  67), cv::Scalar(202,  50,  67), cv::Scalar(205,  51,  68), cv::Scalar(208,  52,  68), cv::Scalar(210,  53,  69),
-  cv::Scalar(213,  55,  69), cv::Scalar(215,  56,  69), cv::Scalar(217,  57,  70), cv::Scalar(220,  58,  70), cv::Scalar(222,  59,  70), cv::Scalar(224,  61,  70), cv::Scalar(225,  62,  71), cv::Scalar(227,  63,  71),
-  cv::Scalar(229,  65,  71), cv::Scalar(230,  66,  71), cv::Scalar(232,  68,  71), cv::Scalar(233,  69,  71), cv::Scalar(235,  70,  71), cv::Scalar(236,  72,  72), cv::Scalar(237,  73,  72), cv::Scalar(238,  75,  72),
-  cv::Scalar(240,  76,  72), cv::Scalar(241,  78,  72), cv::Scalar(242,  79,  72), cv::Scalar(243,  80,  72), cv::Scalar(244,  82,  72), cv::Scalar(245,  83,  72), cv::Scalar(246,  84,  72), cv::Scalar(247,  86,  71),
-  cv::Scalar(247,  87,  71), cv::Scalar(248,  89,  71), cv::Scalar(249,  90,  71), cv::Scalar(250,  91,  71), cv::Scalar(250,  93,  71), cv::Scalar(251,  94,  70), cv::Scalar(251,  96,  70), cv::Scalar(252,  97,  70),
-  cv::Scalar(252,  98,  69), cv::Scalar(253, 100,  69), cv::Scalar(253, 101,  68), cv::Scalar(253, 103,  67), cv::Scalar(254, 104,  67), cv::Scalar(254, 106,  66), cv::Scalar(254, 107,  65), cv::Scalar(254, 109,  64),
-  cv::Scalar(255, 110,  63), cv::Scalar(255, 112,  62), cv::Scalar(255, 113,  60), cv::Scalar(255, 115,  59), cv::Scalar(255, 116,  57), cv::Scalar(254, 118,  56), cv::Scalar(254, 119,  54), cv::Scalar(253, 121,  53),
-  cv::Scalar(253, 122,  51), cv::Scalar(252, 124,  50), cv::Scalar(252, 125,  49), cv::Scalar(251, 127,  48), cv::Scalar(250, 128,  47), cv::Scalar(250, 130,  47), cv::Scalar(249, 131,  46), cv::Scalar(248, 132,  46),
-  cv::Scalar(248, 134,  46), cv::Scalar(247, 135,  46), cv::Scalar(246, 136,  45), cv::Scalar(245, 138,  45), cv::Scalar(244, 139,  45), cv::Scalar(243, 140,  45), cv::Scalar(242, 142,  45), cv::Scalar(241, 143,  44),
-  cv::Scalar(240, 144,  44), cv::Scalar(239, 145,  43), cv::Scalar(238, 147,  42), cv::Scalar(237, 148,  41), cv::Scalar(236, 149,  40), cv::Scalar(235, 151,  39), cv::Scalar(234, 152,  39), cv::Scalar(233, 153,  38),
-  cv::Scalar(232, 154,  38), cv::Scalar(232, 155,  37), cv::Scalar(231, 156,  37), cv::Scalar(230, 158,  36), cv::Scalar(229, 159,  36), cv::Scalar(229, 160,  35), cv::Scalar(228, 161,  35), cv::Scalar(228, 162,  34),
-  cv::Scalar(227, 163,  33), cv::Scalar(227, 165,  32), cv::Scalar(226, 166,  31), cv::Scalar(225, 167,  30), cv::Scalar(225, 168,  29), cv::Scalar(224, 169,  29), cv::Scalar(223, 170,  28), cv::Scalar(222, 171,  27),
-  cv::Scalar(221, 172,  26), cv::Scalar(220, 173,  25), cv::Scalar(218, 174,  23), cv::Scalar(217, 175,  22), cv::Scalar(216, 176,  20), cv::Scalar(214, 177,  18), cv::Scalar(213, 178,  16), cv::Scalar(212, 179,  14),
-  cv::Scalar(210, 179,  11), cv::Scalar(209, 180,   8), cv::Scalar(207, 181,   6), cv::Scalar(206, 182,   4), cv::Scalar(204, 183,   2), cv::Scalar(202, 183,   1), cv::Scalar(201, 184,   0), cv::Scalar(199, 185,   0),
-  cv::Scalar(198, 186,   0), cv::Scalar(196, 186,   1), cv::Scalar(194, 187,   2), cv::Scalar(193, 187,   4), cv::Scalar(191, 188,   6), cv::Scalar(189, 189,   9), cv::Scalar(188, 189,  13), cv::Scalar(186, 190,  16),
-  cv::Scalar(184, 190,  20), cv::Scalar(182, 191,  23), cv::Scalar(181, 192,  26), cv::Scalar(179, 192,  29), cv::Scalar(177, 193,  32), cv::Scalar(175, 193,  35), cv::Scalar(174, 194,  37), cv::Scalar(172, 194,  39),
-  cv::Scalar(170, 195,  41), cv::Scalar(168, 195,  43), cv::Scalar(166, 196,  44), cv::Scalar(165, 196,  46), cv::Scalar(163, 197,  47), cv::Scalar(161, 197,  49), cv::Scalar(159, 198,  50), cv::Scalar(157, 199,  51),
-  cv::Scalar(155, 199,  53), cv::Scalar(153, 200,  54), cv::Scalar(150, 200,  56), cv::Scalar(148, 201,  57), cv::Scalar(146, 201,  59), cv::Scalar(144, 202,  61), cv::Scalar(141, 202,  64), cv::Scalar(139, 202,  66),
-  cv::Scalar(137, 203,  69), cv::Scalar(134, 203,  72), cv::Scalar(132, 203,  75), cv::Scalar(129, 204,  78), cv::Scalar(127, 204,  81), cv::Scalar(124, 204,  84), cv::Scalar(122, 204,  87), cv::Scalar(119, 204,  90),
-  cv::Scalar(116, 205,  94), cv::Scalar(114, 205,  97), cv::Scalar(111, 205, 100), cv::Scalar(108, 205, 103), cv::Scalar(105, 205, 107), cv::Scalar(102, 205, 110), cv::Scalar(100, 205, 114), cv::Scalar( 97, 204, 118),
-  cv::Scalar( 94, 204, 121), cv::Scalar( 91, 204, 125), cv::Scalar( 89, 204, 129), cv::Scalar( 86, 204, 132), cv::Scalar( 83, 203, 136), cv::Scalar( 81, 203, 139), cv::Scalar( 78, 203, 143), cv::Scalar( 75, 202, 147),
-  cv::Scalar( 72, 202, 150), cv::Scalar( 70, 201, 154), cv::Scalar( 67, 201, 157), cv::Scalar( 64, 200, 161), cv::Scalar( 62, 200, 164), cv::Scalar( 59, 199, 167), cv::Scalar( 57, 199, 171), cv::Scalar( 55, 198, 174),
-  cv::Scalar( 53, 198, 178), cv::Scalar( 51, 197, 181), cv::Scalar( 49, 196, 184), cv::Scalar( 47, 196, 187), cv::Scalar( 45, 195, 190), cv::Scalar( 44, 195, 194), cv::Scalar( 42, 194, 197), cv::Scalar( 41, 193, 200),
-  cv::Scalar( 40, 193, 203), cv::Scalar( 39, 192, 206), cv::Scalar( 39, 191, 208), cv::Scalar( 39, 191, 211), cv::Scalar( 39, 190, 214), cv::Scalar( 40, 190, 217), cv::Scalar( 40, 189, 219), cv::Scalar( 41, 188, 222),
-  cv::Scalar( 42, 188, 225), cv::Scalar( 43, 188, 227), cv::Scalar( 45, 187, 230), cv::Scalar( 46, 187, 232), cv::Scalar( 48, 186, 234), cv::Scalar( 50, 186, 236), cv::Scalar( 53, 186, 239), cv::Scalar( 55, 186, 241),
-  cv::Scalar( 57, 186, 243), cv::Scalar( 59, 186, 245), cv::Scalar( 61, 186, 247), cv::Scalar( 62, 186, 249), cv::Scalar( 62, 187, 251), cv::Scalar( 62, 188, 252), cv::Scalar( 61, 189, 254), cv::Scalar( 60, 190, 254),
-  cv::Scalar( 59, 192, 254), cv::Scalar( 58, 193, 254), cv::Scalar( 57, 194, 254), cv::Scalar( 56, 196, 254), cv::Scalar( 55, 197, 254), cv::Scalar( 53, 199, 254), cv::Scalar( 52, 200, 254), cv::Scalar( 51, 202, 254),
-  cv::Scalar( 50, 203, 253), cv::Scalar( 49, 205, 253), cv::Scalar( 49, 206, 253), cv::Scalar( 48, 208, 252), cv::Scalar( 47, 210, 251), cv::Scalar( 46, 211, 251), cv::Scalar( 46, 213, 250), cv::Scalar( 45, 214, 249),
-  cv::Scalar( 44, 216, 249), cv::Scalar( 43, 217, 248), cv::Scalar( 42, 219, 247), cv::Scalar( 42, 221, 247), cv::Scalar( 41, 222, 246), cv::Scalar( 40, 224, 246), cv::Scalar( 40, 225, 245), cv::Scalar( 39, 227, 245),
-  cv::Scalar( 38, 229, 245), cv::Scalar( 38, 230, 245), cv::Scalar( 37, 232, 245), cv::Scalar( 36, 233, 245), cv::Scalar( 35, 235, 245), cv::Scalar( 34, 236, 245), cv::Scalar( 33, 238, 245), cv::Scalar( 32, 239, 246),
-  cv::Scalar( 31, 241, 246), cv::Scalar( 30, 242, 246), cv::Scalar( 28, 244, 247), cv::Scalar( 27, 245, 247), cv::Scalar( 26, 247, 248), cv::Scalar( 24, 248, 248), cv::Scalar( 22, 249, 249), cv::Scalar( 21, 251, 249)
-};
-
 const cv::Scalar kColormapPastel[] =
 {
   cv::Scalar(  0,   0,   0), cv::Scalar(  0,   0,   3), cv::Scalar(  0,   0,   7), cv::Scalar(  0,   0,  10), cv::Scalar(  1,   0,  13), cv::Scalar(  1,   0,  16), cv::Scalar(  1,   0,  20), cv::Scalar(  1,   0,  23),
@@ -735,8 +699,6 @@ inline const cv::Scalar *GetColorMap(const ColorMap &colormap)
   {
   case ColorMap::Autumn:
     return kColormapAutumn;
-  case ColorMap::Parula:
-    return kColormapParula;
   case ColorMap::Bone:
     return kColormapBone;
   case ColorMap::Cold:
@@ -804,8 +766,6 @@ const std::string ColorMapToString(const ColorMap &cm)
     return "Jet";
   case ColorMap::Magma:
     return "Magma";
-  case ColorMap::Parula:
-    return "Parula";
   case ColorMap::Pastel:
     return "Pastel";
   case ColorMap::Plasma:

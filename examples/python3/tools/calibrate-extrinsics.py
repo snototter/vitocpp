@@ -31,12 +31,12 @@ class Streamer(QThread):
     newFrameset = pyqtSignal(list)
 
     VIS_DEPTH_OPTIONS = [
-        'Surface normals', 'Pseudocolor (Parula)', 'Pseudocolor (Turbo)',
+        'Surface normals', 'Pseudocolor (Turbo)',
         'Pseudocolor (Viridis)', 'Grayscale']
     VIS_DEPTH_SURFNORM_OPTION = 0
 
     VIS_IR_OPTIONS = [
-        'Histogram Equalization', 'Pseudocolor (Parula)', 'Pseudocolor (Turbo)',
+        'Histogram Equalization', 'Pseudocolor (Turbo)',
         'Pseudocolor (Viridis)', 'Grayscale']
     VIS_IR_HISTEQ_OPTION = 0
 
@@ -164,8 +164,6 @@ class Streamer(QThread):
     def setDepthVisualization(self, depth_vis_option, depth_range):
         if depth_vis_option == 'Surface normals':
             self._prepare_depth_fx = self._vis_depth_surfnorm
-        elif depth_vis_option == 'Pseudocolor (Parula)':
-            self._prepare_depth_fx = lambda f: self._vis_depth_colormap(f, colormaps.colormap_parula_rgb)
         elif depth_vis_option == 'Pseudocolor (Turbo)':
             self._prepare_depth_fx = lambda f: self._vis_depth_colormap(f, colormaps.colormap_turbo_rgb)
         elif depth_vis_option == 'Pseudocolor (Viridis)':
@@ -179,8 +177,6 @@ class Streamer(QThread):
     def setInfraredVisualization(self, ir_vis_option, ir_range):
         if ir_vis_option == 'Histogram Equalization':
             self._prepare_ir_fx = self._vis_ir_histeq
-        elif ir_vis_option == 'Pseudocolor (Parula)':
-            self._prepare_ir_fx = lambda f: self._vis_ir_colormap(f, colormaps.colormap_parula_rgb)
         elif ir_vis_option == 'Pseudocolor (Turbo)':
             self._prepare_ir_fx = lambda f: self._vis_ir_colormap(f, colormaps.colormap_turbo_rgb)
         elif ir_vis_option == 'Pseudocolor (Viridis)':

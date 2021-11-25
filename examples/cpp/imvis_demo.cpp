@@ -24,9 +24,9 @@ int main(int argc, char **argv)
   img.convertTo(img_32f, CV_32FC1, 1.0/255.0);
 
   cv::Mat heatmap_a, heatmap_b;
-  vcp::imvis::pseudocolor::Colorize(img_32f, vcp::imvis::pseudocolor::ColorMap::Parula, heatmap_a, 0, 1);
+  vcp::imvis::pseudocolor::Colorize(img_32f, vcp::imvis::pseudocolor::ColorMap::Viridis, heatmap_a, 0, 1);
   cv::imshow("PseudoColor 32F [0,1]", heatmap_a);
-  vcp::imvis::pseudocolor::Colorize(img, vcp::imvis::pseudocolor::ColorMap::Parula, heatmap_b, 50, 200);
+  vcp::imvis::pseudocolor::Colorize(img, vcp::imvis::pseudocolor::ColorMap::Viridis, heatmap_b, 50, 200);
   cv::imshow("PseudoColor 8U [80,175]", heatmap_b);
   cv::waitKey(100);
 

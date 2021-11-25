@@ -32,7 +32,7 @@ def color_by_id(id, flip_channels=False):
     return col
 
 
-def pseudocolor(values, limits=[0.0, 1.0], color_map=colormaps.colormap_parula_rgb):
+def pseudocolor(values, limits=[0.0, 1.0], color_map=colormaps.colormap_viridis_rgb):
     return vimvis.pseudocolor(values, limits, color_map)
 
 def overlay(img1, alpha1, img2, mask=None):

@@ -33,7 +33,6 @@ enum class ColorMap
   Inferno,      /**< Perceptually uniform. */
   Jet,          /**< MATLAB's default color map up until R2015, high contrast but otherwise bad. */
   Magma,        /**< Perceptually uniform. */
-  Parula,       /**< MATLAB's default color map as of R2015, perceptually uniform. */
   Pastel,       /**< Black-pastel-white colormap, linear grayscale changes when printed black/white. */
   Plasma,       /**< Perceptually uniform. */
   Sepia,        /**< Black-brown-white colormap, perceptually uniform. */

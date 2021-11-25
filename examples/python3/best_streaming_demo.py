@@ -46,6 +46,8 @@ class LiveStreamDemo(object):
     
     def _cb_first_frameset(self, capture, frameset):
         mp.get_logger().info('[Demo] First frameset received')
+        if True:
+            return
         # Query all intrinsics & extrinsics
         # self._intrinsics = {capture.frame_label(i): capture.intrinsics(i) for i in range(len(frameset))}
         self._intrinsics = {capture.frame_label(i): None for i in range(len(frameset))}

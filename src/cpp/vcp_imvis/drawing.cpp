@@ -1649,7 +1649,7 @@ void DrawGroundplaneGrid(cv::Mat &image, const cv::Mat &K, const cv::Mat &R, con
 
     for (size_t i = 0; i < grid_points.size(); ++i)
     {
-      const cv::Scalar color = pseudocolor::GetPseudocolor(distances[i], pseudocolor::ColorMap::Parula, min_distance, max_distance);
+      const cv::Scalar color = pseudocolor::GetPseudocolor(distances[i], pseudocolor::ColorMap::Viridis, min_distance, max_distance);
       if (flip_color_channels)
         colors.push_back(cv::Scalar(color.val[2], color.val[1], color.val[0]));
       else
