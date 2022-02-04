@@ -906,15 +906,21 @@ public:
 
         const std::string k = configured_params[i];
         const std::string path_orig = GetString(k);
-        const bool is_url = vcp::utils::string::StartsWith(path_orig, "file://");
-        const std::string path = is_url ? path_orig.substr(7) : path_orig;
+        if (vcp::utils::string::StartsWith(path_orig, "http://") ||
+            vcp::utils::string::StartsWith(path_orig, "https://") ||
+            vcp::utils::string::StartsWith(path_orig, "rtsp://") ||
+            vcp::utils::string::StartsWith(path_orig, "rtsps://"))
+          continue;
+
+        const bool is_fileurl = vcp::utils::string::StartsWith(path_orig, "file://");
+        const std::string path = is_fileurl ? path_orig.substr(7) : path_orig;
 
         if (vcp::utils::file::IsAbsolute(path))
           continue;
 
         const std::string abs_path = vcp::utils::file::RealPath(
               vcp::utils::file::FullFile(absolute_base_path, path));
-        SetString(k, is_url ? "file://" + abs_path : abs_path);
+        SetString(k, is_fileurl ? "file://" + abs_path : abs_path);
         ++replaced;
 
         if (verbose)
