@@ -428,7 +428,8 @@ private:
       "extrinsic_calibration",                    // Backwards compatibility (with PVT)
       "calibration_file",                         // Intrinsic calibration
       "video_file", "video", "file", "filename",  // VideoFileSink
-      "directory"                                 // ImageDirectorySink
+      "directory",                                // ImageDirectorySink
+      "stream_url", "custom_url"                  // IP camera sinks
     };
     params.EnsureAbsolutePaths(param_names, rel_path_base_dir, true);
   }
