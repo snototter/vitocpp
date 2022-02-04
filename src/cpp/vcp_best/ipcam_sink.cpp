@@ -384,8 +384,13 @@ IpCameraSinkParams ParseIpCameraSinkParams(const vcp::config::ConfigParams &conf
   // which iirc streams concatenated images - gotta check!)
   sink_params.frame_type = FrameType::MONOCULAR;
 
-  const std::string host = config.GetString(cam_param + ".host" + postfix);
-  configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "host" + postfix), configured_keys.end());
+  // "host" can be optional (if a custom stream URL is defined)
+  std::string host = std::string();
+  if (config.SettingExists(cam_param + ".host" + postfix))
+  {
+    host = config.GetString(cam_param + ".host" + postfix);
+    configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "host" + postfix), configured_keys.end());
+  }
 
   // In a stereo setup, user/pwd can be given once ("user"/"password") or for each device separately ("user_left"/"password_left")
   std::string user = std::string();
