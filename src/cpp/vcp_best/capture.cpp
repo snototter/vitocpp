@@ -502,7 +502,15 @@ public:
     {
       std::vector<cv::Mat> captured = sinks_[i]->Next();
       frames.insert(frames.end(), captured.begin(), captured.end());
+      for (size_t j = 0; j < captured.size(); ++j) { // FIXME remove
+        if (captured[j].empty()) {
+          VCP_LOG_ERROR("Next() - received empty frame from sink [" << i << "]");
+        } else {
+          VCP_LOG_DEBUG("Next() - collected frame " << captured[j].cols << " x " << captured[j].rows << " from sink [" << i << "]");
+        }
+      }
     }
+    VCP_LOG_DEBUG("Next() - after collection loop"); // FIXME remove
     frame_number_++;
     return frames;
   }

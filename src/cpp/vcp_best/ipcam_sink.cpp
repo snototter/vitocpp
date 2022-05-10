@@ -752,6 +752,7 @@ public:
   bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
   {
     const auto& l = stream2sink_lookup_[stream_index];
+//    VCP_LOG_FAILURE("FOOOOOOOOO setextrinsics in IPCAM " << l.first << " --> " << l.second); //FIXME
     return sinks_[l.first]->SetExtrinsicsAt(l.second, R, t);
   }
 

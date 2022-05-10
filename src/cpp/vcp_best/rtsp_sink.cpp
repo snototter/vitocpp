@@ -87,6 +87,9 @@ public:
       {
         intrinsics_.push_back(calibration::StreamIntrinsics());
       }
+      // FIXME - temporary fix
+      // we need to overhaul the calibration handling
+      extrinsics_.push_back(calibration::StreamExtrinsics());
 
 #ifdef VCP_BEST_DEBUG_FRAMERATE
       previous_enqueue_time_points_.push_back(std::chrono::high_resolution_clock::now());
@@ -281,6 +284,8 @@ public:
 
   bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
   {
+//    VCP_LOG_FAILURE("FOOOOOOOOO setextrinsics in rtsp sidx: " << stream_index
+//                    << ", intrinsics: " << extrinsics_.size()); //FIXME
     return extrinsics_[stream_index].SetExtrinsics(R, t, intrinsics_[stream_index]);
   }
 

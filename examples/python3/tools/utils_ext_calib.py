@@ -373,7 +373,7 @@ class ExtrinsicsAprilTag(object):
         assert len(frameset) == len(self._detectors)
         detections = list()
         for i in range(len(frameset)):
-            # print('Stream i: ', i, frameset[i].dtype)
+            #print('Stream i: ', i, frameset[i].dtype)
             if self._detectors[i] is None:
                 detections.append(None)
                 continue
@@ -435,7 +435,7 @@ class ExtrinsicsAprilTag(object):
                 if draw_world_xyz:
                     vis_frames[idx] = imvis.draw_xyz_axes(vis_frames[idx], K, R, t,
                         origin=(0, 0, 0), scale_axes=axis_length, scale_image_points=1,
-                        line_width=line_width, dash_length=-1, tip_length=arrow_head, image_is_rgb=True)
+                        line_width=line_width, dash_length=-1, tip_length=arrow_head)
 
                 # Draw world horizon line
                 if draw_horizon:
@@ -452,7 +452,7 @@ class ExtrinsicsAprilTag(object):
                     R, t = split_pose(tag_ext[tag_id])
                     vis_frames[idx] = imvis.draw_xyz_axes(vis_frames[idx], K, R, t,
                         scale_axes=self._tag_size_mm/2.0, scale_image_points=1.0,
-                        line_width=line_width, dash_length=-1, image_is_rgb=True)
+                        line_width=line_width, dash_length=-1)
         return vis_frames
 
     def _cvt_as_is(self, frame):
