@@ -66,7 +66,7 @@ class Streamer(QThread):
         return self._step_through
     
     def displayLabels(self):
-        return [self._capture.frame_label(idx) + (' [Undist. & Rect.]' if self._capture.is_rectified(idx) else '')
+        return [self._capture.frame_label(idx) + (' [Undist. & Rect.]' if self._capture.is_rectified(idx) else ' [! Not Rectified !]')
             for idx in range(self.numStreams())]
     
     def getCapture(self):
