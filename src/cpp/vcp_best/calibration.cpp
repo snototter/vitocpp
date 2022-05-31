@@ -83,7 +83,7 @@ StreamIntrinsics StreamIntrinsics::FromMonocular(const cv::Mat &intrinsics,
     if (!si.HasResolution())
       VCP_ERROR("Stream '" << label << "/" << identifier << "' has no valid resolution - needed for rectification.");
 
-    si.intrinsics_rectified_ = cv::getOptimalNewCameraMatrix(intrinsics, distortion, resolution, 1.0, resolution, 0);
+    si.intrinsics_rectified_ = cv::getOptimalNewCameraMatrix(intrinsics, distortion, resolution, 0.0, resolution, 0);
     cv::initUndistortRectifyMap(intrinsics, distortion, cv::Mat(), si.intrinsics_rectified_, resolution, CV_16SC2, si.undistort_rectify_map1_, si.undistort_rectify_map2_);
   }
 
