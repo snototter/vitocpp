@@ -15,12 +15,23 @@ CAVEAT: check your CMake configuration, vcp uses an outdated FindPython
 
 
 If you did not compile vcp yet:
-1. Activate your virtualenv & ensure updated pip:
+1. Activate your virtualenv & ensure that your pip is up-to-date:
    ```bash
    source PATH/TO/VENV/bin/activate
    python -m pip install -U pip
    ```
 2. Build & install vcp:
+   vcp provides shell scripts to install required system packages, check
+   the contents of `PATH/TO/VCP/build-scripts/`
+
+   CAVEAT: These scripts DO NOT install optional packages, thus you should
+           either manually configure the library (as shown below) after
+           running the build-script for your OS version;
+           or you install all required system packages (check the build-script
+           on which packages are required) and then manually configure & build
+           the library (as shown below)
+
+   Manually configure & build the library:
    ```bash
    cd PATH/TO/VCP/build
    ccmake ..
@@ -60,7 +71,6 @@ CAVEAT: Ensure that the OpenCV bindings link to the same version you
           # ADJUST THE FOLLOWING PATH!
           echo ${opencvlibdir} > PATH/TO/VENV/lib/PYTHON/site-packages/cv2.pth
           ```
-
 
 
 Run the demo:
