@@ -130,31 +130,27 @@ def _colorize_ir(f, args):
     return imutils.transform(f, 'histeq', 'gray2rgb')
 
 
-def _create_visualization(frameset, capture, args):
+def _create_visualization(frameset, args):
     # A frameset consists of multiple images. These could be
     # color, depth or infrared. Thus, we need to convert them
     # all to a 3-channel uint8 format for display:
-    vis_frames = [_colorize_depth(frameset[idx], args)
-                  if capture.is_depth(idx)
-                  else (_colorize_ir(frameset[idx], args)
-                        if capture.is_infrared(idx)
-                        else frameset[idx])
-                  for idx in range(len(frameset))]
-
+    vis_frames = [_colorize_depth(f.frame_data, args)
+                  if f.is_depth
+                  else (_colorize_ir(f.frame_data, args)
+                        if f.is_intensity else f.frame_data)
+                  for f in frameset.frames]
     # Resize for display
     vis_frames = [imutils.fuzzy_resize(f, args.scale) for f in vis_frames]
     # Overlay frame labels
     if args.label_overlay:
         vis_frames = [imvis.draw_text_box(vis_frames[idx],
-                                          capture.frame_label(idx) + (
-                                              ' [Undistorted & Rectified]' if capture.is_rectified(
-                                                  idx) else ' [Not explicitly undistorted]'),
+                                          frameset.frames[idx].label  + (
+                                          ' [Undistorted & Rectified]' if frameset.frames[idx].is_rectified else ' [Not explicitly undistorted]'),
                                           (vis_frames[idx].shape[1] // 2, 10), 'north',
                                           bg_color=(0, 0, 0), font_color=(-1, -1, -1),
                                           font_scale=1.0, font_thickness=1,
                                           padding=5, fill_opacity=0.5)
                       for idx in range(len(vis_frames))]
-
     # Combine all streams/frames in this frameset into a single collage image
     return imvis.make_collage(vis_frames, num_images_per_row=args.images_per_row)
 
@@ -170,34 +166,41 @@ def main_demo():
                                    cfg_file_rel_path_base_dir=abs_cfg_dirname,
                                    verbose=True)
 
-    capture = stepper.start()
-
-    # The "capture" object allows querying information about the streams you configured.
-    # For example:
-    num_frames_per_frameset = capture.num_streams()
-    frame_labels = [capture.frame_label(idx) for idx in range(num_frames_per_frameset)]
-    logging.info(f'Starting streaming {num_frames_per_frameset} streams: {frame_labels}')
-
     # Process/display the live stream:
+    stepper.start()
     is_paused = False
     while stepper.is_available():
-        capture, frameset = stepper.next_frameset(wait_ms=args.wait_next) #TODO change interface!
+        frameset = stepper.next_frameset(wait_ms=args.wait_next)
         if frameset is None:
             logging.error('No frameset received, aborting now.')
             break
-        if any([f is None for f in frameset]):
+        if any([f is None for f in frameset.frames]):
             logging.warning('Skipping frameset with some empty frames.')
             time.sleep(0.5)
             continue
 
-        vis = _create_visualization(frameset, capture, args)
+        if frameset.frameset_number % 50 == 0:
+            print(f'Processing {frameset}')
+            print(f'* All frames for "Invalid Label": {frameset["Invalid Label"]}')
+            lbl = frameset.labels[0]
+            print(f'* All frames for "{lbl}": {frameset[lbl]}')
+
+            # Test pickling
+            import pickle
+            data = pickle.dumps(frameset)
+            print(f'Serialized {frameset} to {len(data)} bytes')
+            frameset = pickle.loads(data)
+            print(f'Unpickled  {frameset}')
+
+
+        vis = _create_visualization(frameset, args)
         k = imvis.imshow(vis, 'Live', wait_ms=-1 if is_paused else 10) & 0xff
         if k == ord('q') or k == 27:
             break
         elif k == ord('p'):
             is_paused = not is_paused
-
-    # The "stepper" will automatically close the connection upon its destruction
+    # The "stepper" will automatically close the camera
+    # connection upon its destruction.
 
 
 if __name__ == '__main__':

@@ -1109,7 +1109,6 @@ PYBIND11_MODULE(best_cpp, m)
 //        "Saves the extrinsic calibration to the given file.", //TODO doc
 //        py::arg("filename"), py::arg("labels"), py::arg("extrinsics"));
 
-  //FUCK WITH IPCAM
 #ifdef VCP_BEST_WITH_IPCAM
   py::enum_<vcp::best::ipcam::IpApplicationProtocol>(m, "IpApplicationProtocol")
       .value("HTTP", vcp::best::ipcam::IpApplicationProtocol::HTTP)
