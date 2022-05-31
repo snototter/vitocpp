@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.1)
-project(vcp VERSION 1.2.2)
+project(vcp VERSION 1.3.0)
 
 ##############################################################################
 # Version info

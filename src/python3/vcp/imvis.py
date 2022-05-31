@@ -2,11 +2,10 @@
 # coding=utf-8
 """Handy visualization tools."""
 
-import cv2
 import numpy as np
 
-from .imvis_cpp import *
-from . import colormaps
+from vcp.imvis_cpp import *
+from vcp import colormaps
 from vito import imvis as vimvis
 from vito import detection2d as vdet2d
 
