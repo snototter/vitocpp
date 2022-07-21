@@ -312,6 +312,13 @@ protected:
                                          picture->height, picture_bgr->data, picture_bgr->linesize);
       if (slice_height > 0)
       {
+        // If requested by the config, adjust the frame resolution now
+        if (frame_width_ <= 0 || frame_height_ <= 0)
+        {
+          frame_width_ = picture->width;
+          frame_height_ = picture->height;
+        }
+
         if (frame_width_ != picture->width || frame_height_ != picture->height)
           VCP_ERROR("Incorrect configuration of capture '" << vcp::utils::string::ObscureUrlAuthentication(stream_id_) << "': expected a "
                     << frame_width_ << "x" << frame_height_ << " stream, but received packets for " << picture->width << "x" << picture->height);
