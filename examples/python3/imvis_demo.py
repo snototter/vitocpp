@@ -265,6 +265,9 @@ def calibrated_example():
     img_points = np.array([(4.4, 183.4), (76.6, 190.6), (155.5, 197.5), (240.2, 204.8),
         (328.4, 210.6), (44, 147.1), (103.2, 151.1), (167.7, 156.2), (235, 160), (305.9, 164.7),
         (122, 125), (175.9, 128.1), (289, 134.4), (327.1, 115.5), (33.4, 253.4)], dtype=np.float32)
+    img_points = img_points * 2
+    img_height = 2 *img_height
+    img_width = 2 * img_width
     # Corresponding grid points
     grid_points = [
         (0, 0), (1, 0), (2, 0), (3, 0), (4, 0), (0, 1), (1, 1), (2, 1),
@@ -359,13 +362,13 @@ def demo_vis_extrinsics():
         opacity=0.9,
         output_rgb=True)
     # Overlay the axis (actually not starting at 0,0,0 so we can see it fully inside the image...)
+    print(f'Image shape: {img.shape}\nK: {K.reshape((3,3))}\nR: {R}\nt: {t.reshape((1,3))}')
     vis_img = imvis.draw_xyz_axes(vis_img, K, R, t,
         origin=(12, 12, 0),
         scale_axes=48,
         scale_image_points=1.0,
         line_width=4,
-        dash_length=-1,
-        image_is_rgb=True)
+        dash_length=-1)
     return vis_img
 
 
