@@ -72,7 +72,8 @@ enum class IpCameraType
 {
   Generic = 1, /**< Basically, all IP cameras are "generic" sinks, they only differ regarding their streaming URLs. */
   Axis,
-  Mobotix
+  Mobotix,
+  IpVideoCapture /**< Uses OpenCV's VideoCapture, since recent versions support stable IP streaming (and this worked for Siqura cameras, where we couldn't decode their SDP via live555). */
 //  Hikvision
 };
 

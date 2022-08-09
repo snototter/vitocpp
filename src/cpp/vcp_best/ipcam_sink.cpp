@@ -6,6 +6,7 @@
 #include <set>
 #include <iomanip>
 
+#include "ipcam_opencv.h"
 #ifdef VCP_BEST_WITH_IPCAM_HTTP
   #include "http_mjpeg_sink.h"
 #endif
@@ -317,6 +318,8 @@ IpCameraType IpCameraTypeFromString(const std::string &camera_type)
     return IpCameraType::Axis;
   if (vcp::utils::string::StartsWith(lower, "mobotix"))
     return IpCameraType::Mobotix;
+  if (vcp::utils::string::StartsWith(lower, "cv2ipcam"))
+    return IpCameraType::IpVideoCapture;
 //  if (vcp::utils::string::StartsWith(lower, "hikvision"))
 //    return IpCameraType::Hikvision;
 
@@ -334,6 +337,8 @@ std::string IpCameraTypeToString(const IpCameraType &c)
       return "axis";
     case IpCameraType::Mobotix:
       return "mobotix";
+    case IpCameraType::IpVideoCapture:
+      return "cv2ipcam";
 //    case IpCameraType::Hikvision:
 //      return "hikvision";
     default:
@@ -361,6 +366,7 @@ std::string GetStreamingUrl(const IpCameraSinkParams &p)
   switch(p.ipcam_type)
   {
     case ipcam::IpCameraType::Generic:
+    case ipcam::IpCameraType::IpVideoCapture:
       return p.stream_url;
     case ipcam::IpCameraType::Axis:
       return GetAxisUrl(p);
@@ -390,6 +396,12 @@ IpCameraSinkParams ParseIpCameraSinkParams(const vcp::config::ConfigParams &conf
   {
     host = config.GetString(cam_param + ".host" + postfix);
     configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "host" + postfix), configured_keys.end());
+  }
+  else
+  {
+    // Set the config key as default host (since host name is used to count the
+    // configured devices):
+    host = cam_param;
   }
 
   // In a stereo setup, user/pwd can be given once ("user"/"password") or for each device separately ("user_left"/"password_left")
@@ -525,18 +537,25 @@ public:
     // Group parameters by their protocol
     for (const auto &p : params)
     {
-      switch(p.application_protocol)
+      if (p.ipcam_type == IpCameraType::IpVideoCapture)
       {
-        case IpApplicationProtocol::HTTP:
-          params_http_.push_back(p);
-          break;
+        params_videocap_.push_back(p);
+      }
+      else
+      {
+        switch(p.application_protocol)
+        {
+          case IpApplicationProtocol::HTTP:
+            params_http_.push_back(p);
+            break;
 
-        case IpApplicationProtocol::RTSP:
-          params_rtsp_.push_back(p);
-          break;
+          case IpApplicationProtocol::RTSP:
+            params_rtsp_.push_back(p);
+            break;
 
-        default:
-          VCP_ERROR("IP camera protocol '" << p.application_protocol << "' is not yet supported.");
+          default:
+            VCP_ERROR("IP camera protocol '" << p.application_protocol << "' is not yet supported.");
+        }
       }
     }
   }
@@ -581,25 +600,51 @@ public:
 
   size_t NumStreams() const override
   {
-    return params_http_.size() + params_rtsp_.size();
+    return params_http_.size() + params_rtsp_.size() + params_videocap_.size();
   }
 
 
   FrameType FrameTypeAt(size_t stream_index) const override
   {
     if (stream_index < params_http_.size())
+    {
       return params_http_[stream_index].frame_type;
+    }
     else
-      return params_rtsp_[stream_index - params_http_.size()].frame_type;
+    {
+      stream_index -= params_http_.size();
+      if (stream_index < params_rtsp_.size())
+      {
+        return params_rtsp_[stream_index].frame_type;
+      }
+      else
+      {
+        stream_index -= params_rtsp_.size();
+        return params_videocap_[stream_index].frame_type;
+      }
+    }
   }
 
 
   SinkParams SinkParamsAt(size_t stream_index) const override
   {
     if (stream_index < params_http_.size())
+    {
       return params_http_[stream_index];
+    }
     else
-      return params_rtsp_[stream_index - params_http_.size()];
+    {
+      stream_index -= params_http_.size();
+      if (stream_index < params_rtsp_.size())
+      {
+        return params_rtsp_[stream_index];
+      }
+      else
+      {
+        stream_index -= params_rtsp_.size();
+        return params_videocap_[stream_index];
+      }
+    }
   }
 
   size_t NumDevices() const override
@@ -609,6 +654,8 @@ public:
       unique_hosts.insert(p.host);
     for (const auto &p : params_rtsp_)
       unique_hosts.insert(p.host);
+    for (const auto &p : params_videocap_)
+      unique_hosts.insert(p.host);
     return unique_hosts.size();
   }
 
@@ -616,9 +663,22 @@ public:
   std::string StreamLabel(size_t stream_index) const override
   {
     if (stream_index < params_http_.size())
+    {
       return params_http_[stream_index].sink_label;
+    }
     else
-      return params_rtsp_[stream_index - params_http_.size()].sink_label;
+    {
+      stream_index -= params_http_.size();
+      if (stream_index < params_rtsp_.size())
+      {
+        return params_rtsp_[stream_index].sink_label;
+      }
+      else
+      {
+        stream_index -= params_rtsp_.size();
+        return params_videocap_[stream_index].sink_label;
+      }
+    }
   }
 
 
@@ -660,6 +720,24 @@ public:
 #else // VCP_BEST_WITH_IPCAM_RTSP
       VCP_ERROR("You need to compile VCP with RTSP streaming enabled, i.e. VCP_BEST_WITH_IPCAM_RTSP!");
 #endif // VCP_BEST_WITH_IPCAM_RTSP
+    }
+
+    // We couldn't parse the SDP descriptions of some cameras using live555, but
+    // OpenCV's VideoCapture was able to retrieve their streams - thus, we added
+    // this sink class as fallback:
+    if (!params_videocap_.empty())
+    {
+      for (const auto &p : params_videocap_)
+      {
+        if (p.stream_url.empty())
+          VCP_ERROR("Invalid/empty streaming URL for generic IP camera (via VideoCapture): " << p);
+
+        auto sink = videocap::CreateOpenCVIpCamSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p);
+        // Register sink/stream lookup for intrinsics, extrinsics, etc.
+        for (size_t stream_idx = 0; stream_idx < sink->NumStreams(); ++stream_idx)
+          stream2sink_lookup_.push_back(std::make_pair(sinks_.size(), stream_idx));
+        sinks_.push_back(std::move(sink));
+      }
     }
 
     // Finally, open the actual streams/devices.
@@ -752,7 +830,6 @@ public:
   bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
   {
     const auto& l = stream2sink_lookup_[stream_index];
-//    VCP_LOG_FAILURE("FOOOOOOOOO setextrinsics in IPCAM " << l.first << " --> " << l.second); //FIXME
     return sinks_[l.first]->SetExtrinsicsAt(l.second, R, t);
   }
 
@@ -764,8 +841,9 @@ public:
 
 
 private:
-  std::vector<IpCameraSinkParams> params_http_;
-  std::vector<IpCameraSinkParams> params_rtsp_;
+  std::vector<IpCameraSinkParams> params_http_; ///< Custom HTTP streaming sinks
+  std::vector<IpCameraSinkParams> params_rtsp_; ///< Custom (live555) RTSP streaming sinks
+  std::vector<IpCameraSinkParams> params_videocap_; ///< Using default cv2::VideoCapture
   std::vector<std::unique_ptr<StreamSink>> sinks_;
   std::vector<std::pair<size_t, size_t>> stream2sink_lookup_; /**< Each sink may yield multiple streams, so we need 1) sink index and 2) stream index within the sink to look up intrinsics, etc. */
 };
@@ -778,12 +856,21 @@ std::unique_ptr<StreamSink> CreateIpCameraSink(const std::vector<IpCameraSinkPar
   return std::unique_ptr<GenericIpCameraSink>(new GenericIpCameraSink(params));
 }
 
+
 bool IsGenericIpCamera(const std::string &camera_type)
 {
   std::string lower = vcp::utils::string::Lower(camera_type);
   return lower.compare("ipcam") == 0 || lower.compare("ipcamera") == 0
       || lower.compare("ipcam-generic") == 0 || lower.compare("ipcamera-generic") == 0;
 }
+
+
+bool IsIpVideoCapture(const std::string &camera_type)
+{
+  std::string lower = vcp::utils::string::Lower(camera_type);
+  return lower.compare("cv2ipcam") == 0;
+}
+
 
 //bool IsGenericIpCameraStereo(const std::string &camera_type)
 //{
@@ -830,8 +917,10 @@ bool IsIpCamera(const std::string &camera_type)
 {
   return IsGenericIpCamera(camera_type) ||
       IsAxis(camera_type) ||
-      IsMobotix(camera_type);
+      IsMobotix(camera_type) ||
+      IsIpVideoCapture(camera_type);
 }
+
 
 } // namespace ipcam
 } // namespace best

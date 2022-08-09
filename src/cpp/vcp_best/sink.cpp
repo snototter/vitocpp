@@ -255,7 +255,7 @@ std::string GetSinkLabelFromConfig(const vcp::config::ConfigParams &config,
                                    const std::string &cam_group,
                                    std::vector<std::string> &configured_keys)
 {
-  // "cam_group" must have a unique name, or the config cannot be loaded
+  // "cam_group" must be a unique name, or the config cannot be loaded
   // by libconfig++, so use it as the default/fallback value.
   configured_keys.erase(std::remove(configured_keys.begin(), configured_keys.end(), "label"), configured_keys.end());
   return GetOptionalStringFromConfig(config, cam_group, "label", cam_group);

@@ -128,7 +128,8 @@ if(VCP_BEST_WITH_IPCAM)
     add_definitions(-DVCP_BEST_WITH_IPCAM -DVCP_BEST_WITH_IPCAM_HTTP -DVCP_BEST_WITH_IPCAM_RTSP)
 
     set(PUBLIC_HEADERS ${PUBLIC_HEADERS} ipcam_sink.h)
-    set(SOURCES ${SOURCES} ipcam_sink.cpp)
+    set(SOURCES ${SOURCES} ipcam_opencv.cpp ipcam_sink.cpp)
+    set(PRIVATE_HEADERS ${PRIVATE_HEADERS} ipcam_opencv.h)
     #################################################
     # HTTP streaming
     # Dependencies
