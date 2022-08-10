@@ -756,6 +756,15 @@ public:
       ss << "label" << i;
       fs << ss.str() << frame_labels_[i];
 
+      cv::Mat K = CameraMatrixAt(i);
+      if (!K.empty())
+      {
+        ss.str("");
+        ss.clear();
+        ss << "K" << i;
+        fs << ss.str() << K;
+      }
+
       cv::Mat R, t;
       ExtrinsicsAt(i, R, t);
 
