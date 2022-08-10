@@ -166,12 +166,15 @@ public:
 
   bool CloseDevice() override
   {
-    StopStreaming();
+    const bool result = StopStreaming();
 
-    if (params_.verbose)
-      VCP_LOG_INFO_DEFAULT("Closing IP VideoCapture \"" << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url) << "\".");
-    capture_.reset();
-    return true;
+    if (capture_)
+    {
+      if (params_.verbose)
+        VCP_LOG_INFO_DEFAULT("Closing IP VideoCapture \"" << vcp::utils::string::ObscureUrlAuthentication(params_.stream_url) << "\".");
+      capture_.reset();
+    }
+    return result;
   }
 
   bool StartStreaming() override
