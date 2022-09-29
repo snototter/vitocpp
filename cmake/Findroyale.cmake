@@ -13,7 +13,8 @@ set(royale_INSTALL_PATH "/opt/pmd") # TODO make user adjustable
 
 set (royale_INCLUDE_DIRS "${royale_INSTALL_PATH}/include")
 set (royale_LIB_DIR "${royale_INSTALL_PATH}/bin")
-set (royale_LIBS "royale")
+#set (royale_LIBS "royale")
+set(royale_LIBS "${royale_LIB_DIR}/libroyale.so")
 
 # Check if all include dirs exist
 set(royale_FOUND true)
