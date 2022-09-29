@@ -1,0 +1,492 @@
+#include "pmd_sink.h"
+
+#include <thread>
+#include <mutex>
+#include <atomic>
+#include <map>
+#include <sstream>
+
+#include <opencv2/core/version.hpp>
+#if CV_VERSION_MAJOR < 3
+    #include <opencv2/highgui/highgui.hpp>
+    #include <opencv2/imgproc/imgproc.hpp>
+#else
+    #include <opencv2/highgui.hpp>
+    #include <opencv2/imgproc.hpp>
+#endif
+
+#ifdef VCP_BEST_DEBUG_FRAMERATE
+    #include <chrono>
+    #include <iomanip>
+#endif // VCP_BEST_DEBUG_FRAMERATE
+
+#include <royale.hpp>
+
+#include <vcp_utils/vcp_error.h>
+#include <vcp_utils/vcp_logging.h>
+#include <vcp_utils/string_utils.h>
+#include <vcp_utils/file_utils.h>
+#include <vcp_imutils/opencv_compatibility.h>
+#include <vcp_imutils/matutils.h>
+
+namespace vcp
+{
+namespace best
+{
+namespace pmd
+{
+#undef VCP_LOGGING_COMPONENT
+#define VCP_LOGGING_COMPONENT "vcp::best::pmd"
+
+std::ostream &operator<< (std::ostream &out, const PmdSinkParams &p)
+{
+  out << "PMD['" << p.sink_label << "', s/n " << p.serial_number;
+  if (p.rectify)
+    out << ", rectified";
+  else
+    out << ", distorted";
+  out << "]";
+  return out;
+}
+
+
+class PmdSink : public StreamSink, public royale::IDepthDataListener
+{
+public:
+  PmdSink(std::unique_ptr<SinkBuffer> sink_buffer_gray,
+          std::unique_ptr<SinkBuffer> sink_buffer_depth,
+          const PmdSinkParams &params) : StreamSink(),
+    continue_capture_(false),
+    image_queue_gray_(std::move(sink_buffer_gray)),
+    depth_queue_(std::move(sink_buffer_depth)),
+    pmd_camera_(nullptr), params_(params)
+  {
+#ifdef VCP_BEST_DEBUG_FRAMERATE
+    previous_frame_timepoint_ = std::chrono::high_resolution_clock::now();
+    ms_between_frames_ = -1.0;
+#endif // VCP_BEST_DEBUG_FRAMERATE
+  }
+
+  virtual ~PmdSink()
+  {
+    CloseDevice();
+  }
+
+  bool OpenDevice() override
+  {
+    if (IsConnected())
+    {
+      VCP_LOG_FAILURE("Device [" << params_ << "] already connected - ignoring OpenDevice() call");
+      return false;
+    }
+
+    royale::CameraManager manager;
+    if (params_.serial_number.empty())
+    {
+      royale::Vector<royale::String> dev_list (manager.getConnectedCameraList());
+      if (dev_list.empty())
+      {
+        VCP_LOG_FAILURE("No available PMD device!");
+        return false;
+      }
+      params_.serial_number = std::string(dev_list[0].data());
+      dev_list.clear();
+    }
+    pmd_camera_ = manager.createCamera(params_.serial_number);
+
+    auto status = pmd_camera_->initialize();
+    if (status != royale::CameraStatus::SUCCESS)
+    {
+      VCP_LOG_FAILURE("Cannot initialize PMD sensor, error: " << royale::getErrorString(status) << "!");
+      pmd_camera_.reset();
+      return false;
+    }
+
+    royale::LensParameters intrinsics;
+    status = pmd_camera_->getLensParameters(intrinsics);
+    if (status != royale::CameraStatus::SUCCESS)
+    {
+      VCP_LOG_FAILURE("Cannot retrieve intrinsics for PMD sensor, error: " << royale::getErrorString(status) << "!");
+      pmd_camera_.reset();
+      return false;
+    }
+    SetIntrinsics(intrinsics);
+
+    status = pmd_camera_->registerDataListener(this);
+    if (status != royale::CameraStatus::SUCCESS)
+    {
+      VCP_LOG_FAILURE("Cannot register data listener for PMD sensor, error: " << royale::getErrorString(status) << "!");
+      pmd_camera_.reset();
+      return false;
+    }
+
+    if (params_.verbose)
+    {
+      VCP_LOG_INFO_DEFAULT(
+            "Opened PMD sensor (" << params_.serial_number << ")");
+    }
+
+    return true;
+  }
+
+  bool CloseDevice() override
+  {
+    if (pmd_camera_)
+    {
+      pmd_camera_.reset();
+    }
+    return true;
+  }
+
+  bool StartStreaming() override
+  {
+    if (!pmd_camera_)
+      OpenDevice();
+
+    auto status = pmd_camera_->startCapture();
+    if (status != royale::CameraStatus::SUCCESS)
+    {
+      VCP_LOG_FAILURE("Cannot start streaming from PMD sensor, error: " << royale::getErrorString(status) << "!");
+      return false;
+    }
+
+    if (params_.verbose)
+      VCP_LOG_INFO_DEFAULT("Started streaming for " << params_);
+    return true;
+  }
+
+
+  bool StopStreaming() override
+  {
+    if (pmd_camera_)
+    {
+      auto status = pmd_camera_->stopCapture();
+      if (status != royale::CameraStatus::SUCCESS)
+      {
+        VCP_LOG_FAILURE("Cannot stop streaming from PMD sensor, error: " << royale::getErrorString(status) << "!");
+        return false;
+      }
+      else
+      {
+        return true;
+      }
+    }
+    else
+    {
+      return false;
+    }
+  }
+
+
+  std::vector<cv::Mat> Next() override
+  {
+    cv::Mat gray, depth;
+    std::vector<cv::Mat> res;
+    image_queue_mutex_.lock();
+
+    if (image_queue_gray_->Empty())
+    {
+      gray = cv::Mat();
+    }
+    else
+    {
+      // Retrieve oldest image in queue
+      gray = image_queue_gray_->Front().clone();
+      image_queue_gray_->PopFront();
+    }
+    res.push_back(gray);
+
+    if (depth_queue_->Empty())
+    {
+      depth = cv::Mat();
+    }
+    else
+    {
+      // Retrieve oldest image in queue
+      depth = depth_queue_->Front().clone();
+      depth_queue_->PopFront();
+    }
+    res.push_back(depth);
+
+    image_queue_mutex_.unlock();
+    return res;
+  }
+
+
+  int IsDeviceAvailable() const override
+  {
+    if (IsConnected())
+      return 1;
+    return 0;
+  }
+
+  int IsFrameAvailable() const override
+  {
+    image_queue_mutex_.lock();
+    const bool empty = image_queue_gray_->Empty()
+        || depth_queue_->Empty();
+    image_queue_mutex_.unlock();
+    if (empty)
+      return 0;
+    return 1;
+  }
+
+  size_t NumAvailableFrames() const override
+  {
+    size_t num = 0;
+    image_queue_mutex_.lock();
+    if (!image_queue_gray_->Empty())
+        ++num;
+    if (!depth_queue_->Empty())
+        ++num;
+    image_queue_mutex_.unlock();
+    return num;
+  }
+
+  size_t NumStreams() const override
+  {
+    return 2;
+  }
+
+  FrameType FrameTypeAt(size_t stream_index) const override
+  {
+    const std::vector<FrameType> types {
+      FrameType::MONOCULAR, FrameType::DEPTH
+    };
+    if (stream_index >= types.size())
+      VCP_ERROR("stream_index " << stream_index << " is out-of-bounds");
+    return types[stream_index];
+  }
+
+  std::string StreamLabel(size_t stream_index) const override
+  {
+    const std::vector<std::string> labels = {
+      params_.sink_label + "-gray",
+      params_.sink_label + "-depth"
+    };
+    if (stream_index >= labels.size())
+      VCP_ERROR("stream_index " << stream_index << " is out-of-bounds");
+    return labels[stream_index];
+  }
+
+
+  SinkParams SinkParamsAt(size_t stream_index) const override
+  {
+    VCP_UNUSED_VAR(stream_index);
+    return params_;
+  }
+
+  size_t NumDevices() const override
+  {
+    return 1;
+  }
+
+  vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
+  {
+    VCP_ERROR("Not yet implemented!");
+//    std::vector<const calibration::StreamIntrinsics*> intrinsics;
+//    if (is_left_enabled_)
+//      intrinsics.push_back(&intrinsics_left_);
+//    if (is_right_enabled_)
+//      intrinsics.push_back(&intrinsics_right_);
+//    if (is_depth_enabled_)
+//      intrinsics.push_back(&intrinsics_depth_);
+//    return *(intrinsics[stream_index]);
+  }
+
+  bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
+  {
+    VCP_ERROR("Not yet implemented!");
+  }
+
+  void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
+  {
+    VCP_ERROR("Not yet implemented!");
+  }
+
+  void SetVerbose(bool verbose) override
+  {
+    params_.verbose = verbose;
+  }
+
+  SinkType GetSinkType() const override
+  {
+    return SinkType::PMD;
+  }
+
+  void onNewData (const royale::DepthData *data) override
+  {
+    // Callback upon each incoming frame
+    std::lock_guard<std::mutex> lock(receive_mutex_);
+
+    cv::Mat depth16(data->height, data->width, CV_16UC1, cv::Scalar::all(0.0));
+    cv::Mat gray8(data->height, data->width, CV_8UC1, cv::Scalar::all(0.0));
+
+    std::size_t data_idx = 0;
+    for (int row = 0; row < data->height; ++row)
+    {
+      uint16_t *depth_ptr = depth16.ptr<uint16_t>(row);
+      unsigned char *gray_ptr = gray8.ptr<unsigned char>(row);
+      for (int col = 0; col < data->width; ++col, ++data_idx)
+      {
+        const auto &point = data->points.at(data_idx);
+        if (point.depthConfidence > 0)
+        {
+          // Meters --> millimeters
+          depth_ptr[col] = static_cast<uint16_t>(point.z * 1000.0f);
+          // FIXME simple clamping (between 180 and 255) worked well in indoor settings
+          // need to investigate the intensity range for more scenarios
+          gray_ptr[col] = static_cast<unsigned char>(
+                std::min(255.0f, static_cast<float>(point.grayValue) / 180.0f * 255.0f));
+//          gray_ptr[col] = static_cast<unsigned char>(
+//                std::min(255.0f, static_cast<float>(point.grayValue) / 180.0f * 255.0f));
+        }
+      }
+    }
+
+    // Upon receiving the first frame, we have to precompute the
+    // rectification mapping:
+    if (params_.rectify && intrinsics_.Empty())
+    {
+      intrinsics_ = calibration::StreamIntrinsics::FromMonocular(
+            camera_matrix_, distortion_coefficients_, params_.sink_label,
+            std::string(), gray8.size());
+    }
+
+    cv::Mat frame_gray, frame_depth;
+    if (params_.rectify)
+    {
+      frame_gray = intrinsics_.UndistortRectify(gray8);
+      frame_depth = intrinsics_.UndistortRectify(depth16);
+//      cv::undistort(gray8, frame_gray, camera_matrix_, distortion_coefficients_);
+//      cv::undistort(depth16, frame_depth, camera_matrix_, distortion_coefficients_);
+    }
+    else
+    {
+      frame_gray = gray8;
+      frame_depth = depth16;
+    }
+
+//    const cv::Mat img = imutils::ApplyImageTransformations(converted, params_.transforms);
+    image_queue_mutex_.lock();
+    image_queue_gray_->PushBack(frame_gray.clone());
+    depth_queue_->PushBack(frame_depth.clone());
+    image_queue_mutex_.unlock();
+  }
+
+
+private:
+  std::atomic<bool> continue_capture_;
+  std::unique_ptr<SinkBuffer> image_queue_gray_;
+  std::unique_ptr<SinkBuffer> depth_queue_;
+  std::unique_ptr<royale::ICameraDevice> pmd_camera_;
+  PmdSinkParams params_;
+  calibration::StreamIntrinsics intrinsics_;
+  cv::Mat camera_matrix_;
+  cv::Mat distortion_coefficients_;
+
+#ifdef VCP_BEST_DEBUG_FRAMERATE
+  std::chrono::high_resolution_clock::time_point previous_frame_timepoint_;
+  double ms_between_frames_;
+#endif // VCP_BEST_DEBUG_FRAMERATE
+
+  std::thread stream_thread_;
+  mutable std::mutex image_queue_mutex_;
+  std::mutex receive_mutex_;
+
+//  // OpenCV matrix headers which share image data with sl::Mat
+//  cv::Mat cvl, cvr, cvd;
+//  // Color-converted:
+//  cv::Mat cvtl, cvtr;
+//  // Rectified & undistorted:
+//  cv::Mat rul, rur, rud;
+//  // Transformed matrices (basic image transformations)
+//  cv::Mat tcvl, tcvr, tcvd;
+
+  bool IsConnected() const
+  {
+    bool connected = false;
+    if (pmd_camera_)
+      pmd_camera_->isConnected(connected);
+    return connected;
+  }
+
+  void SetIntrinsics(const royale::LensParameters &lens)
+  {
+    cv::Mat K = (cv::Mat1d (3, 3) << lens.focalLength.first, 0, lens.principalPoint.first,
+                 0, lens.focalLength.second, lens.principalPoint.second,
+                 0, 0, 1);
+
+    cv::Mat D = (cv::Mat1d (1, 5) << lens.distortionRadial[0],
+        lens.distortionRadial[1], lens.distortionTangential.first,
+        lens.distortionTangential.second, lens.distortionRadial[2]);
+  }
+
+
+};
+
+
+bool IsPmdSink(const std::string &type_param)
+{
+  const std::string type = vcp::utils::string::Lower(type_param);
+  if (type.compare("pmd") == 0)
+  {
+    return true;
+  }
+  return false;
+}
+
+
+PmdSinkParams PmdSinkParamsFromConfig(const vcp::config::ConfigParams &config, const std::string &cam_param)
+{
+  std::vector<std::string> configured_keys = config.ListConfigGroupParameters(cam_param);
+  const SinkParams sink_params = ParseBaseSinkParamsFromConfig(config, cam_param, configured_keys);
+
+  PmdSinkParams params(sink_params);
+
+  params.serial_number = GetOptionalStringFromConfig(
+        config, cam_param, "serial_number", std::string());
+
+  WarnOfUnusedParameters(cam_param, configured_keys);
+  return params;
+}
+
+
+std::vector<PmdDeviceInfo> ListPmdDevices(bool warn_if_no_devices)
+{
+  std::vector<PmdDeviceInfo> infos;
+
+  royale::CameraManager manager;
+  royale::Vector<royale::String> devs (manager.getConnectedCameraList());
+
+  if (devs.empty())
+  {
+    if (warn_if_no_devices)
+      VCP_LOG_WARNING("No PMD sensors connected!");
+  }
+  else
+  {
+    for (const auto &dp : devs)
+    {
+      PmdDeviceInfo info;
+      info.serial_number = std::string(dp.data());
+      infos.push_back(info);
+    }
+  }
+
+  return infos;
+}
+
+
+std::unique_ptr<StreamSink> CreateBufferedPmdSink(
+    const PmdSinkParams &params, std::unique_ptr<SinkBuffer> sink_buffer_gray,
+    std::unique_ptr<SinkBuffer> sink_buffer_depth)
+{
+  return std::unique_ptr<PmdSink>(
+        new PmdSink(std::move(sink_buffer_gray),
+                    std::move(sink_buffer_depth), params));
+}
+
+} // namespace webcam
+} // namespace best
+} // namespace vcp

@@ -29,6 +29,10 @@
     #include "zed_sink.h"
 #endif
 
+#ifdef VCP_BEST_WITH_PMD
+    #include "pmd_sink.h"
+#endif
+
 
 #undef VCP_LOGGING_COMPONENT
 #define VCP_LOGGING_COMPONENT "vcp::best::sink"
@@ -130,6 +134,10 @@ std::string SinkTypeToString(const SinkType &s)
   MAKE_SINKTYPE_TO_STRING_CASE(ZED);
 #endif
 
+#ifdef VCP_BEST_WITH_PMD
+  MAKE_SINKTYPE_TO_STRING_CASE(PMD);
+#endif
+
   MAKE_SINKTYPE_TO_STRING_CASE(VIDEO_FILE);
   MAKE_SINKTYPE_TO_STRING_CASE(WEBCAM);
   default:
@@ -180,6 +188,11 @@ SinkType SinkTypeFromString(const std::string &s)
 #ifdef VCP_BEST_WITH_ZED
   else if (zed::IsZedSink(s))
     return SinkType::ZED;
+#endif
+
+#ifdef VCP_BEST_WITH_PMD
+  else if (pmd::IsPmdSink(s))
+    return SinkType::PMD;
 #endif
 
   VCP_ERROR("SinkTypeFromString(): Representation '" << s << "' not yet handled.");

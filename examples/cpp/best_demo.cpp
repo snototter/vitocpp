@@ -189,8 +189,9 @@ int main(int argc, char **argv)
 //  };
 //  for (const auto &c : configs)
 //    Stream(c);
-  Stream("data-best/webcam.cfg");
-  Stream("data-best/realsense.cfg");
+//  Stream("data-best/webcam.cfg");
+//  Stream("data-best/realsense.cfg");
+  Stream("data-best/pmd.cfg");
 
   return 0;
 }

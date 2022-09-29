@@ -29,6 +29,9 @@
 #ifdef VCP_BEST_WITH_REALSENSE2
   #include "realsense2_sink.h"
 #endif
+#ifdef VCP_BEST_WITH_PMD
+  #include "pmd_sink.h"
+#endif
 #ifdef VCP_BEST_WITH_ZED
   #include "zed_sink.h"
 #endif
@@ -130,6 +133,9 @@ public:
 #ifdef VCP_BEST_WITH_ZED
     std::vector<zed::ZedSinkParams> zed_params;
 #endif
+#ifdef VCP_BEST_WITH_PMD
+    std::vector<pmd::PmdSinkParams> pmd_params;
+#endif
     std::vector<file::VideoFileSinkParams> video_params;
     std::vector<webcam::WebcamSinkParams> webcam_params;
 
@@ -186,6 +192,14 @@ public:
 #else
           VCP_ERROR("ZED is not available - You have to build vcp with VCP_BEST_WITH_ZED");
 #endif // VCP_BEST_WITH_ZED
+          break;
+
+        case SinkType::PMD:
+#ifdef VCP_BEST_WITH_PMD
+          pmd_params.push_back(pmd::PmdSinkParamsFromConfig(config, cam_config_name));
+#else
+          VCP_ERROR("PMD is not available - You have to build vcp with VCP_BEST_WITH_PMD");
+#endif
           break;
 
         default:
@@ -250,6 +264,11 @@ public:
 #ifdef VCP_BEST_WITH_ZED
     for (const auto &p : zed_params)
       AddSink(zed::CreateZedSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p));
+#endif
+
+#ifdef VCP_BEST_WITH_PMD
+    for (const auto &p : pmd_params)
+      AddSink(pmd::CreatePmdSink<VCP_BEST_STREAM_BUFFER_CAPACITY>(p));
 #endif
 
     num_devices_ = 0;

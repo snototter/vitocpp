@@ -55,6 +55,7 @@ enum class SinkType
   REALSENSE     = 20,
   K4A           = 30,
   ZED           = 40,
+  PMD           = 50,
   CUSTOM        = 99
 //  MVBLUEFOX3,
 };

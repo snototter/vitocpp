@@ -9,6 +9,7 @@ option(VCP_BEST_WITH_IPCAM "Build HTTP/RTSP streaming module (requires CURL, liv
 option(VCP_BEST_WITH_REALSENSE2 "Build Intel RealSense streaming module (requires librealsense2)." OFF)
 option(VCP_BEST_WITH_K4A "Build Kinect 4 Azure streaming module (requires libk4a)." OFF)
 option(VCP_BEST_WITH_K4A_MJPG "K4A sends color as MJPG if ON (slow), otherwise BGRA32 (high bandwidth)." OFF)
+option(VCP_BEST_WITH_PMD "Build PMD streaming module (requires royale SDK)." OFF)
 option(VCP_BEST_WITH_ZED "Build ZED streaming module (requires StereoLabs ZED SDK)." OFF)
 option(VCP_BEST_DEBUG_FRAMERATE "If enabled, sinks debug their frame rate (rather verbose)" OFF)
 
@@ -77,6 +78,16 @@ set(PUBLIC_K4A_STREAM_HEADERS
 set(PRIVATE_K4A_STREAM_HEADERS)
 set(K4A_STREAM_SOURCES
     k4a_sink.cpp
+)
+
+
+# PMD streaming files
+set(PUBLIC_PMD_STREAM_HEADERS
+    pmd_sink.h
+)
+set(PRIVATE_PMD_STREAM_HEADERS)
+set(PMD_STREAM_SOURCES
+    pmd_sink.cpp
 )
 
 
@@ -224,6 +235,24 @@ if (VCP_BEST_WITH_K4A)
     endif()
 else()
     message("  [ ] Disable Azure Kinect sensors")
+endif()
+
+
+if (VCP_BEST_WITH_PMD)
+    find_package(royale REQUIRED)
+    include_directories(${royale_INCLUDE_DIRS})
+    link_directories(${royale_LIB_DIR})
+
+    add_definitions(-DVCP_BEST_WITH_PMD)
+    set(ICC_EXTERNAL_LIBS ${ICC_EXTERNAL_LIBS} ${royale_LIBS})
+    set(PUBLIC_HEADERS ${PUBLIC_HEADERS} ${PUBLIC_PMD_STREAM_HEADERS})
+    set(PRIVATE_HEADERS ${PRIVATE_HEADERS} ${PRIVATE_PMD_STREAM_HEADERS})
+    set(SOURCES ${SOURCES} ${PMD_STREAM_SOURCES})
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_RPATH}:${royale_LIB_DIR}")
+
+    message("  [+] Enable PMD sensors")
+else()
+    message("  [ ] Disable PMD sensors")
 endif()
 
 
