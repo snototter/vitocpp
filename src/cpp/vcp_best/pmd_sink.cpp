@@ -417,15 +417,6 @@ private:
   mutable std::mutex image_queue_mutex_;
   std::mutex receive_mutex_;
 
-//  // OpenCV matrix headers which share image data with sl::Mat
-//  cv::Mat cvl, cvr, cvd;
-//  // Color-converted:
-//  cv::Mat cvtl, cvtr;
-//  // Rectified & undistorted:
-//  cv::Mat rul, rur, rud;
-//  // Transformed matrices (basic image transformations)
-//  cv::Mat tcvl, tcvr, tcvd;
-
   bool IsConnected() const
   {
     bool connected = false;
