@@ -55,10 +55,12 @@ class PmdSink : public StreamSink, public royale::IDepthDataListener
 public:
   PmdSink(std::unique_ptr<SinkBuffer> sink_buffer_gray,
           std::unique_ptr<SinkBuffer> sink_buffer_depth,
+          std::unique_ptr<SinkBuffer> sink_buffer_xyz,
           const PmdSinkParams &params) : StreamSink(),
     continue_capture_(false),
     image_queue_gray_(std::move(sink_buffer_gray)),
     depth_queue_(std::move(sink_buffer_depth)),
+    xyz_queue_(std::move(sink_buffer_xyz)),
     pmd_camera_(nullptr), params_(params)
   {
 #ifdef VCP_BEST_DEBUG_FRAMERATE
@@ -180,7 +182,7 @@ public:
 
   std::vector<cv::Mat> Next() override
   {
-    cv::Mat gray, depth;
+    cv::Mat gray, depth, xyz;
     std::vector<cv::Mat> res;
     image_queue_mutex_.lock();
 
@@ -208,6 +210,17 @@ public:
     }
     res.push_back(depth);
 
+    if (xyz_queue_->Empty())
+    {
+      xyz = cv::Mat();
+    }
+    else
+    {
+      xyz = xyz_queue_->Front().clone();
+      xyz_queue_->PopFront();
+    }
+    res.push_back(xyz);
+
     image_queue_mutex_.unlock();
     return res;
   }
@@ -224,7 +237,8 @@ public:
   {
     image_queue_mutex_.lock();
     const bool empty = image_queue_gray_->Empty()
-        || depth_queue_->Empty();
+        || depth_queue_->Empty()
+        || xyz_queue_->Empty();
     image_queue_mutex_.unlock();
     if (empty)
       return 0;
@@ -239,19 +253,21 @@ public:
         ++num;
     if (!depth_queue_->Empty())
         ++num;
+    if (!xyz_queue_->Empty())
+        ++num;
     image_queue_mutex_.unlock();
     return num;
   }
 
   size_t NumStreams() const override
   {
-    return 2;
+    return 3;
   }
 
   FrameType FrameTypeAt(size_t stream_index) const override
   {
     const std::vector<FrameType> types {
-      FrameType::MONOCULAR, FrameType::DEPTH
+      FrameType::MONOCULAR, FrameType::DEPTH, FrameType::POINTCLOUD
     };
     if (stream_index >= types.size())
       VCP_ERROR("stream_index " << stream_index << " is out-of-bounds");
@@ -262,7 +278,8 @@ public:
   {
     const std::vector<std::string> labels = {
       params_.sink_label + "-gray",
-      params_.sink_label + "-depth"
+      params_.sink_label + "-depth",
+      params_.sink_label + "-xyz",
     };
     if (stream_index >= labels.size())
       VCP_ERROR("stream_index " << stream_index << " is out-of-bounds");
@@ -321,12 +338,15 @@ public:
 
     cv::Mat depth16(data->height, data->width, CV_16UC1, cv::Scalar::all(0.0));
     cv::Mat gray8(data->height, data->width, CV_8UC1, cv::Scalar::all(0.0));
+    cv::Mat xyz(data->height, data->width, CV_32FC3, cv::Scalar::all(0.0));
+    //TODO set default to quiet NaN?
 
     std::size_t data_idx = 0;
     for (int row = 0; row < data->height; ++row)
     {
       uint16_t *depth_ptr = depth16.ptr<uint16_t>(row);
       unsigned char *gray_ptr = gray8.ptr<unsigned char>(row);
+      cv::Vec3f *xyz_ptr = xyz.ptr<cv::Vec3f>(row);
       for (int col = 0; col < data->width; ++col, ++data_idx)
       {
         const auto &point = data->points.at(data_idx);
@@ -334,12 +354,13 @@ public:
         {
           // Meters --> millimeters
           depth_ptr[col] = static_cast<uint16_t>(point.z * 1000.0f);
-          // FIXME simple clamping (between 180 and 255) worked well in indoor settings
-          // need to investigate the intensity range for more scenarios
           gray_ptr[col] = static_cast<unsigned char>(
-                std::min(255.0f, static_cast<float>(point.grayValue) / 180.0f * 255.0f));
-//          gray_ptr[col] = static_cast<unsigned char>(
-//                std::min(255.0f, static_cast<float>(point.grayValue) / 180.0f * 255.0f));
+                std::min(255.0f, static_cast<float>(point.grayValue) / params_.gray_divisor * 255.0f));
+          xyz_ptr[col].val[0] = point.x * 1000.0f;
+          xyz_ptr[col].val[1] = point.y * 1000.0f;
+          xyz_ptr[col].val[2] = point.z * 1000.0f;
+          if (point.z < 0)
+            VCP_LOG_FAILURE("NEGATIVE z??????? " << point.z);
         }
       }
     }
@@ -371,6 +392,7 @@ public:
     image_queue_mutex_.lock();
     image_queue_gray_->PushBack(frame_gray.clone());
     depth_queue_->PushBack(frame_depth.clone());
+    xyz_queue_->PushBack(xyz.clone());
     image_queue_mutex_.unlock();
   }
 
@@ -379,6 +401,7 @@ private:
   std::atomic<bool> continue_capture_;
   std::unique_ptr<SinkBuffer> image_queue_gray_;
   std::unique_ptr<SinkBuffer> depth_queue_;
+  std::unique_ptr<SinkBuffer> xyz_queue_;
   std::unique_ptr<royale::ICameraDevice> pmd_camera_;
   PmdSinkParams params_;
   calibration::StreamIntrinsics intrinsics_;
@@ -446,6 +469,15 @@ PmdSinkParams PmdSinkParamsFromConfig(const vcp::config::ConfigParams &config, c
 
   params.serial_number = GetOptionalStringFromConfig(
         config, cam_param, "serial_number", std::string());
+  configured_keys.erase(
+        std::remove(configured_keys.begin(), configured_keys.end(),
+                    "serial_number"), configured_keys.end());
+
+  params.gray_divisor = static_cast<float>(GetOptionalDoubleFromConfig(
+        config, cam_param, "gray_divisor", 180.0));
+  configured_keys.erase(
+        std::remove(configured_keys.begin(), configured_keys.end(),
+                    "gray_divisor"), configured_keys.end());
 
   WarnOfUnusedParameters(cam_param, configured_keys);
   return params;
@@ -480,11 +512,13 @@ std::vector<PmdDeviceInfo> ListPmdDevices(bool warn_if_no_devices)
 
 std::unique_ptr<StreamSink> CreateBufferedPmdSink(
     const PmdSinkParams &params, std::unique_ptr<SinkBuffer> sink_buffer_gray,
-    std::unique_ptr<SinkBuffer> sink_buffer_depth)
+    std::unique_ptr<SinkBuffer> sink_buffer_depth,
+    std::unique_ptr<SinkBuffer> sink_buffer_xyz)
 {
   return std::unique_ptr<PmdSink>(
         new PmdSink(std::move(sink_buffer_gray),
-                    std::move(sink_buffer_depth), params));
+                    std::move(sink_buffer_depth),
+                    std::move(sink_buffer_xyz), params));
 }
 
 } // namespace webcam

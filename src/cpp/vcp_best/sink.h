@@ -27,7 +27,8 @@ enum class FrameType : short
   MONOCULAR,   /**< Most often, we deal with monocular image streams. */
   STEREO,      /**< Horizontal stereo (a single, concatenated frame consisting of the left and right image) */
   DEPTH,       /**< Depth stream, usually uint16 (RealSense, Kinect) or float32 (ZED). */
-  INFRARED     /**< Infrared stream, i.e. intensity values, typically uint16 (Kinect) or uint8 (RealSense). */
+  INFRARED,    /**< Infrared stream, i.e. intensity values, typically uint16 (Kinect) or uint8 (RealSense). */
+  POINTCLOUD   /**< Point cloud as CV_32FC3 or CV_64FC3 image (first layer is x-coordinate). */
 };
 
 

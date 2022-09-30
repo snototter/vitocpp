@@ -17,12 +17,15 @@ namespace pmd
 struct PmdSinkParams : public SinkParams
 {
   std::string serial_number;
+  float gray_divisor;
 
   PmdSinkParams(
       const SinkParams &sink_params,
-      const std::string &sn = std::string())
+      const std::string &sn = std::string(),
+      float gray_div = 180.0f)
     : SinkParams(sink_params),
-      serial_number(sn)
+      serial_number(sn),
+      gray_divisor(gray_div)
   {}
 };
 
@@ -50,7 +53,8 @@ std::vector<PmdDeviceInfo> ListPmdDevices(bool warn_if_no_devices=true);
 std::unique_ptr<StreamSink> CreateBufferedPmdSink(
     const PmdSinkParams &params,
     std::unique_ptr<SinkBuffer> sink_buffer_gray,
-    std::unique_ptr<SinkBuffer> sink_buffer_depth);
+    std::unique_ptr<SinkBuffer> sink_buffer_depth,
+    std::unique_ptr<SinkBuffer> sink_buffer_xyz);
 
 
 /** @brief Returns a StreamSink to access a PMD cam. */
@@ -59,6 +63,7 @@ std::unique_ptr<StreamSink> CreatePmdSink(const PmdSinkParams &params)
 {
   return CreateBufferedPmdSink(
         params, std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()),
+        std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()),
         std::move(CreateCircularStreamSinkBuffer<BufferCapacity>()));
 }
 

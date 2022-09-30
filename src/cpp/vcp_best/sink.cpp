@@ -51,6 +51,7 @@ std::string FrameTypeToString(const FrameType &s)
   MAKE_STREAMTYPE_TO_STRING_CASE(STEREO);
   MAKE_STREAMTYPE_TO_STRING_CASE(DEPTH);
   MAKE_STREAMTYPE_TO_STRING_CASE(INFRARED);
+  MAKE_STREAMTYPE_TO_STRING_CASE(POINTCLOUD);
   MAKE_STREAMTYPE_TO_STRING_CASE(UNKNOWN);
   default:
     std::stringstream str;
@@ -92,6 +93,9 @@ FrameType FrameTypeFromString(const std::string &s)
       || lower.compare("rgbd-infrared") == 0
       || lower.compare("rgb-ir") == 0)
     return FrameType::INFRARED;
+
+  if (lower.compare("pointcloud") == 0)
+    return FrameType::POINTCLOUD;
 
   VCP_ERROR("FrameTypeFromString(): Cannot convert '" << s << "' to FrameType.");
 }

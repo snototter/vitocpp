@@ -24,6 +24,8 @@
 #define MAX_STREAMING_TIME_PER_CONFIG 20000
 void Stream(const std::string &config_file)
 {
+  const double k_max_depth_value = 5000.0;
+
   std::cout << std::endl << std::endl << std::endl;
 
   VCP_INIT_TIC_TOC;
@@ -66,9 +68,9 @@ void Stream(const std::string &config_file)
 //                                                 cv::Size(16,16),
 //                                                 0.25f, 0.01f, 20.0f,
 //                                                 vcp::bgm::BlockBasedMeanBgmChannel::GRAYSCALE));
-  auto bgm = vcp::bgm::CreateMixtureOfGaussiansBgm(vcp::bgm::MixtureOfGaussiansBgmParams(
-                                                     500,
-                                                     true, 16, 0.15));
+  auto bgm = vcp::bgm::CreateMixtureOfGaussiansBgm(
+        vcp::bgm::MixtureOfGaussiansBgmParams(
+          500, true, 16, 0.15));
   bool bgm_needs_init = true;
 
   VCP_TIC;
@@ -98,6 +100,7 @@ void Stream(const std::string &config_file)
     // Again, the following is only needed for this demo.
     // We filter invalid frames, colorize depth/IR streams, etc.
     std::vector<cv::Mat> valid_raw, valid_vis;
+    std::vector<std::pair<double, double>> min_max_values;
     for (size_t i = 0; i < frames.size(); ++i)
     {
       if (frames[i].empty())
@@ -106,15 +109,37 @@ void Stream(const std::string &config_file)
       }
       else
       {
+        double minv, maxv;
         cv::Mat vis;
         if (frames[i].depth() != CV_8U)
         {
-          vcp::imvis::pseudocolor::Colorize(frames[i], vcp::imvis::pseudocolor::ColorMap::Turbo, vis, 0, 3000);
+          if (frames[i].channels() > 1)
+          {
+            std::vector<cv::Mat> channels;
+            cv::split(frames[i], channels);
+            cv::Mat z_channel = channels[channels.size() - 1];
+            vcp::imvis::pseudocolor::Colorize(
+                  z_channel,
+                  vcp::imvis::pseudocolor::ColorMap::Viridis, vis,
+                0, k_max_depth_value);
+            cv::minMaxLoc(z_channel, &minv, &maxv);
+          }
+          else
+          {
+            vcp::imvis::pseudocolor::Colorize(
+                  frames[i], vcp::imvis::pseudocolor::ColorMap::Turbo,
+                  vis, 0, k_max_depth_value);
+            cv::minMaxLoc(frames[i], &minv, &maxv);
+          }
         }
         else
+        {
           vis = frames[i];
+          cv::minMaxLoc(frames[i], &minv, &maxv);
+        }
         valid_raw.push_back(frames[i]);
         valid_vis.push_back(vis);
+        min_max_values.push_back(std::make_pair(minv, maxv));
       }
     }
     if (valid_raw.empty())
@@ -141,14 +166,14 @@ void Stream(const std::string &config_file)
     // Overlay the sink label and original frame resolution.
     for (size_t i = 0; i < valid_raw.size(); ++i)
     {
-      double minv, maxv;
-      cv::minMaxIdx(valid_raw[i], &minv, &maxv);
       std::stringstream overlay;
       overlay << frame_labels[i] << " "
               << vcp::utils::string::ToStr(valid_raw[i].cols) << "x"
               << vcp::utils::string::ToStr(valid_raw[i].rows) << " "
               << vcp::imutils::CVMatDepthToString(valid_raw[i].type(), valid_raw[i].channels()).substr(3) // Skip CV_ prefix
-              << " [" << std::setw(5) << std::right << minv << ", " << std::setw(5) << std::right << maxv << "]";
+              << " [" << std::setw(5) << std::right
+              << min_max_values[i].first << ", " << std::setw(5) << std::right
+              << min_max_values[i].second << "]";
       vcp::imvis::drawing::DrawTextBox(collage, overlay.str(),
           cv::Point((i % num_per_row) * fixed_size.width, (i / num_per_row) * fixed_size.height),
           vcp::imvis::drawing::textanchor::TOP | vcp::imvis::drawing::textanchor::LEFT,
