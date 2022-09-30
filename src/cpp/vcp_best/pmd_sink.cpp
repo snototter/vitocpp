@@ -29,6 +29,9 @@
 #include <vcp_imutils/opencv_compatibility.h>
 #include <vcp_imutils/matutils.h>
 
+//#define VCP_VERBOSE_TIMING
+//#include <vcp_utils/timing_utils.h>
+
 namespace vcp
 {
 namespace best
@@ -300,25 +303,21 @@ public:
 
   vcp::best::calibration::StreamIntrinsics IntrinsicsAt(size_t stream_index) const override
   {
-    VCP_ERROR("Not yet implemented!");
-//    std::vector<const calibration::StreamIntrinsics*> intrinsics;
-//    if (is_left_enabled_)
-//      intrinsics.push_back(&intrinsics_left_);
-//    if (is_right_enabled_)
-//      intrinsics.push_back(&intrinsics_right_);
-//    if (is_depth_enabled_)
-//      intrinsics.push_back(&intrinsics_depth_);
-//    return *(intrinsics[stream_index]);
+    VCP_UNUSED_VAR(stream_index);
+    return intrinsics_;
   }
 
   bool SetExtrinsicsAt(size_t stream_index, const cv::Mat &R, const cv::Mat &t) override
   {
-    VCP_ERROR("Not yet implemented!");
+    VCP_UNUSED_VAR(stream_index);
+    return extrinsics_.SetExtrinsics(R, t);
   }
 
   void ExtrinsicsAt(size_t stream_index, cv::Mat &R, cv::Mat &t) const override
   {
-    VCP_ERROR("Not yet implemented!");
+    VCP_UNUSED_VAR(stream_index);
+    R = extrinsics_.R().clone();
+    t = extrinsics_.t().clone();
   }
 
   void SetVerbose(bool verbose) override
@@ -333,7 +332,9 @@ public:
 
   void onNewData (const royale::DepthData *data) override
   {
-    // Callback upon each incoming frame
+    // Callback from the royale SDK once a new data frame is available.
+    // Decoding 1 frame and pushing the gray, depth and xyz frames takes
+    // around 1.2ms.
     std::lock_guard<std::mutex> lock(receive_mutex_);
 
     cv::Mat depth16(data->height, data->width, CV_16UC1, cv::Scalar::all(0.0));
@@ -359,8 +360,6 @@ public:
           xyz_ptr[col].val[0] = point.x * 1000.0f;
           xyz_ptr[col].val[1] = point.y * 1000.0f;
           xyz_ptr[col].val[2] = point.z * 1000.0f;
-          if (point.z < 0)
-            VCP_LOG_FAILURE("NEGATIVE z??????? " << point.z);
         }
       }
     }
@@ -405,6 +404,7 @@ private:
   std::unique_ptr<royale::ICameraDevice> pmd_camera_;
   PmdSinkParams params_;
   calibration::StreamIntrinsics intrinsics_;
+  calibration::StreamExtrinsics extrinsics_;
   cv::Mat camera_matrix_;
   cv::Mat distortion_coefficients_;
 

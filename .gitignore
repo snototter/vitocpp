@@ -12,6 +12,7 @@ doc/doxygen/*
 **/.vscode/*
 *.xml
 **/output*/
+*.cal
 
 
 ######

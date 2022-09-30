@@ -25,6 +25,7 @@
 void Stream(const std::string &config_file)
 {
   const double k_max_depth_value = 5000.0;
+  const int k_num_per_row = 2;
 
   std::cout << std::endl << std::endl << std::endl;
 
@@ -160,8 +161,7 @@ void Stream(const std::string &config_file)
     // Make a collage (of resized frames) if there are multiple streams to show.
     cv::Mat collage;
     const cv::Size fixed_size = cv::Size(800, 600);
-    const int num_per_row = 2;
-    vcp::imvis::collage::Collage(valid_vis, collage, num_per_row, 0, fixed_size);
+    vcp::imvis::collage::Collage(valid_vis, collage, k_num_per_row, 0, fixed_size);
 
     // Overlay the sink label and original frame resolution.
     for (size_t i = 0; i < valid_raw.size(); ++i)
@@ -175,7 +175,7 @@ void Stream(const std::string &config_file)
               << min_max_values[i].first << ", " << std::setw(5) << std::right
               << min_max_values[i].second << "]";
       vcp::imvis::drawing::DrawTextBox(collage, overlay.str(),
-          cv::Point((i % num_per_row) * fixed_size.width, (i / num_per_row) * fixed_size.height),
+          cv::Point((i % k_num_per_row) * fixed_size.width, (i / k_num_per_row) * fixed_size.height),
           vcp::imvis::drawing::textanchor::TOP | vcp::imvis::drawing::textanchor::LEFT,
           10, 0.5, cv::Scalar(255, 0, 0), cv::Scalar::all(-1),
           cv::FONT_HERSHEY_PLAIN, 1.5, 2);

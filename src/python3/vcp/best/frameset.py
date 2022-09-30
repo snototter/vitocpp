@@ -8,6 +8,7 @@ class FrameType(Enum):
     Color = 1
     Depth = 2
     Intensity = 3
+    Pointcloud = 4
 
     def __str__(self):
         return self.name
@@ -36,6 +37,10 @@ class Frame(object):
     @property
     def is_intensity(self) -> bool:
         return self.frame_type == FrameType.Intensity
+
+    @property
+    def is_pointcloud(self) -> bool:
+        return self.frame_type == FrameType.Pointcloud
 
     def __repr__(self) -> str:
         dim = 'None' if self.frame_data is None else\

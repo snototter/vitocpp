@@ -140,27 +140,39 @@ def _colorize_ir(f, args):
     return imutils.transform(f, 'histeq', 'gray2rgb')
 
 
-def _create_visualization(frameset, args):
+def _create_visualization(frameset: best.Frameset, args):
     # A frameset consists of multiple images. These could be
     # color, depth or infrared. Thus, we need to convert them
     # all to a 3-channel uint8 format for display:
-    vis_frames = [_colorize_depth(f.frame_data, args)
-                  if f.is_depth
-                  else (_colorize_ir(f.frame_data, args)
-                        if f.is_intensity else f.frame_data)
-                  for f in frameset.frames]
+    vis_frames = list()
+    for frame in frameset.frames:
+        if frame.is_depth:
+            vis_frames.append(_colorize_depth(frame.frame_data, args))
+        elif frame.is_intensity:
+            vis_frames.append(_colorize_ir(frame.frame_data, args))
+        elif frame.is_pointcloud:
+            vis_frames.append(_colorize_depth(frame.frame_data[..., -1], args))
+        elif frame.is_color:
+            vis_frames.append(frame.frame_data)
+        else:
+            logging.warning(f'Unsupported frame modality for "{frame.label}", trying to interpret it as standard image.')
+            vis_frames.append(frame.frame_data)
     # Resize for display
     vis_frames = [imutils.fuzzy_resize(f, args.scale) for f in vis_frames]
     # Overlay frame labels
     if args.label_overlay:
-        vis_frames = [imvis.draw_text_box(vis_frames[idx],
-                                          frameset.frames[idx].label  + (
-                                          ' [Undistorted & Rectified]' if frameset.frames[idx].is_rectified else ' [Not explicitly undistorted]'),
-                                          (vis_frames[idx].shape[1] // 2, 10), 'north',
-                                          bg_color=(0, 0, 0), font_color=(-1, -1, -1),
-                                          font_scale=1.0, font_thickness=1,
-                                          padding=5, fill_opacity=0.5)
-                      for idx in range(len(vis_frames))]
+        def _txt(idx: int) -> str:
+            if frameset.frames[idx].is_pointcloud:
+                return frameset.frames[idx].label
+            else:
+                return frameset.frames[idx].label  + (
+                    ' [Undistorted & Rectified]' if frameset.frames[idx].is_rectified else ' [Not explicitly undistorted]')
+
+        vis_frames = [imvis.draw_text_box(
+            vis_frames[idx], _txt(idx), (vis_frames[idx].shape[1] // 2, 10), 'north',
+            bg_color=(0, 0, 0), font_color=(-1, -1, -1), font_scale=1.0, font_thickness=1,
+            padding=5, fill_opacity=0.5)
+            for idx in range(len(vis_frames))]
     # Combine all streams/frames in this frameset into a single collage image
     return imvis.make_collage(vis_frames, num_images_per_row=args.images_per_row)
 

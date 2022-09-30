@@ -128,10 +128,10 @@ class StreamingError(Exception):
 class MulticamStepper(object):
     """Retrieve image data of a multi-cam setup one image at a time."""
     def __init__(self,
-            cfg_file,       # Path to the configuration file
-            is_libconfig,   # Set True if the configuration is libconfig (otherwise, it must be a JSON file)
-            cfg_file_rel_path_base_dir=None,  # If not None, relative paths within the config file will be prefixed by this relative path
-            verbose=False):
+            cfg_file: str,       # Path to the configuration file
+            is_libconfig: bool,   # Set True if the configuration is libconfig (otherwise, it must be a JSON file)
+            cfg_file_rel_path_base_dir: str = None,  # If not None, relative paths within the config file will be prefixed by this relative path
+            verbose: bool = False):
         self._cfg_file = cfg_file
         self._verbose = verbose
         self._frame_counter = 0
@@ -146,7 +146,7 @@ class MulticamStepper(object):
             self._capture.load_json_file(cfg_file)
 
     @property
-    def capture(self):
+    def capture(self) -> Capture:
         return self._capture
     
     def __del__(self):
@@ -156,7 +156,7 @@ class MulticamStepper(object):
         if not self._capture.close():
             raise StreamingError('Cannot close devices')
 
-    def start(self, wait_ms_first_frameset=10000):
+    def start(self, wait_ms_first_frameset: int = 10000) -> Capture:
         if self._verbose:
             print('\nStarting to receive {} streams from {} devices'.format(self._capture.num_streams(), self._capture.num_devices()))
             print('The configured capture yields the following streams:')
@@ -176,19 +176,28 @@ class MulticamStepper(object):
         # each frameset:
         num_streams = self._capture.num_streams()
         self._vcp_labels = [self._capture.frame_label(idx) for idx in range(num_streams)]
-        self._vcp_types = [FrameType.Depth
-                           if self._capture.is_depth(idx)
-                           else (FrameType.Intensity
-                                 if self._capture.is_infrared(idx)
-                                 else FrameType.Color)
-                           for idx in range(num_streams)]
+
+        self._vcp_types = list()
+        for idx in range(num_streams):
+            if self._capture.is_depth(idx):
+                self._vcp_types.append(FrameType.Depth)
+            elif self._capture.is_infrared(idx):
+                self._vcp_types.append(FrameType.Intensity)
+            elif self._capture.is_pointcloud(idx):
+                self._vcp_types.append(FrameType.Pointcloud)
+            elif self._capture.is_image(idx):
+                self._vcp_types.append(FrameType.Color)
+            else:
+                print(f'[WARNING]: FrameType for "{self._vcp_labels[idx]}" not yet handled! Interpreting it as standard image.')
+                self._vcp_types.append(FrameType.Color)
+
         self._vcp_rectified = [self._capture.is_rectified(idx) for idx in range(num_streams)]
         return self._capture
     
-    def is_available(self):
+    def is_available(self) -> bool:
         return self._capture.all_devices_available()
 
-    def next_frameset(self, wait_ms=1000):
+    def next_frameset(self, wait_ms: int = 1000) -> Frameset:
         if not self.is_available():
             return None
         if not self._capture.wait_for_frames(wait_ms):
@@ -202,10 +211,9 @@ class MulticamStepper(object):
             frameset = Frameset(self._frame_counter, timestamp)
             self._frame_counter += 1
             for fidx in range(len(framelist)):
-                frame = Frame(label=self._vcp_labels[fidx],
-                              frame_data=framelist[fidx],
-                              frame_type=self._vcp_types[fidx],
-                              timestamp=timestamp,
-                              is_rectified=self._vcp_rectified[fidx])
+                frame = Frame(
+                    label=self._vcp_labels[fidx], frame_data=framelist[fidx],
+                    frame_type=self._vcp_types[fidx], timestamp=timestamp,
+                    is_rectified=self._vcp_rectified[fidx])
                 frameset.frames.append(frame)
             return frameset

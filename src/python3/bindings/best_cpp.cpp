@@ -306,6 +306,11 @@ public:
     return capture_->FrameTypeAt(stream_index) == vcp::best::FrameType::INFRARED;
   }
 
+  bool IsFramePointcloud(size_t stream_index) const
+  {
+    return capture_->FrameTypeAt(stream_index) == vcp::best::FrameType::POINTCLOUD;
+  }
+
   bool IsFrameRectified(size_t stream_index) const
   {
     return capture_->IsStreamRectified(stream_index);
@@ -884,6 +889,9 @@ PYBIND11_MODULE(best_cpp, m)
            "Check if the frame at the given index is of type 'depth',\n"
            "i.e. depth measurements (16bit Kinect, RealSense), (float32 ZED).",
            py::arg("stream_index"))
+      .def("is_pointcloud", &pybest::CaptureWrapper::IsFramePointcloud,
+           "Check if the frame at the given index is of type 'pointcloud',\n"
+           "i.e. xyz coordinates as 3-channel float32 or float64 ndarray.")
       .def("is_infrared", &pybest::CaptureWrapper::IsFrameInfrared,
            "Check if the frame at the given index is of type 'infrared',\n"
            "i.e. intensity measurements (16bit Kinect, 8bit RealSense).",
