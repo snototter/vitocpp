@@ -18,14 +18,15 @@ struct PmdSinkParams : public SinkParams
 {
   std::string serial_number;
   float gray_divisor;
+  bool enable_gray;
+  bool enable_pointcloud;
 
-  PmdSinkParams(
-      const SinkParams &sink_params,
-      const std::string &sn = std::string(),
-      float gray_div = 180.0f)
+  PmdSinkParams(const SinkParams &sink_params)
     : SinkParams(sink_params),
-      serial_number(sn),
-      gray_divisor(gray_div)
+      serial_number(std::string()),
+      gray_divisor(180.0f),
+      enable_gray(false),
+      enable_pointcloud(false)
   {}
 };
 

@@ -189,18 +189,6 @@ public:
     std::vector<cv::Mat> res;
     image_queue_mutex_.lock();
 
-    if (image_queue_gray_->Empty())
-    {
-      gray = cv::Mat();
-    }
-    else
-    {
-      // Retrieve oldest image in queue
-      gray = image_queue_gray_->Front().clone();
-      image_queue_gray_->PopFront();
-    }
-    res.push_back(gray);
-
     if (depth_queue_->Empty())
     {
       depth = cv::Mat();
@@ -213,16 +201,34 @@ public:
     }
     res.push_back(depth);
 
-    if (xyz_queue_->Empty())
+    if (params_.enable_gray)
     {
-      xyz = cv::Mat();
+      if (image_queue_gray_->Empty())
+      {
+        gray = cv::Mat();
+      }
+      else
+      {
+        // Retrieve oldest image in queue
+        gray = image_queue_gray_->Front().clone();
+        image_queue_gray_->PopFront();
+      }
+      res.push_back(gray);
     }
-    else
+
+    if (params_.enable_pointcloud)
     {
-      xyz = xyz_queue_->Front().clone();
-      xyz_queue_->PopFront();
+      if (xyz_queue_->Empty())
+      {
+        xyz = cv::Mat();
+      }
+      else
+      {
+        xyz = xyz_queue_->Front().clone();
+        xyz_queue_->PopFront();
+      }
+      res.push_back(xyz);
     }
-    res.push_back(xyz);
 
     image_queue_mutex_.unlock();
     return res;
@@ -239,9 +245,15 @@ public:
   int IsFrameAvailable() const override
   {
     image_queue_mutex_.lock();
-    const bool empty = image_queue_gray_->Empty()
-        || depth_queue_->Empty()
-        || xyz_queue_->Empty();
+    bool empty = depth_queue_->Empty();
+    if (params_.enable_gray)
+    {
+      empty = empty || image_queue_gray_->Empty();
+    }
+    if (params_.enable_pointcloud)
+    {
+      empty = empty || xyz_queue_->Empty();
+    }
     image_queue_mutex_.unlock();
     if (empty)
       return 0;
@@ -252,11 +264,11 @@ public:
   {
     size_t num = 0;
     image_queue_mutex_.lock();
-    if (!image_queue_gray_->Empty())
-        ++num;
     if (!depth_queue_->Empty())
         ++num;
-    if (!xyz_queue_->Empty())
+    if (params_.enable_gray && !image_queue_gray_->Empty())
+        ++num;
+    if (params_.enable_pointcloud && !xyz_queue_->Empty())
         ++num;
     image_queue_mutex_.unlock();
     return num;
@@ -264,14 +276,22 @@ public:
 
   size_t NumStreams() const override
   {
-    return 3;
+    size_t cnt = 1;
+    if (params_.enable_gray)
+      ++cnt;
+    if (params_.enable_pointcloud)
+      ++cnt;
+    return cnt;
   }
 
   FrameType FrameTypeAt(size_t stream_index) const override
   {
-    const std::vector<FrameType> types {
-      FrameType::MONOCULAR, FrameType::DEPTH, FrameType::POINTCLOUD
-    };
+    std::vector<FrameType> types { FrameType::DEPTH };
+    if (params_.enable_gray)
+      types.push_back(FrameType::MONOCULAR);
+    if (params_.enable_pointcloud)
+      types.push_back(FrameType::POINTCLOUD);
+
     if (stream_index >= types.size())
       VCP_ERROR("stream_index " << stream_index << " is out-of-bounds");
     return types[stream_index];
@@ -279,16 +299,16 @@ public:
 
   std::string StreamLabel(size_t stream_index) const override
   {
-    const std::vector<std::string> labels = {
-      params_.sink_label + "-gray",
-      params_.sink_label + "-depth",
-      params_.sink_label + "-xyz",
-    };
+    std::vector<std::string> labels = { params_.sink_label + "-depth"};
+    if (params_.enable_gray)
+      labels.push_back(params_.sink_label + "-gray");
+    if (params_.enable_pointcloud)
+      labels.push_back(params_.sink_label + "-xyz");
+
     if (stream_index >= labels.size())
       VCP_ERROR("stream_index " << stream_index << " is out-of-bounds");
     return labels[stream_index];
   }
-
 
   SinkParams SinkParamsAt(size_t stream_index) const override
   {
@@ -355,11 +375,17 @@ public:
         {
           // Meters --> millimeters
           depth_ptr[col] = static_cast<uint16_t>(point.z * 1000.0f);
-          gray_ptr[col] = static_cast<unsigned char>(
-                std::min(255.0f, static_cast<float>(point.grayValue) / params_.gray_divisor * 255.0f));
-          xyz_ptr[col].val[0] = point.x * 1000.0f;
-          xyz_ptr[col].val[1] = point.y * 1000.0f;
-          xyz_ptr[col].val[2] = point.z * 1000.0f;
+          if (params_.enable_gray)
+          {
+            gray_ptr[col] = static_cast<unsigned char>(
+                  std::min(255.0f, static_cast<float>(point.grayValue) / params_.gray_divisor * 255.0f));
+          }
+          if (params_.enable_pointcloud)
+          {
+            xyz_ptr[col].val[0] = point.x * 1000.0f;
+            xyz_ptr[col].val[1] = point.y * 1000.0f;
+            xyz_ptr[col].val[2] = point.z * 1000.0f;
+          }
         }
       }
     }
@@ -376,22 +402,29 @@ public:
     cv::Mat frame_gray, frame_depth;
     if (params_.rectify)
     {
-      frame_gray = intrinsics_.UndistortRectify(gray8);
       frame_depth = intrinsics_.UndistortRectify(depth16);
-//      cv::undistort(gray8, frame_gray, camera_matrix_, distortion_coefficients_);
-//      cv::undistort(depth16, frame_depth, camera_matrix_, distortion_coefficients_);
+      if (params_.enable_gray)
+      {
+        frame_gray = intrinsics_.UndistortRectify(gray8);
+      }
     }
     else
     {
-      frame_gray = gray8;
       frame_depth = depth16;
+      frame_gray = gray8;
     }
 
 //    const cv::Mat img = imutils::ApplyImageTransformations(converted, params_.transforms);
     image_queue_mutex_.lock();
-    image_queue_gray_->PushBack(frame_gray.clone());
     depth_queue_->PushBack(frame_depth.clone());
-    xyz_queue_->PushBack(xyz.clone());
+    if (params_.enable_gray)
+    {
+      image_queue_gray_->PushBack(frame_gray.clone());
+    }
+    if (params_.enable_pointcloud)
+    {
+      xyz_queue_->PushBack(xyz.clone());
+    }
     image_queue_mutex_.unlock();
   }
 
@@ -435,8 +468,6 @@ private:
         lens.distortionRadial[1], lens.distortionTangential.first,
         lens.distortionTangential.second, lens.distortionRadial[2]);
   }
-
-
 };
 
 
@@ -465,10 +496,22 @@ PmdSinkParams PmdSinkParamsFromConfig(const vcp::config::ConfigParams &config, c
                     "serial_number"), configured_keys.end());
 
   params.gray_divisor = static_cast<float>(GetOptionalDoubleFromConfig(
-        config, cam_param, "gray_divisor", 180.0));
+        config, cam_param, "gray_divisor", params.gray_divisor));
   configured_keys.erase(
         std::remove(configured_keys.begin(), configured_keys.end(),
                     "gray_divisor"), configured_keys.end());
+
+  params.enable_gray = GetOptionalBoolFromConfig(
+        config, cam_param, "enable_gray", params.enable_gray);
+  configured_keys.erase(
+        std::remove(configured_keys.begin(), configured_keys.end(),
+                    "enable_gray"), configured_keys.end());
+
+  params.enable_pointcloud = GetOptionalBoolFromConfig(
+        config, cam_param, "enable_pointcloud", params.enable_pointcloud);
+  configured_keys.erase(
+        std::remove(configured_keys.begin(), configured_keys.end(),
+                    "enable_pointcloud"), configured_keys.end());
 
   WarnOfUnusedParameters(cam_param, configured_keys);
   return params;
