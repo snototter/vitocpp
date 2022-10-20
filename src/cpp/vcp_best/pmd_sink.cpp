@@ -460,11 +460,11 @@ private:
 
   void SetIntrinsics(const royale::LensParameters &lens)
   {
-    cv::Mat K = (cv::Mat1d (3, 3) << lens.focalLength.first, 0, lens.principalPoint.first,
+    camera_matrix_ = (cv::Mat1d (3, 3) << lens.focalLength.first, 0, lens.principalPoint.first,
                  0, lens.focalLength.second, lens.principalPoint.second,
                  0, 0, 1);
 
-    cv::Mat D = (cv::Mat1d (1, 5) << lens.distortionRadial[0],
+    distortion_coefficients_ = (cv::Mat1d (1, 5) << lens.distortionRadial[0],
         lens.distortionRadial[1], lens.distortionTangential.first,
         lens.distortionTangential.second, lens.distortionRadial[2]);
   }
