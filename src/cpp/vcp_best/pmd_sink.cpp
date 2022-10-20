@@ -464,7 +464,7 @@ private:
                  0, lens.focalLength.second, lens.principalPoint.second,
                  0, 0, 1);
 
-    distortion_coefficients_ = (cv::Mat1d (1, 5) << lens.distortionRadial[0],
+    distortion_coefficients_ = (cv::Mat1d (5, 1) << lens.distortionRadial[0],
         lens.distortionRadial[1], lens.distortionTangential.first,
         lens.distortionTangential.second, lens.distortionRadial[2]);
   }
