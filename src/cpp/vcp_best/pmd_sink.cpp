@@ -498,6 +498,9 @@ PmdSinkParams PmdSinkParamsFromConfig(const vcp::config::ConfigParams &config, c
   params.confidence_threshold = static_cast<uint8_t>(
         GetOptionalIntFromConfig(
           config, cam_param, "confidence_threshold", params.confidence_threshold));
+  configured_keys.erase(
+        std::remove(configured_keys.begin(), configured_keys.end(),
+                    "confidence_threshold"), configured_keys.end());
 
   params.gray_divisor = static_cast<float>(GetOptionalDoubleFromConfig(
         config, cam_param, "gray_divisor", params.gray_divisor));
