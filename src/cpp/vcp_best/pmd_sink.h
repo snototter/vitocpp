@@ -19,6 +19,7 @@ struct PmdSinkParams : public SinkParams
   std::string serial_number;
   float gray_divisor;
   uint8_t confidence_threshold;
+  float noise_std_threshold;
   bool enable_gray;
   bool enable_pointcloud;
 
@@ -27,6 +28,7 @@ struct PmdSinkParams : public SinkParams
       serial_number(std::string()),
       gray_divisor(180.0f),
       confidence_threshold(0),
+      noise_std_threshold(1.0f),
       enable_gray(false),
       enable_pointcloud(false)
   {}

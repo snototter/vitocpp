@@ -371,7 +371,8 @@ public:
       for (int col = 0; col < data->width; ++col, ++data_idx)
       {
         const auto &point = data->points.at(data_idx);
-        if (point.depthConfidence > params_.confidence_threshold)
+        if ((point.depthConfidence > params_.confidence_threshold)
+            && (point.noise < params_.noise_std_threshold))
         {
           // Meters --> millimeters
           depth_ptr[col] = static_cast<uint16_t>(point.z * 1000.0f);
@@ -501,6 +502,12 @@ PmdSinkParams PmdSinkParamsFromConfig(const vcp::config::ConfigParams &config, c
   configured_keys.erase(
         std::remove(configured_keys.begin(), configured_keys.end(),
                     "confidence_threshold"), configured_keys.end());
+
+  params.noise_std_threshold = static_cast<float>(GetOptionalDoubleFromConfig(
+        config, cam_param, "noise_std_threshold", params.noise_std_threshold));
+  configured_keys.erase(
+        std::remove(configured_keys.begin(), configured_keys.end(),
+                    "noise_std_threshold"), configured_keys.end());
 
   params.gray_divisor = static_cast<float>(GetOptionalDoubleFromConfig(
         config, cam_param, "gray_divisor", params.gray_divisor));
