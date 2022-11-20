@@ -135,3 +135,58 @@ target_link_libraries(math_demo
     ${VCP_LIBRARIES}
 )
 
+
+# Best Effort Streaming (BESt) demo
+message(STATUS "Setting up cairo comparison")
+find_package(vcp REQUIRED COMPONENTS vcp_best vcp_imvis vcp_imutils)
+include_directories(${VCP_INCLUDE_DIR})
+
+# viren2d requires at least C++14
+set(CMAKE_CXX_STANDARD 17)
+
+# We only need the toolbox (no examples, no testing)
+set(werkzeugkiste_BUILD_EXAMPLES OFF)
+set(werkzeugkiste_BUILD_TESTS OFF)
+# We need werkzeugkiste's install targets (since its vector class
+# is part of the public viren2d++ interface).
+set(werkzeugkiste_INSTALL ON)
+
+# Fetch the library:
+include(FetchContent)
+
+FetchContent_Declare(
+  Eigen
+  GIT_REPOSITORY https://gitlab.com/libeigen/eigen.git
+  GIT_TAG master
+  GIT_SHALLOW TRUE
+  GIT_PROGRESS TRUE)
+set(EIGEN_BUILD_DOC OFF)
+# note: To disable eigen tests,
+# you should put this code in a add_subdirectory to avoid to change
+# BUILD_TESTING for your own project too since variables are directory
+# scoped
+set(BUILD_TESTING OFF)
+set(EIGEN_BUILD_PKGCONFIG OFF)
+set( OFF)
+FetchContent_MakeAvailable(Eigen)
+
+FetchContent_Declare(
+    werkzeugkiste
+    GIT_REPOSITORY https://github.com/snototter/werkzeugkiste.git
+    GIT_TAG main)
+FetchContent_MakeAvailable(werkzeugkiste)
+# Let CMake download and set up the viren2d dependency
+include(FetchContent)
+FetchContent_Declare(
+  viren2d
+  GIT_REPOSITORY https://github.com/snototter/viren2d.git
+  GIT_TAG main)
+FetchContent_MakeAvailable(viren2d)
+
+
+add_executable(cairo_comparison
+  cpp/cairo_comparison.cpp
+)
+# Add the viren2d dependency (include paths will be set up automatically)
+target_link_libraries(cairo_comparison PRIVATE Eigen3::Eigen werkzeugkiste::timing viren2d++::viren2d++ ${VCP_LIBRARIES})
+
